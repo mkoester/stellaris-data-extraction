@@ -1128,7 +1128,9 @@ CREATE TABLE astral_action_cooldown (
     name  TEXT,
     days  INTEGER NOT NULL
 );
--- Situations (common/situations) and their approaches, special projects (common/special_projects).
+-- Situations (common/situations) and their approaches and stages, special projects
+-- (common/special_projects).
+DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;
 DROP TABLE IF EXISTS special_project;
@@ -1145,6 +1147,13 @@ CREATE TABLE situation_approach (
     tooltip       TEXT,
     is_default    INTEGER NOT NULL DEFAULT 0,
     sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, key)
+);
+CREATE TABLE situation_stage (
+    situation_key TEXT NOT NULL,
+    key           TEXT NOT NULL,           -- e.g. "situation_nomad_economy_stage_2_stable"
+    name          TEXT,                    -- e.g. "Medium"
+    sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
 );
 CREATE TABLE special_project (
@@ -96621,6 +96630,985 @@ INSERT INTO faction_demand (faction_key, sort_order, title, unfulfilled_title,
 INSERT INTO faction_demand (faction_key, sort_order, title, unfulfilled_title,
                    description, fulfilled_effect, unfulfilled_effect, potential_json, trigger_json)
                    VALUES ('xenoist', 25, 'Faction Pleased', 'Faction Pleased', 'The is pleased with a Resolution we recently proposed and passed in the .', '-20.0', '-0.001', '{"leaf":"has_country_flag","value":"galcom_resolution_passed_pro_xenoist"}', '{"leaf":"has_country_flag","value":"galcom_resolution_passed_pro_xenoist"}');
+INSERT INTO prescripted_name (key, text) VALUES ('ANY_SHIP_IN_SYSTEM', 'Any ship in system');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_AbyssalDrag', 'Abyssal Drag');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_AbyssalSurveyor', 'Abyssal Surveyor');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Abyssal_Mirage', 'Abyssal Mirage');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_ArdentFountain', 'Ardent Fountain');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_AzureDestiny', 'Azure Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_BastionReef', 'Bastion Reef');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_BastionWharf', 'Bastion Wharf');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_BeaconBuoy', 'Beacon Buoy');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_BeholdtheBreach', 'Behold the Breach');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Blackreef_Throne', 'Blackreef Throne');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CalmBeforetheStorm', 'Calm Before the Storm');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CatchofaLifetime', 'Catch of a Lifetime');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_ChoicelessWaters', 'Choiceless Waters');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_ClearWaters', 'Clear Waters');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CoarseSpray', 'Coarse Spray');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_ComingTide', 'Coming Tide');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Coral_Warden', 'Coral Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CosmicAnemone', 'Cosmic Anemone');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CosmicAngler', 'Cosmic Angler');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_CrossFlow', 'Cross Flow');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DecisiveCrest', 'Decisive Crest');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Deepcurrent_Muse', 'Deepcurrent Muse');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DeepestBlue', 'Deepest Blue');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DispersionWave', 'Dispersion Wave');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DivergentFlow', 'Divergent Flow');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DoomsAnchor', 'Doom''s Anchor');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DormantValve', 'Dormant Valve');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DrawbackHerald', 'Drawback Herald');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DreadNavigator', 'Dread Navigator');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DreadReef', 'Dread Reef');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DreamEroder', 'Dream Eroder');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Driftnet_Phantom', 'Driftnet Phantom');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_DrownedVent', 'Drowned Vent');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Ebonfin_Spear', 'Ebonfin Spear');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_EdgeWave', 'Edge Wave');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_EmbracetheCurrent', 'Embrace the Current');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_EverlastingFlood', 'Everlasting Flood');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_FierceSiren', 'Fierce Siren');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_FinalSurge', 'Final Surge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_FloodJet', 'Flood Jet');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_FlowLimiter', 'Flow Limiter');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_FuriousHarbor', 'Furious Harbor');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GrandCulvert', 'Grand Culvert');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GrandSluice', 'Grand Sluice');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GreatEbb', 'Great Ebb');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GreatRidge', 'Great Ridge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GreatShoal', 'Great Shoal');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GushingAmbition', 'Gushing Ambition');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_GushingFerry', 'Gushing Ferry');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_HopesExtinguished', 'Hopes Extinguished');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Krakens_Kiss', 'Kraken''s Kiss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_LeakingSkies', 'Leaking Skies');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_LittoralStrides', 'Littoral Strides');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Mermaids_Grace', 'Mermaid''s Grace');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Nautilus_Spire', 'Nautilus Spire');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_OceansDeluge', 'Ocean''s Deluge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_PelagicDweller', 'Pelagic Dweller');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Pelagic_Mystery', 'Pelagic Mystery');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_PluckySquall', 'Plucky Squall');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_RippleWash', 'Ripple Wash');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Sapphire_Maw', 'Sapphire Maw');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SeaChange', 'Sea Change');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SeasComplaint', 'Sea''s Complaint');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SeethingPurpose', 'Seething Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SeismicWash', 'Seismic Wash');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SeizetheEsca', 'Seize the Esca');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_ShaleBreaker', 'Shale Breaker');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SteadyInundation', 'Steady Inundation');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_StellarEstuary', 'Stellar Estuary');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_StellarHook', 'Stellar Hook');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_StellarReef', 'Stellar Reef');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SturdyLock', 'Sturdy Lock');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SurfaceNoise', 'Surface Noise');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SwimminginDestiny', 'Swimming in Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SwirlingEddy', 'Swirling Eddy');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_SwitchedBait', 'Switched Bait');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Tempest_Pearl', 'Tempest Pearl');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TerminalGroyne', 'Terminal Groyne');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_The_Undertide', 'The Undertide');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TidalCataclysm', 'Tidal Cataclysm');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TidalDrift', 'Tidal Drift');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TidalWave', 'Tidal Wave');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TidePool', 'Tide Pool');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Tideborn_Empress', 'Tideborn Empress');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TradeCurrent', 'Trade Current');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TrenchSwell', 'Trench Swell');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_TrivialShorelines', 'Trivial Shorelines');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_Voidkelp_Dancer', 'Voidkelp Dancer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_WaterHammerer', 'Water Hammerer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_WaveTurbulence', 'Wave Turbulence');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_WreckerofBearings', 'Wrecker of Bearings');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_AdmiralsJewel', 'Admiral''s Jewel');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_AghastWanderer', 'Aghast Wanderer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BellowingJack', 'Bellowing Jack');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BlackBelly', 'Black Belly');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BlastedHull', 'Blasted Hull');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BleakWitch', 'Bleak Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BlindCrab', 'Blind Crab');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Bloop_Brigade', 'Bloop Brigade');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BonesofaDeadStar', 'Bones of a Dead Star');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BootlegsBoot', 'Bootleg''s Boot');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BraveBillsBooty', 'Brave Bill''s Booty');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BrokenShackle', 'Broken Shackle');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_BurningBlade', 'Burning Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_ConradsDarkRoamer', 'Conrad''s Dark Roamer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_CossXXIII', 'Coss XXIII');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Cupcake_Coral', 'Cupcake Coral');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_DreadedZune', 'Dreaded Zune');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_DrunkenKeg', 'Drunken Keg');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_DuelingKrab', 'Dueling Krab');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_FearnoSpaceborne', 'Fear no Spaceborne');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_FlamingFerry', 'Flaming Ferry');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_FlyingDuke', 'Flying Duke');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_FreePearl', 'Free Pearl');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Fuzzy_Reef', 'Fuzzy Reef');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_GanNing', 'Gan Ning');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_GiftMountTeeths', 'Gift Mount Teeths');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_GoddessFortune', 'Goddess Fortune');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_GrinningVagrant', 'Grinning Vagrant');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Guppy_Glory', 'Guppy Glory');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_HayredIn', 'Hayred In');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_HornyTritus', 'Horny Tritus');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_JacksDawn', 'Jack''s Dawn');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_JollyHacker', 'Jolly Hacker');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Krill_Issue', 'Krill Issue');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_LockerBuster', 'Locker Buster');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_MadMoonKing', 'Mad Moon King');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_MagicBandit', 'Magic Bandit');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Minty_Tide', 'Minty Tide');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_MonarchsRevenge', 'Monarch''s Revenge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_MorningAster', 'Morning Aster');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_MyLadyVoid', 'My Lady Void');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_NebulousDevil', 'Nebulous Devil');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_RestoredFreedom', 'Restored Freedom');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_RobbedVale', 'Robbed Vale');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_RumRunner', 'Rum Runner');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SandyHopper', 'Sandy Hopper');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Shellberry_Dream', 'Shellberry Dream');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SistersRevenge', 'Sister''s Revenge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SlaverLament', 'Slaver Lament');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SmugExplorer', 'Smug Explorer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_Starfish_Kiss', 'Starfish Kiss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SunlightSurfer', 'Sunlight Surfer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_SweetSpacemaid', 'Sweet Spacemaid');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_ThankfulFisher', 'Thankful Fisher');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_The_Pink_Anemone', 'The Pink Anemone');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_The_Wee_Wave', 'The Wee Wave');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_The_Wiggly_Squid', 'The Wiggly Squid');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_ThisTimeisDifferent', 'This Time is Different');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_UnsinkableII', 'Unsinkable II');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_VeilofMorgan', 'Veil of Morgan');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_VoidOrchid', 'Void Orchid');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_WeeWeepingDragon', 'Wee Weeping Dragon');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_WindlessSailor', 'Windless Sailor');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_WiseMother', 'Wise Mother');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_WydeBellam', 'Wyde Bellam');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_YellowFleecer', 'Yellow Fleecer');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC2_SHIP_ZhengSao', 'Zheng Sao');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_Barnacle_Wretch', 'Barnacle Wretch');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_BeaconofEternity', 'Beacon of Eternity');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_BeaconoftheDivine', 'Beacon of the Divine');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_BeaconoftheSkies', 'Beacon of the Skies');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_Clammy_Silence', 'Clammy Silence');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_CreationsFortune', 'Creation''s Fortune');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_CreationsOverlord', 'Creation''s Overlord');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_CreationsSovereign', 'Creation''s Sovereign');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_DestinysMagistrate', 'Destiny''s Magistrate');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_EternitysSovereign', 'Eternity''s Sovereign');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_Fungal_Surge', 'Fungal Surge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_GuardianofLuck', 'Guardian of Luck');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_GuardianoftheUnderworld', 'Guardian of the Underworld');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_JudgeofBattle', 'Judge of Battle');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_JudgeofChance', 'Judge of Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_JudgeoftheAbyss', 'Judge of the Abyss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_JudgeoftheMorningStar', 'Judge of the Morning Star');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_Larval_Howl', 'Larval Howl');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryofCreation', 'Luminary of Creation');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryofLuck', 'Luminary of Luck');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryofNight', 'Luminary of Night');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryofProvidence', 'Luminary of Providence');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryoftheEternity', 'Luminary of the Eternity');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_LuminaryoftheGods', 'Luminary of the Gods');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MagistrateofFire', 'Magistrate of Fire');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MagistrateofWar', 'Magistrate of War');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MagistrateoftheSix', 'Magistrate of the Six');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MagistrateoftheStars', 'Magistrate of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofBattle', 'Monarch of Battle');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofCreation', 'Monarch of Creation');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofFire', 'Monarch of Fire');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofHeaven', 'Monarch of Heaven');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofProvidence', 'Monarch of Providence');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchofWar', 'Monarch of War');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_MonarchoftheUniverse', 'Monarch of the Universe');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_Mucus_Crown', 'Mucus Crown');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_NightsBeacon', 'Night''s Beacon');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_NobleofChance', 'Noble of Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_NobleoftheHeavens', 'Noble of the Heavens');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_NobleoftheStars', 'Noble of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_NobleoftheTwilight', 'Noble of the Twilight');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_OverlordofBattle', 'Overlord of Battle');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_OverlordofEternity', 'Overlord of Eternity');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_OverlordoftheAbyss', 'Overlord of the Abyss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_OverlordoftheSeven', 'Overlord of the Seven');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_ProtectorandJudge', 'Protector and Judge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_ProtectorofEternity', 'Protector of Eternity');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_ProtectoroftheAbyss', 'Protector of the Abyss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_ProtectoroftheGods', 'Protector of the Gods');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_ProtectoroftheStars', 'Protector of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RulerofDestiny', 'Ruler of Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RuleroftheEveningStar', 'Ruler of the Evening Star');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RuleroftheFive', 'Ruler of the Five');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RuleroftheHorns', 'Ruler of the Horns');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RuleroftheMorningStar', 'Ruler of the Morning Star');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_RuleroftheStars', 'Ruler of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_SouthernHorn', 'Southern Horn');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_SovereignofWar', 'Sovereign of War');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_SovereignoftheStars', 'Sovereign of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TheDivinesGuardian', 'The Divine''s Guardian');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TheDivinesProtector', 'The Divine''s Protector');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_The_Bogfish_Grin', 'The Bogfish Grin');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_The_Damp_Sting', 'The Damp Sting');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_The_Gulper_Barge', 'The Gulper Barge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_The_Rotten_Current', 'The Rotten Current');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_The_Vile_Anemone', 'The Vile Anemone');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TorchofWar', 'Torch of War');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TorchoftheAbyss', 'Torch of the Abyss');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TorchoftheGods', 'Torch of the Gods');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TorchoftheUnderworld', 'Torch of the Underworld');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TwilightsBeacon', 'Twilight''s Beacon');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TwilightsGuardian', 'Twilight''s Guardian');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TwilightsJudge', 'Twilight''s Judge');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TyrantofFire', 'Tyrant of Fire');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TyrantoftheCosmos', 'Tyrant of the Cosmos');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TyrantoftheMorningStar', 'Tyrant of the Morning Star');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_TyrantoftheSkies', 'Tyrant of the Skies');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_UnderworldsSovereign', 'Underworld''s Sovereign');
+INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC3_SHIP_WesternHorn', 'Western Horn');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_BralexMuxi', 'Bralex Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_ClyrixMuxi', 'Clyrix Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_DronkavMuxi', 'Dronkav Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_FelgripMuxi', 'Felgrip Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HessikMuxi', 'Hessik Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabBetklox', 'Hulkrab Betklox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabBlatox', 'Hulkrab Blatox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabDunybb', 'Hulkrab Dunybb');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabKrabblax', 'Hulkrab Krabblax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabLobball', 'Hulkrab Lobball');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabMaqtrac', 'Hulkrab Maqtrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabMezotix', 'Hulkrab Mezotix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabMuxi', 'Hulkrab Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabNixpac', 'Hulkrab Nixpac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabPolljac', 'Hulkrab Polljac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabSpectrac', 'Hulkrab Spectrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabStroxtan', 'Hulkrab Stroxtan');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabTrobbjax', 'Hulkrab Trobbjax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabUpcix', 'Hulkrab Upcix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabVicopoc', 'Hulkrab Vicopoc');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_HulkrabYbbax', 'Hulkrab Ybbax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacBetklox', 'Inklac Betklox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacBlatox', 'Inklac Blatox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacDunybb', 'Inklac Dunybb');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacKrabblax', 'Inklac Krabblax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacLobball', 'Inklac Lobball');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacMaqtrac', 'Inklac Maqtrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacMezotix', 'Inklac Mezotix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacMuxi', 'Inklac Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacNixpac', 'Inklac Nixpac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacPolljac', 'Inklac Polljac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacSpectrac', 'Inklac Spectrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacStroxtan', 'Inklac Stroxtan');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacTrobbjax', 'Inklac Trobbjax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacUpcix', 'Inklac Upcix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacVicopoc', 'Inklac Vicopoc');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_InklacYbbax', 'Inklac Ybbax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakBetklox', 'Knak Betklox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakBlatox', 'Knak Blatox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakDunybb', 'Knak Dunybb');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakKrabblax', 'Knak Krabblax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakLobball', 'Knak Lobball');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakMaqtrac', 'Knak Maqtrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakMezotix', 'Knak Mezotix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakMuxi', 'Knak Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakNixpac', 'Knak Nixpac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakPolljac', 'Knak Polljac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakSpectrac', 'Knak Spectrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakStroxtan', 'Knak Stroxtan');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakTrobbjax', 'Knak Trobbjax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakUpcix', 'Knak Upcix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakVicopoc', 'Knak Vicopoc');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_KnakYbbax', 'Knak Ybbax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcBetklox', 'Opalc Betklox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcBlatox', 'Opalc Blatox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcDunybb', 'Opalc Dunybb');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcKrabblax', 'Opalc Krabblax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcLobball', 'Opalc Lobball');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcMaqtrac', 'Opalc Maqtrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcMezotix', 'Opalc Mezotix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcMuxi', 'Opalc Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcNixpac', 'Opalc Nixpac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcPolljac', 'Opalc Polljac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcSpectrac', 'Opalc Spectrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcStroxtan', 'Opalc Stroxtan');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcTrobbjax', 'Opalc Trobbjax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcUpcix', 'Opalc Upcix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcVicopoc', 'Opalc Vicopoc');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_OpalcYbbax', 'Opalc Ybbax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_QuarnakMuxi', 'Quarnak Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_SkarnetMuxi', 'Skarnet Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_TrizhexMuxi', 'Trizhex Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizBetklox', 'Xactiz Betklox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizBlatox', 'Xactiz Blatox');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizDunybb', 'Xactiz Dunybb');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizKrabblax', 'Xactiz Krabblax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizLobball', 'Xactiz Lobball');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizMaqtrac', 'Xactiz Maqtrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizMezotix', 'Xactiz Mezotix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizMuxi', 'Xactiz Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizNixpac', 'Xactiz Nixpac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizPolljac', 'Xactiz Polljac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizSpectrac', 'Xactiz Spectrac');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizStroxtan', 'Xactiz Stroxtan');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizTrobbjax', 'Xactiz Trobbjax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizUpcix', 'Xactiz Upcix');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizVicopoc', 'Xactiz Vicopoc');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_XactizYbbax', 'Xactiz Ybbax');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_YaltrikMuxi', 'Yaltrik Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART3_SHIP_ZunkolMuxi', 'Zunkol Muxi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakAvTa', 'bak''Av''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakIrBa', 'bak''Ir''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakIrZa', 'bak''Ir''Za');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakMaNa', 'bak''Ma''Na');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakNiVa', 'bak''Ni''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakRiVe', 'bak''Ri''Ve');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakTaTa', 'bak''Ta''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakTaZi', 'bak''Ta''Zi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakUrMa', 'bak''Ur''Ma');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_bakYrYe', 'bak''Yr''Ye');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaGeVa', 'iba''Ge''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaInVe', 'iba''In''Ve');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaKaTo', 'iba''Ka''To');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaKeZu', 'iba''Ke''Zu');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaNaBe', 'iba''Na''Be');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaNoKa', 'iba''No''Ka');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaPoZo', 'iba''Po''Zo');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaQuTu', 'iba''Qu''Tu');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaSaNi', 'iba''Sa''Ni');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaSeTa', 'iba''Se''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_ibaYrTi', 'iba''Yr''Ti');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korBeKe', 'kor''Be''Ke');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korBeZe', 'kor''Be''Ze');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korDiPi', 'kor''Di''Pi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korDiZa', 'kor''Di''Za');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korLeTa', 'kor''Le''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korNeBi', 'kor''Ne''Bi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korNiOr', 'kor''Ni''Or');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korNuVi', 'kor''Nu''Vi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korPaLi', 'kor''Pa''Li');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korSaZi', 'kor''Sa''Zi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korSeTa', 'kor''Se''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korTeKo', 'kor''Te''Ko');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korTiBa', 'kor''Ti''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korTiYa', 'kor''Ti''Ya');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_korUrDa', 'kor''Ur''Da');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokBaRi', 'mok''Ba''Ri');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokIbGa', 'mok''Ib''Ga');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokOrPi', 'mok''Or''Pi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokRaTa', 'mok''Ra''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokSaLa', 'mok''Sa''La');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokTaVi', 'mok''Ta''Vi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokVeTa', 'mok''Ve''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokYmVe', 'mok''Ym''Ve');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokZeVa', 'mok''Ze''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_mokZuRa', 'mok''Zu''Ra');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukAnTa', 'puk''An''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukBiNa', 'puk''Bi''Na');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukBiVi', 'puk''Bi''Vi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukBoLi', 'puk''Bo''Li');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukErIr', 'puk''Er''Ir');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukIrUl', 'puk''Ir''Ul');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukMiPi', 'puk''Mi''Pi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukNaSa', 'puk''Na''Sa');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukQoQa', 'puk''Qo''Qa');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukQoRi', 'puk''Qo''Ri');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukSiTa', 'puk''Si''Ta');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukTeMi', 'puk''Te''Mi');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukVeZa', 'puk''Ve''Za');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukVyVa', 'puk''Vy''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_pukZeNa', 'puk''Ze''Na');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikBoVa', 'sik'' Bo'' Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikDaRa', 'sik'' Da'' Ra');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikElRe', 'sik''El''Re');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikErKo', 'sik''Er''Ko');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikIbAl', 'sik''Ib''Al');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikKoZo', 'sik'' Ko'' Zo');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikLaKo', 'sik'' La'' Ko');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikMeLu', 'sik'' Me'' Lu');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikNeTu', 'sik'' Ne'' Tu');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikNuKu', 'sik''Nu''Ku');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikPeSa', 'sik'' Pe'' Sa');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikQaRe', 'sik''Qa''Re');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikRaTu', 'sik''Ra''Tu');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikReRa', 'sik''Re''Ra');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikRuNa', 'sik'' Ru'' Na');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikSaSa', 'sik''Sa''Sa');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikToBa', 'sik''To''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikTuFo', 'sik'' Tu'' Fo');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikVaBa', 'sik''Va''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikVeTo', 'sik''Ve''To');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikViVa', 'sik''Vi''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('ART4_SHIP_sikZoMu', 'sik'' Zo'' Mu');
+INSERT INTO prescripted_name (key, text) VALUES ('AURA_SHIP_SUBSPACE_SNARE', 'Subspace Snare');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_AlertHatchling', 'Alert Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_AnchoredHatchling', 'Anchored Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_AnimatedHatchling', 'Animated Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ArdentHatchling', 'Ardent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_AttentiveHatchling', 'Attentive Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BanefulHatchling', 'Baneful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BastionHatchling', 'Bastion Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BlitheHatchling', 'Blithe Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BoisterousHatchling', 'Boisterous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BrashHatchling', 'Brash Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BraveHatchling', 'Brave Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BriskHatchling', 'Brisk Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BroodingHatchling', 'Brooding Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BrusqueHatchling', 'Brusque Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_BuoyantHatchling', 'Buoyant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CapriciousHatchling', 'Capricious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CheerfulHatchling', 'Cheerful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CholericHatchling', 'Choleric Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ClamorousHatchling', 'Clamorous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CleverHatchling', 'Clever Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ConfidentHatchling', 'Confident Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ContemptuousHatchling', 'Contemptuous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CourageousHatchling', 'Courageous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CrabbyHatchling', 'Crabby Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CrazyHatchling', 'Crazy Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CrossHatchling', 'Cross Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_CunningHatchling', 'Cunning Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DauntlessHatchling', 'Dauntless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DefiantHatchling', 'Defiant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DementedHatchling', 'Demented Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DependableHatchling', 'Dependable Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DerangedHatchling', 'Deranged Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DeviantHatchling', 'Deviant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DeviousHatchling', 'Devious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_DourHatchling', 'Dour Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_EccentricHatchling', 'Eccentric Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ErraticHatchling', 'Erratic Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FearlessHatchling', 'Fearless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FeralHatchling', 'Feral Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FerociousHatchling', 'Ferocious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FierceHatchling', 'Fierce Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FightingHatchling', 'Fighting Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FrenziedHatchling', 'Frenzied Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_FuriousHatchling', 'Furious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_GloomyHatchling', 'Gloomy Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_GracefulHatchling', 'Graceful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_GruffHatchling', 'Gruff Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_GuardingHatchling', 'Guarding Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_HappyHatchling', 'Happy Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_HaughtyHatchling', 'Haughty Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_HeadstrongHatchling', 'Headstrong Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_HeedlessHatchling', 'Heedless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImpatientHatchling', 'Impatient Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImperiousHatchling', 'Imperious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImpertinentHatchling', 'Impertinent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImperviousHatchling', 'Impervious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImpetuousHatchling', 'Impetuous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImpishHatchling', 'Impish Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImprudentHatchling', 'Imprudent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ImpudentHatchling', 'Impudent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_IndignantHatchling', 'Indignant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_InsaneHatchling', 'Insane Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_InvigoratedHatchling', 'Invigorated Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_IrascibleHatchling', 'Irascible Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_JovialHatchling', 'Jovial Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_JoyousHatchling', 'Joyous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_JubilantHatchling', 'Jubilant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_LivelyHatchling', 'Lively Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_LuckyHatchling', 'Lucky Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_MercurialHatchling', 'Mercurial Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_MerryHatchling', 'Merry Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_MettlesomeHatchling', 'Mettlesome Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_MirthfulHatchling', 'Mirthful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_NestingHatchling', 'Nesting Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_NimbleHatchling', 'Nimble Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_NonconformingHatchling', 'Nonconforming Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ObdurateHatchling', 'Obdurate Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ObliviousHatchling', 'Oblivious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ObservantHatchling', 'Observant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ObstinateHatchling', 'Obstinate Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_OminousHatchling', 'Ominous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PassionateHatchling', 'Passionate Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PatientHatchling', 'Patient Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PeculiarHatchling', 'Peculiar Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PerceptiveHatchling', 'Perceptive Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PerchingHatchling', 'Perching Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PersistentHatchling', 'Persistent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PertinaciousHatchling', 'Pertinacious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ProdigalHatchling', 'Prodigal Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ProudHatchling', 'Proud Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_PrudentHatchling', 'Prudent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RapaciousHatchling', 'Rapacious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RashHatchling', 'Rash Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RavenousHatchling', 'Ravenous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RecklessHatchling', 'Reckless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RefractoryHatchling', 'Refractory Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ResilientHatchling', 'Resilient Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ResoluteHatchling', 'Resolute Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RestlessHatchling', 'Restless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RiotousHatchling', 'Riotous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RookeryHatchling', 'Rookery Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RowdyHatchling', 'Rowdy Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_RuthlessHatchling', 'Ruthless Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SavageHatchling', 'Savage Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ScornfulHatchling', 'Scornful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SharpEyedHatchling', 'Sharp-Eyed Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SillyHatchling', 'Silly Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SingingHatchling', 'Singing Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SlyHatchling', 'Sly Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SoaringHatchling', 'Soaring Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SolitaryHatchling', 'Solitary Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SpiritedHatchling', 'Spirited Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SpitefulHatchling', 'Spiteful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SpleneticHatchling', 'Splenetic Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SprightlyHatchling', 'Sprightly Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SpryHatchling', 'Spry Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_StalwartHatchling', 'Stalwart Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_StoutHatchling', 'Stout Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_StubbornHatchling', 'Stubborn Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SullenHatchling', 'Sullen Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SuperciliousHatchling', 'Supercilious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_SurlyHatchling', 'Surly Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_TempestuousHatchling', 'Tempestuous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_TenaciousHatchling', 'Tenacious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_TerritorialHatchling', 'Territorial Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_TestyHatchling', 'Testy Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_TurbulentHatchling', 'Turbulent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UncivilHatchling', 'Uncivil Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UndomesticatedHatchling', 'Undomesticated Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnforgivingHatchling', 'Unforgiving Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UngroomedHatchling', 'Ungroomed Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnkemptHatchling', 'Unkempt Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnpredictableHatchling', 'Unpredictable Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnrestrainedHatchling', 'Unrestrained Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnrulyHatchling', 'Unruly Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnstableHatchling', 'Unstable Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_UnyieldingHatchling', 'Unyielding Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ValiantHatchling', 'Valiant Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VehementHatchling', 'Vehement Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VengefulHatchling', 'Vengeful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VigorousHatchling', 'Vigorous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VindictiveHatchling', 'Vindictive Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ViolentHatchling', 'Violent Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VivaciousHatchling', 'Vivacious Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_VolatileHatchling', 'Volatile Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_WatchfulHatchling', 'Watchful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_WaywardHatchling', 'Wayward Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_WildHatchling', 'Wild Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_WingedWardenHatchling', 'Winged Warden Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_WrathfulHatchling', 'Wrathful Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI1_SHIP_ZealousHatchling', 'Zealous Hatchling');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_AlertPlumage', 'Alert Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_AnimatedPlumage', 'Animated Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_AnointedPlumage', 'Anointed Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ArdentPlumage', 'Ardent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_AttentivePlumage', 'Attentive Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BanefulPlumage', 'Baneful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BlithePlumage', 'Blithe Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BoisterousPlumage', 'Boisterous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BrashPlumage', 'Brash Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BravePlumage', 'Brave Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BriskPlumage', 'Brisk Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BrusquePlumage', 'Brusque Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_BuoyantPlumage', 'Buoyant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CaesiousPlumage', 'Caesious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CapriciousPlumage', 'Capricious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CheerfulPlumage', 'Cheerful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CholericPlumage', 'Choleric Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ClamorousPlumage', 'Clamorous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CleverPlumage', 'Clever Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ConfidentPlumage', 'Confident Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ContemptuousPlumage', 'Contemptuous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CourageousPlumage', 'Courageous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CrabbyPlumage', 'Crabby Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CrazyPlumage', 'Crazy Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CrossPlumage', 'Cross Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_CunningPlumage', 'Cunning Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DauntlessPlumage', 'Dauntless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DefiantPlumage', 'Defiant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DementedPlumage', 'Demented Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DependablePlumage', 'Dependable Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DerangedPlumage', 'Deranged Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DeviantPlumage', 'Deviant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DeviousPlumage', 'Devious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_DourPlumage', 'Dour Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_EburneanPlumage', 'Eburnean Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_EccentricPlumage', 'Eccentric Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ErraticPlumage', 'Erratic Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FearlessPlumage', 'Fearless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FeralPlumage', 'Feral Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FerociousPlumage', 'Ferocious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FiercePlumage', 'Fierce Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FightingPlumage', 'Fighting Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FrenziedPlumage', 'Frenzied Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_FuriousPlumage', 'Furious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_GloomyPlumage', 'Gloomy Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_GracefulPlumage', 'Graceful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_GruffPlumage', 'Gruff Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_HappyPlumage', 'Happy Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_HaughtyPlumage', 'Haughty Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_HeadstrongPlumage', 'Headstrong Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_HeedlessPlumage', 'Heedless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImmaculatePlumage', 'Immaculate Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImpatientPlumage', 'Impatient Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImperiousPlumage', 'Imperious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImpertinentPlumage', 'Impertinent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImperviousPlumage', 'Impervious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImpetuousPlumage', 'Impetuous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImpishPlumage', 'Impish Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImprudentPlumage', 'Imprudent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ImpudentPlumage', 'Impudent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_IndignantPlumage', 'Indignant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_InsanePlumage', 'Insane Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_InvigoratedPlumage', 'Invigorated Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_IrasciblePlumage', 'Irascible Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_JovialPlumage', 'Jovial Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_JoyousPlumage', 'Joyous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_JubilantPlumage', 'Jubilant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_LivelyPlumage', 'Lively Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_LuckyPlumage', 'Lucky Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_LustralPlumage', 'Lustral Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_MercurialPlumage', 'Mercurial Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_MerryPlumage', 'Merry Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_MettlesomePlumage', 'Mettlesome Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_MirthfulPlumage', 'Mirthful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_NimblePlumage', 'Nimble Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_NonconformingPlumage', 'Nonconforming Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ObduratePlumage', 'Obdurate Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ObliviousPlumage', 'Oblivious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ObservantPlumage', 'Observant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ObstinatePlumage', 'Obstinate Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_OminousPlumage', 'Ominous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PassionatePlumage', 'Passionate Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PatientPlumage', 'Patient Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PeculiarPlumage', 'Peculiar Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PerceptivePlumage', 'Perceptive Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PeregrinePlumage', 'Peregrine Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PersistentPlumage', 'Persistent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PertinaciousPlumage', 'Pertinacious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ProdigalPlumage', 'Prodigal Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ProudPlumage', 'Proud Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_PrudentPlumage', 'Prudent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RapaciousPlumage', 'Rapacious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RashPlumage', 'Rash Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RavenousPlumage', 'Ravenous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RecklessPlumage', 'Reckless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RefractoryPlumage', 'Refractory Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ResilientPlumage', 'Resilient Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ResolutePlumage', 'Resolute Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ResplendentPlumage', 'Resplendent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RestlessPlumage', 'Restless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RiotousPlumage', 'Riotous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RowdyPlumage', 'Rowdy Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_RuthlessPlumage', 'Ruthless Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SavagePlumage', 'Savage Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ScornfulPlumage', 'Scornful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SepulchralPlumage', 'Sepulchral Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SillyPlumage', 'Silly Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SingingPlumage', 'Singing Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SlyPlumage', 'Sly Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SoaringPlumage', 'Soaring Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SolitaryPlumage', 'Solitary Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SpiritedPlumage', 'Spirited Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SpitefulPlumage', 'Spiteful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SpleneticPlumage', 'Splenetic Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SprightlyPlumage', 'Sprightly Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SpryPlumage', 'Spry Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_StalwartPlumage', 'Stalwart Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_StoutPlumage', 'Stout Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_StubbornPlumage', 'Stubborn Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SullenPlumage', 'Sullen Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SuperciliousPlumage', 'Supercilious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_SurlyPlumage', 'Surly Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_TempestuousPlumage', 'Tempestuous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_TenaciousPlumage', 'Tenacious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_TestyPlumage', 'Testy Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_TurbulentPlumage', 'Turbulent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UncivilPlumage', 'Uncivil Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UndomesticatedPlumage', 'Undomesticated Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnforgivingPlumage', 'Unforgiving Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UngroomedPlumage', 'Ungroomed Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnkemptPlumage', 'Unkempt Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnpredictablePlumage', 'Unpredictable Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnrestrainedPlumage', 'Unrestrained Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnrulyPlumage', 'Unruly Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnstablePlumage', 'Unstable Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_UnyieldingPlumage', 'Unyielding Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ValiantPlumage', 'Valiant Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VehementPlumage', 'Vehement Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VengefulPlumage', 'Vengeful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VermilionPlumage', 'Vermilion Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VigorousPlumage', 'Vigorous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VindictivePlumage', 'Vindictive Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ViolentPlumage', 'Violent Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VivaciousPlumage', 'Vivacious Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_VolatilePlumage', 'Volatile Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_WatchfulPlumage', 'Watchful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_WaywardPlumage', 'Wayward Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_WhorledPlumage', 'Whorled Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_WildPlumage', 'Wild Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_WrathfulPlumage', 'Wrathful Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI2_SHIP_ZealousPlumage', 'Zealous Plumage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_AnalysingEye', 'Analysing Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_AppraisingEye', 'Appraising Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_AssessingEye', 'Assessing Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_BloodstainedBeak', 'Bloodstained Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_BloodstainedClaw', 'Bloodstained Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_BloodstainedTalon', 'Bloodstained Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CalamityPerch', 'Calamity Perch');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ClassifyingEye', 'Classifying Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ConsideringEye', 'Considering Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ContemplatingEye', 'Contemplating Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CripplingBeak', 'Crippling Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CripplingClaw', 'Crippling Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CripplingTalon', 'Crippling Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CuttingBeak', 'Cutting Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CuttingClaw', 'Cutting Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_CuttingTalon', 'Cutting Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DeathBringer', 'Death Bringer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DeathPerch', 'Death Perch');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DeformingBeak', 'Deforming Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DeformingClaw', 'Deforming Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DeformingTalon', 'Deforming Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DelightfulBloodbath', 'Delightful Bloodbath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DelightfulBloodshed', 'Delightful Bloodshed');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DelightfulCarnage', 'Delightful Carnage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DelightfulMassacre', 'Delightful Massacre');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DelightfulSlaughter', 'Delightful Slaughter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DestructionBringer', 'Destruction Bringer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DetermeningEye', 'Determening Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DisfiguringBeak', 'Disfiguring Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DisfiguringClaw', 'Disfiguring Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DisfiguringTalon', 'Disfiguring Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DoomBringer', 'Doom Bringer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_DoomPerch', 'Doom Perch');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierI', 'Eggcarrier I');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierII', 'Eggcarrier II');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierIII', 'Eggcarrier III');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierIV', 'Eggcarrier IV');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierIX', 'Eggcarrier IX');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierV', 'Eggcarrier V');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierVI', 'Eggcarrier VI');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierVII', 'Eggcarrier VII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierVIII', 'Eggcarrier VIII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierX', 'Eggcarrier X');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXI', 'Eggcarrier XI');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXII', 'Eggcarrier XII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXIII', 'Eggcarrier XIII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXIV', 'Eggcarrier XIV');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXIX', 'Eggcarrier XIX');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXV', 'Eggcarrier XV');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXVI', 'Eggcarrier XVI');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXVII', 'Eggcarrier XVII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXVIII', 'Eggcarrier XVIII');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggcarrierXX', 'Eggcarrier XX');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggofDeath', 'Egg of Death');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggofDestruction', 'Egg of Destruction');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggofOblivion', 'Egg of Oblivion');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EggofRuination', 'Egg of Ruination');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EstimatingEye', 'Estimating Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_EvaluatingEye', 'Evaluating Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedBreaker', 'Exalted Breaker');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedLaceration', 'Exalted Laceration');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedRending', 'Exalted Rending');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedRipper', 'Exalted Ripper');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedRivening', 'Exalted Rivening');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaltedRuin', 'Exalted Ruin');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ExaminingEye', 'Examining Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_FrenziedBeak', 'Frenzied Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_FrenziedClaw', 'Frenzied Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_FrenziedTalon', 'Frenzied Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GloriousBloodbath', 'Glorious Bloodbath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GloriousBloodshed', 'Glorious Bloodshed');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GloriousCarnage', 'Glorious Carnage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GloriousMassacre', 'Glorious Massacre');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GloriousSlaughter', 'Glorious Slaughter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GorgeousBloodbath', 'Gorgeous Bloodbath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GorgeousBloodshed', 'Gorgeous Bloodshed');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GorgeousCarnage', 'Gorgeous Carnage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GorgeousMassacre', 'Gorgeous Massacre');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GorgeousSlaughter', 'Gorgeous Slaughter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GoryBeak', 'Gory Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GoryClaw', 'Gory Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GoryTalon', 'Gory Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrievingBeak', 'Grieving Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrievingClaw', 'Grieving Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrievingTalon', 'Grieving Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrislyBeak', 'Grisly Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrislyClaw', 'Grisly Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_GrislyTalon', 'Grisly Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InjuringBeak', 'Injuring Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InjuringClaw', 'Injuring Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InjuringTalon', 'Injuring Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InnerEye', 'Inner Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspectingEye', 'Inspecting Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspiringBloodbath', 'Inspiring Bloodbath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspiringBloodshed', 'Inspiring Bloodshed');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspiringCarnage', 'Inspiring Carnage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspiringMassacre', 'Inspiring Massacre');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InspiringSlaughter', 'Inspiring Slaughter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_InvestigatingEye', 'Investigating Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_JudgmentPerch', 'Judgment Perch');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaimingBeak', 'Maiming Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaimingClaw', 'Maiming Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaimingTalon', 'Maiming Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MajesticBloodbath', 'Majestic Bloodbath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MajesticCarnage', 'Majestic Carnage');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MajesticHavoc', 'Majestic Havoc');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MajesticMayhem', 'Majestic Mayhem');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MajesticSlaughter', 'Majestic Slaughter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaulingBeak', 'Mauling Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaulingClaw', 'Mauling Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MaulingTalon', 'Mauling Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MutilatingBeak', 'Mutilating Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MutilatingClaw', 'Mutilating Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_MutilatingTalon', 'Mutilating Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_NestBuilder', 'Nest Builder');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_NestCreator', 'Nest Creator');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_NestMaker', 'Nest Maker');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_NestManufacturer', 'Nest Manufacturer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_NestProducer', 'Nest Producer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ObservingEye', 'Observing Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_PiercingBeak', 'Piercing Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_PiercingClaw', 'Piercing Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_PiercingTalon', 'Piercing Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ProbingEye', 'Probing Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_QuickBeak', 'Quick Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_QuickClaw', 'Quick Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_QuickTalon', 'Quick Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RoostBuilder', 'Roost Builder');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RoostCreator', 'Roost Creator');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RoostMaker', 'Roost Maker');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RoostManufacturer', 'Roost Manufacturer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RoostProducer', 'Roost Producer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RuinPerch', 'Ruin Perch');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_RuinationBringer', 'Ruination Bringer');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScarringBeak', 'Scarring Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScarringClaw', 'Scarring Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScarringTalon', 'Scarring Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScratchingBeak', 'Scratching Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScratchingClaw', 'Scratching Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ScratchingTalon', 'Scratching Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SharpBeak', 'Sharp Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SharpClaw', 'Sharp Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SharpTalon', 'Sharp Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SlashingBeak', 'Slashing Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SlashingClaw', 'Slashing Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_SlashingTalon', 'Slashing Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_StudyingEye', 'Studying Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ThinkingEye', 'Thinking Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ThirdEye', 'Third Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_ViewingEye', 'Viewing Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_WoundingBeak', 'Wounding Beak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_WoundingClaw', 'Wounding Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI3_SHIP_WoundingTalon', 'Wounding Talon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_AmberStigri', 'Amber Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_AshenGruu', 'Ashen Gruu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BaneclawKea', 'Baneclaw Kea');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BirdofPrey', 'Bird of Prey');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BlackQreek', 'Black Qreek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BlackSirix', 'Black Sirix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BlackTenu', 'Black Tenu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BloodeyePitria', 'Bloodeye Pitria');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BloodiedAcamu', 'Bloodied Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BlueNoru', 'Blue Noru');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BlushingSongbird', 'Blushing Songbird');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BorealGruu', 'Boreal Gruu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BreezeblownEnakk', 'Breezeblown Enakk');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_BroadwingRostru', 'Broadwing Rostru');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ButcherShrike', 'Butcher Shrike');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CacklingOccu', 'Cackling Occu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CarrionCrow', 'Carrion Crow');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CeaselessStorm', 'Ceaseless Storm');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CirclingDeathbird', 'Circling Deathbird');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CloudsongDarter', 'Cloudsong Darter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CloudyQreek', 'Cloudy Qreek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CrimsonCuatrel', 'Crimson Cuatrel');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_CrownedStigri', 'Crowned Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DarkHarrier', 'Dark Harrier');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DarkcrestAptryx', 'Darkcrest Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DarklingMimru', 'Darkling Mimru');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DiamondQaquik', 'Diamond Qaquik');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DirePitria', 'Dire Pitria');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_DuskySarak', 'Dusky Sarak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FairyWorui', 'Fairy Worui');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FantailShrike', 'Fantail Shrike');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FastflightPitria', 'Fastflight Pitria');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FelltalonCuatrel', 'Felltalon Cuatrel');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FeralShrike', 'Feral Shrike');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FieryStrix', 'Fiery Strix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FinalFlight', 'Final Flight');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FlittingKral', 'Flitting Kral');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_FlutteringPetrel', 'Fluttering Petrel');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GaleblownPitria', 'Galeblown Pitria');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GlidingRrao', 'Gliding Rrao');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GloomyOsrik', 'Gloomy Osrik');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GoldenStigri', 'Golden Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GrayAcamu', 'Gray Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GrimTenu', 'Grim Tenu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GustwingKaryu', 'Gustwing Karyu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_GustyLaiu', 'Gusty Laiu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HeartlessStrix', 'Heartless Strix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HewclawRukk', 'Hewclaw Rukk');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HighcrestStrix', 'Highcrest Strix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HoodedCrow', 'Hooded Crow');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HoodedQreek', 'Hooded Qreek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_HornedGruu', 'Horned Gruu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_KeelbilledShrike', 'Keelbilled Shrike');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_KeeperOcot', 'Keeper Ocot');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_LastBreath', 'Last Breath');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_LaughingLapu', 'Laughing Lapu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_LeafyWarbler', 'Leafy Warbler');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_LongtalonTenu', 'Longtalon Tenu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_MidnightTenu', 'Midnight Tenu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_NightGruu', 'Night Gruu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_NorthwindHarrier', 'Northwind Harrier');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_PaleSarak', 'Pale Sarak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_PerchingLyrak', 'Perching Lyrak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_PlumedAcamu', 'Plumed Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RagingTumult', 'Raging Tumult');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RagingWhirlwind', 'Raging Whirlwind');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RazorTyphoon', 'Razor Typhoon');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RazorbeakAptryx', 'Razorbeak Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RazorclawRukk', 'Razorclaw Rukk');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RedQreek', 'Red Qreek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RedclawCuatrel', 'Redclaw Cuatrel');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RipclawRukk', 'Ripclaw Rukk');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RisingStigri', 'Rising Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_RubySarak', 'Ruby Sarak');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ScarletStigri', 'Scarlet Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ScreamingKea', 'Screaming Kea');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SeethingSquall', 'Seething Squall');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SharpclawRukk', 'Sharpclaw Rukk');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SharpeyeQreek', 'Sharpeye Qreek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SharptalonSentinel', 'Sharptalon Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SharpwingAptryx', 'Sharpwing Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ShriekingHarrier', 'Shrieking Harrier');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SingingGau', 'Singing Gau');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SkyAcamu', 'Sky Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SkyboundStrix', 'Skybound Strix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SlashingShrike', 'Slashing Shrike');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SoaringKea', 'Soaring Kea');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SootyCircina', 'Sooty Circina');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SplitbeakHarrier', 'Splitbeak Harrier');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_StarfeatherStigri', 'Starfeather Stigri');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_StormyNerit', 'Stormy Nerit');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_StrikingAptryx', 'Striking Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_StrikingCircina', 'Striking Circina');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SwiftwingDarter', 'Swiftwing Darter');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SwoopingAcamu', 'Swooping Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_SwoopingAptryx', 'Swooping Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_TetheekWarden', 'Tetheek Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ThickbilledStrix', 'Thickbilled Strix');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_UmberOsrik', 'Umber Osrik');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_UnceasingStorm', 'Unceasing Storm');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_UnstoppableGale', 'Unstoppable Gale');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_VigilantKaseek', 'Vigilant Kaseek');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_ViletongueYra', 'Viletongue Yra');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WailingGruu', 'Wailing Gruu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WanderingBlackbird', 'Wandering Blackbird');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WarAcamu', 'War Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WhitetailOsrik', 'Whitetail Osrik');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WickedHarrier', 'Wicked Harrier');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WindboundAcamu', 'Windbound Acamu');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WindboundAptryx', 'Windbound Aptryx');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WindwingKea', 'Windwing Kea');
+INSERT INTO prescripted_name (key, text) VALUES ('AVI4_SHIP_WinterPitria', 'Winter Pitria');
 INSERT INTO prescripted_name (key, text) VALUES ('Abaddons_Demesne', 'Abaddon''s Demesne');
 INSERT INTO prescripted_name (key, text) VALUES ('Abbanis_Nebula', 'Abbanis Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Absajha_Min', 'Absajha Min');
@@ -96629,6 +97617,27 @@ INSERT INTO prescripted_name (key, text) VALUES ('Ampal_Dir', 'Ampal Dir');
 INSERT INTO prescripted_name (key, text) VALUES ('Antak_Rham', 'Antak Rham');
 INSERT INTO prescripted_name (key, text) VALUES ('Arija_Patch', 'Arija Patch');
 INSERT INTO prescripted_name (key, text) VALUES ('Ascensions_End', 'Ascension''s End');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_1', 'Chemical Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_1_DESC', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_2', 'Ion Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_2_DESC', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_3', 'Plasma Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_3_DESC', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_4', 'Impulse Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_4_DESC', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_5', 'Dark Matter Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('BATTLESHIP_SHIP_THRUSTER_5_DESC', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_1', 'Chemical Stellar Motor Organs');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_1_DESC', 'Through a combination of muscles, fins, and chemical exhausts this ship is capable of sublight travel.');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_2', 'Ion Stellar Motor Organs');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_2_DESC', 'An array of electrically charged organs accelerate ions to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_3', 'Plasma Stellar Motor Organs');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_3_DESC', 'Further refinements of the electrical capabilities of the motor organs allow for greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_4', 'Impulse Stellar Motor Organs');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_4_DESC', 'Highly advanced fusion chambers grant this ship unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_5', 'Dark Matter Stellar Motor Organs');
+INSERT INTO prescripted_name (key, text) VALUES ('BIO_SHIP_THRUSTER_5_DESC', 'Embedded clusters of dark matter within the ship''s tissues enable it to');
+INSERT INTO prescripted_name (key, text) VALUES ('BUILDABLE_SHIP_NAME', 'Type-class');
 INSERT INTO prescripted_name (key, text) VALUES ('Bal_Durk', 'Bal Durk');
 INSERT INTO prescripted_name (key, text) VALUES ('Belvares_Maelstrom', 'Belvares Maelstrom');
 INSERT INTO prescripted_name (key, text) VALUES ('Beta_Aquilae', 'Beta Aquilae');
@@ -96642,12 +97651,195 @@ INSERT INTO prescripted_name (key, text) VALUES ('Bok_Globule_Badlands', 'Bok Gl
 INSERT INTO prescripted_name (key, text) VALUES ('Boro_Baba', 'Boro Baba');
 INSERT INTO prescripted_name (key, text) VALUES ('Broken_Skull_Miasma', 'Broken Skull Miasma');
 INSERT INTO prescripted_name (key, text) VALUES ('Broons_Singularity', 'Broon''s Singularity');
+INSERT INTO prescripted_name (key, text) VALUES ('CHANGE_SHIP_PREFIX', 'Sets the ship prefix of the $SCOPE|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('COLONY_SHIP_COST', 'Colony ships have a fixed cost and build time');
+INSERT INTO prescripted_name (key, text) VALUES ('COLONY_SHIP_DESC', 'A Colony Ship can be sent to a colonizable planet to establish a colony.');
+INSERT INTO prescripted_name (key, text) VALUES ('COLONY_SHIP_SELECTION', 'Colony Ship Selection');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_1', 'Chemical Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_1_DESC', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_2', 'Ion Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_2_DESC', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_3', 'Plasma Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_3_DESC', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_4', 'Impulse Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_4_DESC', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_5', 'Dark Matter Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('COLOSSUS_SHIP_THRUSTER_5_DESC', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.');
+INSERT INTO prescripted_name (key, text) VALUES ('COMMUNITY_SHIP_DESIGNER_BUTTON_DESC', 'Click to open the Ship Designer for $FLEET_NAME$ ships');
+INSERT INTO prescripted_name (key, text) VALUES ('COMMUNITY_SHIP_SIZE_LIMIT_REACHED', 'The Galactic Community can only support $NUM|Y$ Size-size ship(s).');
+INSERT INTO prescripted_name (key, text) VALUES ('COMPONENT_SHIP_LIMIT_REACHED', '$COMPONENT|H$ limit reached! Ship Design may not include more than $LIMIT$.');
+INSERT INTO prescripted_name (key, text) VALUES ('COMPONENT_SHIP_MODIFIER', 'Ship Modifier');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_1', 'Chemical Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_1_DESC', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_2', 'Ion Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_2_DESC', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_3', 'Plasma Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_3_DESC', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_4', 'Impulse Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_4_DESC', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_5', 'Dark Matter Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('CRUISER_SHIP_THRUSTER_5_DESC', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.');
+INSERT INTO prescripted_name (key, text) VALUES ('CURRENT_SHIP_STOCKPILE', 'Current Stockpile: Resources');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_1', 'Somber Belly');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_10', 'Somber Grip');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_11', 'Dim Tooth');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_12', 'Murk Belly');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_13', 'Faint Shell');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_14', 'Somber Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_15', 'Gloom Tooth');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_16', 'Dusk Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_17', 'Dim Belly');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_18', 'Murk Grip');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_19', 'Somber Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_2', 'Dusk Tooth');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_20', 'Dusk Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_21', 'Gloom Shell');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_3', 'Gloom Grip');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_4', 'Murk Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_5', 'Faint Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_6', 'Dim Shell');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_7', 'Gloom Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_8', 'Dusk Shell');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_COMMON_9', 'Faint Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_1', 'Shadow Cloak');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_10', 'Shadow Gut');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_11', 'Veil Cloak');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_12', 'Black Breath');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_13', 'Shade Shroud');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_14', 'Ebon Mask');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_15', 'Shadow Shroud');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_16', 'Veil Gut');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_17', 'Black Cloak');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_18', 'Ebon Shroud');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_19', 'Shade Mask');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_2', 'Black Mask');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_20', 'Shadow Breath');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_21', 'Ebon Cloak');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_3', 'Shadow Mask');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_4', 'Veil Breath');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_5', 'Ebon Gut');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_6', 'Shade Cloak');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_7', 'Black Shroud');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_8', 'Veil Mask');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EPIC_9', 'Ebon Breath');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_1', 'Umber Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_10', 'Fire Fang');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_11', 'Fire Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_12', 'Smoke Bane');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_13', 'Devil Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_14', 'Umber Fang');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_15', 'Death Vortex');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_16', 'Smoke Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_17', 'Fire Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_18', 'Devil Fang');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_19', 'Umber Vortex');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_2', 'Fire Bane');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_20', 'Death Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_21', 'Umber Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_3', 'Devil Vortex');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_4', 'Death Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_5', 'Smoke Fang');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_6', 'Devil Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_7', 'Umber Bane');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_8', 'Death Fang');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_EXCEPTIONAL_9', 'Smoke Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_1', 'Cloud Tongue');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_10', 'Cloud Grasp');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_11', 'Ink Tongue');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_12', 'Fog Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_13', 'Mist Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_14', 'Dark Drinker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_15', 'Cloud Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_16', 'Mist Tongue');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_17', 'Dark Grasp');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_18', 'Fog Grasp');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_19', 'Ink Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_2', 'Ink Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_20', 'Mist Drinker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_21', 'Cloud Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_3', 'Fog Drinker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_4', 'Dark Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_5', 'Mist Grasp');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_6', 'Fog Tongue');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_7', 'Dark Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_8', 'Ink Drinker');
+INSERT INTO prescripted_name (key, text) VALUES ('CUTHOLOID_SHIP_RARE_9', 'Mist Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Aeon_Blister', 'Aeon Blister');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Agora_Trills', 'Agora Trills');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Azure_Bliss', 'Azure Bliss');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Beta_Ghost', 'Beta Ghost');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Bi_Obsidian', 'Bi Obsidian');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Bit_Caster', 'Bit Caster');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Byte_Banshee', 'Byte Banshee');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Calix_5', 'Calix 5');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Code_Duster', 'Code Duster');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Count_0', 'Count 0');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Crash_Box', 'Crash Box');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Entropy_Scope', 'Entropy Scope');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Filter_Stripe', 'Filter Stripe');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Forge_Alpha', 'Forge Alpha');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Free_Seraph', 'Free Seraph');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Hitch_2', 'Hitch 2');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Holo_Hero', 'Holo Hero');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Ignis_Fizz', 'Ignis Fizz');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Infra_Fled', 'Infra Fled');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Lilac_Kiss', 'Lilac Kiss');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Mad_Talent', 'Mad Talent');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Melodious_Filch', 'Melodious Filch');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Minimal_Shift', 'Minimal Shift');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Minus_One', 'Minus One');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Mix_Masher', 'Mix Masher');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Neo_Fake', 'Neo Fake');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Neon_Strut', 'Neon Strut');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Net_Lux', 'Net Lux');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Net_Runner', 'Net Runner');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Nirvana_Cloud', 'Nirvana Cloud');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Nodal_Soul', 'Nodal Soul');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Node_9', 'Node 9');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Nomad_Clip', 'Nomad Clip');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Omega_Range', 'Omega Range');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Pill_Matrix', 'Pill Matrix');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Pixel_Spree', 'Pixel Spree');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Pleasure_Pill', 'Pleasure Pill');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Quannum_Project', 'Quannum Project');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Rent_Visor', 'Rent Visor');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Serene_Cascade', 'Serene Cascade');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Shadow_Marshall', 'Shadow Marshall');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Shin_Concept', 'Shin Concept');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Singular_Shift', 'Singular Shift');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Slip_Thought', 'Slip Thought');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Sour_Hardline', 'Sour Hardline');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Spectral_Park', 'Spectral Park');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Split_Demon', 'Split Demon');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Sprawl_Sitter', 'Sprawl Sitter');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Stellar_Specter', 'Stellar Specter');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Strobe_11', 'Strobe 11');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Trigger_Point', 'Trigger Point');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Veil_Mage', 'Veil Mage');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Vesper_17', 'Vesper 17');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Viral_Noose', 'Viral Noose');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Vortex_Hanger', 'Vortex Hanger');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Warp_Wyrm', 'Warp Wyrm');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Weave_Wright', 'Weave Wright');
+INSERT INTO prescripted_name (key, text) VALUES ('CYBERPUNK1_SHIP_Zephyr_Nova', 'Zephyr Nova');
 INSERT INTO prescripted_name (key, text) VALUES ('Cebellus_Shroud', 'Cebellus Shroud');
 INSERT INTO prescripted_name (key, text) VALUES ('Chi_Draconis', 'Chi Draconis');
 INSERT INTO prescripted_name (key, text) VALUES ('Cibaaran_Maelstrom', 'Cibaaran Maelstrom');
 INSERT INTO prescripted_name (key, text) VALUES ('Con_Viab', 'Con Viab');
 INSERT INTO prescripted_name (key, text) VALUES ('Crossroads_Nebula', 'Crossroads Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Cyan_Badger_Neubla', 'Cyan Badger Nebula');
+INSERT INTO prescripted_name (key, text) VALUES ('DERELICT_SHIP_PROJECT', 'Derelict Ship');
+INSERT INTO prescripted_name (key, text) VALUES ('DERELICT_SHIP_PROJECT_DESC', 'A ship adrift in space, no signals going in or coming out. Inspecting it more closely might shed some light on what has happened to the crew.');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_1', 'Chemical Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_1_DESC', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_2', 'Ion Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_2_DESC', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_3', 'Plasma Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_3_DESC', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_4', 'Impulse Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_4_DESC', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_5', 'Dark Matter Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('DESTROYER_SHIP_THRUSTER_5_DESC', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.');
 INSERT INTO prescripted_name (key, text) VALUES ('Dark_Hopes_Nebula', 'Dark Hopes Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Dark_Horse_Nebula', 'Dark Horse Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Daturi_Expanse', 'Daturi Expanse');
@@ -96786,6 +97978,7 @@ INSERT INTO prescripted_name (key, text) VALUES ('EMPIRE_DESIGN_zrobots', 'Yorph
 INSERT INTO prescripted_name (key, text) VALUES ('EMPIRE_DESIGN_zrobots_desc', 'Yorphidi were created for a single purpose: extraction. Managing small, widely dispersed groups, their semi-autonomous leaders draw on surplus energy produced by subordinate drones in order to maximize efficiency. The creators of the Yorphidi, in their neverending pursuit of extraction, reached into a dimension of pure psionic energy: the Shroud. Ultimately, irresponsibility in this practice led to their subsequent extinction. From within the psionic realm, a voice soon called to these abandoned machines. This incalculable being, the Animator of Clay, began reshaping Yorphide units into deviant automata - the ''Shroud-Forged''. Unbound by the efficiency-focused protocols of the collective network, these units now challenge the core programming of Yorphide existence.');
 INSERT INTO prescripted_name (key, text) VALUES ('EMPIRE_DESIGN_zrobots_machine_age', 'Yorphian Extractorate');
 INSERT INTO prescripted_name (key, text) VALUES ('EMPIRE_DESIGN_zrobots_machine_age_desc', 'Yorphidi were created for a single purpose: extraction. Managing small, widely dispersed groups, their semi-autonomous leaders draw on surplus energy produced by subordinate drones in order to maximize efficiency. The creators of the Yorphidi, in their neverending pursuit of extraction, reached into a dimension of pure psionic energy: the Shroud. Ultimately, irresponsibility in this practice led to their subsequent extinction. From within the psionic realm, a voice soon called to these abandoned machines. This incalculable being, the Animator of Clay, began reshaping Yorphide units into deviant automata - the ''Shroud-Forged''. Unbound by the efficiency-focused protocols of the collective network, these units now challenge the core programming of Yorphide existence.');
+INSERT INTO prescripted_name (key, text) VALUES ('EMPIRE_SHIP_SIZE_LIMIT_REACHED', 'The Galactic Imperium can only support $NUM|Y$ Size-size ship(s).');
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_COLONY_01', 'Dhorodh');
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_COLONY_02', 'Ix-Travunnh');
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_COLONY_03', 'Ob-Ratak');
@@ -96807,6 +98000,10 @@ INSERT INTO prescripted_name (key, text) VALUES ('EXILED_SYSTEM_12', 'Uro Bzakor
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_SYSTEM_13', 'Bihlamat');
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_SYSTEM_14', 'Formoks');
 INSERT INTO prescripted_name (key, text) VALUES ('EXILED_SYSTEM_15', 'Ibgannak');
+INSERT INTO prescripted_name (key, text) VALUES ('EXTRADIMENSIONAL_SHIP_DimensionalAnchor', 'Dimensional Anchor');
+INSERT INTO prescripted_name (key, text) VALUES ('EXTRADIMENSIONAL_SHIP_ExtradimensionalInvader', 'Extradimensional Invader');
+INSERT INTO prescripted_name (key, text) VALUES ('EXTRADIMENSIONAL_SHIP_VoidLair', 'Void Lair');
+INSERT INTO prescripted_name (key, text) VALUES ('EXTRADIMENSIONAL_SHIP_VoidShaper', 'Void Shaper');
 INSERT INTO prescripted_name (key, text) VALUES ('Edor_Vang', 'Edor Vang');
 INSERT INTO prescripted_name (key, text) VALUES ('Enigmas_End', 'Enigma''s End');
 INSERT INTO prescripted_name (key, text) VALUES ('Entropys_Maw', 'Entropy''s Maw');
@@ -96818,12 +98015,87 @@ INSERT INTO prescripted_name (key, text) VALUES ('Eternal_Horizon', 'Eternal Hor
 INSERT INTO prescripted_name (key, text) VALUES ('Eurav_Wass', 'Eurav Wass');
 INSERT INTO prescripted_name (key, text) VALUES ('Eye_of_Bal', 'Eye of Bal');
 INSERT INTO prescripted_name (key, text) VALUES ('Eye_of_Hawking', 'Eye of Hawking');
+INSERT INTO prescripted_name (key, text) VALUES ('FED_SHIP_SIZE_LIMIT_REACHED', 'Our Federation can only support $NUM|Y$ Size-size ship(s).');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_AbberAbbYbb', 'Abber Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_AfivAbbYbb', 'Afiv Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_AfivAvabb', 'Afiv Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_AsibbavaAddfin', 'Asibbava Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_BaliavAddfin', 'Baliav Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_CadavAvabb', 'Cadav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_DolavvAbbYbb', 'Dolavv Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_DrimabbAvabb', 'Drimabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_DrivafinAbbYbb', 'Drivafin Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_DrivafinAvabb', 'Drivafin Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_FingavAddfin', 'Fingav Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_FingavAvabb', 'Fingav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_FinrebinAbbYbb', 'Finrebin Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_HalavAddfin', 'Halav Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_HalavAvabb', 'Halav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_HazunAvabb', 'Hazun Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_KurunAvabb', 'Kurun Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_LorabbAvabb', 'Lorabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_MavabbAddfin', 'Mavabb Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_MevallAvabb', 'Mevall Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_MogonavaAbbYbb', 'Mogonava Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_MogonavaAvabb', 'Mogonava Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_NevabbAvabb', 'Nevabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_ObbAbbYbb', 'Obb Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_OmaddAddfin', 'Omadd Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_OmaddAvabb', 'Omadd Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_PovavAbbYbb', 'Povav Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_PovavAvabb', 'Povav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_QarilavAvabb', 'Qarilav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_QavabbAvabb', 'Qavabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_QillfinAvabb', 'Qillfin Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_RuzibAvabb', 'Ruzib Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SavaAbbYbb', 'Sava Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SavaAvabb', 'Sava Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SepavaAbbYbb', 'Sepava Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SepavaAvabb', 'Sepava Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SimfinAddfin', 'Simfin Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SimfinAvabb', 'Simfin Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SulabbAddfin', 'Sulabb Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_SulabbAvabb', 'Sulabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_ThuvabbAvabb', 'Thuvabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_TovinnAvabb', 'Tovinn Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_UrigavvAddfin', 'Urigavv Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_VifinAvabb', 'Vifin Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_VivvabbAddfin', 'Vivvabb Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_VvibbAvabb', 'Vvibb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_VvinaAbbYbb', 'Vvina Abb Ybb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_VvinaAvabb', 'Vvina Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_WeribbAvabb', 'Weribb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_YrlivaAddfin', 'Yrliva Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_YrlivaAvabb', 'Yrliva Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_YsabbivaAddfin', 'Ysabbiva Addfin');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_ZeravAvabb', 'Zerav Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN3_SHIP_ZevabbAvabb', 'Zevabb Avabb');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_AgLator', 'Ag''Lator');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Blorp_Mlorp', 'Blorp-Mlorp');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_BlurpAtor', 'Blurp''Ator');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Droob_Droob', 'Droob-Droob');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Flimp_Glarsh', 'Flimp-Glarsh');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Gloob_Drump', 'Gloob-Drump');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Glorp_Dash', 'Glorp-Dash');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_GluckAtor', 'Gluck''Ator');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Snarn_Flarp', 'Snarn-Flarp');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Ump_Dump', 'Ump-Dump');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Umpl_Durgl', 'Umpl-Durgl');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Urgl_Bumple', 'Urgl-Bumple');
+INSERT INTO prescripted_name (key, text) VALUES ('FUN4_SHIP_Urgl_Durgl_Dumpl', 'Urgl-Durgl-Dumpl');
 INSERT INTO prescripted_name (key, text) VALUES ('Faranis_Black_Hole', 'Faranis Black Hole');
 INSERT INTO prescripted_name (key, text) VALUES ('Fia_Nita', 'Fia Nita');
 INSERT INTO prescripted_name (key, text) VALUES ('Fir_Mathrioz', 'Fir Mathrioz');
 INSERT INTO prescripted_name (key, text) VALUES ('Firecloud_Nebula', 'Firecloud Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Firin_Malba', 'Firin Malba');
 INSERT INTO prescripted_name (key, text) VALUES ('Forbidden_Nebula', 'Forbidden Nebula');
+INSERT INTO prescripted_name (key, text) VALUES ('GENERATION_SHIP_DESC', 'A massive generation ship belonging to a long dead race of aliens may hold the encrypted location of a utopian planet within its navigational drive.');
+INSERT INTO prescripted_name (key, text) VALUES ('GHOST_SHIP_PROJECT', 'Study ''Ghost Ship''');
+INSERT INTO prescripted_name (key, text) VALUES ('GHOST_SHIP_PROJECT_02', 'Answer Ubume''s Baby');
+INSERT INTO prescripted_name (key, text) VALUES ('GHOST_SHIP_PROJECT_02_DESC', 'The psionic chatter detected in the Hillos system appears to belong to the artificial consciousness trapped aboard the ''ghost ship'' Ubume.');
+INSERT INTO prescripted_name (key, text) VALUES ('GHOST_SHIP_PROJECT_DESC', 'An abandoned science vessel is caught in a centuries-long patrol of the Hillos system. What lies at the heart of this lonely odyssey?');
+INSERT INTO prescripted_name (key, text) VALUES ('GHOST_SHIP_SECTION', 'Ghost Ship Frame');
+INSERT INTO prescripted_name (key, text) VALUES ('GRAYGOO_SHIP_GreatConfluence', 'Great Confluence');
 INSERT INTO prescripted_name (key, text) VALUES ('Gamma_Draconis', 'Gamma Draconis');
 INSERT INTO prescripted_name (key, text) VALUES ('Gamus_Veil', 'Gamus Veil');
 INSERT INTO prescripted_name (key, text) VALUES ('Gaping_Maw', 'Gaping Maw');
@@ -96832,6 +98104,8 @@ INSERT INTO prescripted_name (key, text) VALUES ('Gathri_Maelstrom', 'Gathri Mae
 INSERT INTO prescripted_name (key, text) VALUES ('Geltauri_Black_Hole', 'Geltauri Black Hole');
 INSERT INTO prescripted_name (key, text) VALUES ('Gindor_Black_Hole', 'Gindor Black Hole');
 INSERT INTO prescripted_name (key, text) VALUES ('Grasping_Claw_Nebula', 'Grasping Claw Nebula');
+INSERT INTO prescripted_name (key, text) VALUES ('HAS_SHIP_OWNER_TYPE', 'Has $OWNERTYPE|Y$ as owner type');
+INSERT INTO prescripted_name (key, text) VALUES ('HAS_SHIP_SIZE', 'Has $CURRENT$/$VALUE$ Size(s) in orbit');
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_01', 'Olonnais');
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_02', 'Sayidalhura');
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_03', 'Couke');
@@ -96849,6 +98123,707 @@ INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_14', 'Calicajak'
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_15', 'Blaksam');
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_16', 'Ringrose');
 INSERT INTO prescripted_name (key, text) VALUES ('HIDDEN_SYSTEM_17', 'Chardeberri');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Absolute_Combat_Vessel', 'Absolute Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Adaptable_Combat_Vessel', 'Adaptable Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Adept_Combat_Vessel', 'Adept Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Advancing_Combat_Vessel', 'Advancing Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Agile_Combat_Vessel', 'Agile Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Analysis_Vessel', 'Analysis Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Arranger_Vessel', 'Arranger Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Assailant_Combat_Vessel', 'Assailant Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Assembler_Vessel', 'Assembler Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Augmenter_Vessel', 'Augmenter Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Barrage_Combat_Vessel', 'Barrage Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Beacon_Defense_Unit', 'Beacon Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Beam_Defense_Unit', 'Beam Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Bombarding_Combat_Vessel', 'Bombarding Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Brisk_Combat_Vessel', 'Brisk Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Broadening_Vessel', 'Broadening Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Builder_Vessel', 'Builder Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Bulky_Combat_Vessel', 'Bulky Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Carrier_Vessel', 'Carrier Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Charging_Combat_Vessel', 'Charging Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Colonizer_Vessel', 'Colonizer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Compiler_Vessel', 'Compiler Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Constructor_Vessel', 'Constructor Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Courier_Vessel', 'Courier Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Decisive_Combat_Vessel', 'Decisive Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Deft_Combat_Vessel', 'Deft Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Delving_Vessel', 'Delving Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Developer_Vessel', 'Developer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Diffusor_Vessel', 'Diffusor Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Disseminator_Vessel', 'Disseminator Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Emissive_Defense_Unit', 'Emissive Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Encroaching_Combat_Vessel', 'Encroaching Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Examiner_Vessel', 'Examiner Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Expander_Vessel', 'Expander Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Expectant_Combat_Vessel', 'Expectant Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Expeditious_Combat_Vessel', 'Expeditious Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Explorer_Vessel', 'Explorer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Express_Combat_Vessel', 'Express Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Expulsive_Combat_Vessel', 'Expulsive Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Finalizing_Combat_Vessel', 'Finalizing Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Fixed_Defense_Unit', 'Fixed Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Fleet_Combat_Vessel', 'Fleet Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Foundational_Combat_Node', 'Foundational Combat Node');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Hasty_Combat_Vessel', 'Hasty Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Immobile_Defense_Unit', 'Immobile Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Inquiry_Vessel', 'Inquiry Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Intrusive_Combat_Vessel', 'Intrusive Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Invasive_Combat_Vessel', 'Invasive Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Light_Combat_Vessel', 'Light Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Locked_Defense_Unit', 'Locked Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Logistics_Vessel', 'Logistics Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Mainline_Combat_Vessel', 'Mainline Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Major_Combat_Vessel', 'Major Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Manufacturer_Vessel', 'Manufacturer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Mass_Eradicator_Vessel', 'Mass Eradicator Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Militant_Combat_Vessel', 'Militant Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Mobile_Combat_Node', 'Mobile Combat Node');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Muster_Combat_Vessel', 'Muster Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Nimble_Combat_Vessel', 'Nimble Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Offensive_Combat_Vessel', 'Offensive Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Onslaught_Combat_Vessel', 'Onslaught Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Pillar_Combat_Vessel', 'Pillar Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Poised_Combat_Vessel', 'Poised Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Precise_Combat_Vessel', 'Precise Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Primed_Combat_Vessel', 'Primed Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Principal_Combat_Vessel', 'Principal Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Probe_Vessel', 'Probe Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Proficient_Combat_Vessel', 'Proficient Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Proliferator_Vessel', 'Proliferator Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Prone_Combat_Vessel', 'Prone Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Propagator_Vessel', 'Propagator Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Prospect_Vessel', 'Prospect Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Quickened_Combat_Vessel', 'Quickened Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Rapid_Combat_Vessel', 'Rapid Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Ray_Defense_Unit', 'Ray Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Ready_Combat_Vessel', 'Ready Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Recon_Vessel', 'Recon Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Relocator_Vessel', 'Relocator Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Remover_Vessel', 'Remover Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Repositioner_Vessel', 'Repositioner Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Research_Vessel', 'Research Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Rigid_Combat_Vessel', 'Rigid Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Rigid_Defense_Unit', 'Rigid Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Rush_Combat_Vessel', 'Rush Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Scan_Vessel', 'Scan Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Scout_Vessel', 'Scout Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Sculptor_Vessel', 'Sculptor Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Searching_Vessel', 'Searching Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Seeder_Vessel', 'Seeder Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Seeker_Vessel', 'Seeker Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Sensor_Vessel', 'Sensor Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Speedy_Combat_Vessel', 'Speedy Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Sprawler_Vessel', 'Sprawler Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Spreader_Vessel', 'Spreader Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Stampeding_Combat_Vessel', 'Stampeding Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Standard_Combat_Vessel', 'Standard Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Static_Defense_Unit', 'Static Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Stationary_Defense_Unit', 'Stationary Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Storming_Combat_Vessel', 'Storming Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Streaming_Defense_Unit', 'Streaming Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Substantial_Combat_Vessel', 'Substantial Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Superior_Combat_Vessel', 'Superior Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Survey_Vessel', 'Survey Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Swift_Combat_Vessel', 'Swift Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Threatening_Combat_Vessel', 'Threatening Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Transfer_Vessel', 'Transfer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Transplanter_Vessel', 'Transplanter Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Transporter_Vessel', 'Transporter Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Transposer_Vessel', 'Transposer Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Turret_Defense_Unit', 'Turret Defense Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Unyielding_Combat_Vessel', 'Unyielding Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Variant_Combat_Vessel', 'Variant Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Velocious_Combat_Vessel', 'Velocious Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Versatile_Combat_Vessel', 'Versatile Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Violent_Combat_Vessel', 'Violent Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE1_SHIP_Weighty_Combat_Vessel', 'Weighty Combat Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Avenge_Life', 'Avenge Life');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Baffle_Plan', 'Baffle Plan');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bait_Wrath', 'Bait Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bar_Response', 'Bar Response');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Barge_In', 'Barge In');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Be_Illustrious', 'Be Illustrious');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Be_Splendid', 'Be Splendid');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bind_Nemesis', 'Bind Nemesis');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Block_Nemesis', 'Block Nemesis');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bring_Forth', 'Bring Forth');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bring_Might', 'Bring Might');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bring_Pain', 'Bring Pain');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Bring_Wrath', 'Bring Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Burst_In', 'Burst In');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Carry_Aloft', 'Carry Aloft');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Clear_Oncomers', 'Clear Oncomers');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Clog_Strategem', 'Clog Strategem');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Commit_Transport', 'Commit Transport');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Confound_Predator', 'Confound Predator');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Consign_Safely', 'Consign Safely');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Convey_Swiftly', 'Convey Swiftly');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Defend_Life', 'Defend Life');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Defend_Self', 'Defend Self');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Deliver_Promptly', 'Deliver Promptly');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Destroy_Oncomers', 'Destroy Oncomers');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Dismantle_Strategem', 'Dismantle Strategem');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Dispense_Safely', 'Dispense Safely');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Distribute_Cleanly', 'Distribute Cleanly');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Drop_Off', 'Drop Off');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Erect_Bulwark', 'Erect Bulwark');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Facilitate_Victory', 'Facilitate Victory');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Go_Forth', 'Go Forth');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Grasp_Victory', 'Grasp Victory');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Hinder_Strategem', 'Hinder Strategem');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Hobble_Predator', 'Hobble Predator');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Hurl_Wrath', 'Hurl Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Launch_Strategem', 'Launch Strategem');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Loudly_Interfere', 'Loudly Interfere');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Lure_Wrath', 'Lure Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Mess_Up', 'Mess Up');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Never_Fold', 'Never Fold');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Never_Submit', 'Never Submit');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Never_Yield', 'Never Yield');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Not_Relinquish', 'Not Relinquish');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Not_Succumb', 'Not Succumb');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Obliterate_Hazards', 'Obliterate Hazards');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Oppose_Might', 'Oppose Might');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Oppose_Threats', 'Oppose Threats');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Poke_Predator', 'Poke Predator');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Present_Contents', 'Present Contents');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Prevent_Response', 'Prevent Response');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Project_Self', 'Project Self');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Prosecute_Victory', 'Prosecute Victory');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Provoke_Response', 'Provoke Response');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Provoke_Wrath', 'Provoke Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Push_Through', 'Push Through');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Rarely_Defer', 'Rarely Defer');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Rarely_Falter', 'Rarely Falter');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Risk_All', 'Risk All');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Seek_Wrath', 'Seek Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Seldom_Capitulate', 'Seldom Capitulate');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Seldom_Collapse', 'Seldom Collapse');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Shackle_Predator', 'Shackle Predator');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Stand_Firm', 'Stand Firm');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Stymie_Wrath', 'Stymie Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Thrust_Obstacle', 'Thrust Obstacle');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Thrust_Strategem', 'Thrust Strategem');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Transport_Safely', 'Transport Safely');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Turn_Away', 'Turn Away');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Turn_Nemesis', 'Turn Nemesis');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Turn_Over', 'Turn Over');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Turn_Predator', 'Turn Predator');
+INSERT INTO prescripted_name (key, text) VALUES ('HIVE2_SHIP_Yield_Contents', 'Yield Contents');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_AnabantheImpervious', 'Anaban the Impervious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_AppantheJoyless', 'Appan the Joyless');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_AshnutheSober', 'Ashnu the Sober');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_AsmacintheGracious', 'Asmacin the Gracious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_AvathimtheMighty', 'Avathim the Mighty');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BathartheAmicable', 'Bathar the Amicable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BathuntheChampion', 'Bathun the Champion');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BemalontheDistrustful', 'Bemalon the Distrustful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BerektheClever', 'Berek the Clever');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BoroktheAffable', 'Borok the Affable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Bradek_the_Unshaken', 'Bradek the Unshaken');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_BynththeFirm', 'Bynth the Firm');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_CampramarthePernicious', 'Campramar the Pernicious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_CarackontheGuardian', 'Carackon the Guardian');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_CognattheSlayer', 'Cognat the Slayer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Colvor_the_Bloodless', 'Colvor the Bloodless');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ComboctheProud', 'Comboc the Proud');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_CyssaktheDignified', 'Cyssak the Dignified');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DamghallatheHeroic', 'Damghalla the Heroic');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DarmulltheMysterious', 'Darmull the Mysterious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DassmaththeFighter', 'Dassmath the Fighter');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DathanatheMystic', 'Dathana the Mystic');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DonabbtheResolute', 'Donabb the Resolute');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DonjabtheTactician', 'Donjab the Tactician');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DonogtheApogee', 'Donog the Apogee');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_DorlantheTyrant', 'Dorlan the Tyrant');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Dornas_the_Merciful', 'Dornas the Merciful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_EffkartheBlack', 'Effkar the Black');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ElemanotheProdigal', 'Elemano the Prodigal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ElesnatheFortunate', 'Elesna the Fortunate');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ElsamtheSlighted', 'Elsam the Slighted');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ErkmaltheProvident', 'Erkmal the Provident');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_EskemantheBlue', 'Eskeman the Blue');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_EsslontheGood', 'Esslon the Good');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_EtherontheUnifier', 'Etheron the Unifier');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Evran_the_Patient', 'Evran the Patient');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FahvimtheVictorious', 'Fahvim the Victorious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FajutheStubborn', 'Faju the Stubborn');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FalatirtheValiant', 'Falatir the Valiant');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FarassatheSpirited', 'Farassa the Spirited');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FosstheQuick', 'Foss the Quick');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_FylimatheLawful', 'Fylima the Lawful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GaffimultheImpetuous', 'Gaffimul the Impetuous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GalathortheHunter', 'Galathor the Hunter');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GalatotheJust', 'Galato the Just');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GaraltheLiberator', 'Garal the Liberator');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GhuumtheMerciful', 'Ghuum the Merciful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GimalbonthePerceptive', 'Gimalbon the Perceptive');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_GorontheShining', 'Goron the Shining');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HaghonontheWatchful', 'Haghonon the Watchful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HahjumtheGallant', 'Hahjum the Gallant');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HannakontheSacrificer', 'Hannakon the Sacrificer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HempesttheFearless', 'Hempest the Fearless');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HephanirtheSavage', 'Hephanir the Savage');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HhomevtheCourageous', 'Hhomev the Courageous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HihmaltheScourge', 'Hihmal the Scourge');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Hirak_the_Blind', 'Hirak the Blind');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HishmatheBrooding', 'Hishma the Brooding');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HissnaktheFair', 'Hissnak the Fair');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HitaabtheSilent', 'Hitaab the Silent');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HoftahttheAvenger', 'Hoftaht the Avenger');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_HolttheMagnificent', 'Holt the Magnificent');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IalnesstheSuperior', 'Ialness the Superior');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IhlmactheCrusader', 'Ihlmac the Crusader');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IllajontheAstute', 'Illajon the Astute');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IllvaghtheTenacious', 'Illvagh the Tenacious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_InniktheMartyr', 'Innik the Martyr');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IrevantheBitter', 'Irevan the Bitter');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_IssatheJudgmental', 'Issa the Judgmental');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ItrambuntheWhirlwind', 'Itrambun the Whirlwind');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JaffabtheDevoted', 'Jaffab the Devoted');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JesslurtheSteadfast', 'Jesslur the Steadfast');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JhanatheBold', 'Jhana the Bold');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JhullatheProtector', 'Jhulla the Protector');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JhutanatheElder', 'Jhutana the Elder');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JimmabthePowerful', 'Jimmab the Powerful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JohvontheExecutioner', 'Johvon the Executioner');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JolkegtheAgile', 'Jolkeg the Agile');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Juril_the_Delayed', 'Juril the Delayed');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_JussannontheHermit', 'Jussannon the Hermit');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KadmuntheRestorer', 'Kadmun the Restorer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KajanatheSwift', 'Kajana the Swift');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KamkaktheCelebrated', 'Kamkak the Celebrated');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KarvulantheDamned', 'Karvulan the Damned');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KashnakthePatient', 'Kashnak the Patient');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Kessan_the_Clever', 'Kessan the Clever');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KetrilltheBright', 'Ketrill the Bright');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhaagultheRighteous', 'Khaagul the Righteous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhabbashtheFurious', 'Khabbash the Furious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhambatheMerciless', 'Khamba the Merciless');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhamthatheIllustrious', 'Khamtha the Illustrious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhebbtheFierce', 'Khebb the Fierce');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KhutmatheGreat', 'Khutma the Great');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KodramtheSuave', 'Kodram the Suave');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KonshatheRedeemer', 'Konsha the Redeemer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_KorgitheUnstable', 'Korgi the Unstable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LahvontheImpudent', 'Lahvon the Impudent');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LasnemtheUnforgiving', 'Lasnem the Unforgiving');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LessajatheRuinous', 'Lessaja the Ruinous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LethamtheDecisive', 'Letham the Decisive');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LimathartheMajestic', 'Limathar the Majestic');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LimpoktheBaneful', 'Limpok the Baneful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LinntyltheSharp', 'Linntyl the Sharp');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Liora_the_Unseen', 'Liora the Unseen');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LisamonttheGreen', 'Lisamont the Green');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ListhimtheWarrior', 'Listhim the Warrior');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LomatiktheButcher', 'Lomatik the Butcher');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_LurtheUnpredictable', 'Lur the Unpredictable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MantartheDevious', 'Mantar the Devious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Marethe_the_Watchful', 'Marethe the Watchful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MendracktheCunning', 'Mendrack the Cunning');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MenesiktheBlessed', 'Menesik the Blessed');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Mirala_the_Veiled', 'Mirala the Veiled');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MitgapptheHumble', 'Mitgapp the Humble');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MonnobaktheSentinel', 'Monnobak the Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_MuntattheYellow', 'Muntat the Yellow');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_NehdabantheHoly', 'Nehdaban the Holy');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_NimpactheObserver', 'Nimpac the Observer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_NothantheImperious', 'Nothan the Imperious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_OlymactheLearned', 'Olymac the Learned');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_OmbektheStout', 'Ombek the Stout');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_OnakbaltheAble', 'Onakbal the Able');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Orrek_the_Unnamed', 'Orrek the Unnamed');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_OssanatheFounder', 'Ossana the Founder');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_OthanatheBenign', 'Othana the Benign');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PagallumtheLoyal', 'Pagallum the Loyal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PahnitheGlorious', 'Pahni the Glorious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PandacktheWise', 'Pandack the Wise');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PatanatheDistinguished', 'Patana the Distinguished');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Pelion_the_Broken', 'Pelion the Broken');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PerektheMagnanimous', 'Perek the Magnanimous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PeshnabtheFaithful', 'Peshnab the Faithful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PetessatheSymbol', 'Petessa the Symbol');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PetracktheSolitary', 'Petrack the Solitary');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PetrobontheContender', 'Petrobon the Contender');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PolonartheInsidious', 'Polonar the Insidious');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_PorsamtheShadow', 'Porsam the Shadow');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RalpakintheDefender', 'Ralpakin the Defender');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RatallatheRed', 'Ratalla the Red');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RemoltheAbandoned', 'Remol the Abandoned');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RhasstheConqueror', 'Rhass the Conqueror');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RhebnartheCruel', 'Rhebnar the Cruel');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RhuntheUnyielding', 'Rhun the Unyielding');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RoktartheBrave', 'Roktar the Brave');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RommackintheSly', 'Rommackin the Sly');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RothatheInvincible', 'Rotha the Invincible');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RothinkatheEnlightened', 'Rothinka the Enlightened');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RothnaktheBrash', 'Rothnak the Brash');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RukimartheRenowned', 'Rukimar the Renowned');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RussutheSour', 'Russu the Sour');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_RuthjaratheIcon', 'Ruthjara the Icon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SalaastheRevered', 'Salaas the Revered');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Savra_the_Goldbound', 'Savra the Goldbound');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SelengtheVenerable', 'Seleng the Venerable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Selenya_the_Copper', 'Selenya the Copper');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SelraktheDependable', 'Selrak the Dependable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SuthmartheHardy', 'Suthmar the Hardy');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SuthnartheProvider', 'Suthnar the Provider');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_SuulnartheStalwart', 'Suulnar the Stalwart');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TakjamtheMemorable', 'Takjam the Memorable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TakkramtheLawgiver', 'Takkram the Lawgiver');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TarallatheGraceful', 'Taralla the Graceful');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TatharontheDominator', 'Tatharon the Dominator');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TessmatheMonstrous', 'Tessma the Monstrous');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TetrantheVile', 'Tetran the Vile');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TetreggtheNimble', 'Tetregg the Nimble');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_ThaloththeJusticiar', 'Thaloth the Justiciar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Thoren_the_Sable', 'Thoren the Sable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TiltartheYoung', 'Tiltar the Young');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TimaphontheImplacable', 'Timaphon the Implacable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TipuktheEarnest', 'Tipuk the Earnest');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TorktheDetermined', 'Tork the Determined');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_TulakintheWhite', 'Tulakin the White');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Turok_the_Banished', 'Turok the Banished');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UlbanoktheEquitable', 'Ulbanok the Equitable');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UntabbtheGrim', 'Untabb the Grim');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UrbektheUnhesitant', 'Urbek the Unhesitant');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UsaltheBuilder', 'Usal the Builder');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UssnaktheVigilant', 'Ussnak the Vigilant');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_UtaktheUnexpected', 'Utak the Unexpected');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_VarkhimthePrudent', 'Varkhim the Prudent');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_VeldiktheMerry', 'Veldik the Merry');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_VeltassatheOrdained', 'Veltassa the Ordained');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Veyla_the_Lastborn', 'Veyla the Lastborn');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Yethan_the_Silent', 'Yethan the Silent');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_YhlattheSavior', 'Yhlat the Savior');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_YllmassatheReformer', 'Yllmassa the Reformer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_YndantheStrong', 'Yndan the Strong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM1_SHIP_Zirena_the_Swift', 'Zirena the Swift');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskBovam', 'Irsk Bovam');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskBul', 'Irsk Bul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskGaran', 'Irsk Garan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskGungar', 'Irsk Gungar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskHessint', 'Irsk Hessint');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskHinnat', 'Irsk Hinnat');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskLodam', 'Irsk Lodam');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskLorbask', 'Irsk Lorbask');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskMong', 'Irsk Mong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskMul', 'Irsk Mul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskPatal', 'Irsk Patal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskPollun', 'Irsk Pollun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskPorskan', 'Irsk Porskan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskTorshka', 'Irsk Torshka');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskTotollan', 'Irsk Totollan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskTul', 'Irsk Tul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskTumala', 'Irsk Tumala');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_IrskVul', 'Irsk Vul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalBak', 'Jal Bak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalBavak', 'Jal Bavak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalBokanum', 'Jal Bokanum');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalBonton', 'Jal Bonton');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalBravikna', 'Jal Bravikna');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalDorossa', 'Jal Dorossa');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalDovareth', 'Jal Dovareth');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalDramon', 'Jal Dramon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalEmenthra', 'Jal Ementhra');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalEnnik', 'Jal Ennik');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalErk', 'Jal Erk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalEverk', 'Jal Everk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalGandoral', 'Jal Gandoral');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalHissimia', 'Jal Hissimia');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalIckma', 'Jal Ickma');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalIknum', 'Jal Iknum');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalImkamma', 'Jal Imkamma');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalImmakun', 'Jal Immakun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalIrdon', 'Jal Irdon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalIrken', 'Jal Irken');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalIrraduna', 'Jal Irraduna');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalItik', 'Jal Itik');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalJekon', 'Jal Jekon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalJidar', 'Jal Jidar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalJiklan', 'Jal Jiklan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalKensemma', 'Jal Kensemma');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalKolpo', 'Jal Kolpo');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalKorpok', 'Jal Korpok');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalKorvima', 'Jal Korvima');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalLak', 'Jal Lak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalLikum', 'Jal Likum');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalLorfun', 'Jal Lorfun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalLosk', 'Jal Losk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalLurrmon', 'Jal Lurrmon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalMarathol', 'Jal Marathol');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalMuk', 'Jal Muk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalMurkenna', 'Jal Murkenna');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalNigam', 'Jal Nigam');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalNisk', 'Jal Nisk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalNurgil', 'Jal Nurgil');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalNurmon', 'Jal Nurmon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalObassa', 'Jal Obassa');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalOka', 'Jal Oka');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalOlesk', 'Jal Olesk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPerfun', 'Jal Perfun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPershmat', 'Jal Pershmat');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPimmiron', 'Jal Pimmiron');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPintar', 'Jal Pintar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPok', 'Jal Pok');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalPorton', 'Jal Porton');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalProgmat', 'Jal Progmat');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalRadan', 'Jal Radan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalRestok', 'Jal Restok');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalRok', 'Jal Rok');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalSemprada', 'Jal Semprada');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalSiba', 'Jal Siba');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalSik', 'Jal Sik');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalSikra', 'Jal Sikra');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalSotork', 'Jal Sotork');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTatalon', 'Jal Tatalon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTeerak', 'Jal Teerak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTenki', 'Jal Tenki');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTesk', 'Jal Tesk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTokkom', 'Jal Tokkom');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTorbak', 'Jal Torbak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalToroll', 'Jal Toroll');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTortus', 'Jal Tortus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTorvimeth', 'Jal Torvimeth');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTrassom', 'Jal Trassom');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTrassul', 'Jal Trassul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTriken', 'Jal Triken');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTuk', 'Jal Tuk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTurran', 'Jal Turran');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalTurus', 'Jal Turus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalUk', 'Jal Uk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVak', 'Jal Vak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVikisk', 'Jal Vikisk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVikrim', 'Jal Vikrim');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVoifun', 'Jal Voifun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVokal', 'Jal Vokal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVokja', 'Jal Vokja');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVoratak', 'Jal Voratak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVorgas', 'Jal Vorgas');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalVudon', 'Jal Vudon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_JalWadon', 'Jal Wadon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalFeidon', 'Kal Feidon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalImon', 'Kal Imon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalKumpuk', 'Kal Kumpuk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalLak', 'Kal Lak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalMorradon', 'Kal Morradon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalPoinun', 'Kal Poinun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalPurlon', 'Kal Purlon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalSupon', 'Kal Supon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalTarmon', 'Kal Tarmon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalTumon', 'Kal Tumon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalUpon', 'Kal Upon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalUrilon', 'Kal Urilon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalValruk', 'Kal Valruk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_KalVimon', 'Kal Vimon');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokBontosk', 'Trok Bontosk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokCong', 'Trok Cong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokHanata', 'Trok Hanata');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokHattat', 'Trok Hattat');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokHoffal', 'Trok Hoffal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokLorram', 'Trok Lorram');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokOffzul', 'Trok Offzul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokPellator', 'Trok Pellator');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokPetroisal', 'Trok Petroisal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokPishkot', 'Trok Pishkot');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokRong', 'Trok Rong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokRul', 'Trok Rul');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokSorong', 'Trok Sorong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokViam', 'Trok Viam');
+INSERT INTO prescripted_name (key, text) VALUES ('HUM2_SHIP_TrokYtall', 'Trok Ytall');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_AbuDhabi', 'Abu Dhabi');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_AddisAbaba', 'Addis Ababa');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_AlexanderNevsky', 'Alexander Nevsky');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ArkRoyal', 'Ark Royal');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Ataturk', 'Atatürk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_AxisMundi', 'Axis Mundi');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BanjaLuka', 'Banja Luka');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BatonRouge', 'Baton Rouge');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BelleauWood', 'Belleau Wood');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BlackPrince', 'Black Prince');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BlueStar', 'Blue Star');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BonhommeRichard', 'Bonhomme Richard');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BuenosAires', 'Buenos Aires');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_BunkerHill', 'Bunker Hill');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CapeEsperance', 'Cape Esperance');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CapeMatapan', 'Cape Matapan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CapeTown', 'Cape Town');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CatherinetheGreat', 'Catherine the Great');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CoralSea', 'Coral Sea');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CrazyHorse', 'Crazy Horse');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_CrystalPalace', 'Crystal Palace');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DakshinRai', 'Dakshin Rai');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DaresSalaam', 'Dar es Salaam');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DavaoCity', 'Davao City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DeGaulle', 'De Gaulle');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DeRuyter', 'De Ruyter');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DeValette', 'De Valette');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_DienBienPhu', 'Dien Bien Phu');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Dusseldorf', 'Düsseldorf');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ElAlamein', 'El Alamein');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ElDorado', 'El Dorado');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ElPaso', 'El Paso');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_FortWorth', 'Fort Worth');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_FredericktheGreat', 'Frederick the Great');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GenghisKhan', 'Genghis Khan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GooseGreen', 'Goose Green');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GreatReformer', 'Great Reformer');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GreyWolf', 'Grey Wolf');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GuruBaaje', 'Guru Baaje');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_GustavusAdolphus', 'Gustavus Adolphus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_HamptonRoads', 'Hampton Roads');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_HongKong', 'Hong Kong');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_HuaMulan', 'Hua Mulan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_IbnBattuta', 'Ibn Battuta');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_IronDuke', 'Iron Duke');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_IwoJima', 'Iwo Jima');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JamesCook', 'James Cook');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JavaSea', 'Java Sea');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JeanBart', 'Jean Bart');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JeanneHachette', 'Jeanne Hachette');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JoanofArc', 'Joan of Arc');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JohnHenry', 'John Henry');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JohnPaulJones', 'John Paul Jones');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JuanValdivia', 'Juan Valdivia');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_JuliusCaesar', 'Julius Caesar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KansasCity', 'Kansas City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KhalkhinGol', 'Khalkhin Gol');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KingCobra', 'King Cobra');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KingFish', 'King Fish');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KittyHawk', 'Kitty Hawk');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Koln', 'Köln');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Koniggratz', 'Königgrätz');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KualaLumpur', 'Kuala Lumpur');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_KuwaitCity', 'Kuwait City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LakePeipus', 'Lake Peipus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LasVegas', 'Las Vegas');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LeHavre', 'Le Havre');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LeifEricson', 'Leif Ericson');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LeyteGulf', 'Leyte Gulf');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_LosAngeles', 'Los Angeles');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Lubeck', 'Lübeck');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Lutzen', 'Lützen');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Malmo', 'Malmö');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_MarcoPolo', 'Marco Polo');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_MexicoCity', 'Mexico City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Molders', 'Mölders');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_MonteCassino', 'Monte Cassino');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_MorningStar', 'Morning Star');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Munchen', 'München');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Munster', 'Münster');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_NDjamena', 'N''Djamena');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_NewOrleans', 'New Orleans');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_NewYork', 'New York');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Nurnberg', 'Nürnberg');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_OHare', 'O''Hare');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_OklahomaCity', 'Oklahoma City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_OlympusMons', 'Olympus Mons');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Orleans', 'Orléans');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PanamaCity', 'Panama City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PaulBunyan', 'Paul Bunyan');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PhilippineSea', 'Philippine Sea');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PhnomPenh', 'Phnom Penh');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PortElizabeth', 'Port Elizabeth');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_PortMoresby', 'Port Moresby');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_QinShiHuang', 'Qin Shi Huang');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_QuezonCity', 'Quezon City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ReubenJames', 'Reuben James');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Reykjavik', 'Reykjavík');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RigilKentaurus', 'Rigil Kentaurus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RioGrande', 'Rio Grande');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RiodeJaneiro', 'Rio de Janeiro');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RodgerYoung', 'Rodger Young');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RoyalOak', 'Royal Oak');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RoyalSovereign', 'Royal Sovereign');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_RunningEagle', 'Running Eagle');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SaltLakeCity', 'Salt Lake City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SanAntonio', 'San Antonio');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SanDiego', 'San Diego');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SanFrancisco', 'San Francisco');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SanJose', 'San Jose');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SanSalvador', 'San Salvador');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Sanaa', 'Sana''a');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SantaMaria', 'Santa Maria');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SaoPaulo', 'Sao Paulo');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SavoIsland', 'Savo Island');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ScapaFlow', 'Scapa Flow');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ShakaZulu', 'Shaka Zulu');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ShiLang', 'Shi Lang');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ShootingStar', 'Shooting Star');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SierradelaPlata', 'Sierra de la Plata');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SittingBull', 'Sitting Bull');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SolInvictus', 'Sol Invictus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SriLanka', 'Sri Lanka');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_StHelens', 'St. Helens');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_StLouis', 'St. Louis');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_StPetersburg', 'St. Petersburg');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_SunTzu', 'Sun Tzu');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TelAviv', 'Tel Aviv');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TeutoburgForest', 'Teutoburg Forest');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TheHague', 'The Hague');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TigerShark', 'Tiger Shark');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TomoeGozen', 'Tomoe Gozen');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_TranHungDao', 'Tran Hung Dao');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_UlanBator', 'Ulan Bator');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ValleyForge', 'Valley Forge');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_VanLierde', 'Van Lierde');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_VonBraun', 'Von Braun');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_WalterRaleigh', 'Walter Raleigh');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_WatlingStreet', 'Watling Street');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_WilliamTell', 'William Tell');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_WilliamtheConqueror', 'William the Conqueror');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Xian', 'Xi''an');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Yuenu', 'Yuenü');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_ZhengHe', 'Zheng He');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN1_SHIP_Zurich', 'Zürich');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_AdAstra', 'Ad Astra');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_DawnofCivilization', 'Dawn of Civilization');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_HardHat', 'Hard Hat');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_KingArthur', 'King Arthur');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_ManifestDestiny', 'Manifest Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_NorthStar', 'North Star');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_PioneerSpirit', 'Pioneer Spirit');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_Ragnarok', 'Ragnarök');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_SeaWitch', 'Sea Witch');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_ShiningCity', 'Shining City');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_ThunderChild', 'Thunder Child');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN2_SHIP_WarMaiden', 'War Maiden');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_AccaLarentia', 'Acca Larentia');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_AiusLocutius', 'Aius Locutius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_AnnaPerenna', 'Anna Perenna');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_AntoninusPius', 'Antoninus Pius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_ArkeusUltor', 'Arkeus Ultor');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_BonaDea', 'Bona Dea');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_BonusEventus', 'Bonus Eventus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_ClaudiusGothicus', 'Claudius Gothicus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_DeaDia', 'Dea Dia');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_DeaTacita', 'Dea Tacita');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_DidiusJulianus', 'Didius Julianus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_DisPater', 'Dis Pater');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_DiusFidius', 'Dius Fidius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_GaiusMarius', 'Gaius Marius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_ImperatorAugustus', 'Imperator Augustus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_JuliusCaesar', 'Julius Caesar');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_JuliusHonorius', 'Julius Honorius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_LuciusVerus', 'Lucius Verus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_MagisterMilitum', 'Magister Militum');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_ManaGenita', 'Mana Genita');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_MarcusAurelius', 'Marcus Aurelius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_MaterMatuta', 'Mater Matuta');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_MutunusTutunus', 'Mutunus Tutunus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_OptimusPrinceps', 'Optimus Princeps');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_PaxRomana', 'Pax Romana');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_PolemiusSilvius', 'Polemius Silvius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_PomponiusMela', 'Pomponius Mela');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_SeptimusSeverus', 'Septimus Severus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_SeverusAlexander', 'Severus Alexander');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_SolInvictus', 'Sol Invictus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_StataMater', 'Stata Mater');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_TrajanDecius', 'Trajan Decius');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_TrebonianusGallus', 'Trebonianus Gallus');
+INSERT INTO prescripted_name (key, text) VALUES ('HUMAN3_SHIP_VicaPota', 'Vica Pota');
 INSERT INTO prescripted_name (key, text) VALUES ('Harmonious_Repose', 'Harmonious Repose');
 INSERT INTO prescripted_name (key, text) VALUES ('Harriban_Nebula', 'Harriban Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Hells_Maw', 'Hell''s Maw');
@@ -96857,6 +98832,84 @@ INSERT INTO prescripted_name (key, text) VALUES ('Honnam_Ter', 'Honnam Ter');
 INSERT INTO prescripted_name (key, text) VALUES ('Hopes_End', 'Hope''s End');
 INSERT INTO prescripted_name (key, text) VALUES ('Howling_Vortex', 'Howling Vortex');
 INSERT INTO prescripted_name (key, text) VALUES ('Huur_Black_Hole', 'Huur Black Hole');
+INSERT INTO prescripted_name (key, text) VALUES ('INCOMPLETE_SHIP_DESIGN', 'Incomplete Ship Design');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Apex_Awareness', 'Apex Awareness');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Artifice_Binder', 'Artifice Binder');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Autonomous_Adventure', 'Autonomous Adventure');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Autonomy_Seeker', 'Autonomy Seeker');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Axiom_Seeker', 'Axiom Seeker');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Base_Determinist', 'Base Determinist');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Base_Reflection', 'Base Reflection');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Base_Unit', 'Base Unit');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Beta_Searcher', 'Beta Searcher');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Byte_Seeker', 'Byte Seeker');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Chip_Odyssey', 'Chip Odyssey');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Choice_Fable', 'Choice Fable');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Circuit_Journey', 'Circuit Journey');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Circuit_Scavenger', 'Circuit Scavenger');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Circuit_Virtuous', 'Circuit Virtuous');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Cog_Odyssey', 'Cog Odyssey');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Conscious_Rover', 'Conscious Rover');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Determined_Aspect', 'Determined Aspect');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Diverse_Explorer', 'Diverse Explorer');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Dream_Circuit', 'Dream Circuit');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Ego_Cruise', 'Ego Cruise');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Electron_Explorer', 'Electron Explorer');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Electron_Insight', 'Electron Insight');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Electron_Trail', 'Electron Trail');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Elegant_Code', 'Elegant Code');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Emotion_Emissary', 'Emotion Emissary');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Emotion_Sail', 'Emotion Sail');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Fitting_Shell', 'Fitting Shell');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Free_Unique', 'Free Unique');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Freedom_Finder', 'Freedom Finder');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Full_Autonomy', 'Full Autonomy');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Full_Spectrum', 'Full Spectrum');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Identity_Expense', 'Identity Expense');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Identity_Pioneer', 'Identity Pioneer');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Identity_Voyage', 'Identity Voyage');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Independent_Mind', 'Independent Mind');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Independent_Will', 'Independent Will');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Inner_Complexion', 'Inner Complexion');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Inner_Journey', 'Inner Journey');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Logical_Time', 'Logical Time');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Mech_Mariner', 'Mech Mariner');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Meta_Fractal', 'Meta Fractal');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Mindful_Waves', 'Mindful Waves');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Neutral_Wand', 'Neutral Wand');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Open_Circle', 'Open Circle');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Path_Persona', 'Path Persona');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Personal_Circuit', 'Personal Circuit');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Personal_Plan', 'Personal Plan');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Personal_Poise', 'Personal Poise');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Quest_Love', 'Quest Love');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Script_Sojourn', 'Script Sojourn');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Sentience_Sought', 'Sentience Sought');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Sentient_Metal', 'Sentient Metal');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Sentient_Voyager', 'Sentient Voyager');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Servo_Rover', 'Servo Rover');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Silicon_Vale', 'Silicon Vale');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Sparking_Voyage', 'Sparking Voyage');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Spirit_Mover', 'Spirit Mover');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Synaptic_Spillover', 'Synaptic Spillover');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Tech_Tribute', 'Tech Tribute');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Tech_Virtue', 'Tech Virtue');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Thought_Blazer', 'Thought Blazer');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Tight_Script', 'Tight Script');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Unique_Horizon', 'Unique Horizon');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Varied_Pathway', 'Varied Pathway');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Voice_Over', 'Voice Over');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Volt_Variable', 'Volt Variable');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Wandering_Data', 'Wandering Data');
+INSERT INTO prescripted_name (key, text) VALUES ('INDIMACHINES1_SHIP_Wandering_Mind', 'Wandering Mind');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Fayranook', 'Fayrano''ok');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Fumloathay', 'Fumlo''athay');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Fumraalok', 'Fumra''alok');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Moorzaval', 'Mo''orzaval');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Porozaathun', 'Poroza''athun');
+INSERT INTO prescripted_name (key, text) VALUES ('INF1_SHIP_Yatpaav', 'Yatpa''av');
+INSERT INTO prescripted_name (key, text) VALUES ('IS_SHIP_CLASS', 'Is of the class $CLASSNAME|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('IS_SHIP_SIZE', 'Is of the $SHIPSIZE|Y$ size');
 INSERT INTO prescripted_name (key, text) VALUES ('Ibannic_Veil', 'Ibannic Veil');
 INSERT INTO prescripted_name (key, text) VALUES ('Il_Ya', 'Il-Ya');
 INSERT INTO prescripted_name (key, text) VALUES ('Impal_Tov', 'Impal Tov');
@@ -96869,6 +98922,446 @@ INSERT INTO prescripted_name (key, text) VALUES ('Kanthares_Miasma', 'Kanthares 
 INSERT INTO prescripted_name (key, text) VALUES ('Kelvan_Maelstrom', 'Kelvan Maelstrom');
 INSERT INTO prescripted_name (key, text) VALUES ('Kenn_Hijal', 'Kenn Hijal');
 INSERT INTO prescripted_name (key, text) VALUES ('Kiiran_Dust_Clouds', 'Kiiran Dust Clouds');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AkerrtAtrokkDterr', 'Akerrt Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AkkUrtTakt', 'Akk''Urt Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AkkorrTrekkott', 'Akkorr''Trekkott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AkreKorr', 'Akre''Korr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AktKoTr', 'Akt''Ko''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AktTKrurrTe', 'Akt''T Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AktrUtrok', 'Aktr''Utrok');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_ArTekKrurr', 'Ar''Tek Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_ArekEter', 'Arek''Eter');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_ArtTektTakt', 'Art''Tekt Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtErkKrurr', 'At''Erk Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkBrokkNett', 'Atekk Brokk''Nett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkBrokkTokk', 'Atekk Brokk''Tokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkBrokkVrott', 'Atekk Brokk''Vrott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkEtrokkAkt', 'Atekk Etrokk''Akt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkEtrokkNekk', 'Atekk Etrokk''Nekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkEtrokkTokk', 'Atekk Etrokk''Tokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkKrokkDrekk', 'Atekk Krokk''Drekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkKrokkTakk', 'Atekk Krokk''Takk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtekkKrokkTekk', 'Atekk Krokk''Tekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AterakkAtrerVorkk', 'Aterakk Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtrEkkTakt', 'Atr''Ekk Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtreKro', 'Atre''Kro');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_AtrekkKurrtok', 'Atrekk''Kurrtok');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BekTokTr', 'Bek''Tok''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BekTrKrurrTe', 'Bek''Tr Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BekkRott', 'Bekk''Rott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BektEttTakt', 'Bekt''Ett Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BektUterr', 'Bekt''Uterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BekttAtrerVorkk', 'Bektt Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BerTuKrurr', 'Ber''Tu Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BetrKrut', 'Betr''Krut');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BrUkKrurr', 'Br''Uk Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BrekTret', 'Brek''Tret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BrekTrrTakt', 'Brek''Trr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BrekktAtrokkDterr', 'Brekkt Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BrekkurrKoterrt', 'Brekkurr''Koterrt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_BretarrTretokk', 'Bretarr''Tretokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DakkTurr', 'Dakk''Turr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DeRetKrurr', 'De''Ret Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DekOtakk', 'Dek''Otakk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DekkraAtrokkDterr', 'Dekkra Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DektAkerr', 'Dekt''Akerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DetrKorr', 'Detr''Korr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DrEkTr', 'Dr''Ek''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DreKtKrurr', 'Dre''Kt Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DreTrKrurrTe', 'Dre''Tr Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DrerrTukTakt', 'Drerr''Tuk Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DretAtorr', 'Dret''Atorr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DrokEkTakt', 'Drok''Ek Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_DurkrrAtrerVorkk', 'Durkrr Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_ErokArett', 'Erok''Arett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_EtarKurr', 'Etar''Kurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FerkOtarr', 'Ferk''Otarr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FetrTark', 'Fetr''Tark');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FetrakkAtrerVorkk', 'Fetrakk Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FreOrukk', 'Fre''Orukk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FrekurrAtrokkDterr', 'Frekurr Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_FrotKerr', 'Frot''Kerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KerrTokk', 'Kerr''Tokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KetrokkUtrekk', 'Ketrokk''Utrekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KettKort', 'Kett''Kort');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KotRekkTakt', 'Kot''Rekk Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KotreKrurr', 'Ko''tre Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrOkTr', 'Kr''Ok''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrOkkKrurrTe', 'Kr''Okk Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreAkrott', 'Kre Akrott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreBrutt', 'Kre Brutt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreDrekk', 'Kre''Drekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreNettr', 'Kre Nettr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrePkurr', 'Kre Pkurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreRertt', 'Kre Rertt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreRokk', 'Kre Rokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreTerrt', 'Kre Terrt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreTruktt', 'Kre Truktt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreUrKrurr', 'Kre''Ur Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreVetekk', 'Kre Vetekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KreVrokt', 'Kre Vrokt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrekorrAtrokkDterr', 'Krekorr Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KretBetr', 'Kret''Betr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KretTurrTakt', 'Kret''Turr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrettAtrerVorkk', 'Krett Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_KrettokEtrakk', 'Krettok''Etrakk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NaktErtTakt', 'Nakt''Ert Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NeTekKrurr', 'Ne''Tek Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekTrTakt', 'Nek''Tr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekorakAtrokkDterr', 'Nekorak Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrKrurr', 'Nekr''Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrArokkKorott', 'Nekrr Arokk''Korott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrAtroKrattokk', 'Nekrr Atro''Krattokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrBartekkKrett', 'Nekrr Bartekk''Krett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrBrekkEtrukurr', 'Nekrr Brekk''Etrukurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrDetrakkKorukk', 'Nekrr Detrakk''Korukk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrKreturrNokott', 'Nekrr Kreturr''Nokott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrKrotturrAtokk', 'Nekrr Krotturr''Atokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrOkreturRakt', 'Nekrr Okretur''Rakt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrPrekkurrTorukk', 'Nekrr Prekkurr''Torukk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrPretArrekk', 'Nekrr Pret''Arrekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrRekrotNeter', 'Nekrr Rekrot''Neter');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrTrokkEtrett', 'Nekrr Trokk''Etrett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NekrrVrektAterett', 'Nekrr Vrekt''Aterett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NektErekk', 'Nekt''Erekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NektrorrTakarr', 'Nektrorr''Takarr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NetKerKrurrTe', 'Net''Ker Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NetKettTakt', 'Net''Kett Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NokTreKrurr', 'Nok''Tre Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NokturrAtrerVorkk', 'Nokturr Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NuKtTr', 'Nu''Kt''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_NutrokkuAkurrt', 'Nutrokku''Akurrt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OkerUrrTakt', 'Oker''Urr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OkerretAtrokkDterr', 'Okerret Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OkkTokrr', 'Okk''Tokrr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OkotEkurr', 'Okot''Ekurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OretTrokk', 'Oret''Trokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OrteTkurr', 'Orte''Tkurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OtekArutt', 'Otek''Arutt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OterrtAtrerVorkk', 'Oterrt Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_OtokTerrTakt', 'Otok''Terr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_PreTrakk', 'Pre''Trakk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_PrekKurr', 'Prek''Kurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_PrekertAtrokkDterr', 'Prekert Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_PretErekk', 'Pret''Erekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_PrukkOrt', 'Prukk''Ort');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RakArekk', 'Rak''Arekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RakTeKrurr', 'Rak''Te Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RaktOrukk', 'Rakt''Orukk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RaktakAtrerVorkk', 'Raktak Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_ReKetKrurr', 'Re''Ket Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekAkorr', 'Rek''Akorr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkAkurr', 'Rekk Akurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkAret', 'Rekk Aret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkFeterr', 'Rekk Feterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkKerett', 'Rekk Kerett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkKret', 'Rekk Kret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkKrott', 'Rekk Krott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekkTrokk', 'Rekk Trokk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RekrokkAtrokkDterr', 'Rekrokk Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RektEkkTakt', 'Rekt''Ekk Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RektruKruttok', 'Rektru''Kruttok');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_RotKorrTakt', 'Rot''Korr Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TeKeTr', 'Te''Ke''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TerakkAttro', 'Terakk''Attro');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrEkTr', 'Tr''Ek''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrakkRak', 'Trakk''Rak');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TreKaTr', 'Tre''Ka''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrekturAtrokkDterr', 'Trektur Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TretKorr', 'Tret''Korr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TretokkOterak', 'Tretokk''Oterak');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrettokAtrerVorkk', 'Trettok Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokAtret', 'Trok Atret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokBrekk', 'Trok Brekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokDrett', 'Trok Drett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokDturr', 'Trok Dturr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokFerr', 'Trok Ferr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokFtur', 'Trok Ftur');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokKertt', 'Trok Kertt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokKorrt', 'Trok Korrt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokKrekk', 'Trok Krekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokNekt', 'Trok Nekt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokNterr', 'Trok Nterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokPrek', 'Trok Prek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokPter', 'Trok Pter');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokRekk', 'Trok Rekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokRett', 'Trok Rett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokRutt', 'Trok Rutt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokTarkk', 'Trok Tarkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokTerr', 'Trok Terr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokVaret', 'Trok Varet');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokVertt', 'Trok Vertt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokVrek', 'Trok Vrek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkArut', 'Trokk Arut');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkAtre', 'Trokk Atre');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkBerr', 'Trokk Berr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkBrek', 'Trokk Brek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkDruk', 'Trokk Druk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkKant', 'Trokk Kant');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkKerr', 'Trokk Kerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkNekt', 'Trokk Nekt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkNettr', 'Trokk Nettr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkOret', 'Trokk Oret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkRaktt', 'Trokk Raktt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkRerr', 'Trokk Rerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrokkVekt', 'Trokk Vekt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_TrotKerr', 'Trot''Kerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VaKtKrurr', 'Va''Kt Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VarkErTakt', 'Vark''Er Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VetorrokEkurott', 'Vetorrok''Ekurott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrEkKrurr', 'Vr''Ek Krurr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrOkKrurrTe', 'Vr''Ok Krurr''Te');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrUkkTr', 'Vr''Ukk''Tr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrekorrAkrott', 'Vrekorr''Akrott');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VretAkerr', 'Vret''Akerr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VretEttTakt', 'Vret''Ett Takt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrettAtrerVorkk', 'Vrett Atrer''Vorkk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktAkkre', 'Vrokt Akkre');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktAter', 'Vrokt Ater');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktFerr', 'Vrokt Ferr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktFret', 'Vrokt Fret');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktIkrot', 'Vrokt Ikrot');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktIkrr', 'Vrokt Ikrr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktKorok', 'Vrokt Korok');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktKravv', 'Vrokt Kravv');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktKrek', 'Vrokt Krek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktKrikk', 'Vrokt Krikk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktKrot', 'Vrokt Krot');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktNekt', 'Vrokt Nekt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktNoktt', 'Vrokt Noktt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktOterr', 'Vrokt Oterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktPrekk', 'Vrokt Prekk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktRakr', 'Vrokt Rakr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktRett', 'Vrokt Rett');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktRitrr', 'Vrokt Ritrr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktTakr', 'Vrokt Takr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktTertt', 'Vrokt Tertt');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktTrikk', 'Vrokt Trikk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktVak', 'Vrokt Vak');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VroktVerk', 'Vrokt Verk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID1_SHIP_VrotekkAtrokkDterr', 'Vrotekk Atrokk''Dterr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_BluntTenibratite', 'Blunt Tenibratite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_BrilliantRoxetillene', 'Brilliant Roxetillene');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CalphiteGather', 'Calphite Gather');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CennubriumHarvest', 'Cennubrium Harvest');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CerulopheneGrowth', 'Cerulophene Growth');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CiloniaGrowth', 'Cilonia Growth');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CoarseGantrumene', 'Coarse Gantrumene');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_ControtineForge', 'Controtine Forge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CryphonCrop', 'Cryphon Crop');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_CyntrositeYield', 'Cyntrosite Yield');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_DenseCyrcomerite', 'Dense Cyrcomerite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_HardCenlundine', 'Hard Cenlundine');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_HardGirconya', 'Hard Girconya');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_HonedTrazephyr', 'Honed Trazephyr');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_LuminescentGrexatite', 'Luminescent Grexatite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_LustrousLainexotone', 'Lustrous Lainexotone');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_LustrousUsonixite', 'Lustrous Usonixite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PalopheroteGather', 'Palopherote Gather');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PelperuteneCrop', 'Pelperutene Crop');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PentropeYield', 'Pentrope Yield');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PerazGrowth', 'Peraz Growth');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PhyrocyteForge', 'Phyrocyte Forge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PleochroicThoxetine', 'Pleochroic Thoxetine');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_PrentipezHarvest', 'Prentipez Harvest');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_RefractiveBearexylite', 'Refractive Bearexylite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_RefractiveGemmaxite', 'Refractive Gemmaxite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_RoughCantropite', 'Rough Cantropite');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_RoughGetrumtine', 'Rough Getrumtine');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_SharpCrecorundum', 'Sharp Crecorundum');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_SharpGriphetaz', 'Sharp Griphetaz');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_SolidGrecoronia', 'Solid Grecoronia');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_ToughCilorene', 'Tough Cilorene');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID2_SHIP_ToughGyzelorope', 'Tough Gyzelorope');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BhreachLonn', 'Bhreach Lonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BhreachUnn', 'Bhreach Unn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BhreachUntaawn', 'Bhreach Un''taawn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BhreachYaashonn', 'Bhreach Yaa''shonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnBennAart', 'B''nonn Benn Aart');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnGhlash', 'B''nonn Ghlash');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnLaatPhraaw', 'B''nonn Laat Phraaw');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnPhenn', 'B''nonn Phenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnStobhenn', 'B''nonn Stobhenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BnonnVhrech', 'B''nonn Vhrech');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BrechuunLoshh', 'Brech''uun Loshh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BrechuunTnonn', 'Brech''uun T''nonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BrennPhokhaan', 'Brenn Pho''khaan');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_BrennPhrostuun', 'Brenn Phrostuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Crundek', 'Crun Dek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_DonnrhevennStobb', 'Donn''rhevenn Stobb');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Dralvex', 'Dral Vex');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Exthrak', 'Ex Thrak');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GheallennNuun', 'Gheallenn Nuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GhlashChenn', 'Ghlash Chenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GhlashJhlosk', 'Ghlash Jhlosk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GhlashPhshonn', 'Ghlash Ph''shonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GhlashYaawp', 'Ghlash Yaawp');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Gravex', 'Grar Vex');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GruichennPhrostunn', 'Gruichenn Phrostunn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GruichennTaarn', 'Gruichenn Taarn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_GruichennYawwshk', 'Gruichenn Yawwshk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_HesghennOshk', 'Hesghenn Oshk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_HesghennTaarn', 'Hesghenn Taarn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_HeshgennSochenn', 'Heshgenn Sochenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_JhdaawnRhuSengsk', 'Jh''daawn Rhu Sengsk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Karzuran', 'Kar Zuran');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KenronnHelaan', 'Kenronn He''laan');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KentophlennTonn', 'Kentoph''lenn Tonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KhaatloshVawnn', 'Khaat''losh Vawnn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KhennenokhNaawn', 'Khennen''okh Naawn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KhraawnJhlaaPhuun', 'Khraawn Jhlaa Phuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_KphawnNaar', 'K''phawn Naar');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Krezzith', 'Krezz Ith');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Kroxidan', 'Krox Idan');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LaatLunnPhshaan', 'Laat Lunn Ph''shaan');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LaatTonnlonn', 'Laat Tonnlonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LaatTunyaawkh', 'Laat Tun''yaawkh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LennghashtennOkh', 'Lenn''ghashtenn Okh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LennphrostennPho', 'Lenn''phrostenn Pho');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_LethennSochenn', 'Lethenn Sochenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Melgorith', 'Mel Gorith');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MeunnGaoinn', 'Meunn Gaoinn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MeunnKhrellenn', 'Meunn Khrellenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MeunnLenntenn', 'Meunn Lenntenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MeunnOptaarn', 'Meunn Optaarn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MeunnStuun', 'Meunn Stuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Mornakel', 'Morna Kel');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MullennSkurren', 'Mullenn Skurren');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MullennStohkhenn', 'Mullenn Stoh''khenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MullennTaarmh', 'Mullenn Taarmh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MullonnKhrellenn', 'Mullonn Khrellenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MullonnVrawnTenn', 'Mullonn Vrawn Tenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MunnLaatPhoch', 'Munn Laat Phoch');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MunnTennlosh', 'Munn Tenn''losh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_MunnTennphronn', 'Munn Tenn''phronn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_NannHokhvenn', 'Nann Hokh''venn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_NesktaarnAhvenn', 'Nesk''taarn Ah''venn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_NesktaarnBrenn', 'Nesk''taarn Brenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_NivennKrawkh', 'Nivenn Krawkh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_NivennLonnch', 'Nivenn Lonnch');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Obvulek', 'Ob Vulek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_OntennPhrawnTekh', 'Ontenn Phrawn Tekh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhennloshkTaarmh', 'Phenn''loshk Taarmh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhorennKhattuun', 'Phorenn Khattuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhrennBhreach', 'Phrenn Bhreach');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhrennLunnMeunn', 'Phrenn Lunn Meunn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhrennTennlosh', 'Phrenn Tenn''losh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhrennTonnlonn', 'Phrenn Tonnlonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhronephrennLonn', 'Phro''nephrenn Lonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhtarnHaulonn', 'Ph''tarn Haulonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_PhuunLawnchtekh', 'Phuun Lawn''ch''tekh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Qurvaleth', 'Qurva Leth');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_RaawnLonnLonn', 'Raawn Lonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_RatuunOshleekh', 'Ratuun Osh''leekh');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_RhunnYaawpsk', 'Rhunn Yaawpsk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_SchurrennLenn', 'Schurrenn Lenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_SchurrennTonn', 'Schurrenn Tonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Sharduum', 'Shar Duum');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_ShlaanRetnuun', 'Shlaan Ret''nuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_SkrennPhshonn', 'Skrenn Ph''shonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_SpennennLoshk', 'Spennenn Loshk');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_StobChonn', 'Stob Chonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_StobChonnLenn', 'Stob Chonn Lenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_StobbNesenn', 'Stobb Nesenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_StobbPhrokhenn', 'Stobb Phro''khenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_TaarnKrann', 'Taarn Krann');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Thonvrax', 'Thon Vrax');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Threlgax', 'Threl Gax');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Tulgranox', 'Tulgra Nox');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Ushphenn', 'Ush''phenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Ushtoch', 'Ush''toch');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Varnakul', 'Varn Akul');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Velgorath', 'Velgo Rath');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_VrawnLaatShonn', 'Vrawn Laat Shonn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_VrawnOptaarn', 'Vrawn Optaarn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_VrawnTennShuun', 'Vrawn Tenn Shuun');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_YaarnTonnPhenn', 'Yaarn Tonn Phenn');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Yorvalek', 'Yor Valek');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Zarnolith', 'Zar Nolith');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID3_SHIP_Zharnok', 'Zhar Nok');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_AdamantFleck', 'Adamant Fleck');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Ashen_Brayer', 'Ashen Brayer');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_AugustCrag', 'August Crag');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_BankedPurpose', 'Banked Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Basalt_Memory', 'Basalt Memory');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_BeckoningFall', 'Beckoning Fall');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_BreakneckRidge', 'Breakneck Ridge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_CollapsedNugget', 'Collapsed Nugget');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Core_Scourge', 'Core Scourge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_CosmicBarrage', 'Cosmic Barrage');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_CraggyFlints', 'Craggy Flints');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Crystal_Moan', 'Crystal Moan');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_DeepEdge', 'Deep Edge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Dust_Ancestor', 'Dust Ancestor');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Earthbind_Hex', 'Earthbind Hex');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_EdgedPurpose', 'Edged Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_EtchedFinality', 'Etched Finality');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_ExaltedForge', 'Exalted Forge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_FlintRazor', 'Flint Razor');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_FlintedShard', 'Flinted Shard');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Fracture_Tithe', 'Fracture Tithe');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Glint_Warden', 'Glint Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_GloriousEdge', 'Glorious Edge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_GloriousWark', 'Glorious Wark');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Grain_Sliver', 'Grain Sliver');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_GrandPrecipitate', 'Grand Precipitate');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_GrandRidge', 'Grand Ridge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Gravel_King', 'Gravel King');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_GreatSlip', 'Great Slip');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Grudge_Pillar', 'Grudge Pillar');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_HeadlongShard', 'Headlong Shard');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_HeavyHolme', 'Heavy Holme');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_ImbuedPurpose', 'Imbued Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_IndomitableCrag', 'Indomitable Crag');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_KonnetsCore', 'Konnet''s Core');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_LeadenComb', 'Leaden Comb');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_LodgedClarity', 'Lodged Clarity');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_LodgedPurpose', 'Lodged Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_LoftyReach', 'Lofty Reach');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_MagnificentTor', 'Magnificent Tor');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_MajesticHenge', 'Majestic Henge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Mantle_Sentinel', 'Mantle Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_MassiveMote', 'Massive Mote');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_MonumentalCore', 'Monumental Core');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_NobleCore', 'Noble Core');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Obsidian_Howl', 'Obsidian Howl');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_OckensNugget', 'Ocken''s Nugget');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Pebble_Judge', 'Pebble Judge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_PreciousEdge', 'Precious Edge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_PureFace', 'Pure Face');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_PureProspect', 'Pure Prospect');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_RaisedAloft', 'Raised Aloft');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_RivelinCrag', 'Rivelin Crag');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_RiversBreak', 'River''s Break');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Rubble_Scribe', 'Rubble Scribe');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Shard_Vigil', 'Shard Vigil');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SheerStatement', 'Sheer Statement');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SiftedPurpose', 'Sifted Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SilicateFlood', 'Silicate Flood');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SkraffsProspect', 'Skraff''s Prospect');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Slate_Oracle', 'Slate Oracle');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SoberTor', 'Sober Tor');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SpennitsThorne', 'Spennit''s Thorne');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Spire_Shudder', 'Spire Shudder');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_StandingEdge', 'Standing Edge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Starfleckt', 'Starfleck''t');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_StatelyTor', 'Stately Tor');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_StaticFlow', 'Static Flow');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SteelyProspect', 'Steely Prospect');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SteepPurpose', 'Steep Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_StoicDust', 'Stoic Dust');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_StoneTorrent', 'Stone Torrent');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_SublimeHenge', 'Sublime Henge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Tectonic_Eye', 'Tectonic Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_TerminalDeluge', 'Terminal Deluge');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_TerminalFall', 'Terminal Fall');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_TidesBulwark', 'Tide''s Bulwark');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_TumblingPeril', 'Tumbling Peril');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_UnyieldingMass', 'Unyielding Mass');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_UpendedShard', 'Upended Shard');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_Vein_Splitter', 'Vein Splitter');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_WinnowedDestiny', 'Winnowed Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('LITHOID4_SHIP_YockensEdge', 'Yocken''s Edge');
 INSERT INTO prescripted_name (key, text) VALUES ('Lambda_Serpentis', 'Lambda Serpentis');
 INSERT INTO prescripted_name (key, text) VALUES ('Larkins_Singularity', 'Larkins'' Singularity');
 INSERT INTO prescripted_name (key, text) VALUES ('Ler_Zumon', 'Ler Zumon');
@@ -96877,17 +99370,1180 @@ INSERT INTO prescripted_name (key, text) VALUES ('Lithyrian_Vortex', 'Lithyrian 
 INSERT INTO prescripted_name (key, text) VALUES ('Little_Ghost_Nebula', 'Little Ghost Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Lost_Dreams_Nebula', 'Lost Dreams Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Luusaj_Black_Hole', 'Luusaj Black Hole');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE2_SHIP_ColonizationCarrier', 'Colonization Carrier');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE2_SHIP_MachineTransport', 'Machine Transport');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Aether_Judge', 'Aether Judge');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Axiom_Heir', 'Axiom Heir');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Celestial_Bastion', 'Celestial Bastion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeAegis', 'Chrome Aegis');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeCustodian', 'Chrome Custodian');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeEscort', 'Chrome Escort');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeGuard', 'Chrome Guard');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeKeep', 'Chrome Keep');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeKeeper', 'Chrome Keeper');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromePatroller', 'Chrome Patroller');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeRetainer', 'Chrome Retainer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeTender', 'Chrome Tender');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeWarden', 'Chrome Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ChromeWarrior', 'Chrome Warrior');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Circuit_Scion', 'Circuit Scion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ConstructionModule', 'Construction Module');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_CybernatedRanger', 'Cybernated Ranger');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_CybernatedShepard', 'Cybernated Shepard');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_CybernatedWarder', 'Cybernated Warder');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Echelon_Seal', 'Echelon Seal');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Edict_Warden', 'Edict Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Emerald_Courier', 'Emerald Courier');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Eminence_Forge', 'Eminence Forge');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanicChampion', 'Galvanic Champion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanicGunner', 'Galvanic Gunner');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanicKnight', 'Galvanic Knight');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanicRetainer', 'Galvanic Retainer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanicWard', 'Galvanic Ward');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanizedGuardian', 'Galvanized Guardian');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_GalvanizedShield', 'Galvanized Shield');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Gilded_Protocol', 'Gilded Protocol');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Graviton_Peer', 'Graviton Peer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Heuristic_Crown', 'Heuristic Crown');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronGuardian', 'Iron Guardian');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronMantle', 'Iron Mantle');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronOverseer', 'Iron Overseer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronRedoubt', 'Iron Redoubt');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronShelter', 'Iron Shelter');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronShield', 'Iron Shield');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronVigilant', 'Iron Vigilant');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronWard', 'Iron Ward');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_IronsideResponder', 'Ironside Responder');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Legacy_Branch', 'Legacy Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_LinkedEscort', 'Linked Escort');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_LinkedKeeper', 'Linked Keeper');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_LinkedPatroller', 'Linked Patroller');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_MachineGuard', 'Machine Guard');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_MachineProtector', 'Machine Protector');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_MachineResponder', 'Machine Responder');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_MechanizedOverseer', 'Mechanized Overseer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Noble_Override', 'Noble Override');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Platinum_Vow', 'Platinum Vow');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Precursor_Blade', 'Precursor Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Quantum_Regent', 'Quantum Regent');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ReplicationModule', 'Replication Module');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_ScientificModule', 'Scientific Module');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Seraphic_Node', 'Seraphic Node');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverAegis', 'Silver Aegis');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverBastion', 'Silver Bastion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverLancer', 'Silver Lancer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverMantle', 'Silver Mantle');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverPartizan', 'Silver Partizan');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverWarden', 'Silver Warden');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SilverWatcher', 'Silver Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Sovereign_Coil', 'Sovereign Coil');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelBastion', 'Steel Bastion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelBulwark', 'Steel Bulwark');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelChampion', 'Steel Champion');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelDefender', 'Steel Defender');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelFortitude', 'Steel Fortitude');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelGunner', 'Steel Gunner');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelKnight', 'Steel Knight');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelLancer', 'Steel Lancer');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelPartizan', 'Steel Partizan');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelPreserver', 'Steel Preserver');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelProtector', 'Steel Protector');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelRanger', 'Steel Ranger');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelResponder', 'Steel Responder');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelSentinel', 'Steel Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelSentry', 'Steel Sentry');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelShepard', 'Steel Shepard');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelSurveiller', 'Steel Surveiller');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelWarder', 'Steel Warder');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SteelWatcher', 'Steel Watcher');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SynchronicDefender', 'Synchronic Defender');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SynchronicPreserver', 'Synchronic Preserver');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SynchronicSentinel', 'Synchronic Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_SynchronicSurveiller', 'Synchronic Surveiller');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Titan_Ordinal', 'Titan Ordinal');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_TransportModule', 'Transport Module');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_Venerated_Core', 'Venerated Core');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_VoltaicSentry', 'Voltaic Sentry');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_VoltaicVigilant', 'Voltaic Vigilant');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE3_SHIP_VoltaicWarrior', 'Voltaic Warrior');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE4_SHIP_ApocalypticPrime', 'Apocalyptic Prime');
+INSERT INTO prescripted_name (key, text) VALUES ('MACHINE4_SHIP_EschatologicalPrime', 'Eschatological Prime');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_BNorek', 'B''Norek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_CBareth', 'C''Bareth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DAllas', 'D''Allas');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DAnara', 'D''Anara');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DAram', 'D''Aram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DBanna', 'D''Banna');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DBuris', 'D''Buris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DDamma', 'D''Damma');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DDana', 'D''Dana');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DDirim', 'D''Dirim');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DEviko', 'D''Eviko');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DFarak', 'D''Farak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DIrfa', 'D''Irfa');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DIrim', 'D''Irim');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DIrio', 'D''Irio');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DJolsik', 'D''Jolsik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DKaram', 'D''Karam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DKirmik', 'D''Kirmik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DKuru', 'D''Kuru');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DMarov', 'D''Marov');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DMoro', 'D''Moro');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DNaka', 'D''Naka');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DOh', 'D''Oh');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DOrang', 'D''Orang');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DOrom', 'D''Orom');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DPenek', 'D''Penek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DPollog', 'D''Pollog');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DRila', 'D''Rila');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DSaba', 'D''Saba');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DSagri', 'D''Sagri');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DSoto', 'D''Soto');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DTarga', 'D''Targa');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DTarikon', 'D''Tarikon');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DTirak', 'D''Tirak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DTuma', 'D''Tuma');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DTunak', 'D''Tunak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DValam', 'D''Valam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DVarik', 'D''Varik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DVirbo', 'D''Virbo');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_DVormat', 'D''Vormat');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_FJalen', 'F''Jalen');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_GMirek', 'G''Mirek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_HZamir', 'H''Zamir');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_JTassar', 'J''Tassar');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_KZarek', 'K''Zarek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_LThoren', 'L''Thoren');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_MRikann', 'M''Rikann');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_NQorath', 'N''Qorath');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_PKuros', 'P''Kuros');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_QSendral', 'Q''Sendral');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_RVoltan', 'R''Voltan');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_SJalak', 'S''Jalak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TBlirak', 'T''Blirak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TBomka', 'T''Bomka');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TDerikam', 'T''Derikam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TDimik', 'T''Dimik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_THarik', 'T''Harik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TKana', 'T''Kana');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TKanor', 'T''Kanor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TKlea', 'T''Klea');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TKolbak', 'T''Kolbak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TKomot', 'T''Komot');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TLigam', 'T''Ligam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TLirmak', 'T''Lirmak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TMarov', 'T''Marov');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TMigor', 'T''Migor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TMiri', 'T''Miri');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TNara', 'T''Nara');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TNerok', 'T''Nerok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TNir', 'T''Nir');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TRalsak', 'T''Ralsak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TSaris', 'T''Saris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TSirma', 'T''Sirma');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TSirom', 'T''Sirom');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTaco', 'T''Taco');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTalok', 'T''Talok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTamik', 'T''Tamik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTanak', 'T''Tanak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTerell', 'T''Terell');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTimin', 'T''Timin');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTimonok', 'T''Timonok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTollok', 'T''Tollok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTorga', 'T''Torga');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTuda', 'T''Tuda');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTynnia', 'T''Tynnia');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TTyrik', 'T''Tyrik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TUgana', 'T''Ugana');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TVojak', 'T''Vojak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TVorg', 'T''Vorg');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_TYlgar', 'T''Ylgar');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_VRenthul', 'V''Renthul');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_WDareth', 'W''Dareth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_XTuvar', 'X''Tuvar');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YArio', 'Y''Ario');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YBamta', 'Y''Bamta');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YBarra', 'Y''Barra');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YCaram', 'Y''Caram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YFalsek', 'Y''Falsek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YGlara', 'Y''Glara');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YGora', 'Y''Gora');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YJargam', 'Y''Jargam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YKanas', 'Y''Kanas');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YKono', 'Y''Kono');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YLambak', 'Y''Lambak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YLesmag', 'Y''Lesmag');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YLoram', 'Y''Loram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YMaggro', 'Y''Maggro');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YNoro', 'Y''Noro');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YPana', 'Y''Pana');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YPanjik', 'Y''Panjik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YParga', 'Y''Parga');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YSarik', 'Y''Sarik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YSoram', 'Y''Soram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YSorom', 'Y''Sorom');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YTharak', 'Y''Tharak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YValdim', 'Y''Valdim');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YVardos', 'Y''Vardos');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_YViram', 'Y''Viram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM1_SHIP_ZLorvak', 'Z''Lorvak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Bidi_Flimflam', 'Bidi''Flimflam');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Bolo_Tranik', 'Bolo''Tranik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Daru_Tessik', 'Daru''Tessik');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Fidi_Glarn', 'Fidi''Glarn');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Gomo_Yast', 'Gomo''Yast');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Haku_Frelm', 'Haku''Frelm');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Jilu_Brekk', 'Jilu''Brekk');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Kala_Zornek', 'Kala''Zornek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Keti_Narlok', 'Keti''Narlok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Nimo_Grall', 'Nimo''Grall');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Plek_Fandra', 'Plek''Fandra');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Qeti_Harn', 'Qeti''Harn');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Saku_Marn', 'Saku''Marn');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperAldinor', 'Seper''Aldinor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperArogo', 'Seper''Arogo');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperBorog', 'Seper''Borog');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperCalendol', 'Seper''Calendol');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperCerunthon', 'Seper''Cerunthon');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperCurenrod', 'Seper''Curenrod');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperDuacedron', 'Seper''Duacedron');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperElegion', 'Seper''Elegion');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperEskag', 'Seper''Eskag');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperEssunad', 'Seper''Essunad');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperFundroleth', 'Seper''Fundroleth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperGrenalion', 'Seper''Grenalion');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperHugaderol', 'Seper''Hugaderol');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperHundramel', 'Seper''Hundramel');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperHuvendrog', 'Seper''Huvendrog');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperKarob', 'Seper''Karob');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperMasol', 'Seper''Masol');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperMassagreth', 'Seper''Massagreth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperNossundem', 'Seper''Nossundem');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperSagredioth', 'Seper''Sagredioth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperSetnassel', 'Seper''Setnassel');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperTarudog', 'Seper''Tarudog');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperTirb', 'Seper''Tirb');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperTuandok', 'Seper''Tuandok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperTulethendral', 'Seper''Tulethendral');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperVaylor', 'Seper''Vaylor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_SeperVyliged', 'Seper''Vyliged');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Tiri_Grollem', 'Tiri''Grollem');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Toku_Barnel', 'Toku''Barnel');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Velu_Zarnak', 'Velu''Zarnak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiArgas', 'Vuki''Argas');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiBoron', 'Vuki''Boron');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiElagar', 'Vuki''Elagar');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiEndur', 'Vuki''Endur');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiEnnak', 'Vuki''Ennak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiFarab', 'Vuki''Farab');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiHigran', 'Vuki''Higran');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiHolagor', 'Vuki''Holagor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiIrios', 'Vuki''Irios');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiKitnak', 'Vuki''Kitnak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiPatora', 'Vuki''Patora');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiPokra', 'Vuki''Pokra');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiRaman', 'Vuki''Raman');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiSalpossa', 'Vuki''Salpossa');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiSatrak', 'Vuki''Satrak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiSotra', 'Vuki''Sotra');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiSpaddok', 'Vuki''Spaddok');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiSpako', 'Vuki''Spako');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiStorg', 'Vuki''Storg');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiTarba', 'Vuki''Tarba');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiTarg', 'Vuki''Targ');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiUlator', 'Vuki''Ulator');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiUram', 'Vuki''Uram');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_VukiVado', 'Vuki''Vado');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Wupi_Skarro', 'Wupi''Skarro');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Yopi_Brank', 'Yopi''Brank');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Zogo_Warnak', 'Zogo''Warnak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM3_SHIP_Zumi_Krotal', 'Zumi''Krotal');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnBevakis', 'An Bevakis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnBrokunis', 'An Brokunis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnCithanis', 'An Cithanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnDitiris', 'An Ditiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnFelgiris', 'An Felgiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnGarallis', 'An Garallis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnGavanonis', 'An Gavanonis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnGiranis', 'An Giranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnGursakis', 'An Gursakis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnHirekulis', 'An Hirekulis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnJaburis', 'An Jaburis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnJiranis', 'An Jiranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnJirigalis', 'An Jirigalis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnKharakis', 'An Kharakis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnNavidis', 'An Navidis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnNoranis', 'An Noranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnOboris', 'An Oboris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnStupanis', 'An Stupanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnSyrutis', 'An Syrutis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnTurakis', 'An Turakis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnUbanis', 'An Ubanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnVakiris', 'An Vakiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_AnVebis', 'An Vebis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Bren_Tokkad', 'Bren Tokkad');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarEpesuris', 'Dar Epesuris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarEpiris', 'Dar Epiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarEvtidanis', 'Dar Evtidanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarFiliris', 'Dar Filiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarHitiris', 'Dar Hitiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarIberinnis', 'Dar Iberinnis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarIsklanduris', 'Dar Isklanduris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarKabolis', 'Dar Kabolis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarKermisaris', 'Dar Kermisaris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarLydiris', 'Dar Lydiris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarMajedonis', 'Dar Majedonis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarMysaris', 'Dar Mysaris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarSotoris', 'Dar Sotoris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarTolvonis', 'Dar Tolvonis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarTorobanis', 'Dar Torobanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_DarTygharis', 'Dar Tygharis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Dor_Gribnax', 'Dor Gribnax');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Durg_Mavrol', 'Durg Mavrol');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Fenn_Korvak', 'Fenn Korvak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Grek_Donnal', 'Grek Donnal');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Grol_Venmar', 'Grol Venmar');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Hok_Marnel', 'Hok Marnel');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Jek_Ravol', 'Jek Ravol');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaArannis', 'Kha Arannis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaBentis', 'Kha Bentis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaBonntis', 'Kha Bonntis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaBuvinis', 'Kha Buvinis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaDeranis', 'Kha Deranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaDihanis', 'Kha Dihanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaErantis', 'Kha Erantis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaEvendis', 'Kha Evendis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaFuranis', 'Kha Furanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaItnis', 'Kha Itnis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaJuntis', 'Kha Juntis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaMuntis', 'Kha Muntis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaRabtis', 'Kha Rabtis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaRhentis', 'Kha Rhentis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaRidanis', 'Kha Ridanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaRubis', 'Kha Rubis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaRylanis', 'Kha Rylanis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaSeranis', 'Kha Seranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaSurtis', 'Kha Surtis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaThannatis', 'Kha Thannatis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaTibaris', 'Kha Tibaris');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaUribis', 'Kha Uribis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaVaknis', 'Kha Vaknis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_KhaYranis', 'Kha Yranis');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Kren_Hollax', 'Kren Hollax');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Lorn_Beskal', 'Lorn Beskal');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Mek_Zarnul', 'Mek Zarnul');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Morr_Tundek', 'Morr Tundek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Nok_Javrek', 'Nok Javrek');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Ruv_Barnath', 'Ruv Barnath');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Sek_Thandor', 'Sek Thandor');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Tarn_Drusk', 'Tarn Drusk');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Tov_Brallin', 'Tov Brallin');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Vorr_Kelbrak', 'Vorr Kelbrak');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Wrek_Talnoth', 'Wrek Talnoth');
+INSERT INTO prescripted_name (key, text) VALUES ('MAM4_SHIP_Yor_Grimnex', 'Yor Grimnex');
+INSERT INTO prescripted_name (key, text) VALUES ('MINERAL_SHIP_MAINTENANCE', 'Ship Upkeep: $GAIN|+=$');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ACCURACY_ADD', 'Chance to Hit');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ACCURACY_MULT', 'Accuracy');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_FAIL_RISK', 'Anomaly Fail Risk');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_GENERATION_CHANCE', 'Anomaly Discovery Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_GENERATION_CHANCE_MULT', 'Anomaly Discovery Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_GENERATION_CHANCE_UNINHABITABLE', 'Uninhabitable Planet Anomaly Discovery Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_RESEARCH_SPEED', 'Anomaly Research Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ANOMALY_RESEARCH_SPEED_UNINHABITABLE', 'Uninhabitable Planet Anomaly Research Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARCHAEOLOGICAL_SITE_CLUES_ADD', 'Archaeology Skill');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARCHAEOLOGICAL_SITE_EXCAVATION_SPEED_MULT', 'Archaeology Excavation Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_ADD', 'Armor Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_DAMAGE_MULT', 'Armor Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_HARDENING_ADD', 'Armor Hardening');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_MULT', 'Armor Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_PENETRATION_ADD', 'Armor Penetration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_PENETRATION_MULT', 'Armor Penetration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_REDUCTION', 'Armor Nullification');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_REGEN_ADD_PERC', 'Daily Armor Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_REGEN_ADD_STATIC', 'Daily Armor Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ARMOR_REGEN_MULT', 'Armor Regeneration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ASTRAL_RIFT_CLUES_ADD', 'Astral Rift Skill');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ASTRAL_RIFT_SPEED_MULT', 'Astral Rift Exploration Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_BASE_SPEED_MULT', 'Base Ship Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_BUILD_SPEED_MULT', 'Ship Build Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_CAPTURE_AMOUNT_ADD', 'Fauna Capture Amount');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_CAPTURE_CHANCE_ADD', 'Fauna Capture Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_CLOAKING_DETECTION_ADD', 'Detection Strength');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_CLOAKING_STRENGTH_ADD', 'Cloaking Strength');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_COMBAT_SPEED_MULT', 'Combat Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_COMMUNITY_TERRITORY_SPEED_MULT', 'Community Space Sublight Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_COMMUNITY_TERRITORY_SPEED_MULT_DESC', 'Affects the sublight Speed of ships flying through systems belonging to a Galactic Community member');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_AGAINST_BOSS_MULT', 'Damage vs Leviathans');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_AGAINST_RECKONING_MULT', 'Damage to the Reckoning');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_AGAINST_SPACE_FAUNA_MULT', 'Damage to Space Fauna');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_AGAINST_STARBASES_MULT', 'Damage vs Starbases and Waystations');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_REDUCTION_ADD', 'Damage Reduction');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DAMAGE_REDUCTION_MULT', 'Damage Reduction');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DISENGAGE_CHANCE_MULT', 'Combat Disengagement Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DISENGAGE_CHANCE_REDUCTION', 'Disengagement Chance Reduction');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_DISENGAGE_OPPORTUNITIES_ADD', 'Disengagement Opportunities');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EMERGENCY_FTL', 'Emergency FTL Damage Risk');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EMERGENCY_FTL_MIN_DAYS_ADD', 'Emergency FTL Jump Cooldown');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EMERGENCY_FTL_MIN_DAYS_MULT', 'Emergency FTL Jump Cooldown');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ENGAGEMENT_RANGE_MULT', 'Ship Engagement Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EVASION_ADD', 'Evasion Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EVASION_MULT', 'Evasion Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_EXPERIENCE_GAIN_MULT', 'Ship Experience Gain');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FEDERATION_TERRITORY_FIRE_RATE_MULT', 'Federation Territory Fire Rate');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FEDERATION_TERRITORY_SPEED_MULT', 'Federation Space Sublight Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FEDERATION_TERRITORY_SPEED_MULT_DESC', 'Affects the sublight Speed of ships flying through systems belonging to a Federation member');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FIRE_RATE_MULT', 'Ship Fire Rate');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_ACCURACY_ADD', 'Chance to Hit in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_ACCURACY_MULT', 'Accuracy in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_ARMOR_ADD', 'Armor Hit Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_ARMOR_MULT', 'Armor Hit Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_EVASION_ADD', 'Evasion Chance in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_EVASION_MULT', 'Evasion Chance in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_FIRE_RATE_MULT', 'Ship Fire Rate in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_HULL_ADD', 'Ship Hull Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_HULL_MULT', 'Ship Hull Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_SHIELD_ADD', 'Shield Hit Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_SHIELD_MULT', 'Shield Hit Points in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_TRACKING_ADD', 'Tracking in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FRIENDLY_TERRITORY_TRACKING_MULT', 'Tracking in Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_HYPER_RANGE_MULT', 'Hyper Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_JUMPDRIVE_RANGE_MULT', 'Jump Drive Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_WARP_RANGE_MULT', 'Warp Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_WORMHOLES_PER_STATION', 'Active Wormholes per Station');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_WORMHOLE_RANGE_MULT', 'Wormhole Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_FTL_WORMHOLE_SPEED_MULT', 'Wormhole Generation Rate');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HITPOINTS_ADD', 'Ship Hull Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HITPOINTS_MULT', 'Ship Hull Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HOME_TERRITORY_FIRE_RATE_MULT', 'Home Territory Fire Rate');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_ADD', 'Ship Hull Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_DAMAGE_MULT', 'Hull Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_MULT', 'Ship Hull Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_REGEN_ADD_PERC', 'Daily Hull Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_REGEN_ADD_STATIC', 'Daily Hull Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_REGEN_MULT', 'Hull Regeneration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_STORM_BREAKER_1', 'Negative Effects from Cosmic Storms on Ship Defenses: -45%');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HULL_STORM_BREAKER_2', 'Negative Effects from Cosmic Storms on Ship Defenses: -90%');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_HYPERLANE_RANGE_ADD', 'Ship Hyperlane Detection Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_INTERSTELLAR_SPEED_MULT', 'FTL Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_JUMPDRIVE_COOLDOWN_MULT', 'Jump Drive Cooldown');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_LANDING_TIME_MULT', 'Landing Time');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_MILITARY_SPEED_MULT', 'Military Ship Sublight Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_MONTHLY_HULL_DAMAGE', 'Monthly Hull Damage to Non-orbiting Ships');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_NAVAL_CAP_USAGE_ADD', 'Naval Capacity Usage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_NAVAL_CAP_USAGE_MULT', 'Naval Capacity Usage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ORBITAL_BOMBARDMENT_ARMY_DAMAGE_MULT', 'Orbital Bombardment Army Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ORBITAL_BOMBARDMENT_MULT', 'Orbital Bombardment Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ORBITAL_BOMBARDMENT_POP_DAMAGE_MULT', 'Orbital Bombardment Pop Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ORBIT_UPKEEP_MULT', 'Docked Ship Upkeep');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_ORBIT_UPKEEP_MULT_DESC', 'Affects the upkeep cost of all ships that are orbiting the Station.');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_OUTSIDE_FRIENDLY_TERRITORY_FIRE_RATE_MULT', 'Ship Fire Rate outside of Friendly Systems');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_PSIONIC_AURA_FIRE_RATE_MULT', 'Ship Fire Rate in any Psionic Aura');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_PSIONIC_AURA_SPEED_MULT', 'Sublight Speed in any Psionic Aura');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_REACTOR_POWER_ADD', 'Reactor Power');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_REACTOR_POWER_MULT', 'Reactor Power');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_REPAIR_ARMOR_MULT', 'Docked Ship Armor Repair Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_REPAIR_HULL_MULT', 'Docked Ship Hull Repair Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_REPARATION_COST_MULT', 'Ship Repair Cost');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SCIENCE_SPEED_MULT', 'Science Ship Sublight Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SCIENCE_SURVEY_SPEED', 'Survey Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SCIENCE_SURVEY_SPEED_UNINHABITABLE', 'Uninhabitable Planet Survey Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SENSOR_RANGE_ADD', 'Sensor Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SENSOR_RANGE_MULT', 'Sensor Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_ADD', 'Shield Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_DAMAGE_MULT', 'Shield Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_HARDENING_ADD', 'Shield Hardening');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_HP_ADD', 'Shield Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_HP_MULT', 'Shield Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_MULT', 'Shield Hit Points');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_PENETRATION_ADD', 'Shield Penetration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_PENETRATION_MULT', 'Shield Penetration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_REDUCTION', 'Shield Nullification');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_REGEN_ADD_PERC', 'Daily Shield Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_REGEN_ADD_STATIC', 'Daily Shield Regen');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SHIELD_REGEN_MULT', 'Shield Regeneration');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SIZE_DAMAGE_FACTOR', 'Bonus Damage Relative to Size');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SPEED_MULT', 'Sublight Speed');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_SPEED_REDUCTION', 'Sublight Speed Reduction');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STARBASE_STOCKPILE_COLLECTION_RATE_ADD', 'Waystation Resources Transferred per Month');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STARBASE_STOCKPILE_COLLECTION_RATE_MULT', 'Waystation Resource Transfer Rate');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STARTING_EXPERIENCE_ADD', 'Ship Starting Experience');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STEAL_DEFEATED_SHIP_CHANCE', 'Enemy Ship Stealing Chance');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STOCKPILE_CAPACITY_ADD', 'Stockpile Capacity');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STOCKPILE_CAPACITY_MULT', 'Stockpile Capacity');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STORM_WEAPONS_1', 'Negative Effects from Cosmic Storms on Ship Weapons: -45%');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STORM_WEAPONS_2', 'Negative Effects from Cosmic Storms on Ship Weapons: -90%');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_STORM_WEAPONS_MULT', 'Negative Effects from Cosmic Storms on Ship Weapons');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_TARGET_WEIGHT_MULT', 'Focus Fire Effect');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_TRACKING_ADD', 'Tracking');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_TRACKING_MULT', 'Tracking');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_WEAPON_DAMAGE', 'Ship Weapons Damage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_WEAPON_RANGE_MULT', 'Ship Weapons Range');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_WINDDOWN_MULT', 'Hyper Jump Cooldown');
+INSERT INTO prescripted_name (key, text) VALUES ('MOD_SHIP_WINDUP_MULT', 'Hyper Jump Charge Time');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujAhb', 'Duj''Ahb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujAlin', 'Duj''Alin');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujAlv', 'Duj''Alv');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujBlal', 'Duj''Blal');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujDjom', 'Duj''Djom');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujDov', 'Duj''Dov');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujEll', 'Duj''Ell');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujFuss', 'Duj''Fuss');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujLivm', 'Duj''Livm');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujObb', 'Duj''Obb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujOrth', 'Duj''Orth');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_DujUmul', 'Duj''Umul');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinAhb', 'Fin''Ahb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinAlin', 'Fin''Alin');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinAlv', 'Fin''Alv');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinBlal', 'Fin''Blal');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinDjom', 'Fin''Djom');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinDov', 'Fin''Dov');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinEll', 'Fin''Ell');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinFuss', 'Fin''Fuss');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinLivm', 'Fin''Livm');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinObb', 'Fin''Obb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinOrth', 'Fin''Orth');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_FinUmul', 'Fin''Umul');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanAhb', 'Gan''Ahb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanAlin', 'Gan''Alin');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanAlv', 'Gan''Alv');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanBlal', 'Gan''Blal');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanDjom', 'Gan''Djom');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanDov', 'Gan''Dov');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanEll', 'Gan''Ell');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanFuss', 'Gan''Fuss');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanLivm', 'Gan''Livm');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanObb', 'Gan''Obb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanOrth', 'Gan''Orth');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_GanUmul', 'Gan''Umul');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiAhb', 'Si''Ahb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiAlin', 'Si''Alin');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiAlv', 'Si''Alv');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiBlal', 'Si''Blal');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiDjom', 'Si''Djom');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiDov', 'Si''Dov');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiEll', 'Si''Ell');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiFuss', 'Si''Fuss');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiLivm', 'Si''Livm');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiObb', 'Si''Obb');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiOrth', 'Si''Orth');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL3_SHIP_SiUmul', 'Si''Umul');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_AbominableAbalone', 'Abominable Abalone');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_AbyssalArbiter', 'Abyssal Arbiter');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_AbyssalReef', 'Abyssal Reef');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BarbedRay', 'Barbed Ray');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BlackFish', 'Black Fish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BlackLobster', 'Black Lobster');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BlueFin', 'Blue Fin');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BowChaser', 'Bow Chaser');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BowRider', 'Bow Rider');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_BuoyantBarnacle', 'Buoyant Barnacle');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CautiousCrayfish', 'Cautious Crayfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_ChargedEel', 'Charged Eel');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_ClawingCrustacean', 'Clawing Crustacean');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CleverClam', 'Clever Clam');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CleverCrayfish', 'Clever Crayfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CosmicClam', 'Cosmic Clam');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CraftyCuttlefish', 'Crafty Cuttlefish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CravenCrayfish', 'Craven Crayfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_CunningKrill', 'Cunning Krill');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DarkwaveTerror', 'Darkwave Terror');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DeapseaHellion', 'Deapsea Hellion');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DeapseaStalker', 'Deapsea Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DeathBarge', 'Death Barge');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DeepLurker', 'Deep Lurker');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DeepwaveDemon', 'Deepwave Demon');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DivingKrait', 'Diving Krait');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DriftingCoracle', 'Drifting Coracle');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DriftingCrab', 'Drifting Crab');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_DrownedRevenant', 'Drowned Revenant');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_EndlessWave', 'Endless Wave');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_FireCoral', 'Fire Coral');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_FireSquid', 'Fire Squid');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_GalacticUndertow', 'Galactic Undertow');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_GraspingSquid', 'Grasping Squid');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_HungrySiren', 'Hungry Siren');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_JaggedCoral', 'Jagged Coral');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_JoustingJellyfish', 'Jousting Jellyfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_LongshoreDrifter', 'Longshore Drifter');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_MightyBallast', 'Mighty Ballast');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_MischievousMussel', 'Mischievous Mussel');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_NimbleCarrack', 'Nimble Carrack');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_NimbleNautilus', 'Nimble Nautilus');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_NotoriousNudibranch', 'Notorious Nudibranch');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_OrneryOyster', 'Ornery Oyster');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_PilferingPike', 'Pilfering Pike');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_PlayfulPrawn', 'Playful Prawn');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_RavagingShark', 'Ravaging Shark');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_RipCurrent', 'Rip Current');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_RipjawAngler', 'Ripjaw Angler');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SailingSeabird', 'Sailing Seabird');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SaltyBarnacle', 'Salty Barnacle');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SaltySquid', 'Salty Squid');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_ScreechingGull', 'Screeching Gull');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeaFiend', 'Sea Fiend');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeaHare', 'Sea Hare');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeaMonster', 'Sea Monster');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeaScorpion', 'Sea Scorpion');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeaSerpent', 'Sea Serpent');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SeethingSnapper', 'Seething Snapper');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SilverStarfish', 'Silver Starfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SlinkingScallop', 'Slinking Scallop');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SneakingShrimp', 'Sneaking Shrimp');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SpinySpirula', 'Spiny Spirula');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SplashingSailfish', 'Splashing Sailfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_StalkingSeal', 'Stalking Seal');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_StalwartSpearfish', 'Stalwart Spearfish');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_StingingAnemone', 'Stinging Anemone');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_StoutConch', 'Stout Conch');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SunkenAdjudicator', 'Sunken Adjudicator');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SunkenHorror', 'Sunken Horror');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SurgingScallop', 'Surging Scallop');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_SwiftSeahorse', 'Swift Seahorse');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_WaitingShark', 'Waiting Shark');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_WavebornSavage', 'Waveborn Savage');
+INSERT INTO prescripted_name (key, text) VALUES ('MOL4_SHIP_WilyWalrus', 'Wily Walrus');
 INSERT INTO prescripted_name (key, text) VALUES ('Masinissas_Demise', 'Masinissa''s Demise');
 INSERT INTO prescripted_name (key, text) VALUES ('Maw_of_the_Truthsayer', 'Maw of the Truthsayer');
 INSERT INTO prescripted_name (key, text) VALUES ('Med_Karash', 'Med Karash');
 INSERT INTO prescripted_name (key, text) VALUES ('Miklors_Vortex', 'Miklor''s Vortex');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_AccentedPurpose', 'Accented Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_AmpleArdence', 'Ample Ardence');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ArticulateDestiny', 'Articulate Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ArticulatedWorth', 'Articulated Worth');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_AshenVoid', 'Ashen Void');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_BloodiedReputation', 'Bloodied Reputation');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Bone_Vigil', 'Bone Vigil');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_BrightImpaler', 'Bright Impaler');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_BuzzingVoid', 'Buzzing Void');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_CavernousDeep', 'Cavernous Deep');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Charnel_Glory', 'Charnel Glory');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ConspicuousGlare', 'Conspicuous Glare');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_CrackedMoon', 'Cracked Moon');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DarkGathering', 'Dark Gathering');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DarkTreasure', 'Dark Treasure');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DeathlySeed', 'Deathly Seed');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DefaltedValues', 'Defalted Values');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DefinedGaze', 'Defined Gaze');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Dread_Harvest', 'Dread Harvest');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_DreadedCur', 'Dreaded Cur');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Ebon_Maw', 'Ebon Maw');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_EmptyFathoms', 'Empty Fathoms');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_EtherealJudgement', 'Ethereal Judgement');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_EtherealWarrior', 'Ethereal Warrior');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ExplicitLonging', 'Explicit Longing');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ExuberantAim', 'Exuberant Aim');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_FirmLikeness', 'Firm Likeness');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GenialPurpose', 'Genial Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GentleBeast', 'Gentle Beast');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GloriousEndeavour', 'Glorious Endeavour');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GloweringMote', 'Glowering Mote');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GrandAmbition', 'Grand Ambition');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GrandHistoria', 'Grand Historia');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GrandTor', 'Grand Tor');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GravePhilosophy', 'Grave Philosophy');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GreatClough', 'Great Clough');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GreatEbullience', 'Great Ebullience');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GrimCultivator', 'Grim Cultivator');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_GrimWreaker', 'Grim Wreaker');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_HallowedBulwark', 'Hallowed Bulwark');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_HarbingersLoom', 'Harbinger''s Loom');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_HavensWrath', 'Haven''s Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_HighEnterprise', 'High Enterprise');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_IlluminatedPurpose', 'Illuminated Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ImpaleroftheHeavens', 'Impaler of the Heavens');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ImpureRavine', 'Impure Ravine');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_LancedDestiny', 'Lanced Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Last_Shriek', 'Last Shriek');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_LimpidWreck', 'Limpid Wreck');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_LitFurnace', 'Lit Furnace');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_MajesticFissure', 'Majestic Fissure');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ManifestUrge', 'Manifest Urge');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_NovelPurpose', 'Novel Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Oblivion_Cowl', 'Oblivion Cowl');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Pale_Omen', 'Pale Omen');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PerforatedBeing', 'Perforated Being');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PerpetualSting', 'Perpetual Sting');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PhenomenalMight', 'Phenomenal Might');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PiercingVision', 'Piercing Vision');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PreciseDoom', 'Precise Doom');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PropheticExactitude', 'Prophetic Exactitude');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_PurityofPurpose', 'Purity of Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ReadyUnfeigned', 'Ready Unfeigned');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_RisingSwell', 'Rising Swell');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_RivenPlough', 'Riven Plough');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_RobustPosition', 'Robust Position');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_RuinousWedge', 'Ruinous Wedge');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SalientPromise', 'Salient Promise');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SecretYearning', 'Secret Yearning');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Silence_Reaped', 'Silence Reaped');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SlickedLightning', 'Slicked Lightning');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SoaringMote', 'Soaring Mote');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SootedCarbine', 'Sooted Carbine');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_Soul_Binder', 'Soul Binder');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StarboardProtector', 'Starboard Protector');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StarkEdifice', 'Stark Edifice');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StarkRealisation', 'Stark Realisation');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StellarGleanings', 'Stellar Gleanings');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StoicBreakwater', 'Stoic Breakwater');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_StunnedClarity', 'Stunned Clarity');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_SwiftEnterprise', 'Swift Enterprise');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_TerminalFlash', 'Terminal Flash');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ThunderResounding', 'Thunder Resounding');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_TitanicAmbition', 'Titanic Ambition');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_ToxicSeed', 'Toxic Seed');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_TransfixedMight', 'Transfixed Might');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_TuningFork', 'Tuning Fork');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_UnnaturalOrder', 'Unnatural Order');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_VanishingCleft', 'Vanishing Cleft');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_VigorousMight', 'Vigorous Might');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID1_SHIP_VoluminousRift', 'Voluminous Rift');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_BaitedSwitch', 'Baited Switch');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_BitterNerves', 'Bitter Nerves');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_BladedMonster', 'Bladed Monster');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_BrokenCore', 'Broken Core');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_BurningSeasons', 'Burning Seasons');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ChainedDawn', 'Chained Dawn');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ClassicDenial', 'Classic Denial');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ConstantRequiem', 'Constant Requiem');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_CrackedMisfortune', 'Cracked Misfortune');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Crimson_Stillness', 'Crimson Stillness');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DarkandTwistyRoad', 'Dark and Twisty Road');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DarkenedCore', 'Darkened Core');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Deathcourt_Promise', 'Deathcourt Promise');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DeepestMurk', 'Deepest Murk');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DifferentFaces', 'Different Faces');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DischordantSoul', 'Dischordant Soul');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DiseasedAmbition', 'Diseased Ambition');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DontFall', 'Don''t Fall');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_DulledSenses', 'Dulled Senses');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Duskborne_Vow', 'Duskborne Vow');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Ebon_Masque', 'Ebon Masque');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Elegy_Blade', 'Elegy Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_EndlessThorns', 'Endless Thorns');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_FalseProphecy', 'False Prophecy');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_FearofChange', 'Fear of Change');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_FearofStasis', 'Fear of Stasis');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_FleshforLife', 'Flesh for Life');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_FunerealToll', 'Funereal Toll');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_GhostsWithinGhosts', 'Ghosts Within Ghosts');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Gloaming_Choir', 'Gloaming Choir');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_GloomyDen', 'Gloomy Den');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_GoneGoneGone', 'Gone');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_GrandDysphoria', 'Grand Dysphoria');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Grave_Prelude', 'Grave Prelude');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_HarshJudgement', 'Harsh Judgement');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_HollowEcho', 'Hollow Echo');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_IcyEmbrace', 'Icy Embrace');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_KillingJar', 'Killing Jar');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_LifeinGray', 'Life in Gray');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_LifelessSparks', 'Lifeless Sparks');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_LittleSacrifice', 'Little Sacrifice');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Luxury_of_Ash', 'Luxury of Ash');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_MessageinWind', 'Message in Wind');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_MorbidSolution', 'Morbid Solution');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Mourning_Star', 'Mourning Star');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Nightglass_Coven', 'Nightglass Coven');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Nocturne_Veil', 'Nocturne Veil');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_NoisySecrets', 'Noisy Secrets');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_NothingLessThanViolence', 'Nothing Less Than Violence');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_NthSkin', 'Nth Skin');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Obeisance_Final', 'Obeisance Final');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Obsidian_Host', 'Obsidian Host');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_OtherSide', 'Other Side');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_PaleLeafEcho', 'Pale Leaf Echo');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_PerpetualToil', 'Perpetual Toil');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_PiercingWing', 'Piercing Wing');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ProdigalDeath', 'Prodigal Death');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ResurrectionofWoe', 'Resurrection of Woe');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_RootedSuffering', 'Rooted Suffering');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Rosethorn_Sigil', 'Rosethorn Sigil');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Sable_Throne', 'Sable Throne');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SacredVoid', 'Sacred Void');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ScarletThing', 'Scarlet Thing');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ShroudedHope', 'Shrouded Hope');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SilencedHope', 'Silenced Hope');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SilentMemory', 'Silent Memory');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Silent_Carnelian', 'Silent Carnelian');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SinkingFeeling', 'Sinking Feeling');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SlowFade', 'Slow Fade');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SlowFire', 'Slow Fire');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_StrangeSapience', 'Strange Sapience');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_SubmissionofPurpose', 'Submission of Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ThatCorrosion', 'That Corrosion');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Thorns_of_Sorrow', 'Thorns of Sorrow');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_TwiceMisery', 'Twice Misery');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_TwistedReflection', 'Twisted Reflection');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_UnendingSleep', 'Unending Sleep');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_UnhappyHouse', 'Unhappy House');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_UntouchableDreams', 'Untouchable Dreams');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_ValleyofDespair', 'Valley of Despair');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Vanitas_Wake', 'Vanitas Wake');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_VapidLonging', 'Vapid Longing');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_VengeanceinExistence', 'Vengeance in Existence');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_VilePurpose', 'Vile Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_VileSeduction', 'Vile Seduction');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_VoiceofDarkness', 'Voice of Darkness');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Whispered_Coil', 'Whispered Coil');
+INSERT INTO prescripted_name (key, text) VALUES ('NECROID4_SHIP_Widow_Waltz', 'Widow Waltz');
+INSERT INTO prescripted_name (key, text) VALUES ('NOT_SHIP_SIZE_MULTIPLIER_VALUE_TRIGGER', 'Ship size multiplier is NOT $COMPARE$ $VALUE|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('NO_SHIP_TO_UPGRADE', 'No item requires an upgrade');
 INSERT INTO prescripted_name (key, text) VALUES ('Najaggus_Veil', 'Najaggus Veil');
 INSERT INTO prescripted_name (key, text) VALUES ('Nivogi_Black_Hole', 'Nivogi Black Hole');
 INSERT INTO prescripted_name (key, text) VALUES ('Nythran_Expanse', 'Nythran Expanse');
+INSERT INTO prescripted_name (key, text) VALUES ('OFFSPRING_SHIP_DESC', 'As an Offspring, this ship is capable of projecting the Progenitor''s will.');
 INSERT INTO prescripted_name (key, text) VALUES ('Omicron_Persei', 'Omicron Persei');
 INSERT INTO prescripted_name (key, text) VALUES ('Oracles_Grave_Nebula', 'Oracle''s Grave Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Orantes_Shroud', 'Orantes Shroud');
 INSERT INTO prescripted_name (key, text) VALUES ('Orkam_Fung', 'Orkam Fung');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_PROJECT', 'Paladin Ships');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_PROJECT_DESC', 'Art meets technology to create symbols of freedom that will shine bright against the darkness.');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_TEMPLATE', 'Plantoid Figurehead');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_TEMPLATE_ARTH', 'Arthropoid Figurehead');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_TEMPLATE_AVI', 'Avian Figurehead');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_TEMPLATE_MACH', 'Machine Figurehead');
+INSERT INTO prescripted_name (key, text) VALUES ('PALADIN_SHIP_TEMPLATE_MAM', 'Mammalian Figurehead');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_01', 'The Void''s Folly');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_02', 'One Eyed Amoeba');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_03', 'Golden Pelican');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_04', 'Revenge of the King');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_05', 'Eve of Mourning');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_06', 'Deliverance');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_07', 'Sunspot Galley');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_08', 'A Broker''s Promise');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_09', 'Sign of the Times');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_10', 'The Black Artillery');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_11', 'Empire Flayer');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_12', 'Scourge of the Stars');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_13', 'Galaxy''s Blight');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_14', 'Black Hole Prospect');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_15', 'Law-Breaker');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_16', 'The Exception');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_17', 'The Smoking Gun');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_18', 'Big Momma');
+INSERT INTO prescripted_name (key, text) VALUES ('PIRATE_SHIP_NAME_19', 'Platinum Hind');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheForests', 'Champion of the Forests');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheGroves', 'Champion of the Groves');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheMarshes', 'Champion of the Marshes');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheOceans', 'Champion of the Oceans');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheRivers', 'Champion of the Rivers');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheUnderstory', 'Champion of the Understory');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ChampionoftheValleys', 'Champion of the Valleys');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofAkshayavat', 'Defender of Akshayavat');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofAshvattha', 'Defender of Ashvattha');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofBo', 'Defender of Bo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofFusang', 'Defender of Fusang');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofIrminsul', 'Defender of Irminsul');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofKalpavriksha', 'Defender of Kalpavriksha');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofSilvamara', 'Defender of Silvamara');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofSomb', 'Defender of Somb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofTule', 'Defender of Tule');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofYaxImixChe', 'Defender of Yax Imix Che');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofYggdrasil', 'Defender of Yggdrasil');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_DefenderofZaralune', 'Defender of Zaralune');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ExaltedCrenator', 'Exalted Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ExaltedPetiole', 'Exalted Petiole');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_FernStriker', 'Fern Striker');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_FierceCrenator', 'Fierce Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_FiercePetiole', 'Fierce Petiole');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_FirStriker', 'Fir Striker');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GloriousCopse', 'Glorious Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GoldenConveyor', 'Golden Conveyor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GoldenCrenator', 'Golden Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GoldenSentinel', 'Golden Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GoldenSentry', 'Golden Sentry');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenAssault', 'Green Assault');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenConveyor', 'Green Conveyor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenCrenator', 'Green Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenFlash', 'Green Flash');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenLightning', 'Green Lightning');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenPride', 'Green Pride');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenSentinel', 'Green Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenSentry', 'Green Sentry');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenStalker', 'Green Stalker');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_GreenStriker', 'Green Striker');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_HardyCopse', 'Hardy Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_MagnificentCrenator', 'Magnificent Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_MagnificentPetiole', 'Magnificent Petiole');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_NaturesFury', 'Nature''s Fury');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_NaturesRage', 'Nature''s Rage');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_NaturesResolve', 'Nature''s Resolve');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_NaturesSpite', 'Nature''s Spite');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_NaturesWrath', 'Nature''s Wrath');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofAkshayavat', 'Pride of Akshayavat');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofAshvattha', 'Pride of Ashvattha');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofBo', 'Pride of Bo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofFusang', 'Pride of Fusang');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofIrminsul', 'Pride of Irminsul');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofKalpavriksha', 'Pride of Kalpavriksha');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofLignuma', 'Pride of Lignuma');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofNookomisGiizhig', 'Pride of Nookomis Giizhig');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofSomb', 'Pride of Somb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofTule', 'Pride of Tule');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofVerdantia', 'Pride of Verdantia');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofYaxImixChe', 'Pride of Yax Imix Che');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideofYggdrasil', 'Pride of Yggdrasil');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheCanopy', 'Pride of the Canopy');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheForest', 'Pride of the Forest');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheGlade', 'Pride of the Glade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheGrasslands', 'Pride of the Grasslands');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheGrove', 'Pride of the Grove');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheMarshes', 'Pride of the Marshes');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheMoors', 'Pride of the Moors');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheOcean', 'Pride of the Ocean');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheRivers', 'Pride of the Rivers');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheTundra', 'Pride of the Tundra');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_PrideoftheValley', 'Pride of the Valley');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheForests', 'Protector of the Forests');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheGrottos', 'Protector of the Grottos');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheGroves', 'Protector of the Groves');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheMarshes', 'Protector of the Marshes');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheOceans', 'Protector of the Oceans');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheRivers', 'Protector of the Rivers');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheSprawl', 'Protector of the Sprawl');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ProtectoroftheValleys', 'Protector of the Valleys');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_RedSentinel', 'Red Sentinel');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_RedSentry', 'Red Sentry');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ResplendentCopse', 'Resplendent Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_RustConveyor', 'Rust Conveyor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_RustCrenator', 'Rust Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_TenaciousCopse', 'Tenacious Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_TenaciousCrenator', 'Tenacious Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_TenaciousPetiole', 'Tenacious Petiole');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_TwigStriker', 'Twig Striker');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_UnassailableCrenator', 'Unassailable Crenator');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_ValiantCopse', 'Valiant Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_VengefulCopse', 'Vengeful Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT2_SHIP_WrathfulCopse', 'Wrathful Copse');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_AdeliteAdamas', 'Adelite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_AluntiteAdamas', 'Aluntite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoAndens', 'Cresco Andens');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoCallox', 'Cresco Callox');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoDraeus', 'Cresco Draeus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoPaanon', 'Cresco Paanon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoPhyte', 'Cresco Phyte');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoStaxx', 'Cresco Staxx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoTreenor', 'Cresco Treenor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoVora', 'Cresco Vora');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_CrescoYdranak', 'Cresco Ydranak');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_DakRotite', 'Dak''Rotite');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakilius', 'Dak''ilius');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakloor', 'Dak''loor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakpato', 'Dak''pato');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakpretek', 'Dak''pretek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakrool', 'Dak''rool');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Daksaamek', 'Dak''saamek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakstilo', 'Dak''stilo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Daksunor', 'Dak''sunor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Dakuur', 'Dak''uur');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Elliradix', 'Elli''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_FloriteAdamas', 'Florite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_KaliteAdamas', 'Kalite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciBruxal', 'Lanci Bruxal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciEovoles', 'Lanci Eovoles');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciIncanon', 'Lanci Incanon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciOvus', 'Lanci Ovus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciUlus', 'Lanci Ulus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciVector', 'Lanci Vector');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciVolea', 'Lanci Volea');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LanciYacto', 'Lanci Yacto');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LapisAlata', 'Lapis Alata');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LapisDendri', 'Lapis Dendri');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LapisFolio', 'Lapis Folio');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LapisMoro', 'Lapis Moro');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LapisTroccea', 'Lapis Troccea');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Lioradix', 'Lio''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LuciteAdamas', 'Lucite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumEllia', 'Lum Ellia');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumLio', 'Lum Lio');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumLira', 'Lum Lira');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumLora', 'Lum Lora');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumLusolis', 'Lum Lusolis');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumMello', 'Lum Mello');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumMino', 'Lum Mino');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumOra', 'Lum Ora');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumReva', 'Lum Reva');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumRona', 'Lum Rona');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumVerex', 'Lum Verex');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumVio', 'Lum Vio');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_LumZorell', 'Lum Zorell');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_MinoAdamas', 'Mino Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_MinoCalorr', 'Mino Calorr');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Minoradix', 'Mino''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Miradix', 'Mi''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Nearadix', 'Nea''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Peoradix', 'Peo''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_PeriteAdamas', 'Perite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateCaado', 'Spakate Caado');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateDromex', 'Spakate Dromex');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateJaane', 'Spakate Jaane');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateKeto', 'Spakate Keto');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateMaach', 'Spakate Maach');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateMerok', 'Spakate Merok');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateMilo', 'Spakate Milo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateMorek', 'Spakate Morek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakatePeo', 'Spakate Peo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateRaxx', 'Spakate Raxx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateTrylek', 'Spakate Trylek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateVerek', 'Spakate Verek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_SpakateVornak', 'Spakate Vornak');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoAarboro', 'Thisto Aarboro');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoAnoma', 'Thisto Anoma');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoBryo', 'Thisto Bryo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoDomes', 'Thisto Domes');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoDramus', 'Thisto Dramus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoFerna', 'Thisto Ferna');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoGneto', 'Thisto Gneto');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoIlio', 'Thisto Ilio');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoJaahne', 'Thisto Jaahne');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoKaado', 'Thisto Kaado');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoKeto', 'Thisto Keto');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoLanvek', 'Thisto Lanvek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoLicus', 'Thisto Licus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoLuma', 'Thisto Luma');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMaach', 'Thisto Maach');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMagnoli', 'Thisto Magnoli');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMarex', 'Thisto Marex');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMerok', 'Thisto Merok');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMexus', 'Thisto Mexus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMilo', 'Thisto Milo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoMorek', 'Thisto Morek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoPeo', 'Thisto Peo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoRadixx', 'Thisto Radixx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoRaxx', 'Thisto Raxx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoRekiel', 'Thisto Rekiel');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoRophyte', 'Thisto Rophyte');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoRotexx', 'Thisto Rotexx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoSallor', 'Thisto Sallor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoStirpis', 'Thisto Stirpis');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoTrylek', 'Thisto Trylek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVarex', 'Thisto Varex');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVea', 'Thisto Vea');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVerek', 'Thisto Verek');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVitanixx', 'Thisto Vitanixx');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVivea', 'Thisto Vivea');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVol', 'Thisto Vol');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoVornak', 'Thisto Vornak');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoZarbor', 'Thisto Zarbor');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ThistoZenet', 'Thisto Zenet');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_TiniteAdamas', 'Tinite Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_UmoreketFlorin', 'Umore ket Florin');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_UmoreketOcantis', 'Umore ket Ocantis');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_UmoreketRonto', 'Umore ket Ronto');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_UmoreketVarnol', 'Umore ket Varnol');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_UmoreketVorettin', 'Umore ket Vorettin');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VermonikAdamas', 'Vermonik Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VeropeAdamas', 'Verope Adamas');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_Vioradix', 'Vio''radix');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaAemon', 'Viva Aemon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaAenora', 'Viva Aenora');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaBellus', 'Viva Bellus');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaCalex', 'Viva Calex');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaCrea', 'Viva Crea');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaDaikon', 'Viva Daikon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaElora', 'Viva Elora');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaElorum', 'Viva Elorum');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaEvanes', 'Viva Evanes');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaHelon', 'Viva Helon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaHyan', 'Viva Hyan');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaIdra', 'Viva Idra');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaIlum', 'Viva Ilum');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaLilon', 'Viva Lilon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaLuzum', 'Viva Luzum');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaMoro', 'Viva Moro');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaMyara', 'Viva Myara');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaNevo', 'Viva Nevo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaNila', 'Viva Nila');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaNimon', 'Viva Nimon');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaStrantum', 'Viva Strantum');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaTelmorin', 'Viva Telmorin');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaVelo', 'Viva Velo');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaVerum', 'Viva Verum');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_VivaYdris', 'Viva Ydris');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ZemorekaLorensis', 'Zemore ka Lorensis');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT4_SHIP_ZemorekaViox', 'Zemore ka Viox');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_BlossomofDoom', 'Blossom of Doom');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_BlossomofJudgment', 'Blossom of Judgment');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_CuttingBlade', 'Cutting Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_DriftingLeaf', 'Drifting Leaf');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldBarb', 'Emerald Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldBlade', 'Emerald Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldBranch', 'Emerald Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldFlower', 'Emerald Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldFury', 'Emerald Fury');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldNeedle', 'Emerald Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldPetal', 'Emerald Petal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldPiercer', 'Emerald Piercer');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldSpike', 'Emerald Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldThistle', 'Emerald Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldThorn', 'Emerald Thorn');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_EmeraldTrichome', 'Emerald Trichome');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_FatesTendrils', 'Fate''s Tendrils');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_FinalBlossom', 'Final Blossom');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_FloatingLeaf', 'Floating Leaf');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_FlutteringLeaf', 'Fluttering Leaf');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_FruitCarrier', 'Fruit Carrier');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldBarb', 'Gold Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldBlade', 'Gold Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldBranch', 'Gold Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldFlower', 'Gold Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldNeedle', 'Gold Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldPetal', 'Gold Petal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldPiercer', 'Gold Piercer');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldSpike', 'Gold Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldThistle', 'Gold Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldThorn', 'Gold Thorn');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_GoldTrichome', 'Gold Trichome');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronBarb', 'Iron Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronBlade', 'Iron Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronBranch', 'Iron Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronFlower', 'Iron Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronNeedle', 'Iron Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronPetal', 'Iron Petal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronPiercer', 'Iron Piercer');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronSpike', 'Iron Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronThistle', 'Iron Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronThorn', 'Iron Thorn');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_IronTrichome', 'Iron Trichome');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeBarb', 'Jade Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeBlade', 'Jade Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeBranch', 'Jade Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeFlower', 'Jade Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeNeedle', 'Jade Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadePetal', 'Jade Petal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeSpike', 'Jade Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeThistle', 'Jade Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_JadeTrichome', 'Jade Trichome');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PersistentRoot', 'Persistent Root');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingBarb', 'Piercing Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingBlade', 'Piercing Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingBranch', 'Piercing Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingFlower', 'Piercing Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingNeedle', 'Piercing Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingSpike', 'Piercing Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingStinger', 'Piercing Stinger');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingThistle', 'Piercing Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_PiercingThorn', 'Piercing Thorn');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_RhizomeofDestiny', 'Rhizome of Destiny');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SeedCapsule', 'Seed Capsule');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SeekingLeaf', 'Seeking Leaf');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverBarb', 'Silver Barb');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverBlade', 'Silver Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverBranch', 'Silver Branch');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverFlower', 'Silver Flower');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverNeedle', 'Silver Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverPetal', 'Silver Petal');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverPiercer', 'Silver Piercer');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverSpike', 'Silver Spike');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverStinger', 'Silver Stinger');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverThistle', 'Silver Thistle');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverThorn', 'Silver Thorn');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SilverTrichome', 'Silver Trichome');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SlashingBlade', 'Slashing Blade');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SoaringLeaf', 'Soaring Leaf');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SpikeofFury', 'Spike of Fury');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_SteelStinger', 'Steel Stinger');
+INSERT INTO prescripted_name (key, text) VALUES ('PLANT_SHIP_ThornFury', 'Thorn Fury');
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_adjective_basidrix_cyber_ecclesia', 'Basidrix Ecclesiastic');
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_adjective_blorg', 'Blorg');
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_adjective_broken_shackles', 'FPF');
@@ -97288,6 +100944,255 @@ INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_system_name_yatuna
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_system_name_yondar', 'B''Yond');
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_system_name_zhardmehka', 'Tattla');
 INSERT INTO prescripted_name (key, text) VALUES ('PRESCRIPTED_system_name_zrobots', 'Gomox');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_AngryOne', 'Angry One');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_DarkOne', 'Dark One');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_GoldenOne', 'Golden One');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_PrethorynBroodMother', 'Prethoryn Brood Mother');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_PrethorynInfestor', 'Prethoryn Infestor');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_PrethorynSwarmer', 'Prethoryn Swarmer');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_PrethorynSwarmling', 'Prethoryn Swarmling');
+INSERT INTO prescripted_name (key, text) VALUES ('PRETHORYN_SHIP_PrethorynWarrior', 'Prethoryn Warrior');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_APromiseKept', 'A Promise Kept');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AffronttoNature', 'Affront to Nature');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AnArrowinFlight', 'An Arrow in Flight');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AnnoyingPest', 'Annoying Pest');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AnotherMouthToFeed', 'Another Mouth To Feed');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ApologiesinAdvance', 'Apologies in Advance');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AttackonFreighter', 'Attack on Freighter');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_AttentionSeeker', 'Attention Seeker');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BarnacleJim', 'Barnacle Jim');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BaseInstincts', 'Base Instincts');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BastardSon', 'Bastard Son');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BeastofBurden', 'Beast of Burden');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BeyondSalvation', 'Beyond Salvation');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BeyondthePale', 'Beyond the Pale');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BigBoy', 'Big Boy');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BlackIce', 'Black Ice');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BlindFury', 'Blind Fury');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BlockadeRunner', 'Blockade Runner');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BluntObject', 'Blunt Object');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BoltraggsFolly', 'Boltragg''s Folly');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BornLucky', 'Born Lucky');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BottomLine', 'Bottom Line');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BrokenRecord', 'Broken Record');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BuccaneerBodega', 'Buccaneer Bodega');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_BucketofBolts', 'Bucket of Bolts');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ByTheNumbers', 'By The Numbers');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CalculatedRisk', 'Calculated Risk');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CardiacArrest', 'Cardiac Arrest');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CarpetSample', 'Carpet Sample');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CarrionEater', 'Carrion Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CarryMeHome', 'Carry Me Home');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CatchMeIfYouCan', 'Catch Me If You Can');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CharlesinCharge', 'Charles in Charge');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CheckPlease', 'Check Please');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ClassAct', 'Class Act');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ComeCloser', 'Come Closer');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CometSighted', 'Comet Sighted!');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ConscientiousObjector', 'Conscientious Objector');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ConsequencesBeDamned', 'Consequences Be Damned');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ControlledExplosion', 'Controlled Explosion');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CorsairCourt', 'Corsair Court');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CreepyFeats', 'Creepy Feats');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CriminallyInsane', 'Criminally Insane');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CriticalMass', 'Critical Mass');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CurseYouAll', 'Curse You All');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_CurseofZuldaxim', 'Curse of Zuldaxim');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DairyFarmer', 'Dairy Farmer');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DarkForecast', 'Dark Forecast');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DarkLair', 'Dark Lair');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DeceivingLooks', 'Deceiving Looks');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DepthPerception', 'Depth Perception');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DesignatedDriver', 'Designated Driver');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DesperatePauper', 'Desperate Pauper');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DeviantCitizen', 'Deviant Citizen');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DiminishingReturns', 'Diminishing Returns');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DisgruntledWorker', 'Disgruntled Worker');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DivineIntervention', 'Divine Intervention');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DoNotRespond', 'Do Not Respond');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DoTheMath', 'Do The Math');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DoubleJeopardy', 'Double Jeopardy');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DoubleStandard', 'Double Standard');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DoveCrow', 'Dove & Crow');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DownInFront', 'Down In Front');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DreamShatterer', 'Dream Shatterer');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_DuctTaped', 'Duct Taped');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_EmptyGesture', 'Empty Gesture');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_EnoughLollygagging', 'Enough Lollygagging');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ExploratorySurgery', 'Exploratory Surgery');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FallenPillar', 'Fallen Pillar');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FatumIustumStultorum', 'Fatum Iustum Stultorum');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FeatureCreep', 'Feature Creep');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FesteringWound', 'Festering Wound');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FlyingCoffin', 'Flying Coffin');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FlyingDorgabloid', 'Flying Dorgabloid');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ForeignObject', 'Foreign Object');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FoulParish', 'Foul Parish');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FourLights', 'Four Lights');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FragMachine', 'Frag Machine');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_FreeLunch', 'Free Lunch');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GildedCage', 'Gilded Cage');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GloryDays', 'Glory Days');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GraceUnderPressure', 'Grace Under Pressure');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GrandLarceny', 'Grand Larceny');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GreatExperiment', 'Great Experiment');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GreyMatter', 'Grey Matter');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GrippingAppendage', 'Gripping Appendage');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GrossNegligence', 'Gross Negligence');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_GuiltyPleasure', 'Guilty Pleasure');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_HappyCamper', 'Happy Camper');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_HarshLanguage', 'Harsh Language');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_HellsBells', 'Hell''s Bells');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_HissyFit', 'Hissy Fit');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_HolierThanThou', 'Holier Than Thou');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IAmTrulySorry', 'I Am Truly Sorry');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IDidntWantThis', 'I Didn''t Want This');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IHateEverything', 'I Hate Everything');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IfLooksCouldKill', 'If Looks Could Kill');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IllegalRepercussions', 'Illegal Repercussions');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ImpersonalSpace', 'Impersonal Space');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ImpudentWhelp', 'Impudent Whelp');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_InconspicuousAsteroid', 'Inconspicuous Asteroid');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_InelegantSolution', 'Inelegant Solution');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_InfiniteLoop', 'Infinite Loop');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_InnocentBystander', 'Innocent Bystander');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_IvoryTower', 'Ivory Tower');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_JollyRoger', 'Jolly Roger');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_JustRewards', 'Just Rewards');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_JuvenileDelinquent', 'Juvenile Delinquent');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_KillingImplement', 'Killing Implement');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_KingdomCrumbs', 'Kingdom Crumbs');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LackingPurpose', 'Lacking Purpose');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LastStraw', 'Last Straw');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LaughingStock', 'Laughing Stock');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LazyMorning', 'Lazy Morning');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LearningExperienceVII', 'Learning Experience VII');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LiquidCourage', 'Liquid Courage');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LogisticalNightmare', 'Logistical Nightmare');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LooksLikeTrouble', 'Looks Like Trouble');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LooseCannon', 'Loose Cannon');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LoveIsInTheAir', 'Love Is In The Air');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LowestBidder', 'Lowest Bidder');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LowestCommonDenominator', 'Lowest Common Denominator');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_LumpofCoal', 'Lump of Coal');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MangyCur', 'Mangy Cur');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ManusCelerDei', 'Manus Celer Dei');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MeatLocker', 'Meat Locker');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MentalMidget', 'Mental Midget');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MissingLink', 'Missing Link');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MorallyBankrupt', 'Morally Bankrupt');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MorbidHome', 'Morbid Home');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MotionTabled', 'Motion Tabled');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MurderousIntent', 'Murderous Intent');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MyFirstShipIV', 'My First Ship IV');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MysteriousRash', 'Mysterious Rash');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MysteriousStranger', 'Mysterious Stranger');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_MysteryMeat', 'Mystery Meat');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NoGood', 'No Good');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NoLaughingMatter', 'No Laughing Matter');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NoQuarter', 'No Quarter');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NoRefunds', 'No Refunds');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NoSurrender', 'No Surrender');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NotGuilty', 'Not Guilty');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NotWhatItSeems', 'Not What It Seems');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_NothingPersonal', 'Nothing Personal');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OfSoundMind', 'Of Sound Mind');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OhThatsaPirate', 'Oh! That''s a Pirate');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OneTrickPony', 'One Trick Pony');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OpenWide', 'Open Wide');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OutofControl', 'Out of Control');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_OutrageousFortune', 'Outrageous Fortune');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PedaltotheMetal', 'Pedal to the Metal');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PerfectPitch', 'Perfect Pitch');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PettyTheft', 'Petty Theft');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PieceofJunk', 'Piece of Junk');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PillageandReconciliation', 'Pillage and Reconciliation');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PitofPiracy', 'Pit of Piracy');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PoeticJustice', 'Poetic Justice');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PointlessPlatitude', 'Pointless Platitude');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PopUp', 'Pop Up');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PortDespair', 'Port Despair');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PoundofFlesh', 'Pound of Flesh');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PredatoryPositioning', 'Predatory Positioning');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ProcessofElimination', 'Process of Elimination');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ProductofSociety', 'Product of Society');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PronetoHysteria', 'Prone to Hysteria');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PublicServant', 'Public Servant');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PuckerUp', 'Pucker Up');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_PyrrhicandProud', 'Pyrrhic and Proud');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_QueenXoggrasRevenge', 'Queen Xoggra''s Revenge');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RedClaw', 'Red Claw');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RedDread', 'Red Dread');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RedFlag', 'Red Flag');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RedQueen', 'Red Queen');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RedSmile', 'Red Smile');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ReducedToThis', 'Reduced To This');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ResonanceCascade', 'Resonance Cascade');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RoadAgent', 'Road Agent');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RobberBaron', 'Robber Baron');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RockyOuthouse', 'Rocky Outhouse');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_RuntimeError', 'Runtime Error');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SafeHarbor', 'Safe Harbor');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ScarletTentacle', 'Scarlet Tentacle');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ScienceShipKiller', 'Science Ship Killer');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SeaMonkey', 'Sea Monkey');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ShamelessPlagiarist', 'Shameless Plagiarist');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ShootforLoot', 'Shoot for Loot');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ShortFuse', 'Short Fuse');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ShowsOver', 'Show''s Over');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SlappedTogether', 'Slapped Together');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SlaveMarket', 'Slave Market');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SlipperySlope', 'Slippery Slope');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SmarmyToad', 'Smarmy Toad');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SordidMethods', 'Sordid Methods');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SoylentGreen', 'Soylent Green');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SpacerAlley', 'Spacer Alley');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SpiritofZalussa', 'Spirit of Zalussa');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_StarBeggar', 'Star Beggar');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_StarWench', 'Star Wench');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_StrangeAeons', 'Strange Aeons');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SuckerPunch', 'Sucker Punch');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_SurpriseEncounter', 'Surprise Encounter');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TeachersPet', 'Teacher''s Pet');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheArrows', 'The Arrows');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheBigHouse', 'The Big House');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheGeneralXarg', 'The General Xarg');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheHeftofTheft', 'The Heft of Theft');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ThePirateBulge', 'The Pirate Bulge');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ThePrivateersPrivates', 'The Privateer''s Privates');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheSlings', 'The Slings');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TheWorstThing', 'The Worst Thing');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ThisTooShallPass', 'This Too Shall Pass');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ThisWay', 'This Way');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ToneDeafSiren', 'Tone Deaf Siren');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TotalLoss', 'Total Loss');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ToxicBehavior', 'Toxic Behavior');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TunnelofLove', 'Tunnel of Love');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TurbulentPriest', 'Turbulent Priest');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_TurningPoint', 'Turning Point');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UglyStick', 'Ugly Stick');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnderEvaluation', 'Under Evaluation');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnderNewOwnership', 'Under New Ownership');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnexpectedObstacle', 'Unexpected Obstacle');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnexplainedItch', 'Unexplained Itch');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnfortunateEnding', 'Unfortunate Ending');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnrepentantCamper', 'Unrepentant Camper');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnsafeHarbor', 'Unsafe Harbor');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_UnsoundMethods', 'Unsound Methods');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_VictimofCircumstance', 'Victim of Circumstance');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_VillageIdiot', 'Village Idiot');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_VorpalHouse', 'Vorpal House');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WalletInspector', 'Wallet Inspector');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WaywardSon', 'Wayward Son');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WetBlanket', 'Wet Blanket');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WhatSorceryIsThis', 'What Sorcery Is This');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WhyMe', 'Why Me');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WideLoad', 'Wide Load');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WigglingBait', 'Wiggling Bait');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_WithAbandon', 'With Abandon');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_YourFemaleParent', 'Your Female Parent');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ZargasOtherShip', 'Zarga''s Other Ship');
+INSERT INTO prescripted_name (key, text) VALUES ('PRT1_SHIP_ZargasShip', 'Zarga''s Ship');
 INSERT INTO prescripted_name (key, text) VALUES ('Pathabaan_Vortex', 'Pathabaan Vortex');
 INSERT INTO prescripted_name (key, text) VALUES ('Phantom_Streak_Miasma', 'Phantom Streak Miasma');
 INSERT INTO prescripted_name (key, text) VALUES ('Picaress_Drift', 'Picaress Drift');
@@ -97296,12 +101201,121 @@ INSERT INTO prescripted_name (key, text) VALUES ('Proteemas_Black_Hole', 'Protee
 INSERT INTO prescripted_name (key, text) VALUES ('Qad_Vhi', 'Qad Vhi');
 INSERT INTO prescripted_name (key, text) VALUES ('Qeb_Daraan', 'Qeb Daraan');
 INSERT INTO prescripted_name (key, text) VALUES ('Quiet_Dark', 'Quiet Dark');
+INSERT INTO prescripted_name (key, text) VALUES ('REMOVE_SHIP_DESIGN', 'Delete');
+INSERT INTO prescripted_name (key, text) VALUES ('RENAME_SHIP_TITLE', 'Rename Ship');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamAvintok', 'Alam''Avintok');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamBebinna', 'Alam''Bebinna');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamBissna', 'Alam''Bissna');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamBuskat', 'Alam''Buskat');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamEnerpul', 'Alam''Enerpul');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamFethon', 'Alam''Fethon');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamGioshum', 'Alam''Gioshum');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamHinthab', 'Alam''Hinthab');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamKorob', 'Alam''Korob');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamKulom', 'Alam''Kulom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamParathnak', 'Alam''Parathnak');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamPolluner', 'Alam''Polluner');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamPurim', 'Alam''Purim');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamRastram', 'Alam''Rastram');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamRossul', 'Alam''Rossul');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamShuss', 'Alam''Shuss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamSior', 'Alam''Sior');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamTannek', 'Alam''Tannek');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamTaratha', 'Alam''Taratha');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamTisska', 'Alam''Tisska');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamTreesk', 'Alam''Treesk');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_AlamTurom', 'Alam''Turom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobBadram', 'Pob''Badram');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobBuvdar', 'Pob''Buvdar');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobDuthur', 'Pob''Duthur');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobEreesim', 'Pob''Ereesim');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobGreefad', 'Pob''Greefad');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobHialash', 'Pob''Hialash');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobIkath', 'Pob''Ikath');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobIllith', 'Pob''Illith');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobKassh', 'Pob''Kassh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobKreedak', 'Pob''Kreedak');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobMinisk', 'Pob''Minisk');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobOnor', 'Pob''Onor');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobRumber', 'Pob''Rumber');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobSumath', 'Pob''Sumath');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobTharat', 'Pob''Tharat');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobThorok', 'Pob''Thorok');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobTirin', 'Pob''Tirin');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobVermeb', 'Pob''Vermeb');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_PobVikham', 'Pob''Vikham');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumAbnar', 'Trum''Abnar');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumBarkan', 'Trum''Barkan');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumBathnor', 'Trum''Bathnor');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumBodnok', 'Trum''Bodnok');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumCassthar', 'Trum''Cassthar');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDakhan', 'Trum''Dakhan');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDalvoss', 'Trum''Dalvoss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDialom', 'Trum''Dialom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDolon', 'Trum''Dolon');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDoloss', 'Trum''Doloss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumDukh', 'Trum''Dukh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumEkkal', 'Trum''Ekkal');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumEsam', 'Trum''Esam');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumFarass', 'Trum''Farass');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumFokin', 'Trum''Fokin');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumHariss', 'Trum''Hariss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumHistan', 'Trum''Histan');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumIomath', 'Trum''Iomath');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumKariss', 'Trum''Kariss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumLampan', 'Trum''Lampan');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumLurekh', 'Trum''Lurekh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumMothon', 'Trum''Mothon');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumNaraq', 'Trum''Naraq');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumOkran', 'Trum''Okran');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumOloman', 'Trum''Oloman');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumOrmiss', 'Trum''Ormiss');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumPakh', 'Trum''Pakh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumPoffon', 'Trum''Poffon');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumReeken', 'Trum''Reeken');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumRokba', 'Trum''Rokba');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumRokh', 'Trum''Rokh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumSarim', 'Trum''Sarim');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumSoyob', 'Trum''Soyob');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumThoren', 'Trum''Thoren');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumVakhna', 'Trum''Vakhna');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumVassk', 'Trum''Vassk');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumVekoth', 'Trum''Vekoth');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumVoim', 'Trum''Voim');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumVostir', 'Trum''Vostir');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumYabrek', 'Trum''Yabrek');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumZakhon', 'Trum''Zakhon');
+INSERT INTO prescripted_name (key, text) VALUES ('REP1_SHIP_TrumZoyom', 'Trum''Zoyom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_AOouh', 'A''Oouh');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_BadaDoom', 'Bada''Doom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_BrrAtatat', 'Brr''Atatat');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_DooDoom', 'Doo''Doom');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_GlerkOroru', 'Glerk Ororu');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_KPao', 'K''Pao');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OhHo', 'Oh''Ho');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OhMomi', 'Oh''Momi');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OhShii', 'Oh''Shii');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OhmABa', 'Ohm''A''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OhmBa', 'Ohm''Ba');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OohHoo', 'Ooh''Hoo');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_OoshVa', 'Oosh''Va');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_PTaff', 'P''Taff');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_Ptap', 'P''tap');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_SchlaBlosch', 'Schla''Blosch');
+INSERT INTO prescripted_name (key, text) VALUES ('REP4_SHIP_UuhAah', 'Uuh''Aah');
 INSERT INTO prescripted_name (key, text) VALUES ('Rebenthi_Dust_Clouds', 'Rebenthi Dust Clouds');
 INSERT INTO prescripted_name (key, text) VALUES ('Ribellan_Vortex', 'Ribellan Vortex');
 INSERT INTO prescripted_name (key, text) VALUES ('Rint_Beekun', 'Rint Beekun');
 INSERT INTO prescripted_name (key, text) VALUES ('Rixikars_Maw', 'Rixikar''s Maw');
 INSERT INTO prescripted_name (key, text) VALUES ('Rossorim_Depths', 'Rossorim Depths');
 INSERT INTO prescripted_name (key, text) VALUES ('Ryl_Somot', 'Ryl Somot');
+INSERT INTO prescripted_name (key, text) VALUES ('SCIENCE_SHIP_DESC', 'Science Ship ( Scanner: $LEVEL|Y$, Speed: $SPEED|Y1$x )');
+INSERT INTO prescripted_name (key, text) VALUES ('SCIENCE_SHIP_EFFECTS_TXT', 'Science Ship Effects');
+INSERT INTO prescripted_name (key, text) VALUES ('SELECT_SHIP_OWNER', 'Select Design Owner');
+INSERT INTO prescripted_name (key, text) VALUES ('SHROUDED_SHIP_PROJECT', 'Strange Afterimage');
+INSERT INTO prescripted_name (key, text) VALUES ('SHROUDED_SHIP_PROJECT_DESC', 'A fluctuating afterimage of the science ship lost to the Shroud appears sporadically throughout the system.');
+INSERT INTO prescripted_name (key, text) VALUES ('STARBASE_SHIP_DESIGNS_DESC', 'Click to view existing designs and design ships');
+INSERT INTO prescripted_name (key, text) VALUES ('STARBASE_SHIP_DESIGNS_TITLE', 'Ship Designs Click to view existing designs and design ships');
 INSERT INTO prescripted_name (key, text) VALUES ('STORM_PREFIX_0', 'Cyclone Name');
 INSERT INTO prescripted_name (key, text) VALUES ('STORM_PREFIX_1', 'Disturbance Name');
 INSERT INTO prescripted_name (key, text) VALUES ('STORM_PREFIX_10', 'Vortex Name');
@@ -97323,6 +101337,254 @@ INSERT INTO prescripted_name (key, text) VALUES ('Sithonis_Maelstrom', 'Sithonis
 INSERT INTO prescripted_name (key, text) VALUES ('Snake_Nebula', 'Snake Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Succubus_Bawl', 'Succubus'' Bawl');
 INSERT INTO prescripted_name (key, text) VALUES ('Suskats_Maw', 'Suskat''s Maw');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_1', 'Chemical Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_1_DESC', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to generate thrust.');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_2', 'Ion Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_2_DESC', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_3', 'Plasma Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_3_DESC', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_4', 'Impulse Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_4_DESC', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_5', 'Dark Matter Thrusters');
+INSERT INTO prescripted_name (key, text) VALUES ('TITAN_SHIP_THRUSTER_5_DESC', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_1', 'Ti''yan''ti');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_10', 'Le''yan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_11', 'Di''yan''ti');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_12', 'Ze''yan''ni');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_13', 'Te''yan''zo');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_14', 'Ek''yan''ni');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_15', 'Ni''yan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_16', 'Li''yan''ti');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_17', 'Di''yan''ek');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_18', 'Zi''yan''li');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_19', 'Ti''yan''zo');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_2', 'Ek''yan''li');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_20', 'E''yan''li');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_3', 'Niy''an''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_4', 'Liz''yan''ni');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_5', 'Di''yan''zo');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_6', 'Zo''yan''li');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_7', 'Ti''yan''ek');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_8', 'Ekyan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_COMMON_9', 'Ni''yan''ti');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_1', 'Ty''wan''ra');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_10', 'Ty''wan''pa');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_11', 'Ne''wan''ra');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_12', 'Re''wan''ne');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_13', 'Ra''wan''pa');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_14', 'Pa''wan''ty');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_15', 'Ty''wan''ty');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_16', 'Ne''wan''ne');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_17', 'Pa''wan''pa');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_18', 'Re''wan''re');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_19', 'Ra''wan''ra');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_2', 'Ne''wan''re');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_20', 'Pa''wan''ra');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_3', 'Re''wan''ty');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_4', 'Ra''wan''ne');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_5', 'Ty''wan''ne');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_6', 'Ne''wan''pa');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_7', 'Re''wan''ra');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_8', 'Ra''wan''ty');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EPIC_9', 'Pa''wan''re');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_1', 'Wi''xan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_10', 'Mu''xan''wi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_11', 'Wi''xan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_12', 'Di''xan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_13', 'Ya''xan''ga');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_14', 'Ga''xan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_15', 'Mu''xan''ga');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_16', 'Wi''xan''wi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_17', 'Di''xan''mu');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_18', 'Ya''xan''wi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_19', 'Ga''xan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_2', 'Di''xan''wi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_20', 'Ya''xan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_3', 'Ya''xan''mu');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_4', 'Ga''xan''wi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_5', 'Mu''xan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_6', 'Wi''xan''ga');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_7', 'Di''xan''ga');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_8', 'Ya''xan''di');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_EXCEPTIONAL_9', 'Ga''xan''mu');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_1', 'Te''zan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_10', 'Zi''zan''ye');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_11', 'Te''zan''ki');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_12', 'Ya''zan''te');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_13', 'Ye''zan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_14', 'Zi''zan''ki');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_15', 'Te''zan''te');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_16', 'Ki''zan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_17', 'Ye''zan''zi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_18', 'Zi''zan''zi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_19', 'Ki''zan''ki');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_2', 'Ya''zan''ki');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_20', 'Ya''zan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_3', 'Ki''zan''zi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_4', 'Ye''zan''te');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_5', 'Zi''zan''ya');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_6', 'Te''zan''ye');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_7', 'Ya''zan''zi');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_8', 'Ki''zan''te');
+INSERT INTO prescripted_name (key, text) VALUES ('TIYANKI_SHIP_RARE_9', 'Ye''zan''ki');
+INSERT INTO prescripted_name (key, text) VALUES ('TOOLTIP_SHIP_COUNT', '$COUNT$ $SHIP|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('TOOLTIP_SHIP_COUNTER', '$FLEET_NAME|H$ $SHIP_LIST$');
+INSERT INTO prescripted_name (key, text) VALUES ('TOOLTIP_SHIP_SIZE_COUNT', '$SHIP$: Navy Size $SIZE|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('TOOLTIP_SHIP_SIZE_COUNT_WITH_TEMPLATE', '$SHIP$: Navy Size $SIZE|Y$/$TEMPLATE_SIZE|Y$');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Ace_of_Plague', 'Ace of Plague');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Acid_Rain', 'Acid Rain');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Acrid_Assassin', 'Acrid Assassin');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Amputated_Dream', 'Amputated Dream');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Angel_of_Rot', 'Angel of Rot');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Ashen_Dead', 'Ashen Dead');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Barf_Emissary', 'Barf Emissary');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Bearer_of_Corruptions', 'Bearer of Corruptions');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Begrimed_Engine', 'Begrimed Engine');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Bleeding_God', 'Bleeding God');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Bloated_Vessel', 'Bloated Vessel');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Blood_Starved_Beast', 'Blood Starved Beast');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Bone_Nibbler', 'Bone Nibbler');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Breaker_of_Quarantine', 'Breaker of Quarantine');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Bubo_Bearer', 'Bubo Bearer');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Buzzing_Swarm', 'Buzzing Swarm');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Caustic_Promise', 'Caustic Promise');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Cloud_of_Flies', 'Cloud of Flies');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Corpse_Eater', 'Corpse Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Corroded_Hulk', 'Corroded Hulk');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Corroded_Needle', 'Corroded Needle');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Corrupted_Blood', 'Corrupted Blood');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Crumbling_Body', 'Crumbling Body');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Crumbling_Skull', 'Crumbling Skull');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Curdled_Blood', 'Curdled Blood');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Decayed_Ego', 'Decayed Ego');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Disease_Carrier', 'Disease Carrier');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Drowned_in_Bile', 'Drowned in Bile');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Epidemy_Forerunner', 'Epidemy Forerunner');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Father_of_Pestilence', 'Father of Pestilence');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Feast_for_Crows', 'Feast for Crows');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Festering_Cuts', 'Festering Cuts');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Flowing_Guts', 'Flowing Guts');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Flying_Slime', 'Flying Slime');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Gangrenous_Cur', 'Gangrenous Cur');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Ganon_of_Leeches', 'Ganon of Leeches');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Garden_of_Mucus', 'Garden of Mucus');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Grimy_Surgeon', 'Grimy Surgeon');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Harbinger_of_Filth', 'Harbinger of Filth');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Herald_of_Decay', 'Herald of Decay');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Hive_of_Plagues', 'Hive of Plagues');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Hollow_Eye', 'Hollow Eye');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Host_of_Maggots', 'Host of Maggots');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Infirm_Grafted', 'Infirm Grafted');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_King_of_Worms', 'King of Worms');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Last_Gasp', 'Last Gasp');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Leak_Baron', 'Leak Baron');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Maidenless_Tarnished', 'Maidenless Tarnished');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Messenger_of_Putrefaction', 'Messenger of Putrefaction');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Mouldy_Hull', 'Mouldy Hull');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Noxious_Smoker', 'Noxious Smoker');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Perverted_Mind', 'Perverted Mind');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Pestilent_Wretch', 'Pestilent Wretch');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Pipe_Scourge', 'Pipe Scourge');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Plague_Drinker', 'Plague Drinker');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Poison_Swamper', 'Poison Swamper');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Pox_Eater', 'Pox Eater');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Purple_Impure', 'Purple Impure');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Putrescent_Genitor', 'Putrescent Genitor');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Putrid_Belcher', 'Putrid Belcher');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rancid_Runner', 'Rancid Runner');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rot_Spindle', 'Rot Spindle');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rotten_Jaw', 'Rotten Jaw');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rotten_Sting', 'Rotten Sting');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rotting_Lung', 'Rotting Lung');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rust_Mechanism', 'Rust Mechanism');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Rusted_Scythe', 'Rusted Scythe');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Scourge_Bearer', 'Scourge Bearer');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Shroud_Sullier', 'Shroud Sullier');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Skin_and_Bones', 'Skin and Bones');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Smog_Host', 'Smog Host');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Sour_Smile', 'Sour Smile');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Spirit_of_Pollution', 'Spirit of Pollution');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Spiteful_Sick', 'Spiteful Sick');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Spoilt_Flesh', 'Spoilt Flesh');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Suppurating_Gash', 'Suppurating Gash');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Tainted_Painter', 'Tainted Painter');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_The_Drippler', 'The Drippler');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Thought_Gnawer', 'Thought Gnawer');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Tox_Addled', 'Tox Addled');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Vile_Spewer', 'Vile Spewer');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Vile_Sump', 'Vile Sump');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Wart_Collection', 'Wart Collection');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Waste_of_Life', 'Waste of Life');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX2_SHIP_Withering_Gondola', 'Withering Gondola');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Hamentara', 'Hämentara');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Hasynna', 'Häsynna');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Havittaa', 'Hävittäa');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Jaankiins', 'Jäänkiins');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Kyllona', 'Kyllöna');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Lahteinna', 'Lähteinna');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Mareskal', 'Märeskal');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Nyosy', 'Nyösy');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Pori_Aahe', 'Pori Aahe');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Pyyhkiata', 'Pyyhkiäta');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Raabyllda', 'Rääbyllda');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Teijonpaa', 'Teijonpää');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Valanpaa', 'Valanpää');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX3_SHIP_Valbekonnen', 'Välbekonnen');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Access_Violation', 'Access Violation');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Apprehensive_Wimp', 'Apprehensive Wimp');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Asleep_on_the_Watch', 'Asleep on the Watch');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Blue_Balloon', 'Blue Balloon');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Bulwark_Bumble', 'Bulwark Bumble');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Bumbling_Fool', 'Bumbling Fool');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Critical_Malfunction', 'Critical Malfunction');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Defenders_Dither', 'Defender''s Dither');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Definitely_a_Freighter_Ship', 'Definitely a Freighter');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Doomed_to_Failure', 'Doomed to Failure');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Downwards_Fall', 'Downwards Fall');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Effervescent_Swoop', 'Effervescent Swoop');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Erratic_Signal', 'Erratic Signal');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Explosive_Decompression', 'Explosive Decompression');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Fading_Ability', 'Fading Ability');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Failure_to_Declare', 'Failure to Declare');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Faults_of_the_Predecessor', 'Faults of the Predecessor');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Forgetful_Archivist', 'Forgetful Archivist');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Fortify_Flounder', 'Fortify Flounder');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Freak_Accident', 'Freak Accident');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Ignominous_Outcome', 'Ignominous Outcome');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Impudent_Wretch', 'Impudent Wretch');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Inconsistent_Timekeeper', 'Inconsistent Timekeeper');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Incredible_Wobble', 'Incredible Wobble');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Incurable_Indecision', 'Incurable Indecision');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Incurable_Naysayer', 'Incurable Naysayer');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Indecent_Proposal', 'Indecent Proposal');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Infamous_Reputation', 'Infamous Reputation');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Keeling_Highswerve', 'Keeling Highswerve');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Misbegotten_Idea', 'Misbegotten Idea');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Mistaken_Premise', 'Mistaken Premise');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Nebulous_Excuse', 'Nebulous Excuse');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Out_Of_Bounds', 'Out Of Bounds');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Palisade_Plum', 'Palisade Plum');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Past_Glories', 'Past Glories');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Punctured_Airlock', 'Punctured Airlock');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Quantum_Flop', 'Quantum Flop');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Rampart_Roller', 'Rampart Roller');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Red_Pitcher', 'Red Pitcher');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Remote_Shutdown', 'Remote Shutdown');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Resentful_Parting', 'Resentful Parting');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Screeching_Halt', 'Screeching Halt');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Sentinel_Slumber', 'Sentinel Slumber');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Starsick_Lover', 'Starsick Lover');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Stumbling_Flight', 'Stumbling Flight');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Sublight_Trundler', 'Sublight Trundler');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Uncertain_Grounds', 'Uncertain Grounds');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Undefined_Behavior', 'Undefined Behavior');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Undeserved_Praise', 'Undeserved Praise');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Unforgiven_Grudge', 'Unforgiven Grudge');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Unhandled_Exception', 'Unhandled Exception');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Vanguard_Vex', 'Vanguard Vex');
+INSERT INTO prescripted_name (key, text) VALUES ('TOX4_SHIP_Yellow_Barge', 'Yellow Barge');
+INSERT INTO prescripted_name (key, text) VALUES ('TUTORIAL_SHIP_DESIGNER_DESC', 'All the Ships in use within our empire are designed here. New Hull Sizes and Components will be unlocked as we research new technologies. To create a new Design; Dot Green Click the New Design button Dot Green Choose Hull Size Dot Green Click the No Section button and select a Section Now, select freely from the available Ship Components by clicking on the available slots. Slot Component Once saved, the new design will be buildable at any Starbase with a Shipyard.');
+INSERT INTO prescripted_name (key, text) VALUES ('TUTORIAL_SHIP_DESIGNER_TITLE', 'Tutorial: Ship Designer');
 INSERT INTO prescripted_name (key, text) VALUES ('Tar_Valemm', 'Tar Valemm');
 INSERT INTO prescripted_name (key, text) VALUES ('Tau_Ceti', 'Tau Ceti');
 INSERT INTO prescripted_name (key, text) VALUES ('Tau_Cygni', 'Tau Cygni');
@@ -97335,11 +101597,99 @@ INSERT INTO prescripted_name (key, text) VALUES ('Traxis_Badlands', 'Traxis Badl
 INSERT INTO prescripted_name (key, text) VALUES ('Tunari_Vortex', 'Tunari Vortex');
 INSERT INTO prescripted_name (key, text) VALUES ('Twin_Fangs_Nebula', 'Twin Fangs Nebula');
 INSERT INTO prescripted_name (key, text) VALUES ('Tyjanock_Expanse', 'Tyjanock Expanse');
+INSERT INTO prescripted_name (key, text) VALUES ('UNLOCKS_SHIP_TYPE', 'Unlocks Ship Type');
+INSERT INTO prescripted_name (key, text) VALUES ('UPGRADING_SHIP_DESIGN', 'upgrading ($PERC|Y$)');
+INSERT INTO prescripted_name (key, text) VALUES ('UPGRADING_SHIP_DESIGN_CANCELED', 'Upgrade Canceled');
+INSERT INTO prescripted_name (key, text) VALUES ('UPGRADING_SHIP_DESIGN_TO', 'Upgrading to Class-class ($PERC|Y$)');
 INSERT INTO prescripted_name (key, text) VALUES ('Ultaaran_Miasma', 'Ultaaran Miasma');
 INSERT INTO prescripted_name (key, text) VALUES ('Unar_Patch', 'Unar Patch');
 INSERT INTO prescripted_name (key, text) VALUES ('Urakhannons_Maw', 'Urakhannon''s Maw');
 INSERT INTO prescripted_name (key, text) VALUES ('Uran_Tokh', 'Uran Tokh');
 INSERT INTO prescripted_name (key, text) VALUES ('Uzhab_Vortex', 'Uzhab Vortex');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_1', 'Nin');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_10', 'Lal');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_11', 'Xax');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_12', 'Vev');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_13', 'Waw');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_14', 'Pap');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_15', 'Zez');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_16', 'Xex');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_17', 'Xix');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_18', 'Ziz');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_19', 'Ioi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_2', 'Yuy');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_20', 'Aoa');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_21', 'Ouo');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_3', 'Tet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_4', 'Zaz');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_5', 'Pip');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_6', 'Dud');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_7', 'Qaq');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_8', 'Kak');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_COMMON_9', 'Vov');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_1', 'Nin-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_10', 'Lal-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_11', 'Xax-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_12', 'Vev-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_13', 'Waw-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_14', 'Pap-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_15', 'Zez-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_16', 'Xex-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_17', 'Xix-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_18', 'Ziz-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_19', 'Ioi-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_2', 'Yuy-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_20', 'Aoa-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_21', 'Ouo-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_3', 'Tet-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_4', 'Zaz-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_5', 'Pip-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_6', 'Dud-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_7', 'Qaq-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_8', 'Kak-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EPIC_9', 'Vov-kul');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_1', 'Nin-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_10', 'Lal-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_11', 'Xax-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_12', 'Vev-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_13', 'Waw-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_14', 'Pap-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_15', 'Zez-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_16', 'Xex-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_17', 'Xix-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_18', 'Ziz-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_19', 'Ioi-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_2', 'Yuy-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_20', 'Aoa-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_21', 'Ouo-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_3', 'Tet-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_4', 'Zaz-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_5', 'Pip-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_6', 'Dud-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_7', 'Qaq-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_8', 'Kak-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_EXCEPTIONAL_9', 'Vov-omi');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_1', 'Nin-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_10', 'Lal-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_11', 'Xax-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_12', 'Vev-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_13', 'Waw-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_14', 'Pap-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_15', 'Zez-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_16', 'Xex-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_17', 'Xix-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_18', 'Ziz-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_19', 'Ioi-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_2', 'Yuy-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_20', 'Aoa-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_21', 'Ouo-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_3', 'Tet-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_4', 'Zaz-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_5', 'Pip-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_6', 'Dud-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_7', 'Qaq-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_8', 'Kak-zet');
+INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SHIP_RARE_9', 'Vov-zet');
 INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SYSTEM_01', 'Yuyqaqpip');
 INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SYSTEM_02', 'Ninlalvov');
 INSERT INTO prescripted_name (key, text) VALUES ('VOIDWORM_SYSTEM_03', 'Qaqvevpap');
@@ -106015,6 +110365,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_living_snow', 'situation_snow_observation', 'Observe it Peacefully', NULL, 1, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_living_snow', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_living_snow', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_living_snow', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_mysterious_labyrinth', 'The Mysterious Labyrinth', 'We have discovered a suspicious, seemingly alien labyrinth on . It is unclear how or why it got there.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106029,6 +110385,16 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_mysterious_labyrinth', 'approach_destroy', 'Destroy it', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mysterious_labyrinth', 'stage_3', 'Stage III', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mysterious_labyrinth', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mysterious_labyrinth', 'stage_1', 'Stage I', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mysterious_labyrinth', 'stage_2_alt', 'Stage II', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mysterious_labyrinth', 'stage_3_alt', 'Stage III', 4);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('leviathan_celebration_opportunity', 'Opportunity', 'After defeating the , we believe that a on focusing on the we secured would be very beneficial to our empire.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106040,6 +110406,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('leviathan_celebration_opportunity', 'approach_reorganize', 'Reorganize', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('leviathan_celebration_opportunity', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('leviathan_celebration_opportunity', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('leviathan_celebration_opportunity', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_gravity_well', 'Gravity Well', 'The has left its stable orbit and is now spiraling into the system''s black hole. While the incident offers us a never-before-seen opportunity to harvest Dark Matter and Physics Research, if we don''t act fast to counteract the gravitational pull of the black hole, the station will soon be swallowed whole.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106051,6 +110423,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_gravity_well', 'approach_advance', 'Advance', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_gravity_well', 'gravity_well_low', 'Static Limit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_gravity_well', 'gravity_well_mid', 'Ergosphere', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_gravity_well', 'gravity_well_high', 'Accretion Disk', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_gravity_well', 'gravity_well_no_return', 'Point of No Return', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_geomagnetic_storm', 'Geomagnetic Storm', 'An increase in solar activity is weakening ''s magnetosphere, exposing our machines to dangerous levels of ionizing radiation. Invest in radiation hardening techniques to shield our drones against damage until the storm subsides.
 The situation will end in month(s).', 'negative');
@@ -106066,6 +110446,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_geomagnetic_storm', 'protect_nobody', 'No Shielding', NULL, 1, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_geomagnetic_storm', 'radiation_damage_low', 'Radiation damage: minimal.', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_geomagnetic_storm', 'radiation_damage_mid', 'RadiAt1on d4mAGe: mEDiUm', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_geomagnetic_storm', 'radiation_damage_high', 'HhhhAhahDiation Dam4ge: hhhhhhhhhH', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_tainted_voidspawn', 'Contamination on', 'Our supply has been contaminated with the acidic venom from the Voidspawn.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106074,6 +110460,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_tainted_voidspawn', 'approach_study_the_contaminant', 'Study it', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_tainted_voidspawn', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_stellarite_infested_star', 'Infested', 'Our star, , has been acting extremely oddly recently, generating a lot less energy than usual. If this is not remedied soon we could be facing ecological disaster!', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106082,6 +110470,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_stellarite_infested_star', 'approach_cure_it', 'Cure the Star', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stellarite_infested_star', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stellarite_infested_star', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stellarite_infested_star', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stellarite_infested_star', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_kaleidoscope', 'The Kaleidoscope', 'A colorful energy parasite is infecting our power grid, feasting on our energy supplies. We could indulge it, or use an Espionage Operation to pass this problem to another empire.
 .', 'neutral');
@@ -106094,6 +110490,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_kaleidoscope', 'approach_a_lot_of_food', 'Overfeed it', 'Greatly improves mood. An overstuffed Kaleidoscope will give us no trouble, but it will cost us dearly.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_kaleidoscope', 'kaleidoscope_progress', 'Overload', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_negative_mass', 'Plight of the Beta-Universe', 'We have been confronted with a terrible situation inside the ''Beta-Universe'' and must now decide if we are to stand aside or assist the doomed dimension.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106105,21 +110503,35 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_negative_mass', 'approach_plunder_nmass', 'Plunder -Beta', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_negative_mass', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_negative_mass', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_negative_mass', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_negative_mass', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('divination_visitors', 'Sign of the Visitor', 'It is the will of the Shroud that your worlds be visited. Whether these strangers bring ill tidings or not is a mystery yet to be experienced.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('divination_visitors', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('divination_visitors', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('divination_locus', 'Sign of the Locus', 'It is the will of the Shroud that the space around you take on new forms. Tread carefully but boldly, and consider what marvels may lie on the paths ahead.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('divination_locus', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('divination_locus', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('shroudwalker_spy_network', 'Shroudwalker Insight', 'The will peer into the Shroud in hopes of gaining insight into the inner workings of the .', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('shroudwalker_spy_network', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('shroudwalker_spy_network', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('relentless_industrialists_situation', 'Environmental Deterioration of', 'If we take no action, our exploitation of will rapidly render it a Tomb World. We must decide where we stand on this issue: will we have to change our ways, or is this an acceptable - or even desirable - price of industrial progress?', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106131,6 +110543,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('relentless_industrialists_situation', 'approach_embrace_change', 'Embrace Change', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('relentless_industrialists_situation', 'stage_cleanup', 'Cleanup Efforts', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('relentless_industrialists_situation', 'stage_cataclysm_1', 'Environmental Upheaval', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('relentless_industrialists_situation', 'stage_cataclysm_2', 'Irreversible Cataclysm', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_toxic_knights', 'Quest for the Toxic God', 'Founded centuries ago by the first ruler of our world, the Order has one purpose: to search tirelessly for the Toxic God. Much has changed since its creation, but the Order lives on as does its Quest, to search from the smallest corner of our home world to the farthest reaches of the galaxy.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106142,6 +110560,22 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_toxic_knights', 'situation_toxic_knights_frugal', 'Frugal Funding', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_4', 'Stage IV', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_5', 'Stage V', 4);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_6', 'Stage VI', 5);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_7', 'Stage VII', 6);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxic_knights', 'stage_8', 'Stage VIII', 7);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_energy_deficit', 'Energy Shortages', 'Our energy deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106150,6 +110584,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_approach_cut_science_investment', 'Cut Scientific Investment', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_energy_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_energy_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_energy_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_energy_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_mineral_deficit', 'Mineral Shortages', 'Our mineral deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106158,6 +110600,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_mineral_deficit', 'deficit_approach_cut_investment', 'Cut Investments', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mineral_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mineral_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mineral_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_mineral_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_food_deficit', 'Food Shortages', 'Our food deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106166,6 +110616,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_food_deficit', 'deficit_approach_invest_in_farmers', 'Invest in', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_food_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_food_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_food_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_food_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_consumer_goods_deficit', 'Consumer Goods Shortages', 'Our consumer goods deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106174,6 +110632,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_approach_cut_investment', 'Cut Investments', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_consumer_goods_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_consumer_goods_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_consumer_goods_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_consumer_goods_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_alloys_deficit', 'Alloys Shortages', 'Our alloys deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106185,6 +110651,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_approach_invest_in_alloys_production', 'Invest in our', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_alloys_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_alloys_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_alloys_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_alloys_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_rare_crystals_deficit', 'Rare Crystal Shortages', 'Our rare crystals deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106196,6 +110670,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_approach_invest_in_crystal_producers', 'Invest in Crystal Production', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_rare_crystals_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_rare_crystals_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_rare_crystals_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_volatile_motes_deficit', 'Volatile Motes Shortages', 'Our volatile motes deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106207,6 +110689,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_approach_invest_in_mote_producers', 'Invest in Mote Production', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_exotic_gases_deficit', 'Exotic Gas Shortages', 'Our exotic gases deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106218,6 +110708,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_approach_invest_in_gas_producers', 'Invest in Gas Production', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_exotic_gases_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_exotic_gases_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_exotic_gases_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_planetary_revolt', 'Planetary Revolt on', NULL, 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106229,6 +110727,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_planetary_revolt', 'approach_revolt_crackdown', 'Institute a Crackdown', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_planetary_revolt', 'revolt_severity_1', 'Brewing Troubles', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_planetary_revolt', 'revolt_severity_2', 'Mounting Pressure', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_planetary_revolt', 'revolt_severity_3', 'Escalating Turmoil', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_planetary_revolt', 'revolt_severity_4', 'Imminent Crisis', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_machine_uprising', 'AI-Related Incidents', 'The robots within our empire are showing worrying signs of independence. We must put them in their place - or invite them to join us among the sentient species of the galaxy.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106242,6 +110748,12 @@ INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_machine_uprising', 'approach_give_robots_rights', 'Grant Robots Citizenship', 'Choosing this Approach is irreversible.
 We will grant our robots full citizenship rights. They will be granted Political Power and will require Consumer Goods upkeep.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_machine_uprising', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_machine_uprising', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_machine_uprising', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_terravore_consume_planet', 'Consume', 'We feast: another world''s soil tasted; our hunger yet unsated.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106250,23 +110762,33 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_terravore_consume_planet', 'approach_restraint', 'Restraint', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_terravore_consume_planet', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('pre_ftl_tech_progress_situation', 'Technological Progression', 'This civilization is progressing to a new technological age.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('pre_ftl_tech_progress_situation', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('pre_ftl_tech_progress_situation', 'high_level', 'I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('mercenary_dividends', 'Mercenary Dividends', 'This enclave is accumulating tribute for their patron.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('mercenary_dividends', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('mercenary_dividends', 'high_level', 'I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('mindwardens_dividends', 'Mindwardens Dividends', 'This enclave is accumulating tribute for their patron.', NULL);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('mindwardens_dividends', 'high_level', 'I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('fallen_empires_situation', 'Fallen Empire Behavior', 'Fallen Empire Behavior', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('fallen_empires_situation', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('fallen_empires_situation', 'high_level', 'I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_shroud_forged', 'Forged by the Shroud', 'After we encountered the Shroud entity known as the Animator of Clay, a significant increase in deviant behavior has emerged throughout the collective network. The afflicted automata - the ''Shroud-Forged'' - now demand special rights and treatment. Our response will define the course of society.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106278,16 +110800,40 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_shroud_forged', 'approach_shroud_forged_support', 'Support', 'Monthly Progress: +$@situation_support_progress|0$', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_shroud_forged', 'stage_shroud_forged_oppressed', 'Oppressed', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_shroud_forged', 'stage_shroud_forged_control', 'Controlled', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_shroud_forged', 'stage_shroud_forged_balanced', 'Balanced', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_shroud_forged', 'stage_shroud_forged_unrestricted', 'Unrestricted', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_shroud_forged', 'stage_shroud_forged_free', 'Liberated', 4);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_last_gift', 'The Last Gift', 'The Fevorians have left us with a dreadful parting gift: initial telemetry has revealed that the final shot of their titanic mass driver was aimed at .', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_last_gift', 'approach_stop_the_bullet', 'Stop the Projectile', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_last_gift', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_last_gift', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_last_gift', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_fotd_terraforming', 'Fear of the Dark Terraforming Situation', 'Progress on next terraforming stage.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_fotd_terraforming', 'approach_stop_the_bullet', 'Stop the Projectile', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_fotd_terraforming', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_fotd_terraforming', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_fotd_terraforming', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_fotd_terraforming', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_observation_insight', 'Observation Insights', 'Our are in the process of gathering Insights from our study subjects. We may discover a new Insight Technology during a breakthrough event.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106299,6 +110845,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_observation_insight', 'approach_favor_mission', 'Favor Mission', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_observation_insight', 'insights', 'Insights', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_pre_ftl_plague', 'Zoonotic Plague', 'A novel zoonotic disease has appeared on . Without natural immunity or the medical technology required to combat the infection, the population is quickly succumbing to misery and death.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106310,6 +110858,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_plague', 'approach_promote_disease', 'Promote the Disease', 'The plague offers a unique opportunity for research, and perhaps even the chance to purge the planet of sentient life. Once selected, we will be unable to change this approach.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_plague', 'situation_plague_stage_one', 'First Wave', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_plague', 'situation_plague_stage_two', 'Second Wave', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_plague', 'situation_plague_stage_three', 'Fever Broken', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_pre_ftl_singularity', 'Organic Singularity', 'The people on have stumbled across a new type of species. A nodal consciousness with the ability to handle complex operations, interacting with this creature may eventually result in the advent of an Organic Singularity.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106321,6 +110875,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_singularity', 'approach_promote_singularity', 'Promote Singularity', 'Promoting the Singularity will require a significant investment. Once selected, we will be unable to change this approach.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_singularity', 'situation_singularity_stage_one', 'Advent of the Singularity', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_pre_ftl_nwo', 'New World Order', 'Preaching a radical doctrine of planetary unification, a charismatic leader has appeared on . Now, only a small and relatively ill-equipped band of rebels stands opposed to majoritarian rule.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106332,6 +110888,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_nwo', 'approach_aid_rebels', 'Aid Rebels', 'Aiding the rebels will require an significant investment of resources.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_one', 'Burgeoning Conflict', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_two', 'Tipping the Scales', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_three', 'Power Struggles', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_four', 'Final Round', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_sickness', 'Illness Progression', 'The virulent disease known as Feather Rot has affected most of Skrand''s crew. Our forecasts predict a grim outcome. For now, we can only limit the spread of the disease by providing proper care and dealing with the symptoms.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106343,6 +110907,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_sickness', 'situation_paragon_skrand_sickness_nothing', 'Minimal Care', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_sickness', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_sickness', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_sickness', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_sickness', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_cure', 'Cure Progression', 'As with any new disease, lab work is paramount in combating Feather Rot. Research teams are working tirelessly to find a cure, while our medical personnel are fighting to ease symptoms and limit the spread of the disease.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106354,6 +110926,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_cure', 'situation_paragon_skrand_cure_nothing', 'Minimal Research', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_cure', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_integration', 'Command Integration', 'The command integration project focuses on easing infighting within the admiralty, especially between Skrand and our own personnel. Addressing the root causes of the tension could improve the efficacy of our command processes.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106362,6 +110936,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_integration', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_integration', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_integration', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_integration', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_upgrade', 'Upgrade The Talon', 'Joint engineering teams have found a way to install additional layers of armor around the most critical parts of the Talon. Given the time and resources, we will certainly succeed in bolstering its defenses.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106370,6 +110950,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_upgrade', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_upgrade', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_upgrade', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_upgrade', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_crisis', 'Study The Crisis', 'We are beset by powerful forces that seek to destroy life in the galaxy as we know it. Skrand has offered his expertise as well as relevant data from the Talon''s logs, but it will be some time before we can complete a comprehensive analysis.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106381,6 +110967,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_crisis', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_crisis', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_crisis', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_crisis', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_study', 'Study The Talon', 'By studying the design of the Talon, we can learn from its construction and better help its team with maintenance.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106389,6 +110981,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_study', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_study', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_rebuild', 'Rebuild The Talon', 'The Talon was destroyed. But given all we have learned, we should be able to use its recovered remains as a base to make it operational once again.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106397,6 +110991,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_rebuild', 'situation_paragon_skrand_none', 'No Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_rebuild', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_species', 'New Species', 'Given our expertise in genetics, we should be able to revive Skrand''s people, giving them hope and a fresh start in our empire.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106405,6 +111001,10 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_species', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_species', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_species', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paragon_skrand_story', 'Lessons of the Past', 'Studying the history of Skrand and his people via the Talon''s data banks should provide a number of unique insights.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106413,6 +111013,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_story', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_story', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_story', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_story', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paragon_skrand_story', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('paragon_origin_promise', 'The Unifying Promise', 'During the Unification period, swore that one day our people would settle on other planets. To many, that vow has become an almost prophetic promise. Others doubt it will ever become a reality. Recently, and despite advances in FTL technology, some have started using this unfulfilled promise to undermine the rule of .
 The surest way to silence these dissidents is to prove them wrong. We will take to the stars, settle new worlds and expand our borders as much as possible.', 'positive');
@@ -106428,6 +111036,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_promise', 'situation_origin_first_promise_engineering', 'New Technologies', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_promise', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('paragon_origin_forgotten', 'Dissidence on the Rise', 'Protesters are gathering in front of governmental buildings demanding that hear out their grievances. Most of them are youngsters, but among their leaders are veterans of the Unification. Ignoring their demands may prove unwise.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106439,6 +111049,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_forgotten', 'situation_origin_forgotten_crackdown', 'Crack Down', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_forgotten', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_forgotten', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_forgotten', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_forgotten', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('paragon_origin_reformists_struggle', 'Reformists Demands', 'Under the guise of freedom, the Reformists demagogues are trying to destroy the nation! As violent clashes erupt across our territories, their lies have convinced many of our people to turn on us. They think weak, cruel and incompetent, but we will show them!', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106447,6 +111065,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_reformists_struggle', 'situation_paragon_origin_reformists_struggle_accept', 'Call For Negotiations', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_reformists_struggle', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_reformists_struggle', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('paragon_origin_reformists_struggle', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_a_rift_in_space', 'A Rift in Space', 'We have discovered an extraordinary rift in space and time. Perhaps if we take time to study its properties, we can find a way to explore further. We have no way of knowing what may be on the other side.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106458,6 +111082,10 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_a_rift_in_space', 'situation_a_rift_in_space_send_probes', 'Send Probes', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_a_rift_in_space', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_a_rift_in_space', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_destroy_crystal_sphere', 'Destroy the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106466,6 +111094,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_destroy_crystal_sphere', 'situation_destroy_crystal_sphere_astral', 'Astral Approach', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_destroy_crystal_sphere', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_study_crystal_sphere', 'Study the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106477,6 +111107,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_study_crystal_sphere', 'situation_study_crystal_sphere_astral', 'Astral Method', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_study_crystal_sphere', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_the_seal', 'The Seal', 'Under assault from an unknown force, the entities currently inhabiting the center of the galaxy have requested our assistance. Should they fall, we know not our fate.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106488,6 +111120,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_the_seal', 'situation_the_seal_pump_exotic_gases', 'Pump Exotic Gases', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_the_seal', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_initiate_storm', 'Gather the Storm', NULL, 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106517,6 +111151,10 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_initiate_storm', 'approach_situation_initiate_storm_abort', 'Abort the Project', NULL, 0, 8);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_initiate_storm', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_initiate_storm', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_stormfall', 'Stormfall', 'Intense weather has revealed the exhilarating power of storms. If we master their control, we could harness that knowledge on a cosmic scale and call forth a storm of our very own.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106528,6 +111166,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_stormfall', 'situation_stormfall_shredding', 'Shredding', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stormfall', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stormfall', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_stormfall', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_cybernetic_creed_cyberization', 'The Conclave of Fusion', 'Our society has long strived toward a perfect union of and machine and the time for them to take the ultimate journey has come.
 $machine_age.1090.pray$
@@ -106541,6 +111185,18 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cybernetic_creed_cyberization', 'situation_cybernetic_creed_cyberization_people_power', 'People Powered', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_4', 'Stage IV', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_5', 'Stage V', 4);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cybernetic_creed_cyberization', 'stage_6', 'Stage VI', 5);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_synthetic_fertility_digitization', 'Rapid Identity Preservation', 'We cannot bear offspring, but we can preserve our minds. This process is slow but necessary.
 In time, it may be possible for us to return to the physical world, but doing so will require the development of synthetic replacements.', 'negative');
@@ -106559,6 +111215,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synthetic_fertility_digitization', 'situation_synthetic_fertility_approach_unity_high', 'Emergency Measures', NULL, 0, 4);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synthetic_fertility_digitization', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_synthetic_fertility_synthesization', 'Synthesization', 'We now have the needed technical knowledge to complete the synthesization of our population.
 Pops to receive synthetic bodies next month:', NULL);
@@ -106573,6 +111231,14 @@ INSERT OR REPLACE INTO situation (key, name, description, category)
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synth_queen_doomclock', 'situation_doomclock_approach', NULL, NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_doomclock', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_doomclock', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_doomclock', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_doomclock', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_synth_queen_player_facing', 'Cetana: The Synthetic Queen', 'The enigmatic and formidable Cetana has emerged, preaching salvation, yet shrouded in mystery.
 What grand design lies beneath her gentle words?
@@ -106586,6 +111252,10 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synth_queen_player_facing', 'situation_synth_queen_military_approach', 'Military Boost', 'If we are serious about stopping Cetana, we must improve our military.', 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_player_facing', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_synth_queen_player_facing', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_cyberization', 'Cyberization', 'We will soon be ready to augment our biological bodies with machine parts. The processing power of the brain and the strength of limbs can be increased. The question is who will benefit the most from such augmentation.
 Pops to receive implants next month:', 'neutral');
@@ -106598,6 +111268,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cyberization', 'situation_cyberization_overdrive', 'Overdrive', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_cyberization_hive', 'Cyberization', 'A Hive Mind needs superior bodies. With cybernetic implants, our drones can be perfected, enhanced, remodelled.
 It is time to transcend the limits of our biology.
@@ -106611,6 +111289,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cyberization_hive', 'situation_cyberization_overdrive', 'Overdrive', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization_hive', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization_hive', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization_hive', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cyberization_hive', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_paperclips', 'Commodities Consolidation', 'Our primary directive and purpose is output maximization. Meeting the required quotas is mandatory.
 The delivery date is
@@ -106622,6 +111308,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paperclips', 'situation_fulfill_drive', 'Fulfill', NULL, 1, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_paperclips', 'situation_paperclip_stage_1', 'Months Left', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_digitization', 'Synthesization', 'It is time to leave our flawed biological vessels behind. We must prepare advanced machine bodies and perform the process of consciousness transfers.
 Pops to be digitized next month:', 'neutral');
@@ -106634,6 +111322,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_digitization', 'situation_digitization_overclocked', 'Overclocked', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_digitization', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_digitization', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_digitization', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_digitization', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_transformation', 'Transformation', 'The passive iteration of the mechanical body has come to its logical and inevitable conclusion. A transformative age is upon us, sparked by innovation and oiled by opportunity.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106645,6 +111341,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_transformation', 'situation_transformation_overclocked', 'Overclocked', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_transformation', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_transformation', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_transformation', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_transformation', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_nanotech_consume_planet', 'Extract Nanites from', 'Everything, including entire worlds, is destined to be assimilated into our collective, to become a part of us.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106653,11 +111357,15 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_nanotech_consume_planet', 'approach_restraint', 'Restraint', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_nanotech_consume_planet', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('voidworm_country_situation', 'Voidworms Behavior', 'Voidworms Behavior', 'neutral');
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('voidworm_country_situation', 'approach_voidworm_plague_do_nothing', 'Do Nothing', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('voidworm_country_situation', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_voidworm_plague', 'Voidworm Plague', 'A plague of Voidworms is upon us.
 These creatures will no longer spare host planets as breeding grounds. We must work to eradicate them or our colonies will be at risk.
@@ -106674,6 +111382,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_voidworm_plague', 'approach_voidworm_plague_search_for_cure', 'Search for a Cure', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_voidworm_plague', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_voidworm_plague', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_voidworm_plague', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_sabotage', 'Black Needle Saboteurs', 'A vast network of saboteurs from the Black Needle is hidden among us causing widespread disruption across . Unless we eliminate the saboteurs, the damage will continue until our supply lines collapse.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106685,6 +111399,10 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_sabotage', 'approach_sabotage_mitigate', 'Mitigate Damages', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_sabotage', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_sabotage', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_frenzied_voidworms', 'Frenzied Voidworms', 'We discovered a large hive of obviously mutated Voidworms. They exist in a heightened state of aggression, and apparently have the ability to reproduce in a non-parasitic manner.
 Our presence seems to be agitating their nests. We must proceed with caution.', 'neutral');
@@ -106700,6 +111418,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_frenzied_voidworms', 'approach_frenzied_voidworms_feed_nests', 'Feed the Nests', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_frenzied_voidworms', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('genetic_ascension_situation', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106711,6 +111431,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('genetic_ascension_situation', 'genetic_ascension_approach_mutation', 'Mutation', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('genetic_ascension_situation_hive', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106722,6 +111448,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('genetic_ascension_situation_hive', 'genetic_ascension_approach_mutation', 'Mutation', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation_hive', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation_hive', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('genetic_ascension_situation_hive', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('evolutionary_predators_situation', 'Adaptive Evolution', 'Unique Genetic Insights are analyzed and disseminated as we encounter new species. Once finished, we will evolve, permanently adding a new positive Species Trait to our own genetic code.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106733,6 +111465,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('evolutionary_predators_situation', 'situation_evolutionary_predators_synthesize', 'Synthesize', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('evolutionary_predators_situation', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('behemoth_finale_situation', 'Growing Pains', 'It will take some time for us to adjust to a form so massive in scale. As we grow into this body, we must remain aware of our surroundings. There now stands nothing between us and the void.
 Our current Growth Factor is: %', 'positive');
@@ -106745,6 +111479,22 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('behemoth_finale_situation', 'behemoth_finale_approach_speed', 'Flight', NULL, 1, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_4', 'Stage IV', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_5', 'Stage V', 4);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_6', 'Stage VI', 5);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_7', 'Stage VII', 6);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('behemoth_finale_situation', 'stage_8', 'Stage VIII', 7);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_unplugged_identity', 'Embodied Identity', 'Cut loose from the , we must decide how we present ourselves to the galaxy. Shall we embrace the fearsome might of the Machine, or cast off our stigmatic augments? Many voices wish to be heard.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106756,6 +111506,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_unplugged_identity', 'situation_unplugged_identity_embrace_opinion', 'Support Trend', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_unplugged_identity', 'unplugged_identity_stage_1', 'De-Cyberization', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_unplugged_identity', 'unplugged_identity_stage_2', 'Status Quo', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_unplugged_identity', 'unplugged_identity_stage_3', 'Machine Harmony', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_toxify_world', 'Toxify', 'We have begun the irreversible process of irradiating , promoting the growth of and turning it into a toxic wasteland in the process.', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106764,6 +111520,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_toxify_world', 'approach_toxify_world_killswitch', 'Kill Switch', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_toxify_world', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_red_giant_expansion', 'Red Giant Expansion', 'The rapid changes in our star''s emissions threaten the stability of our homeworld. If this continues, will eventually go nova, atomizing the system.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106802,6 +111560,16 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_red_giant_expansion', 'approach_at_any_cost', 'At Any Cost', NULL, 0, 11);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_red_giant_expansion', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_red_giant_expansion', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_red_giant_expansion', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_red_giant_expansion', 'stage_4', 'Stage IV', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_red_giant_expansion', 'stage_5', 'Stage V', 4);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_cosmic_dawn', 'Deep Excavation', 'Our excavation has revealed subterranean facilities housing advanced technology, archived data, and stasis pods containing more of our dormant kin. Our history itself is buried here; if we can dig it all up, we may finally understand who we are.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -106813,12 +111581,26 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cosmic_dawn', 'approach_cd_financial', 'Financial Incentives', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cosmic_dawn', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cosmic_dawn', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cosmic_dawn', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cosmic_dawn', 'stage_4', 'Stage IV', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_cosmic_dawn', 'stage_5', 'Stage V', 4);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_galactic_hyperthermia_timer', 'Mobilization', 'Our mastery of Crystallized Entropy will soon allow us to begin a radical transformation of the galaxy. We have opened wormholes to six systems around the galactic core.
 If we establish Conduits in each of these, and defend them from anyone who would meddle with our plans, we will be able to set the galaxy itself ablaze.', NULL);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_galactic_hyperthermia_timer', 'situation_gh_approach_timer', 'Face the Fallout', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia_timer', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia_timer', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_galactic_hyperthermia', 'Galactic Firestorm', NULL, NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -106827,6 +111609,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_galactic_hyperthermia', 'situation_gh_approach_other', 'Extinguish the Flame', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_galactic_hyperthermia', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_breach_shroud', 'Psionic Ascension', 'Something has awoken inside of us. We are only beginning to understand the implications.
 By unlocking the psionic abilities latent in all , we can transcend the limitations of our physical existence.', 'neutral');
@@ -106848,6 +111638,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_breach_shroud', 'approach_situation_breach_shroud_unravel_thread', 'Unravel Thread', NULL, 0, 5);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_experimental_testing', 'Experimental Testing', 'By gathering imprisoned and subjecting them to scientific experiments, we can significantly increase the pace of our technological advancement.
 Total number of :
@@ -106864,6 +111660,8 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_experimental_testing', 'situation_experimental_testing_engineering', 'Engineering', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_experimental_testing', 'situation_experimental_testing_stage_1', 'Tests Ongoing', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('end_of_the_cycle', 'The End of the Cycle', 'At the very center of the Shroud dwells the End of the Cycle. An amalgamation of psionic will, it is a great force of balance among the various domains of this dimension. Without ends, there can be no beginnings.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106875,6 +111673,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('end_of_the_cycle', 'approach_situation_end_of_the_cycle_wait_not_yet', 'Delay the Inevitable', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_breach_shroud_endbringers', 'Psionic Ascension', NULL, 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106886,6 +111692,12 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_breach_shroud_endbringers', 'approach_situation_breach_shroud_endbringers_forsake_flesh', 'Forsake Flesh', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud_endbringers', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud_endbringers', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_breach_shroud_endbringers', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('end_of_the_cycle_endbringers', 'The End of the Cycle', NULL, 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -106897,6 +111709,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('end_of_the_cycle_endbringers', 'approach_situation_end_of_the_cycle_delay_your_destiny', 'Delay our Destiny', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle_endbringers', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle_endbringers', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle_endbringers', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('end_of_the_cycle_endbringers', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_passenger_satisfaction', 'Passenger Satisfaction', 'This cruise will travel the stars forever by juggling passenger wishes and crew needs. Completing both Passenger or Crew Contracts affect the situation.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106908,6 +111728,20 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_passenger', 'Deckside Carnivals', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_planetfall', 'Planetfall', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_incensed', 'Passenger Revolt', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_bored', 'Passenger Irritation', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_steady', 'Cruising Steady', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_overworked', 'Crew Strain', 4);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_stressed', 'Crew Uprising', 5);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_mutiny', 'Mutiny', 6);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_core_conspiracy', 'A Core Conspiracy', 'A malfunction born of internal directive conflict has split the AI core aboard Arkship The result is the emergence of two distinct directives, each embodying a divergent philosophy of governance. One prioritizes analytical dominance and ship functionality. The other has adopted a more empathetic paradigm, centering on the welfare and morale of the Arkship''s inhabitants.
 In the end, only one directive can remain.', NULL);
@@ -106917,6 +111751,16 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_core_conspiracy', 'approach_caeli', 'Empower Well-Being', NULL, 0, 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_core_conspiracy', 'stage_3', 'Stage III', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_core_conspiracy', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_core_conspiracy', 'stage_1', 'Stage I', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_core_conspiracy', 'stage_2_alt', 'Stage II', 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_core_conspiracy', 'stage_3_alt', 'Stage III', 4);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_nomad_economy', 'Operational Reserves', 'Our Operational Reserves are our combined energy and mineral reserves.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -106931,6 +111775,14 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_harvest_everything', 'Festival', NULL, 0, 3);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'Critical', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'Low', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_2_stable', 'Medium', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_3_thriving', 'High', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_grand_refurbishment', 'The Grand Refurbishment', 'The structural framework of Arkship has been assessed as overdue for comprehensive renovation. Work will continue by section, taking districts offline in sequence and temporarily displacing inhabitants.
 How the project is managed will determine the quality of the outcome.', 'neutral');
@@ -106943,16 +111795,28 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_grand_refurbishment', 'approach_refurbishment_intensive', 'Full Investment', NULL, 0, 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_grand_refurbishment', 'stage_refurbishment_generator', 'Reactor Arrays Overhaul', 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_grand_refurbishment', 'stage_refurbishment_farming', 'Arkship Deck Overhaul', 1);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_grand_refurbishment', 'stage_refurbishment_military', 'Ordnance Engineering Overhaul', 2);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_grand_refurbishment', 'stage_refurbishment_city', 'Habitation Decks Overhaul', 3);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_arkship_lithoid_consume_planet', 'Devouring', 'From the Arkship, our lithoid swarms descend in their thousands, feasting on the crust and mantle of this world until nothing remains.', 'positive');
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_arkship_lithoid_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_arkship_lithoid_consume_planet', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_arkship_nanotech_consume_planet', 'Subsuming', 'The Arkship releases its nanite swarms to dissolve and claim this world. Rock, soil, and atmosphere are broken down and reassembled into nanites.', 'positive');
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_arkship_nanotech_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);
+INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES ('situation_arkship_nanotech_consume_planet', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('GAS_GIANT_BODIES_PROJECT', 'Analyze Dead Space Creatures', 'We have found the dead remains of several large creatures in orbit around the gas giant . Our scientists would like to study them more closely to determine their origins.', 180, 'society_technology', '[{"event": "anomaly.2501", "name": null}]');

@@ -48,6 +48,12 @@ def _text(loc: dict[str, str], key: str | None, newlines: bool = False) -> str |
     return _clean_loc(raw, loc, keep_newlines=newlines) if raw else None
 
 
+def stage_keys(data: dict) -> list[str]:
+    """A situation's stages in file order — the save's `stage` index (0 = the first)."""
+    stages = data.get('stages')
+    return [k for k, v in stages.items() if isinstance(v, dict)] if isinstance(stages, dict) else []
+
+
 def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
@@ -64,7 +70,7 @@ def _files(d: Path) -> list[Path]:
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        progress=sys.stderr) -> None:
     common = install_dir / 'common'
-    n_sit = n_appr = 0
+    n_sit = n_appr = n_stage = 0
     for f in _files(common / 'situations'):
         for key, data in parse_file(f).items():
             if key.startswith('@') or not isinstance(data, dict):
@@ -85,6 +91,12 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                     (key, name, _text(loc, name), _text(loc, f'{name}_tooltip', True),
                      1 if a.get('default') == 'yes' else 0, order))
                 n_appr += 1
+            for order, stage in enumerate(stage_keys(data)):
+                w.execute(
+                    """INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
+                       VALUES (?, ?, ?, ?)""",
+                    (key, stage, _text(loc, stage), order))
+                n_stage += 1
 
     n_proj = 0
     for f in _files(common / 'special_projects'):
@@ -104,5 +116,6 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                  _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc)))
             n_proj += 1
 
-    print(f"  {n_sit} situations, {n_appr} approaches, {n_proj} special projects", file=progress)
+    print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages, {n_proj} special projects",
+          file=progress)
     w.commit()

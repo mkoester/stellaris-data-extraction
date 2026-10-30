@@ -127,11 +127,23 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
 # Extraction: prescripted names
 # ---------------------------------------------------------------------------
 
+_SHIP_NAME = re.compile(r'^[A-Za-z0-9]+_SHIP_(.+)$')
+
+
+def _ship_name(key: str, text: str) -> bool:
+    """A name list's ship name whose text is more than its key's tail (`HUM1_SHIP_PeshnabtheFaithful`
+    = "Peshnab the Faithful"): a save names ships, a nomad's arkship colony among them, by key."""
+    m = _SHIP_NAME.match(key)
+    return bool(m) and m.group(1) != text
+
+
 def prescripted_names(loc: dict[str, str], name_keys: set[str] = frozenset()) -> list[tuple[str, str]]:
-    """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key and of the `name_keys` (random-name
-    entries that are localisation keys), sorted (determinism)."""
+    """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key, of the `name_keys` (random-name
+    entries that are localisation keys) and of ship names that differ from their key, sorted
+    (determinism)."""
     return sorted((k, _clean_loc(v, loc)) for k, v in loc.items()
-                  if (k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) or k in name_keys)
+                  if (k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) or k in name_keys
+                      or _ship_name(k, v))
                   and v and _clean_loc(v, loc))
 
 

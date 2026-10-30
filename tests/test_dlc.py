@@ -52,6 +52,12 @@ class TestPrescriptedNames(unittest.TestCase):
         loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
 
+    def test_ship_names_that_differ_from_their_key(self):
+        # 4.5.2 localisation/english/name_lists/name_list_HUM1_l_english.yml; a nomad's arkship
+        loc = {'HUM1_SHIP_PeshnabtheFaithful': 'Peshnab the Faithful', 'HUM1_SHIP_Byzantium': 'Byzantium'}
+        self.assertEqual(prescripted_names(loc),
+                         [('HUM1_SHIP_PeshnabtheFaithful', 'Peshnab the Faithful')])
+
 
 if __name__ == '__main__':
     unittest.main()

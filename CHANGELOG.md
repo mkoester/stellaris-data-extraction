@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format follows
 
 - `ethic.sort_order`: the order the ethics are defined in, which is the index of a save's
   per-ethic lists (`country.ethics_distribution`, …), for the empire dashboard's ethics tab.
+- `situation_stage`: each situation's stages with their names, in the order a save's `stage`
+  counts them (the nomads' Operational Reserves: Critical, Low, Medium, High).
+- `prescripted_name` also holds the name lists' ship names that differ from their key
+  (`HUM1_SHIP_PeshnabtheFaithful` = "Peshnab the Faithful"), as a save names ships by key.
 
 ## [0.1.3] - 2026-10-27
 

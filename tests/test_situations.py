@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Unit tests for the outcome events of anomalies and special projects."""
+"""Unit tests for situation stages and the outcome events of anomalies and special projects."""
 import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import event_ids, outcomes_json
+from extractor.situations import event_ids, outcomes_json, stage_keys
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
 ANOMALY = """
@@ -17,6 +17,20 @@ on_success = {
 	1 = anomaly.35
 }
 """
+
+
+class TestStages(unittest.TestCase):
+    # shaped like situation_nomad_economy (common/situations/14_nomads_situations.txt)
+    def test_file_order(self):
+        data = Parser(tokenize("""stages = {
+            situation_nomad_economy_stage_critical = { end = 1000 }
+            situation_nomad_economy_stage_1_struggle = { end = 5000 }
+        }""")).parse()
+        self.assertEqual(stage_keys(data), ['situation_nomad_economy_stage_critical',
+                                            'situation_nomad_economy_stage_1_struggle'])
+
+    def test_none(self):
+        self.assertEqual(stage_keys({}), [])
 
 
 class TestOutcomes(unittest.TestCase):

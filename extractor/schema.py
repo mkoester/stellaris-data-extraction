@@ -1133,7 +1133,9 @@ CREATE TABLE astral_action_cooldown (
     name  TEXT,
     days  INTEGER NOT NULL
 );
--- Situations (common/situations) and their approaches, special projects (common/special_projects).
+-- Situations (common/situations) and their approaches and stages, special projects
+-- (common/special_projects).
+DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;
 DROP TABLE IF EXISTS special_project;
@@ -1150,6 +1152,13 @@ CREATE TABLE situation_approach (
     tooltip       TEXT,
     is_default    INTEGER NOT NULL DEFAULT 0,
     sort_order    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, key)
+);
+CREATE TABLE situation_stage (
+    situation_key TEXT NOT NULL,
+    key           TEXT NOT NULL,           -- e.g. "situation_nomad_economy_stage_2_stable"
+    name          TEXT,                    -- e.g. "Medium"
+    sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
 );
 CREATE TABLE special_project (
