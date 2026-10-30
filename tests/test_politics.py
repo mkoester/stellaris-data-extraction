@@ -80,8 +80,18 @@ class TestAttractionStructured(unittest.TestCase):
                              {'leaf': 'species_has_living_standard', 'value': 'living_standard_good'},
                              {'leaf': 'species_has_trait', 'value': 'trait_decadent'}]})
 
-    def test_anything_else_stays_opaque(self):
+    def test_citizenship_and_slavery(self):
         self.assertEqual(self.norm("any_owned_species = { is_robotic = no NOT = { is_same_species = root } }"),
+                         {'leaf': 'other_organic_species', 'value': 'yes'})
+        self.assertEqual(self.norm("count_owned_species = { limit = { is_sapient = yes is_robotic = no "
+                                   "NOT = { has_citizenship_type = { type = citizenship_full country = root } } } "
+                                   "count = 0 }"),
+                         {'leaf': 'all_organic_full_citizenship', 'value': 'yes'})
+        self.assertEqual(self.norm("any_enslaved_species = { is_robotic = no }"),
+                         {'leaf': 'enslaved_organic_species', 'value': 'yes'})
+
+    def test_anything_else_stays_opaque(self):
+        self.assertEqual(self.norm("any_owned_species = { is_robotic = no is_sapient = yes }"),
                          {'leaf': 'any_owned_species', 'value': 'scope'})
 
 

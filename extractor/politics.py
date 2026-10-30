@@ -55,7 +55,12 @@ def attraction_structured(dlc: dict, variables: dict):
     `council_leader_ethic`, `any_owned_planet = { exists = leader leader = { has_ethic = X } }` →
     `governor_ethic`, `num_assigned_jobs = { job = X value > 0 }` → `assigned_jobs`,
     `has_living_standard = { type = X }`, and `any_owned_species = {…}` of living standards, traits
-    or robotic only, or-ed → `species_<leaf>` (any species with any of them). Others stay opaque."""
+    or robotic only, or-ed → `species_<leaf>` (any species with any of them); citizenship and
+    slavery as egalitarian's reasons ask them — `any_owned_species = { is_robotic = no NOT = {
+    is_same_species = root } }` → `other_organic_species` (another organic species than the pop's),
+    `count_owned_species = { limit = { … NOT = { has_citizenship_type = { type = citizenship_full } }
+    } count = 0 }` → `all_organic_full_citizenship`, `any_enslaved_species = { is_robotic = no }` →
+    `enslaved_organic_species`. Others stay opaque."""
     def hook(k, v):
         if not isinstance(v, dict):
             return None
@@ -73,6 +78,17 @@ def attraction_structured(dlc: dict, variables: dict):
             if (isinstance(leader, dict) and set(leader) == {'has_ethic'}
                     and set(v) <= {'exists', 'leader'}):
                 return {'leaf': 'governor_ethic', 'value': leader['has_ethic']}
+        if (k == 'any_owned_species' and set(v) == {'is_robotic', 'NOT'}
+                and v['is_robotic'] == 'no' and v['NOT'] == {'is_same_species': 'root'}):
+            return {'leaf': 'other_organic_species', 'value': 'yes'}
+        if k == 'any_enslaved_species' and v == {'is_robotic': 'no'}:
+            return {'leaf': 'enslaved_organic_species', 'value': 'yes'}
+        if k == 'count_owned_species' and str(v.get('count')) == '0':
+            limit = v.get('limit') if isinstance(v.get('limit'), dict) else {}
+            lacks = limit.get('NOT') if isinstance(limit.get('NOT'), dict) else {}
+            cit = lacks.get('has_citizenship_type')
+            if limit.get('is_robotic') == 'no' and isinstance(cit, dict) and cit.get('type') == 'citizenship_full':
+                return {'leaf': 'all_organic_full_citizenship', 'value': 'yes'}
         if k == 'num_assigned_jobs' and isinstance(v.get('job'), str):
             value = v.get('value')
             if getattr(value, 'op', None) == '>' and str(value.value) == '0':

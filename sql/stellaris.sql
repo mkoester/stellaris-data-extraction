@@ -96711,9 +96711,9 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
                    factor_text, trigger_json) VALUES ('ethic_egalitarian', 3, 'tag', '+ Empire has Diplomactic Pacts with other Egalitarian Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
-                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 4, 'tag', '+ Empire grants citizenship to all resident species', NULL, NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"count_owned_species","value":"scope"}]}');
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 4, 'tag', '+ Empire grants citizenship to all resident species', NULL, NULL, '{"op":"and","args":[{"leaf":"other_organic_species","value":"yes"},{"leaf":"all_organic_full_citizenship","value":"yes"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
-                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 5, 'tag', '+ Pop is enslaved', NULL, NULL, '{"leaf":"any_enslaved_species","value":"scope"}');
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 5, 'tag', '+ Pop is enslaved', NULL, NULL, '{"leaf":"enslaved_organic_species","value":"yes"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
                    factor_text, trigger_json) VALUES ('ethic_egalitarian', 6, 'tag', '+ Empire has Democratic Authority', NULL, NULL, '{"leaf":"has_election_type","value":"democratic"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
@@ -96749,7 +96749,7 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
                    factor_text, trigger_json) VALUES ('ethic_egalitarian', 22, 'country', 'From Authority', '1.25', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"democratic"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
-                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 23, 'country', 'All Species have Citizenship', '1.25', NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"count_owned_species","value":"scope"}]}');
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 23, 'country', 'All Species have Citizenship', '1.25', NULL, '{"op":"and","args":[{"leaf":"other_organic_species","value":"yes"},{"leaf":"all_organic_full_citizenship","value":"yes"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
                    factor_text, trigger_json) VALUES ('ethic_egalitarian', 24, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|egalitarian|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,

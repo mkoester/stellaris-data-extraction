@@ -15,7 +15,8 @@ All notable changes to this project are documented here. The format follows
 - `ethic_attraction`: each ethic's own attraction rules — the empire-wide `country_attraction`
   factors and the `pop_attraction_tag` reasons — with their conditions, normalised; the scopes
   the reasons look into (council and governor ethics, assigned jobs, our species' living standards
-  and traits) as leaves a save can answer.
+  and traits; another organic species, all on full citizenship, one enslaved) as leaves a save
+  can answer.
 - `authority.election_type` (democratic / oligarchic / none), which `has_election_type` tests.
 - `prescripted_name` also holds the name lists' ship names that differ from their key
   (`HUM1_SHIP_PeshnabtheFaithful` = "Peshnab the Faithful"), as a save names ships by key.
