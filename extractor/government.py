@@ -126,6 +126,12 @@ def _ethic_axis(ethic_data: dict) -> tuple[int | None, int]:
     return value, 1 if ethic_data.get('category_opposite') == 'yes' else 0
 
 
+def election_type(adef: dict) -> str:
+    """An authority's `election_type` (99_README: oligarchic / democratic / none, default none)."""
+    v = adef.get('election_type')
+    return v.strip('"') if isinstance(v, str) else 'none'
+
+
 def _ethic_entries(data: dict) -> list[tuple[str, dict]]:
     """The ethics in the order the files define them: the game's ethic index, which a save's
     per-ethic arrays (`country.ethics_distribution`, …) follow."""
@@ -475,9 +481,9 @@ def extract_authorities(data: dict, loc: dict[str, str],
 
         w.execute(
             """INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (key, name, description, dlc, selectable, icon, order),
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, name, description, dlc, selectable, icon, order, election_type(adef)),
         )
         if verbose:
             print(f"  authority {key} | {name}"

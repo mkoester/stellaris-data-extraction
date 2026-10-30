@@ -206,6 +206,7 @@ CREATE TABLE trait_category (
 
 DROP TABLE IF EXISTS ethic_policy_restriction;
 DROP TABLE IF EXISTS ethic_tag;
+DROP TABLE IF EXISTS ethic_attraction;
 DROP TABLE IF EXISTS ethic_modifier;
 DROP TABLE IF EXISTS ethic;
 CREATE TABLE ethic (
@@ -219,6 +220,18 @@ CREATE TABLE ethic (
     category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
     category_opposite INTEGER NOT NULL DEFAULT 0, -- 1 on the axis' second pole (egalitarian, xenophile, …)
     sort_order      INTEGER NOT NULL DEFAULT 0  -- order in the files: the index of a save's per-ethic arrays
+);
+
+CREATE TABLE ethic_attraction (
+    ethic_key    TEXT NOT NULL,
+    sort_order   INTEGER NOT NULL,         -- file order within the ethic
+    kind         TEXT NOT NULL,            -- 'tag': a reason the tooltip names (pop_attraction_tag);
+                                           -- 'country': an empire-wide factor (country_attraction)
+    description  TEXT,                     -- localised desc, e.g. "Owns Robots"
+    factor       REAL,                     -- 'country': the factor, when a number
+    factor_text  TEXT,                     -- 'country': the script value otherwise
+    trigger_json TEXT,                     -- the condition, normalised; NULL = always
+    PRIMARY KEY (ethic_key, sort_order)
 );
 
 CREATE TABLE ethic_modifier (
@@ -354,6 +367,7 @@ CREATE TABLE authority (
     selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
+    election_type TEXT NOT NULL DEFAULT 'none',  -- democratic / oligarchic / none (the trigger has_election_type)
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
@@ -30363,8 +30377,8 @@ INSERT OR REPLACE INTO government_type (key, name) VALUES ('gov_war_splinter', '
 INSERT OR REPLACE INTO government_type (key, name) VALUES ('gov_wilderness', 'Collective Consciousness');
 INSERT OR REPLACE INTO government_type (key, name) VALUES ('gov_worker_coop', 'Worker Cooperative');
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_democratic', 'Democratic', 'Democratic governments have regular elections where all citizens can vote on who should represent them.', NULL, 1, NULL, 0);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_democratic', 'Democratic', 'Democratic governments have regular elections where all citizens can vote on who should represent them.', NULL, 1, NULL, 0, 'democratic');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_democratic', 'faction_approval', '0.1', 0);
@@ -30385,8 +30399,8 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_democratic', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_oligarchic', 'Oligarchic', 'Oligarchic governments are ruled by a small group of individuals that hold all political power.', NULL, 1, NULL, 1);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_oligarchic', 'Oligarchic', 'Oligarchic governments are ruled by a small group of individuals that hold all political power.', NULL, 1, NULL, 1, 'oligarchic');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_oligarchic', 'councilor_skill_add', '2.0', 0);
@@ -30402,8 +30416,8 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_oligarchic', 'ethic', 'forbid', 'ethic_fanatic_authoritarian', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_dictatorial', 'Dictatorial', 'Dictatorial governments are ruled by a single individual for life that wields absolute control over the state.', NULL, 1, NULL, 2);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_dictatorial', 'Dictatorial', 'Dictatorial governments are ruled by a single individual for life that wields absolute control over the state.', NULL, 1, NULL, 2, 'oligarchic');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_dictatorial', 'councilor_ruler_dictatorial_exp_gain', '0.25', 0);
@@ -30424,8 +30438,8 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_dictatorial', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_imperial', 'Imperial', 'Imperial governments are similar to dictatorial ones, except that the throne is always inherited by a designated successor upon the ruler''s death.', NULL, 1, NULL, 3);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_imperial', 'Imperial', 'Imperial governments are similar to dictatorial ones, except that the throne is always inherited by a designated successor upon the ruler''s death.', NULL, 1, NULL, 3, 'none');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_imperial', 'country_leader_pool_size', '-1.0', 0);
@@ -30441,9 +30455,9 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_imperial', 'ethic', 'forbid', 'ethic_fanatic_egalitarian', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
                VALUES ('auth_hive_mind', 'Hive Mind', 'Hive Minds operate as a single organism more than as a state. The population has no free will, and act as an extension of the gestalt consciousness itself, much like the limbs of a body.
-When cut off from the Mind, these drones become comatose and eventually wither and die. Any free individuals on planets owned by the Mind are driven away, killed, or simply treated as prey to feed the collective.', NULL, 1, NULL, 4);
+When cut off from the Mind, these drones become comatose and eventually wither and die. Any free individuals on planets owned by the Mind are driven away, killed, or simply treated as prey to feed the collective.', NULL, 1, NULL, 4, 'none');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_hive_mind', 'logistic_growth_mult', '0.25', 0);
@@ -30461,8 +30475,8 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_hive_mind', 'archetype', 'forbid', 'MACHINE', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_machine_intelligence', 'Machine Intelligence', 'Machine Intelligences are immense artificial group minds that have been networked into a single gestalt consciousness. Most of the actual', NULL, 1, NULL, 5);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_machine_intelligence', 'Machine Intelligence', 'Machine Intelligences are immense artificial group minds that have been networked into a single gestalt consciousness. Most of the actual', NULL, 1, NULL, 5, 'none');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_machine_intelligence', 'colony_start_urban_districts_add', '1.0', 0);
@@ -30490,11 +30504,11 @@ INSERT OR IGNORE INTO authority_requirement
                        (authority_key, kind, operator, value, group_id)
                    VALUES ('auth_machine_intelligence', 'archetype', 'require', 'MACHINE', 0);
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, NULL, 0, 'gfx/interface/icons/governments/authorities/auth_hive_mind.dds', 6);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_ancient_machine_intelligence', 'Ancient Machine Intelligence', NULL, NULL, 0, 'gfx/interface/icons/governments/authorities/auth_hive_mind.dds', 6, 'none');
 INSERT OR REPLACE INTO authority
-                   (key, name, description, required_dlc, selectable, icon, sort_order)
-               VALUES ('auth_corporate', 'Corporate', 'Corporate governments are organized as a massive commercial enterprise that has completely supplanted the role of the state.', 'MegaCorp', 1, NULL, 7);
+                   (key, name, description, required_dlc, selectable, icon, sort_order, election_type)
+               VALUES ('auth_corporate', 'Corporate', 'Corporate governments are organized as a massive commercial enterprise that has completely supplanted the role of the state.', 'MegaCorp', 1, NULL, 7, 'oligarchic');
 INSERT OR IGNORE INTO authority_modifier
                            (authority_key, modifier_key, modifier_value, sort_order)
                        VALUES ('auth_corporate', 'planet_jobs_trade_produces_mult', '0.1', 0);
@@ -96630,6 +96644,500 @@ INSERT INTO faction_demand (faction_key, sort_order, title, unfulfilled_title,
 INSERT INTO faction_demand (faction_key, sort_order, title, unfulfilled_title,
                    description, fulfilled_effect, unfulfilled_effect, potential_json, trigger_json)
                    VALUES ('xenoist', 25, 'Faction Pleased', 'Faction Pleased', 'The is pleased with a Resolution we recently proposed and passed in the .', '-20.0', '-0.001', '{"leaf":"has_country_flag","value":"galcom_resolution_passed_pro_xenoist"}', '{"leaf":"has_country_flag","value":"galcom_resolution_passed_pro_xenoist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 0, 'tag', '+ Empire has Authoritarian Governing Ethics', NULL, NULL, '{"leaf":"is_authoritarian","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"has_faction","value":"totalitarian"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 2, 'tag', '+ Pop is free and planet has slaves with same species', NULL, NULL, '{"leaf":"any_enslaved_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 3, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 4, 'tag', '+ Pop lives on a planet with Xeno Slaves', NULL, NULL, '{"op":"and","args":[{"leaf":"any_enslaved_species","value":"scope"},{"op":"not","args":[{"leaf":"any_enslaved_species","value":"scope"}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 5, 'tag', '- Pop has High Living Standards', NULL, NULL, '{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"any_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 6, 'tag', '+ Pop has Stratified Living Standards and is not a Worker or Slave', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 7, 'tag', '+ Pop has Full Citizenship while others lack it', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 8, 'tag', '+ Empire has Autocratic Authority', NULL, NULL, '{"leaf":"has_election_type","value":"none"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 9, 'tag', '- Empire has Democratic Authority', NULL, NULL, '{"leaf":"has_election_type","value":"democratic"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 10, 'tag', '+ Pop has Decadent trait', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 11, 'tag', '+ Empire has Diplomactic Pacts with other Authoritarian Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 12, 'tag', '+ Empire We are a member of a Hegemony', NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 13, 'tag', '+ Pop works as a Noble', NULL, NULL, '{"leaf":"num_assigned_jobs","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 14, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 15, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 16, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 17, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 18, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 19, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 20, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_authoritarian","value":"no"}]},{"leaf":"has_faction","value":"totalitarian"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 21, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|authoritarian|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 22, 'country', 'From Federation Type', '1.5', NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 23, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_authoritarian"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 24, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 25, 'country', 'From Authority', '1.25', NULL, '{"leaf":"has_election_type","value":"none"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 26, 'country', 'From Authority', '0.75', NULL, '{"leaf":"has_election_type","value":"democratic"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 27, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|authoritarian|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_authoritarian', 28, 'country', 'From Relations', NULL, 'value:authoritarian_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 0, 'tag', '+ Empire has Egalitarian Governing Ethics', NULL, NULL, '{"leaf":"is_egalitarian","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_egalitarian","value":"no"},{"leaf":"has_faction","value":"progressive"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 2, 'tag', '+ Pop has High Living Standards', NULL, NULL, '{"op":"and","args":[{"leaf":"is_authoritarian","value":"no"},{"leaf":"any_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 3, 'tag', '+ Empire has Diplomactic Pacts with other Egalitarian Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 4, 'tag', '+ Empire grants citizenship to all resident species', NULL, NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"count_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 5, 'tag', '+ Pop is enslaved', NULL, NULL, '{"leaf":"any_enslaved_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 6, 'tag', '+ Empire has Democratic Authority', NULL, NULL, '{"leaf":"has_election_type","value":"democratic"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 7, 'tag', '- Empire has Autocratic Authority', NULL, NULL, '{"leaf":"has_election_type","value":"none"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 8, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 9, 'tag', '- Pop has Decadent trait', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 10, 'tag', '- Pop works as a Noble', NULL, NULL, '{"leaf":"num_assigned_jobs","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 11, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 12, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 13, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 14, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 15, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 16, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 17, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_egalitarian","value":"no"}]},{"leaf":"has_faction","value":"progressive"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 18, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_egalitarian"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 19, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 20, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|egalitarian|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 21, 'country', 'From Authority', '0.75', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"none"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 22, 'country', 'From Authority', '1.25', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"democratic"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 23, 'country', 'All Species have Citizenship', '1.25', NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"count_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 24, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|egalitarian|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_egalitarian', 25, 'country', 'From Relations', NULL, 'value:egalitarian_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 0, 'tag', '+ Empire has Xenophobe Governing Ethics', NULL, NULL, '{"leaf":"is_xenophobe","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_xenophobe","value":"no"},{"op":"or","args":[{"leaf":"has_faction","value":"supremacist"},{"leaf":"has_faction","value":"isolationist"}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 2, 'tag', '+ Empire has Fanatical Purifiers Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 3, 'tag', '+ Empire has Inward Perfection Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 4, 'tag', '+ Empire is defending against Xenos', NULL, NULL, '{"op":"and","args":[{"leaf":"is_at_war","value":"yes"},{"leaf":"any_war","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 5, 'tag', '+ Pop lives on a planet with Repugnant Xenos', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 6, 'tag', '+ Pop lives on a planet with Noxious Xenos', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 7, 'tag', '+ Pop lives on a planet with Xeno Slaves', NULL, NULL, '{"leaf":"any_enslaved_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 8, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 9, 'tag', '+ An alien Empire has enslaved Pops of our Species', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 10, 'tag', '+ Empire is complicit in genocide', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 11, 'tag', '+ An alien Empire has purged Pops of our Species', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 12, 'tag', '+ Empire Homicidal neighbor', NULL, NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 13, 'tag', '- Empire has Xeno Leadership Species Rights', NULL, NULL, '{"leaf":"allows_alien_leaders","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 14, 'tag', '- Pop lives on a planet with Free Xenos', NULL, NULL, '{"leaf":"any_owned_pop_group","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 15, 'tag', '- Empire has Migration Treaties with Xenos', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 16, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 17, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 18, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 19, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 20, 'country', 'Has Supremacist Faction or Isolationist Faction', '2.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophobe","value":"no"},{"op":"or","args":[{"leaf":"has_faction","value":"supremacist"},{"leaf":"has_faction","value":"isolationist"}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 21, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_xenophobe"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 22, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 23, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|xenophobe|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 24, 'country', NULL, '1.5', NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 25, 'country', NULL, '1.5', NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 26, 'country', 'Different Species with Citizenship', '0.75', NULL, '{"leaf":"allows_alien_leaders","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 27, 'country', 'Defending against Xenos', '3.0', NULL, '{"leaf":"any_war","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 28, 'country', 'From Slaves taken by Alien Empires', '2.0', NULL, '{"op":"and","args":[{"leaf":"species","value":"scope"},{"leaf":"any_relation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 29, 'country', 'From Homicidal Empires', '3.0', NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 30, 'country', 'From Alien Empires Purges', '4.0', NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 31, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 32, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 33, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|xenophobe|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophobe', 34, 'country', 'From Relations', NULL, 'value:xenophobe_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 0, 'tag', '+ Empire has Xenophile Governing Ethics', NULL, NULL, '{"leaf":"is_xenophile","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_xenophile","value":"no"},{"leaf":"has_faction","value":"xenoist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 2, 'tag', '+ Pop lives on a planet with Free Xenos', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 3, 'tag', '+ Empire has Diplomacy with Xenos', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 4, 'tag', '+ Empire has Migration Treaties with Xenos', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 5, 'tag', '+ Pop lives on a planet with Charismatic Xenos', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 6, 'tag', '- Empire has Fanatical Purifiers Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 7, 'tag', '- Empire has Inward Perfection Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 8, 'tag', '- An alien Empire has enslaved Pops of our Species', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 9, 'tag', '- Empire is complicit in genocide', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 10, 'tag', '- An alien Empire has purged Pops of our Species', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 11, 'tag', '- Pop is a Necrophage and procreates by consuming other species', NULL, NULL, '{"op":"and","args":[{"leaf":"has_origin","value":"origin_necrophage"},{"leaf":"has_trait","value":"trait_necrophage"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 12, 'tag', '+ Empire has Xeno Leadership Species Rights', NULL, NULL, '{"leaf":"allows_alien_leaders","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 13, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 14, 'tag', '+ Pop lives on a planet with a Xeno-Outreach Agency', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 15, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 16, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 17, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 18, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 19, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophile","value":"no"}]},{"leaf":"has_faction","value":"xenoist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 20, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_xenophile"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 21, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 22, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|xenophile|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 23, 'country', NULL, '0.5', NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 24, 'country', NULL, '0.33', NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 25, 'country', 'Different Species with Citizenship', '1.5', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"allows_alien_leaders","value":"yes"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 26, 'country', 'From Alien Empires Purges', '0.25', NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 27, 'country', 'From Homicidal Empires', '0.35', NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 28, 'country', 'From Xenos Slavery', '0.5', NULL, '{"op":"and","args":[{"leaf":"is_same_species","value":"root"},{"leaf":"any_relation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 29, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 30, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 31, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|xenophile|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_xenophile', 32, 'country', 'From Relations', NULL, 'value:xenophile_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 0, 'tag', '+ Empire has Militarist Governing Ethics', NULL, NULL, '{"leaf":"is_militarist","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_militarist","value":"no"},{"leaf":"has_faction","value":"imperialist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 2, 'tag', '+ Empire is at war', NULL, NULL, '{"leaf":"is_at_war","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 3, 'tag', '+ Empire is at war with our rival', NULL, NULL, '{"op":"and","args":[{"leaf":"is_at_war","value":"yes"},{"leaf":"any_war","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 4, 'tag', '+ Empire recently lost a war', NULL, NULL, '{"leaf":"recently_lost_war","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 5, 'tag', '+ An alien Empire has conquered our colony(ies)', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 6, 'tag', '+ An alien Empire has occupied our colony(ies)', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 7, 'tag', '+ Pop is a citizen and Empire is bordering an enemy empire', NULL, NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 8, 'tag', '+ Pop has trait Strong or Very Strong', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 9, 'tag', '- Empire has had a long period of peace', NULL, NULL, '{"leaf":"years_of_peace","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 10, 'tag', '- Pop has trait Weak', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 11, 'tag', '- Empire has Inward Perfection Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 12, 'tag', '+ Empire We are a member of a Martial Alliance', NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 13, 'tag', '+ Pop works as a Duelist', NULL, NULL, '{"leaf":"num_assigned_jobs","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 14, 'tag', '+ Pop works as a Soldier', NULL, NULL, '{"leaf":"num_assigned_jobs","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 15, 'tag', '+ Empire Militarily superior rival neighbor', NULL, NULL, '{"leaf":"any_rival_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 16, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 17, 'tag', '- Empire has enacted Defensive Wars Only', NULL, NULL, '{"leaf":"has_policy_flag","value":"no_wars"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 18, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 19, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 20, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 21, 'tag', '+ Empire Ethic embraced by The Templars of Steel', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 22, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 23, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_militarist","value":"no"}]},{"leaf":"has_faction","value":"imperialist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 24, 'country', 'From Federation Type', '1.5', NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 25, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_militarist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 26, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 27, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|militarist|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 28, 'country', NULL, '0.33', NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 29, 'country', 'From Lasting Peace', NULL, 'value:militarist_ethics_from_peace', '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 30, 'country', 'From Wars', '2.0', NULL, '{"leaf":"is_at_war","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 31, 'country', 'From Rivals in Wars', '1.5', NULL, '{"op":"and","args":[{"leaf":"is_at_war","value":"yes"},{"leaf":"any_war","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 32, 'country', 'War Recently Lost', '2.0', NULL, '{"leaf":"recently_lost_war","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 33, 'country', 'From Hostile Neighbors', '1.5', NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 34, 'country', 'Superior Rival Military', '1.25', NULL, '{"leaf":"any_rival_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 35, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 36, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 37, 'country', 'Lost Colonies', '2.0', NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 38, 'country', NULL, '0.75', NULL, '{"leaf":"has_policy_flag","value":"no_wars"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 39, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|militarist|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_militarist', 40, 'country', 'From Creed', '1.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_war"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 0, 'tag', '+ Empire has Pacifist Governing Ethics', NULL, NULL, '{"leaf":"is_pacifist","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_pacifist","value":"no"},{"leaf":"has_faction","value":"prosperity"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 2, 'tag', '+ Empire has had a long period of peace', NULL, NULL, '{"leaf":"years_of_peace","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 3, 'tag', '+ Empire has Inward Perfection Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 4, 'tag', '+ Pop has trait Weak', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 5, 'tag', '- Pop is a citizen and Empire is bordering an enemy empire', NULL, NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 6, 'tag', '- Empire has Fanatical Purifiers Civic', NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 7, 'tag', '- Pop works as a Duelist', NULL, NULL, '{"leaf":"num_assigned_jobs","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 8, 'tag', '- Empire has enacted Unrestricted Warfare', NULL, NULL, '{"leaf":"has_policy_flag","value":"unrestricted_wars"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 9, 'tag', '+ Empire has Non-Aggression Pacts', NULL, NULL, '{"leaf":"num_non_aggression_pacts","cmp":">","value":"0"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 10, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 11, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 12, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 13, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 14, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 15, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_pacifist","value":"no"}]},{"leaf":"has_faction","value":"prosperity"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 16, 'country', NULL, '1.5', NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 17, 'country', NULL, '0.5', NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 18, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_pacifist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 19, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 20, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|pacifist|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 21, 'country', 'From Lasting Peace', NULL, 'value:pacifist_ethics_from_peace', '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 22, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 23, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 24, 'country', NULL, '0.75', NULL, '{"leaf":"has_policy_flag","value":"unrestricted_wars"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 25, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|pacifist|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_pacifist', 26, 'country', 'From Non-Aggression Pacts', NULL, 'value:pacifist_ethics_from_pacts', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 0, 'tag', '+ Empire has Spiritualist Governing Ethics', NULL, NULL, '{"leaf":"is_spiritualist","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_spiritualist","value":"no"},{"leaf":"has_faction","value":"traditionalist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 2, 'tag', '+ Empire has Psionic capabilities or Pops', NULL, NULL, '{"op":"or","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_psionic_theory"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"},{"leaf":"any_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 3, 'tag', '+ Empire has Diplomacy with Spiritualist Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 4, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 5, 'tag', '- Pop is Robotic', NULL, NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"is_individual_machine","value":"no"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 6, 'tag', '- Empire has Full Rights for AI', NULL, NULL, '{"op":"and","args":[{"leaf":"has_policy_flag","value":"ai_full_rights"},{"leaf":"is_individual_machine","value":"no"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 7, 'tag', '+ Empire We are a member of a Holy Covenant', NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 8, 'tag', '+ Empire Proselytizing Envoys assigned to the Federation', NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"},{"leaf":"any_owned_leader","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 9, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 10, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 11, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 12, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 13, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 14, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 15, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_spiritualist","value":"no"}]},{"leaf":"has_faction","value":"traditionalist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 16, 'country', 'From Federation Type', '1.5', NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 17, 'country', 'From Federation Leader', '1.2', NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"},{"leaf":"any_owned_leader","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 18, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_spiritualist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 19, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 20, 'country', NULL, '1.1', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 21, 'country', 'From Psionic Ascension', '1.5', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_psionic_ascension","value":"yes"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 22, 'country', 'From Psionic Traditions', '1.5', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 23, 'country', NULL, '0.75', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 24, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|spiritualist|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 25, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|spiritualist|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_spiritualist', 26, 'country', 'From Relations', NULL, 'value:spiritualist_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 0, 'tag', '+ Empire has Materialist Governing Ethics', NULL, NULL, '{"leaf":"is_materialist","value":"yes"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 1, 'tag', '+ Empire has an active non-governing Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"is_materialist","value":"no"},{"leaf":"has_faction","value":"technologist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 2, 'tag', '+ Empire has Mechanist Origin', NULL, NULL, '{"leaf":"has_origin","value":"origin_mechanists"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 3, 'tag', '+ Pop has trait Cybernetic', NULL, NULL, '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"any_owned_species","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 4, 'tag', '+ Pop lives on a planet with Robotic Pops', NULL, NULL, '{"op":"and","args":[{"leaf":"any_owned_species","value":"scope"},{"leaf":"is_individual_machine","value":"no"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 5, 'tag', '+ Empire has Full Rights for AI', NULL, NULL, '{"op":"and","args":[{"leaf":"has_policy_flag","value":"ai_full_rights"},{"leaf":"is_individual_machine","value":"no"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 6, 'tag', '+ Overlord Ethics', NULL, NULL, '{"op":"and","args":[{"leaf":"is_subject","value":"yes"},{"leaf":"has_loyalty","cmp":">","value":"0"},{"leaf":"overlord","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 7, 'tag', '+ Empire has Research Agreements with Materialist Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 8, 'tag', '+ Empire has Diplomacy with Materialist Empires', NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 9, 'tag', '+ Pop has any Natural Scientist trait', NULL, NULL, '{"leaf":"any_owned_species","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 10, 'tag', '- Pop works as a Priest, High Priest, Death Priest, or Prosperity Preacher', NULL, NULL, '{"op":"and","args":[{"leaf":"is_spiritualist","value":"yes"},{"leaf":"num_assigned_jobs","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 11, 'tag', '+ Empire We are a member of a Research Cooperative', NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 12, 'tag', '+ Empire Ethic represented on Council', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 13, 'tag', '+ Empire Ethic embraced by Planetary Governor', NULL, NULL, '{"leaf":"any_owned_planet","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 14, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 15, 'tag', '+ Empire Ethic embraced by The Choir of the Mind', NULL, NULL, '{"leaf":"owner","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 16, 'country', 'From Empire', '0.0', NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 17, 'country', 'From Observer', '20.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 18, 'country', 'From Observer', '10.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 19, 'country', NULL, '2.0', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_materialist","value":"no"}]},{"leaf":"has_faction","value":"technologist"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 20, 'country', 'From Federation Type', '1.5', NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 21, 'country', NULL, '2.0', NULL, '{"leaf":"has_ethic","value":"ethic_materialist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 22, 'country', NULL, '3.0', NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 23, 'country', NULL, '1.25', NULL, '{"leaf":"has_origin","value":"origin_mechanists"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 24, 'country', NULL, '1.25', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 25, 'country', 'FROM_OVERLORD', NULL, 'value:ethics_from_overlord|ETHIC|materialist|', '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 26, 'country', 'From Council', NULL, 'value:count_councilors_with_ethic|ETHIC|materialist|', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 27, 'country', 'From Creed', '1.0', NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_research"}]}');
+INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES ('ethic_materialist', 28, 'country', 'From Relations', NULL, 'value:materialist_ethics_from_relations', '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO prescripted_name (key, text) VALUES ('ANY_SHIP_IN_SYSTEM', 'Any ship in system');
 INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_AbyssalDrag', 'Abyssal Drag');
 INSERT INTO prescripted_name (key, text) VALUES ('AQUATIC1_SHIP_AbyssalSurveyor', 'Abyssal Surveyor');

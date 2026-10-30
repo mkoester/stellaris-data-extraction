@@ -4,7 +4,7 @@ import unittest
 
 from extractor.clausewitz import IfBlock
 from extractor.government import (_civic_requirements, _ethic_axis, _ethic_entries,
-                                  _granted_traits, ascension_restrictions)
+                                  _granted_traits, ascension_restrictions, election_type)
 from extractor.traits import _trait_requirements
 
 
@@ -28,6 +28,13 @@ class TestEthicEntries(unittest.TestCase):
         self.assertEqual([k for k, _ in _ethic_entries(data)],
                          ['ethic_fanatic_authoritarian', 'ethic_authoritarian',
                           'ethic_gestalt_consciousness'])
+
+
+class TestElectionType(unittest.TestCase):
+    # auth_democratic and auth_imperial (common/governments/authorities/00_authorities.txt, 4.5.2)
+    def test_set_or_none(self):
+        self.assertEqual(election_type({'election_type': 'democratic'}), 'democratic')
+        self.assertEqual(election_type({}), 'none')
 
 
 class TestNomadicGate(unittest.TestCase):

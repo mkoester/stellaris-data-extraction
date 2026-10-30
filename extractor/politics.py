@@ -1,4 +1,5 @@
-"""Extraction: policies with their options, and pop faction types with their demands."""
+"""Extraction: policies with their options, pop faction types with their demands, and what draws
+pops to each ethic."""
 
 from pathlib import Path
 import re
@@ -41,6 +42,27 @@ def _number(v) -> float | None:
         return float(str(v))
     except (TypeError, ValueError):
         return None
+
+
+_FACTOR_KEYS = ('factor', 'mult', 'add', 'desc')
+
+
+def attraction_rules(data: dict) -> list[dict]:
+    """An ethic's attraction rules in file order (common/ethics/00_ethics.txt): each
+    `pop_attraction_tag` (a reason the game's tooltip names, `desc` + `trigger`) and each
+    `country_attraction` modifier (an empire-wide factor on the ethic: `factor` or `mult`, a number
+    or a script value, `desc`, the rest its condition)."""
+    out = []
+    for tag in _as_blocks(data.get('pop_attraction_tag')):
+        out.append({'kind': 'tag', 'desc': _unquote(tag.get('desc')), 'factor': None,
+                    'factor_text': None, 'trigger': tag.get('trigger')})
+    ca = data.get('country_attraction')
+    for m in _as_blocks(ca.get('modifier') if isinstance(ca, dict) else None):
+        raw = m.get('factor', m.get('mult'))
+        out.append({'kind': 'country', 'desc': _unquote(m.get('desc')), 'factor': _number(raw),
+                    'factor_text': None if _number(raw) is not None else _unquote(str(raw)),
+                    'trigger': {k: v for k, v in m.items() if k not in _FACTOR_KEYS} or None})
+    return out
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────
@@ -115,6 +137,16 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
                  dumps(ctx.trig(owner_scope(d.get('trigger')), fvars))))
             n_demands += 1
 
+    n_rules = 0
+    for key, (data, evars, _) in _load(common / 'ethics', scripted_vars).items():
+        for order, r in enumerate(attraction_rules(data)):
+            w.execute(
+                """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['factor'],
+                 r['factor_text'], dumps(ctx.trig(r['trigger'], evars))))
+            n_rules += 1
+
     print(f"  {len(policies)} policies, {n_options} options, {len(factions)} faction types, "
-          f"{n_demands} demands", file=progress)
+          f"{n_demands} demands, {n_rules} ethic attraction rules", file=progress)
     w.commit()

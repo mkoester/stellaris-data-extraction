@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.politics import expand_inline, owner_scope
+from extractor.politics import attraction_rules, expand_inline, owner_scope
 
 # Shaped like common/inline_scripts/pop_faction_types/demand_faction_pleased.txt.
 PLEASED = """
@@ -32,6 +32,28 @@ class TestPolitics(unittest.TestCase):
     def test_owner_scope_keeps_other_triggers(self):
         block = {'owner': {'is_at_war': 'yes'}, 'num_pops': '5'}
         self.assertIs(owner_scope(block), block)
+
+
+class TestAttractionRules(unittest.TestCase):
+    # shaped like ethic_materialist (common/ethics/00_ethics.txt, 4.5.2)
+    ETHIC = """
+    pop_attraction_tag = { desc = POP_ATTRACTION_ROBOT_RIGHTS_POS trigger = { has_policy_flag = ai_full_rights } }
+    country_attraction = {
+        base = 1
+        modifier = { factor = 2 has_ethic = ethic_materialist }
+        modifier = { factor = 1.5 has_federation = yes desc = FROM_FEDERATION }
+        modifier = { exists = overlord mult = value:ethics_from_overlord|ETHIC|materialist| desc = FROM_OVERLORD }
+    }
+    """
+
+    def test_tags_then_factors_with_their_conditions(self):
+        rules = attraction_rules(Parser(tokenize(self.ETHIC)).parse())
+        self.assertEqual([(r['kind'], r['desc'], r['factor']) for r in rules],
+                         [('tag', 'POP_ATTRACTION_ROBOT_RIGHTS_POS', None), ('country', None, 2.0),
+                          ('country', 'FROM_FEDERATION', 1.5), ('country', 'FROM_OVERLORD', None)])
+        self.assertEqual(rules[1]['trigger'], {'has_ethic': 'ethic_materialist'})
+        self.assertEqual(rules[3]['trigger'], {'exists': 'overlord'})
+        self.assertTrue(rules[3]['factor_text'].startswith('value:ethics_from_overlord'))
 
 
 if __name__ == '__main__':

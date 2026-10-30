@@ -211,6 +211,7 @@ CREATE TABLE trait_category (
 
 DROP TABLE IF EXISTS ethic_policy_restriction;
 DROP TABLE IF EXISTS ethic_tag;
+DROP TABLE IF EXISTS ethic_attraction;
 DROP TABLE IF EXISTS ethic_modifier;
 DROP TABLE IF EXISTS ethic;
 CREATE TABLE ethic (
@@ -224,6 +225,18 @@ CREATE TABLE ethic (
     category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
     category_opposite INTEGER NOT NULL DEFAULT 0, -- 1 on the axis' second pole (egalitarian, xenophile, …)
     sort_order      INTEGER NOT NULL DEFAULT 0  -- order in the files: the index of a save's per-ethic arrays
+);
+
+CREATE TABLE ethic_attraction (
+    ethic_key    TEXT NOT NULL,
+    sort_order   INTEGER NOT NULL,         -- file order within the ethic
+    kind         TEXT NOT NULL,            -- 'tag': a reason the tooltip names (pop_attraction_tag);
+                                           -- 'country': an empire-wide factor (country_attraction)
+    description  TEXT,                     -- localised desc, e.g. "Owns Robots"
+    factor       REAL,                     -- 'country': the factor, when a number
+    factor_text  TEXT,                     -- 'country': the script value otherwise
+    trigger_json TEXT,                     -- the condition, normalised; NULL = always
+    PRIMARY KEY (ethic_key, sort_order)
 );
 
 CREATE TABLE ethic_modifier (
@@ -359,6 +372,7 @@ CREATE TABLE authority (
     selectable   INTEGER NOT NULL DEFAULT 1,  -- 0 = not player-pickable
     icon         TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
+    election_type TEXT NOT NULL DEFAULT 'none',  -- democratic / oligarchic / none (the trigger has_election_type)
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 
