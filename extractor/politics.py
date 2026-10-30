@@ -1,11 +1,12 @@
-"""Extraction: policies with their options, and pop faction types with their demands."""
+"""Extraction: policies with their options, pop faction types with their demands, and what draws
+pops to each ethic."""
 
 from pathlib import Path
 import re
 import sys
 from .clausewitz import Parser, tokenize
 from .traditions import _Ctx, _load, dumps
-from .triggers import _scripted_trigger_index, dlc_trigger_map
+from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
 from .values import _as_blocks, _to_list
 from .writer import Writer
 
@@ -41,6 +42,84 @@ def _number(v) -> float | None:
         return float(str(v))
     except (TypeError, ValueError):
         return None
+
+
+_FACTOR_KEYS = ('factor', 'mult', 'add', 'desc')
+_SPECIES_LEAVES = {'has_living_standard', 'has_trait', 'is_robotic'}
+
+
+def attraction_structured(dlc: dict, variables: dict):
+    """The `structured` hook of `normalize_trigger` for ethic attraction rules: the scopes their
+    reasons look into, as leaves a save can answer — `owner = {…}` (a pop's country: its own
+    conditions), `any_owned_leader = { OR = { is_ruler is_councilor } has_ethic = X }` →
+    `council_leader_ethic`, `any_owned_planet = { exists = leader leader = { has_ethic = X } }` →
+    `governor_ethic`, `num_assigned_jobs = { job = X value > 0 }` → `assigned_jobs`,
+    `has_living_standard = { type = X }`, and `any_owned_species = {…}` of living standards, traits
+    or robotic only, or-ed → `species_<leaf>` (any species with any of them); citizenship and
+    slavery as egalitarian's reasons ask them — `any_owned_species = { is_robotic = no NOT = {
+    is_same_species = root } }` → `other_organic_species` (another organic species than the pop's),
+    `count_owned_species = { limit = { … NOT = { has_citizenship_type = { type = citizenship_full } }
+    } count = 0 }` → `all_organic_full_citizenship`, `any_enslaved_species = { is_robotic = no }` →
+    `enslaved_organic_species`. Others stay opaque."""
+    def hook(k, v):
+        if not isinstance(v, dict):
+            return None
+        if k == 'owner':
+            return normalize_trigger(v, dlc, variables, hook)
+        if k == 'has_living_standard' and isinstance(v.get('type'), str):
+            return {'leaf': 'has_living_standard', 'value': v['type']}
+        if k == 'any_owned_leader':
+            roles = v.get('OR')
+            if (isinstance(v.get('has_ethic'), str) and isinstance(roles, dict)
+                    and set(v) == {'OR', 'has_ethic'} and set(roles) <= {'is_ruler', 'is_councilor'}):
+                return {'leaf': 'council_leader_ethic', 'value': v['has_ethic']}
+        if k == 'any_owned_planet':
+            leader = v.get('leader')
+            if (isinstance(leader, dict) and set(leader) == {'has_ethic'}
+                    and set(v) <= {'exists', 'leader'}):
+                return {'leaf': 'governor_ethic', 'value': leader['has_ethic']}
+        if (k == 'any_owned_species' and set(v) == {'is_robotic', 'NOT'}
+                and v['is_robotic'] == 'no' and v['NOT'] == {'is_same_species': 'root'}):
+            return {'leaf': 'other_organic_species', 'value': 'yes'}
+        if k == 'any_enslaved_species' and v == {'is_robotic': 'no'}:
+            return {'leaf': 'enslaved_organic_species', 'value': 'yes'}
+        if k == 'count_owned_species' and str(v.get('count')) == '0':
+            limit = v.get('limit') if isinstance(v.get('limit'), dict) else {}
+            lacks = limit.get('NOT') if isinstance(limit.get('NOT'), dict) else {}
+            cit = lacks.get('has_citizenship_type')
+            if limit.get('is_robotic') == 'no' and isinstance(cit, dict) and cit.get('type') == 'citizenship_full':
+                return {'leaf': 'all_organic_full_citizenship', 'value': 'yes'}
+        if k == 'num_assigned_jobs' and isinstance(v.get('job'), str):
+            value = v.get('value')
+            if getattr(value, 'op', None) == '>' and str(value.value) == '0':
+                return {'leaf': 'assigned_jobs', 'value': v['job']}
+        if k == 'any_owned_species':
+            inner = normalize_trigger(v, dlc, variables, hook)
+            leaves = [inner] if inner and 'leaf' in inner else (
+                inner['args'] if inner and inner.get('op') == 'or' else [])
+            if leaves and all('leaf' in x and x['leaf'] in _SPECIES_LEAVES for x in leaves):
+                mapped = [{**x, 'leaf': f"species_{x['leaf']}"} for x in leaves]
+                return mapped[0] if len(mapped) == 1 else {'op': 'or', 'args': mapped}
+        return None
+    return hook
+
+
+def attraction_rules(data: dict) -> list[dict]:
+    """An ethic's attraction rules in file order (common/ethics/00_ethics.txt): each
+    `pop_attraction_tag` (a reason the game's tooltip names, `desc` + `trigger`) and each
+    `country_attraction` modifier (an empire-wide factor on the ethic: `factor` or `mult`, a number
+    or a script value, `desc`, the rest its condition)."""
+    out = []
+    for tag in _as_blocks(data.get('pop_attraction_tag')):
+        out.append({'kind': 'tag', 'desc': _unquote(tag.get('desc')), 'factor': None,
+                    'factor_text': None, 'trigger': tag.get('trigger')})
+    ca = data.get('country_attraction')
+    for m in _as_blocks(ca.get('modifier') if isinstance(ca, dict) else None):
+        raw = m.get('factor', m.get('mult'))
+        out.append({'kind': 'country', 'desc': _unquote(m.get('desc')), 'factor': _number(raw),
+                    'factor_text': None if _number(raw) is not None else _unquote(str(raw)),
+                    'trigger': {k: v for k, v in m.items() if k not in _FACTOR_KEYS} or None})
+    return out
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────
@@ -115,6 +194,17 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
                  dumps(ctx.trig(owner_scope(d.get('trigger')), fvars))))
             n_demands += 1
 
+    n_rules = 0
+    for key, (data, evars, _) in _load(common / 'ethics', scripted_vars).items():
+        for order, r in enumerate(attraction_rules(data)):
+            w.execute(
+                """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
+                   factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['factor'],
+                 r['factor_text'],
+                 dumps(ctx.trig(r['trigger'], evars, attraction_structured(ctx.dlc, evars)))))
+            n_rules += 1
+
     print(f"  {len(policies)} policies, {n_options} options, {len(factions)} faction types, "
-          f"{n_demands} demands", file=progress)
+          f"{n_demands} demands, {n_rules} ethic attraction rules", file=progress)
     w.commit()

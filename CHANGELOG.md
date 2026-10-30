@@ -4,7 +4,25 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.4] - 2026-10-31
+
+### Added
+
+- `ethic.sort_order`: the order the ethics are defined in, which is the index of a save's
+  per-ethic lists (`country.ethics_distribution`, …), for the empire dashboard's ethics tab.
+- `situation_stage`: each situation's stages with their names, in the order a save's `stage`
+  counts them (the nomads' Operational Reserves: Critical, Low, Medium, High).
+- `ethic_attraction`: each ethic's own attraction rules — the empire-wide `country_attraction`
+  factors and the `pop_attraction_tag` reasons — with their conditions, normalised; the scopes
+  the reasons look into (council and governor ethics, assigned jobs, our species' living standards
+  and traits; another organic species, all on full citizenship, one enslaved) as leaves a save
+  can answer.
+- Defines for a colony's amenities, happiness and stability (`MIN|MAX_PLANET_AMENITIES`,
+  `LOW|HIGH_HAPPINESS_STABILITY_EFFECT`, `BASE|MIN|MAX|LOW_PLANET_STABILITY`, `BASE_HAPPINESS`,
+  crime).
+- `authority.election_type` (democratic / oligarchic / none), which `has_election_type` tests.
+- `prescripted_name` also holds the name lists' ship names that differ from their key
+  (`HUM1_SHIP_PeshnabtheFaithful` = "Peshnab the Faithful"), as a save names ships by key.
 
 ## [0.1.3] - 2026-10-27
 

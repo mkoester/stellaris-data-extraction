@@ -3,8 +3,8 @@
 import unittest
 
 from extractor.clausewitz import IfBlock
-from extractor.government import (_civic_requirements, _ethic_axis, _granted_traits,
-                                  ascension_restrictions)
+from extractor.government import (_civic_requirements, _ethic_axis, _ethic_entries,
+                                  _granted_traits, ascension_restrictions, election_type)
 from extractor.traits import _trait_requirements
 
 
@@ -19,6 +19,22 @@ class TestEthicAxis(unittest.TestCase):
 
     def test_missing(self):
         self.assertEqual(_ethic_axis({}), (None, 0))
+
+
+class TestEthicEntries(unittest.TestCase):
+    def test_file_order_without_variables(self):
+        data = {'@ethic_attunement1': '25', 'ethic_fanatic_authoritarian': {},
+                'ethic_authoritarian': {}, 'ethic_gestalt_consciousness': {}}
+        self.assertEqual([k for k, _ in _ethic_entries(data)],
+                         ['ethic_fanatic_authoritarian', 'ethic_authoritarian',
+                          'ethic_gestalt_consciousness'])
+
+
+class TestElectionType(unittest.TestCase):
+    # auth_democratic and auth_imperial (common/governments/authorities/00_authorities.txt, 4.5.2)
+    def test_set_or_none(self):
+        self.assertEqual(election_type({'election_type': 'democratic'}), 'democratic')
+        self.assertEqual(election_type({}), 'none')
 
 
 class TestNomadicGate(unittest.TestCase):

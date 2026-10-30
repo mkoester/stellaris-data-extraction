@@ -1,3 +1,3 @@
 """Stellaris game-data extractor: game scripts -> SQLite/SQL (see cli.main)."""
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
