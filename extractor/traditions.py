@@ -44,7 +44,12 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                'MAX_GIFT_SIZE', 'MIN_TRADE_DEAL_LENGTH_YEARS', 'MAX_TRADE_DEAL_LENGTH_YEARS',
                # … what ethics cost a federation's cohesion
                'FEDERATION_BASE_ETHICS', 'FEDERATION_ETHICS_PENALTY',
-               'FEDERATION_OPPOSING_ETHICS_PENALTY')
+               'FEDERATION_OPPOSING_ETHICS_PENALTY',
+               # … a colony's amenities, happiness and stability
+               'MIN_PLANET_AMENITIES', 'MAX_PLANET_AMENITIES', 'BASE_PLANET_STABILITY',
+               'MIN_PLANET_STABILITY', 'MAX_PLANET_STABILITY', 'LOW_PLANET_STABILITY',
+               'LOW_HAPPINESS_STABILITY_EFFECT', 'HIGH_HAPPINESS_STABILITY_EFFECT', 'BASE_HAPPINESS',
+               'LOW_HAPPINESS', 'HIGH_HAPPINESS', 'POP_CRIME', 'HIGH_PLANET_CRIME', 'MAX_PLANET_CRIME')
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

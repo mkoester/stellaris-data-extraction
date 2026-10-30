@@ -17,6 +17,9 @@ All notable changes to this project are documented here. The format follows
   the reasons look into (council and governor ethics, assigned jobs, our species' living standards
   and traits; another organic species, all on full citizenship, one enslaved) as leaves a save
   can answer.
+- Defines for a colony's amenities, happiness and stability (`MIN|MAX_PLANET_AMENITIES`,
+  `LOW|HIGH_HAPPINESS_STABILITY_EFFECT`, `BASE|MIN|MAX|LOW_PLANET_STABILITY`, `BASE_HAPPINESS`,
+  crime).
 - `authority.election_type` (democratic / oligarchic / none), which `has_election_type` tests.
 - `prescripted_name` also holds the name lists' ship names that differ from their key
   (`HUM1_SHIP_PeshnabtheFaithful` = "Peshnab the Faithful"), as a save names ships by key.

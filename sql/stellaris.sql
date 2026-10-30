@@ -84540,6 +84540,8 @@ INSERT OR REPLACE INTO tech_fallen_empire
                (key, label, description, area, area_label, category, category_label, building_key, sort_order)
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'Engineering', 'propulsion', 'Propulsion', NULL, 34);
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('ASCENSION_PERKS_SLOTS', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_HAPPINESS', '0.5');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_PLANET_STABILITY', '50.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_POP_ASSEMBLY', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_POP_DECLINE', '5.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_POP_GROWTH', '1.0');
@@ -84569,16 +84571,27 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_DEFAULT', 
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_MAGNITUDE_OFFSET', '10000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_OPPOSITE_PLANET', '0.4');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_WRONG_PLANET', '0.7');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('HIGH_HAPPINESS', '0.6');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('HIGH_HAPPINESS_STABILITY_EFFECT', '30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('HIGH_PLANET_CRIME', '50.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_CEILING_DEFAULT', '5.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_FLOOR', '0.1');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_LOWER_THRESHOLD', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_MIN_POPS', '10.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_R', '0.0025');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOW_HAPPINESS', '0.4');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOW_HAPPINESS_STABILITY_EFFECT', '-50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOW_PLANET_STABILITY', '25.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MARKET_TRADE_FEE_BASE', '0.3');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MARKET_TRADE_FEE_MIN', '0.05');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_GIFT_SIZE', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_AMENITIES', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_CRIME', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_STABILITY', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TRADE_DEAL_LENGTH_YEARS', '30.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_GIFT_SIZE', '25.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_AMENITIES', '0.25');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_STABILITY', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_TRADE_DEAL_LENGTH_YEARS', '10.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_WILLINGNESS_TO_OFFER_TRADE', '0.75');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_ACCEPTANCE_ATTITUDE', '-1000.0');
@@ -84587,6 +84600,7 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_DECLINE_TH
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_MACHINE_DECLINE_THRESHOLD', '1.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_ASSEMBLY_THRESHOLD', '1.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_GROWTH_THRESHOLD', '1.15');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('POP_CRIME', '0.02');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('STARBASE_CAPACITY_BASE', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MAX_RESOURCE_PERCENT', '0.3');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_DELTA', '10.0');
