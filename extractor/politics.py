@@ -6,7 +6,7 @@ import re
 import sys
 from .clausewitz import Parser, tokenize
 from .traditions import _Ctx, _load, dumps
-from .triggers import _scripted_trigger_index, dlc_trigger_map
+from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
 from .values import _as_blocks, _to_list
 from .writer import Writer
 
@@ -45,6 +45,47 @@ def _number(v) -> float | None:
 
 
 _FACTOR_KEYS = ('factor', 'mult', 'add', 'desc')
+_SPECIES_LEAVES = {'has_living_standard', 'has_trait', 'is_robotic'}
+
+
+def attraction_structured(dlc: dict, variables: dict):
+    """The `structured` hook of `normalize_trigger` for ethic attraction rules: the scopes their
+    reasons look into, as leaves a save can answer — `owner = {…}` (a pop's country: its own
+    conditions), `any_owned_leader = { OR = { is_ruler is_councilor } has_ethic = X }` →
+    `council_leader_ethic`, `any_owned_planet = { exists = leader leader = { has_ethic = X } }` →
+    `governor_ethic`, `num_assigned_jobs = { job = X value > 0 }` → `assigned_jobs`,
+    `has_living_standard = { type = X }`, and `any_owned_species = {…}` of living standards, traits
+    or robotic only, or-ed → `species_<leaf>` (any species with any of them). Others stay opaque."""
+    def hook(k, v):
+        if not isinstance(v, dict):
+            return None
+        if k == 'owner':
+            return normalize_trigger(v, dlc, variables, hook)
+        if k == 'has_living_standard' and isinstance(v.get('type'), str):
+            return {'leaf': 'has_living_standard', 'value': v['type']}
+        if k == 'any_owned_leader':
+            roles = v.get('OR')
+            if (isinstance(v.get('has_ethic'), str) and isinstance(roles, dict)
+                    and set(v) == {'OR', 'has_ethic'} and set(roles) <= {'is_ruler', 'is_councilor'}):
+                return {'leaf': 'council_leader_ethic', 'value': v['has_ethic']}
+        if k == 'any_owned_planet':
+            leader = v.get('leader')
+            if (isinstance(leader, dict) and set(leader) == {'has_ethic'}
+                    and set(v) <= {'exists', 'leader'}):
+                return {'leaf': 'governor_ethic', 'value': leader['has_ethic']}
+        if k == 'num_assigned_jobs' and isinstance(v.get('job'), str):
+            value = v.get('value')
+            if getattr(value, 'op', None) == '>' and str(value.value) == '0':
+                return {'leaf': 'assigned_jobs', 'value': v['job']}
+        if k == 'any_owned_species':
+            inner = normalize_trigger(v, dlc, variables, hook)
+            leaves = [inner] if inner and 'leaf' in inner else (
+                inner['args'] if inner and inner.get('op') == 'or' else [])
+            if leaves and all('leaf' in x and x['leaf'] in _SPECIES_LEAVES for x in leaves):
+                mapped = [{**x, 'leaf': f"species_{x['leaf']}"} for x in leaves]
+                return mapped[0] if len(mapped) == 1 else {'op': 'or', 'args': mapped}
+        return None
+    return hook
 
 
 def attraction_rules(data: dict) -> list[dict]:
@@ -144,7 +185,8 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
                 """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
                    factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['factor'],
-                 r['factor_text'], dumps(ctx.trig(r['trigger'], evars))))
+                 r['factor_text'],
+                 dumps(ctx.trig(r['trigger'], evars, attraction_structured(ctx.dlc, evars)))))
             n_rules += 1
 
     print(f"  {len(policies)} policies, {n_options} options, {len(factions)} faction types, "

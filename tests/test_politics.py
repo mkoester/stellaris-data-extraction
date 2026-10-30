@@ -3,7 +3,8 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.politics import attraction_rules, expand_inline, owner_scope
+from extractor.politics import attraction_rules, attraction_structured, expand_inline, owner_scope
+from extractor.triggers import normalize_trigger
 
 # Shaped like common/inline_scripts/pop_faction_types/demand_faction_pleased.txt.
 PLEASED = """
@@ -54,6 +55,34 @@ class TestAttractionRules(unittest.TestCase):
         self.assertEqual(rules[1]['trigger'], {'has_ethic': 'ethic_materialist'})
         self.assertEqual(rules[3]['trigger'], {'exists': 'overlord'})
         self.assertTrue(rules[3]['factor_text'].startswith('value:ethics_from_overlord'))
+
+
+class TestAttractionStructured(unittest.TestCase):
+    # the triggers of ethic_egalitarian's and ethic_materialist's pop_attraction_tags (4.5.2)
+    def norm(self, text):
+        block = Parser(tokenize(text)).parse()
+        return normalize_trigger(block, {}, {}, attraction_structured({}, {}))
+
+    def test_council_and_governor(self):
+        self.assertEqual(self.norm("""owner = { any_owned_leader = { OR = { is_ruler = yes is_councilor = yes }
+                                    has_ethic = ethic_egalitarian } }"""),
+                         {'leaf': 'council_leader_ethic', 'value': 'ethic_egalitarian'})
+        self.assertEqual(self.norm("any_owned_planet = { exists = leader leader = { has_ethic = ethic_egalitarian } }"),
+                         {'leaf': 'governor_ethic', 'value': 'ethic_egalitarian'})
+
+    def test_jobs_and_species(self):
+        self.assertEqual(self.norm("num_assigned_jobs = { job = bureaucrat value > 0 }"),
+                         {'leaf': 'assigned_jobs', 'value': 'bureaucrat'})
+        self.assertEqual(self.norm("""any_owned_species = { OR = {
+                                    has_living_standard = { type = living_standard_good country = root }
+                                    has_trait = trait_decadent } }"""),
+                         {'op': 'or', 'args': [
+                             {'leaf': 'species_has_living_standard', 'value': 'living_standard_good'},
+                             {'leaf': 'species_has_trait', 'value': 'trait_decadent'}]})
+
+    def test_anything_else_stays_opaque(self):
+        self.assertEqual(self.norm("any_owned_species = { is_robotic = no NOT = { is_same_species = root } }"),
+                         {'leaf': 'any_owned_species', 'value': 'scope'})
 
 
 if __name__ == '__main__':

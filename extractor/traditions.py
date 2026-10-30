@@ -145,8 +145,8 @@ class _Ctx:
         raw = self.loc.get(key) if key else None
         return _clean_loc(raw, self.loc, keep_newlines=newlines, variables=variables) if raw else None
 
-    def trig(self, block, variables) -> dict | None:
-        return normalize_trigger(block, self.dlc, variables)
+    def trig(self, block, variables, structured=None) -> dict | None:
+        return normalize_trigger(block, self.dlc, variables, structured)
 
     def tooltip(self, data: dict, variables) -> str | None:
         return join_texts(self.text(k, True, variables) for k in tooltip_keys(data))
