@@ -51,8 +51,9 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                'MIN_PLANET_STABILITY', 'MAX_PLANET_STABILITY', 'LOW_PLANET_STABILITY',
                'LOW_HAPPINESS_STABILITY_EFFECT', 'HIGH_HAPPINESS_STABILITY_EFFECT', 'BASE_HAPPINESS',
                'LOW_HAPPINESS', 'HIGH_HAPPINESS', 'POP_CRIME', 'HIGH_PLANET_CRIME', 'MAX_PLANET_CRIME',
-               # … and when the recruitable leaders are replaced
-               'LEADER_POOL_REFRESH_TIME')
+               # … when the recruitable leaders are replaced, and when a leader levels up
+               'LEADER_POOL_REFRESH_TIME', 'LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE',
+               'LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', 'LEADER_BASE_SKILL_CAP')
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

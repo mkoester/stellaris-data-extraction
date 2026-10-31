@@ -1093,7 +1093,8 @@ CREATE TABLE leader_trait (
 );
 CREATE TABLE leader_trait_modifier (
     trait_key      TEXT NOT NULL,
-    scope          TEXT NOT NULL,          -- where it applies: country, self, councilor, fleet, army, planet, sector
+    scope          TEXT NOT NULL,          -- where it applies: modifier (wherever assigned), self, councilor,
+                                           -- fleet, army, planet, sector, galcom, federation
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0,

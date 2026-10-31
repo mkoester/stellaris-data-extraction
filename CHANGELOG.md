@@ -15,6 +15,10 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
   `add` (+ it, 4.5.3, onto a base of 1), in `sort_order`. 4.5.3's `add` rules had no number.
 - The define `TECH_COST_DIFFICULTY_SCALE_MULT` (0.025): how much the difficulty raises tech costs,
   for the empire dashboard's research due dates.
+- `leader_trait_modifier`: what a trait does while its leader is the Galactic Community's or the
+  federation's delegate (scopes `galcom`, `federation`).
+- The defines `LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE` / `_SCALE_VALUE` (100, 300) and
+  `LEADER_BASE_SKILL_CAP` (10): when a leader levels up, for the empire dashboard's Upcoming list.
 - The define `LEADER_POOL_REFRESH_TIME` (1800 days): when the recruitable leaders are replaced,
   for the empire dashboard's Upcoming list.
 - `ethic_attraction.per_json` / `per_value`: "From Council" read from its script value

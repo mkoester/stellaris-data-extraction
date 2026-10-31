@@ -22,6 +22,12 @@ class TestLeaderTraits(unittest.TestCase):
                          [('self', 'species_leader_exp_gain', 0.25),
                           ('councilor', 'all_technology_research_speed', 0.03)])
 
+    def test_delegate_scopes(self):
+        t = Parser(tokenize('t = { galcom_modifier = { diplo_weight_mult = 0.1 } '
+                            'federation_modifier = { federation_cohesion_add = 1 } }')).parse()['t']
+        self.assertEqual(trait_modifiers(t, {}), [('galcom', 'diplo_weight_mult', 0.1),
+                                                  ('federation', 'federation_cohesion_add', 1.0)])
+
 
 if __name__ == '__main__':
     unittest.main()

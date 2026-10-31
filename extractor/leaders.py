@@ -9,9 +9,11 @@ from .traits import is_species_trait_file
 from .values import _as_blocks, _to_list
 from .writer import Writer
 
-# The untriggered modifier blocks of a leader trait and where they apply.
+# The untriggered modifier blocks of a leader trait and where they apply (common/traits/
+# 000_documentation_leader_traits.txt): `modifier` "to scope leader is assigned to", stored as
+# `modifier`; galcom / federation while the delegate there.
 SCOPES = ('modifier', 'self_modifier', 'councilor_modifier', 'fleet_modifier', 'army_modifier',
-          'planet_modifier', 'sector_modifier')
+          'planet_modifier', 'sector_modifier', 'galcom_modifier', 'federation_modifier')
 
 
 def trait_modifiers(data: dict, variables: dict[str, float]) -> list[tuple[str, str, float]]:
