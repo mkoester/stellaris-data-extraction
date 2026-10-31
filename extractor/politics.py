@@ -107,19 +107,28 @@ def attraction_structured(dlc: dict, variables: dict):
 def attraction_rules(data: dict) -> list[dict]:
     """An ethic's attraction rules in file order (common/ethics/00_ethics.txt): each
     `pop_attraction_tag` (a reason the game's tooltip names, `desc` + `trigger`) and each
-    `country_attraction` modifier (an empire-wide factor on the ethic: `factor` or `mult`, a number
-    or a script value, `desc`, the rest its condition)."""
+    `country_attraction` modifier (empire-wide, applied in file order onto `base = 1`: `op` 'factor'
+    multiplies — `factor` or `mult`, 4.5.2's form —, 'add' adds — `add`, 4.5.3's; a number or a
+    script value, `desc`, the rest its condition)."""
     out = []
     for tag in _as_blocks(data.get('pop_attraction_tag')):
-        out.append({'kind': 'tag', 'desc': _unquote(tag.get('desc')), 'factor': None,
+        out.append({'kind': 'tag', 'desc': _unquote(tag.get('desc')), 'op': None, 'factor': None,
                     'factor_text': None, 'trigger': tag.get('trigger')})
     ca = data.get('country_attraction')
     for m in _as_blocks(ca.get('modifier') if isinstance(ca, dict) else None):
-        raw = m.get('factor', m.get('mult'))
-        out.append({'kind': 'country', 'desc': _unquote(m.get('desc')), 'factor': _number(raw),
-                    'factor_text': None if _number(raw) is not None else _unquote(str(raw)),
+        op = 'add' if 'add' in m else 'factor'
+        raw = m.get('add') if op == 'add' else m.get('factor', m.get('mult'))
+        out.append({'kind': 'country', 'desc': _unquote(m.get('desc')), 'op': op,
+                    'factor': _number(raw),
+                    'factor_text': None if raw is None or _number(raw) is not None else _unquote(str(raw)),
                     'trigger': {k: v for k, v in m.items() if k not in _FACTOR_KEYS} or None})
     return out
+
+
+def attraction_base(data: dict) -> float | None:
+    """`country_attraction`'s `base` (1 in 4.5.2 and 4.5.3 alike, which the rows assume)."""
+    ca = data.get('country_attraction')
+    return _number(ca.get('base')) if isinstance(ca, dict) else None
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────
@@ -196,12 +205,15 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
 
     n_rules = 0
     for key, (data, evars, _) in _load(common / 'ethics', scripted_vars).items():
+        if attraction_base(data) not in (None, 1.0):
+            print(f"  WARNING: {key}: country_attraction base {attraction_base(data)}, "
+                  f"ethic_attraction assumes 1", file=sys.stderr)
         for order, r in enumerate(attraction_rules(data)):
             w.execute(
-                """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, factor,
-                   factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['factor'],
-                 r['factor_text'],
+                """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
+                   factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['op'],
+                 r['factor'], r['factor_text'],
                  dumps(ctx.trig(r['trigger'], evars, attraction_structured(ctx.dlc, evars)))))
             n_rules += 1
 

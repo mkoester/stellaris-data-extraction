@@ -2,7 +2,8 @@
 """Unit tests for which civics/origins a building requires."""
 import unittest
 
-from extractor.buildings import _building_resources, _write_build_time, building_unlocks
+from extractor.buildings import (_building_modifiers, _building_resources, _write_build_time,
+                                 building_unlocks)
 
 TRIGGERS = {'is_toxic_baths_empire': {'OR': {'has_valid_civic': ['civic_toxic_baths',
                                                                  'civic_hive_toxic_baths']}}}
@@ -63,6 +64,40 @@ class TestBuildingResources(unittest.TestCase):
         self.assertEqual(_building_resources(s, {'@civilian_station_cost': 100.0}),
                          [('cost', 'minerals', 100.0), ('upkeep', 'energy', 1.0)])
 
+
+
+# Shaped like 4.5.3's common/inline_scripts/jobs/fe_automation.txt (beta 7793).
+FE_AUTOMATION = """
+triggered_planet_modifier = {
+    potential = { owner? = { is_gestalt = no } }
+    job_$JOB$_automated_workforce_mult = @fe_automation_$TIER$
+}
+triggered_planet_modifier = {
+    potential = { owner? = { is_gestalt = yes } }
+    job_$GESTALT_JOB$_automated_workforce_mult = @fe_automation_$TIER$
+}
+"""
+
+
+class TestBuildingModifiers(unittest.TestCase):
+    # Shaped like 4.5.3's building_affluence_center: its own modifier, automation inlined.
+    B = {'planet_modifier': {'planet_amenities_add': '5'},
+         'inline_script': [{'script': 'jobs/fe_automation', 'JOB': 'artisan',
+                            'GESTALT_JOB': 'artisan_drone', 'TIER': 'specialist_2'},
+                           {'script': 'buildings/on_all_capital_buildings'}]}
+    VARS = {'@fe_automation_specialist_2': 0.5}
+
+    def test_fe_automation_from_the_inline_script(self):
+        load = {'jobs/fe_automation': FE_AUTOMATION,
+                'buildings/on_all_capital_buildings': 'planet_modifier = { planet_housing_add = 9 }'}.get
+        self.assertEqual(_building_modifiers(self.B, self.VARS, load),
+                         [('planet', 'planet_amenities_add', 5.0, None, None),
+                          ('planet', 'job_artisan_automated_workforce_mult', 0.5, None, None),
+                          ('planet', 'job_artisan_drone_automated_workforce_mult', 0.5, None, None)])
+
+    def test_without_a_loader_only_its_own(self):
+        self.assertEqual(_building_modifiers(self.B, self.VARS),
+                         [('planet', 'planet_amenities_add', 5.0, None, None)])
 
 
 class _Writes:

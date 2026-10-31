@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.politics import attraction_rules, attraction_structured, expand_inline, owner_scope
+from extractor.politics import attraction_base, attraction_rules, attraction_structured, expand_inline, owner_scope
 from extractor.triggers import normalize_trigger
 
 # Shaped like common/inline_scripts/pop_faction_types/demand_faction_pleased.txt.
@@ -55,6 +55,33 @@ class TestAttractionRules(unittest.TestCase):
         self.assertEqual(rules[1]['trigger'], {'has_ethic': 'ethic_materialist'})
         self.assertEqual(rules[3]['trigger'], {'exists': 'overlord'})
         self.assertTrue(rules[3]['factor_text'].startswith('value:ethics_from_overlord'))
+        self.assertEqual([r['op'] for r in rules], [None, 'factor', 'factor', 'factor'])
+
+    # 4.5.3 (beta 7793): the same rules as additions onto the base, the empire's block last
+    ETHIC_453 = """
+    country_attraction = {
+        base = 1
+        modifier = { add = 1 has_ethic = ethic_materialist }
+        modifier = { add = -0.25 has_election_type = democratic desc = FROM_AUTHORITY }
+        modifier = { exists = overlord add = value:ethics_from_overlord|ETHIC|materialist| desc = FROM_OVERLORD }
+        modifier = { factor = 0 blocks_ethic_attraction = { ETHIC = materialist } desc = FROM_EMPIRE }
+    }
+    """
+
+    def test_additions_and_factors_keep_their_operation(self):
+        data = Parser(tokenize(self.ETHIC_453)).parse()
+        rules = attraction_rules(data)
+        self.assertEqual([(r['op'], r['factor'], r['factor_text'] is None) for r in rules],
+                         [('add', 1.0, True), ('add', -0.25, True), ('add', None, False),
+                          ('factor', 0.0, True)])
+        self.assertEqual(rules[1]['trigger'], {'has_election_type': 'democratic'})
+        self.assertTrue(rules[2]['factor_text'].startswith('value:ethics_from_overlord'))
+        self.assertEqual(attraction_base(data), 1.0)
+
+    def test_no_number_and_no_script_value_is_null_not_none_text(self):
+        rules = attraction_rules(Parser(tokenize(
+            'country_attraction = { modifier = { has_ethic = ethic_materialist } }')).parse())
+        self.assertIsNone(rules[0]['factor_text'])
 
 
 class TestAttractionStructured(unittest.TestCase):

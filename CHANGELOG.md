@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Reads Stellaris 4.5.3 (open beta, build 7793) as well as 4.5.2, which wrote some of it in a new
+form; the extraction ran without an error on 4.5.3 but lost these silently.
+
+### Added
+
+- `ethic_attraction.op`: how a `country_attraction` rule applies — `factor` (× it, 4.5.2) or
+  `add` (+ it, 4.5.3, onto a base of 1), in `sort_order`. 4.5.3's `add` rules had no number.
+
+### Fixed
+
+- `ethic_attraction.factor_text` is NULL, not the text `None`, for a rule without a value.
+- `building_modifier`: the Fallen Empire buildings' job automation, which 4.5.3 moved into the
+  inline script `jobs/fe_automation` (the regular and the gestalt job, as before), including
+  4.5.3's new Logistic Drone automation of the Virtual Bliss Plaza and Omni-Bliss Nexus.
+- Triggers: a safe scope (`owner? = { … }`) is the scope (`owner`), no longer a test of its own.
+
 ## [0.1.4] - 2026-10-31
 
 ### Added

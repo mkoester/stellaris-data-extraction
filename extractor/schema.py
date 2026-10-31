@@ -233,7 +233,9 @@ CREATE TABLE ethic_attraction (
     kind         TEXT NOT NULL,            -- 'tag': a reason the tooltip names (pop_attraction_tag);
                                            -- 'country': an empire-wide factor (country_attraction)
     description  TEXT,                     -- localised desc, e.g. "Owns Robots"
-    factor       REAL,                     -- 'country': the factor, when a number
+    op           TEXT,                     -- 'country': 'factor' (× it, 4.5.2) or 'add' (+ it, 4.5.3),
+                                           -- applied in sort_order onto a base of 1
+    factor       REAL,                     -- 'country': the number, when one
     factor_text  TEXT,                     -- 'country': the script value otherwise
     trigger_json TEXT,                     -- the condition, normalised; NULL = always
     PRIMARY KEY (ethic_key, sort_order)
