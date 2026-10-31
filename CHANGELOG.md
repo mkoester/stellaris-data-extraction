@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.5] - 2026-10-31
 
 Reads Stellaris 4.5.3 (open beta, build 7793) as well as 4.5.2, which wrote some of it in a new
 form; the extraction ran without an error on 4.5.3 but lost these silently.
