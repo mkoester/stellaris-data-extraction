@@ -1094,11 +1094,12 @@ CREATE TABLE leader_trait (
 CREATE TABLE leader_trait_modifier (
     trait_key      TEXT NOT NULL,
     scope          TEXT NOT NULL,          -- where it applies: modifier (wherever assigned), self, councilor,
-                                           -- fleet, army, planet, sector, galcom, federation
+                                           -- fleet, army, planet, sector, galcom, federation, background_planet
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
+    potential_json TEXT,                   -- a triggered block's condition, normalised (THIS the leader); NULL: always
     sort_order     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (trait_key, scope, modifier_key)
+    PRIMARY KEY (trait_key, sort_order)    -- one modifier may come under several conditions
 );
 -- The empire focus (common/country_focus): categories, the cards (tasks) and the rewards per
 -- category, each a research option offered at `cost` focus progress.

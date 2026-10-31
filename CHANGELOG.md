@@ -16,7 +16,11 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 - The define `TECH_COST_DIFFICULTY_SCALE_MULT` (0.025): how much the difficulty raises tech costs,
   for the empire dashboard's research due dates.
 - `leader_trait_modifier`: what a trait does while its leader is the Galactic Community's or the
-  federation's delegate (scopes `galcom`, `federation`).
+  federation's delegate (scopes `galcom`, `federation`), and on its home colony
+  (`background_planet`); and the triggered blocks with their condition (`potential_json`) — 748
+  modifiers of 145 traits were missing, Righteous's crime among them — and the blocks a trait
+  pulls in by `inline_script` (the Expertise traits' Technocracy research, × their tier). The key is now
+  (`trait_key`, `sort_order`): one modifier may come under several conditions.
 - The defines `LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE` / `_SCALE_VALUE` (100, 300) and
   `LEADER_BASE_SKILL_CAP` (10): when a leader levels up, for the empire dashboard's Upcoming list.
 - The define `LEADER_POOL_REFRESH_TIME` (1800 days): when the recruitable leaders are replaced,
@@ -27,6 +31,8 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 
 ### Fixed
 
+- `modifier_label.positive_is_good`: lower is better for devastation too
+  (`planet_storm_devastation_mult`, a scientist governor's −2 % a level).
 - `static_modifier_modifier`: effects whose value is a scripted variable (`@planet_job_mult`)
   were left out — 174 of them, among them every leader class's governor effect per level
   (`skill_official_planet_governor`, …).

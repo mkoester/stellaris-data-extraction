@@ -255,12 +255,13 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
     # Good/bad colour: prefer the game's own `good` flag (common/scripted_modifiers) where it
     # defines the modifier. Otherwise fall back: lower is better for any cost/upkeep/fee key —
     # the curated set plus every `_cost_`/`_upkeep_` anywhere (e.g. tradition_cost_empire_size_mult
-    # −25% is a saving, not a penalty) — and for crime (less crime is better).
+    # −25% is a saving, not a penalty) — and for crime and devastation (a scientist governor's
+    # planet_storm_devastation_mult −2% a level is less damage from cosmic storms).
     if mod_key in _SCRIPTED_MOD_GOOD:
         pig = 1 if _SCRIPTED_MOD_GOOD[mod_key] else 0
     else:
         inverted = (mod_key in INVERTED_MODIFIERS
-                    or re.search(r'_(cost|upkeep|fee)(_|$)|crime', mod_key))
+                    or re.search(r'_(cost|upkeep|fee)(_|$)|crime|devastation', mod_key))
         pig = 0 if inverted else 1
     w.execute(
         """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
