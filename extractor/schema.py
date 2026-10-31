@@ -643,6 +643,14 @@ CREATE TABLE flag_asset (
 
 -- Flag colour swatches from flags/colors.txt: the `map` colour of each, which the galaxy map
 -- uses for an empire's territory and borders (a save's country.flag.colors names its swatches).
+-- Shipsets (common/graphical_culture) and the ship kinds each builds: `uses_ship_category`
+-- (empire dashboard: a bio-ship empire researches the bio hulls, not Battleships).
+DROP TABLE IF EXISTS graphical_culture;
+CREATE TABLE graphical_culture (
+    key             TEXT PRIMARY KEY,  -- e.g. "biogenesis_02"
+    ship_kinds_json TEXT NOT NULL      -- ["bio_ship","space_amoeba",…]; [] where none listed
+);
+
 DROP TABLE IF EXISTS flag_color;
 CREATE TABLE flag_color (
     key TEXT PRIMARY KEY,          -- e.g. "blue"

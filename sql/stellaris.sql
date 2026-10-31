@@ -638,6 +638,14 @@ CREATE TABLE flag_asset (
 
 -- Flag colour swatches from flags/colors.txt: the `map` colour of each, which the galaxy map
 -- uses for an empire's territory and borders (a save's country.flag.colors names its swatches).
+-- Shipsets (common/graphical_culture) and the ship kinds each builds: `uses_ship_category`
+-- (empire dashboard: a bio-ship empire researches the bio hulls, not Battleships).
+DROP TABLE IF EXISTS graphical_culture;
+CREATE TABLE graphical_culture (
+    key             TEXT PRIMARY KEY,  -- e.g. "biogenesis_02"
+    ship_kinds_json TEXT NOT NULL      -- ["bio_ship","space_amoeba",…]; [] where none listed
+);
+
 DROP TABLE IF EXISTS flag_color;
 CREATE TABLE flag_color (
     key TEXT PRIMARY KEY,          -- e.g. "blue"
@@ -33058,6 +33066,58 @@ INSERT OR REPLACE INTO planet_class
 INSERT OR REPLACE INTO planet_class
                    (key, name, climate, colonizable, is_standard, ideal, sort_order)
                VALUES ('pc_ark', 'Arkship', 'artificial', 1, 1, 0, 30);
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ai_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ai_02', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ancient', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ancient_drone_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('aquatic_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('arthropoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('avian_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('biogenesis_01', '["bio_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('biogenesis_01_fallen_empire', '["bio_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('biogenesis_02', '["bio_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('caravaneer_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('civilian_arkship', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('cybernetics_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('drone', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('extra_dimensional_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('extra_dimensional_02', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('extra_dimensional_03', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fallen_empire_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fallen_empire_02', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fallen_empire_03', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fallen_empire_04', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fallen_machine_empire_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('fungoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('guardian_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('humanoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('industrial_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('infernal_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('lesser_messenger_00', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('lithoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('mammalian_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('military_arkship', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('mindwarden_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('molluscoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('necroid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('nemesis_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('npf_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('npf_01_dirty', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('pirate_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('plantoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('preindustrial_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('psionic_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('reptilian_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('science_arkship', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('slaver_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('solarpunk_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('subterranean_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('swarm_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('synth_queen_01', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('synthetics_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('techno', '[]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('toxoid_01', '["default_ship", "space_amoeba", "tiyanki", "voidworm", "cutholoid", "crystalline_entity"]');
+INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('wilderness_01', '[]');
 INSERT OR REPLACE INTO prescripted_empire
                    (key, name, adjective, ship_prefix, species_class, species_portrait,
                     species_name, species_plural, species_adjective,

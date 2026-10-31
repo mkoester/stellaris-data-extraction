@@ -22,7 +22,8 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .misc import extract_dlc, extract_prescripted_names, host_checks, random_name_keys, extract_named_colors, extract_planet_classes
+from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys,
+                   extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
@@ -393,6 +394,11 @@ Examples:
     planet_classes = _merge_dir(planet_class_dir, progress)
     if planet_classes:
         extract_planet_classes(planet_classes, loc, w, args.verbose)
+
+    # --- shipsets and the ship kinds they build ---
+    print(f"\n[shipsets] {install_dir / 'common' / 'graphical_culture'}", file=progress)
+    extract_graphical_cultures(_merge_dir(install_dir / 'common' / 'graphical_culture', progress),
+                               w, args.verbose)
 
     # --- prescripted (predefined) empires ---
     print(f"\n[empires] {prescripted_dir}", file=progress)

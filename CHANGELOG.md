@@ -17,6 +17,9 @@ All notable changes to this project are documented here. The format follows
 
 - `technology_requirement.prerequisites_any_json`: the `OR` groups, one tech of each needed
   first (17 techs on 4.5.2).
+- `graphical_culture`: every shipset with the ship kinds it builds (`ship_kinds`) — what
+  `uses_ship_category = bio_ship` asks (the Biogenesis shipsets research the bio hulls).
+  No other table changed.
 
 ## [0.1.6] - 2026-10-31
 
