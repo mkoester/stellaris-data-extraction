@@ -8,7 +8,9 @@ Two things depend on a release here: the planner's deployment builds its DB from
 `sql/stellaris.sql`, and the dashboard's zips bundle the extractor from a tag.
 
 1. On `develop`, everything committed, `sql/stellaris.sql` regenerated if the extraction changed
-   (`AGENTS.md`). In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit).
+   (`AGENTS.md`) — **from the public game**: the extractor refuses while a beta is installed.
+   `scripts/release-check` must pass (the dump matches the schema and is `public`'s); the
+   dashboard's release workflow runs it again on the tag it bundles. In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit).
 2. `git checkout main && git merge --no-ff develop -m "Release vX.Y.Z (merge develop)"`, then
    `git tag vX.Y.Z`.
 3. `git checkout develop`, bump the patch of `__version__`, commit `chore: version bump (vX.Y.Z+1)`.

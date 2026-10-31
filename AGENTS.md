@@ -30,6 +30,19 @@ first, or the run stops at "directory does not exist".
 on the server). Regenerating only the gitignored SQLite works locally and then 500s in production
 on missing columns. Check: `git status` lists `sql/stellaris.sql` as modified.
 
+**The dump must be the public game's, made by this code.** The extractor refuses to write
+`sql/stellaris.sql` or `sqlite/stellaris.sqlite` while Steam has a beta installed (or cannot tell:
+no `steamapps/appmanifest_281990.acf`), and records `meta.steam_branch`; write a beta's data
+elsewhere (`--out $TMPDIR/beta.sql`). `scripts/release-check` fails on a dump whose tables differ
+from `extractor/schema.py` or whose branch is not `public`. `python3 -m extractor.steam <game dir>`
+prints the installed branch.
+
+**The dump released with v0.1.5 (2026-10-31) is stale**: 4.5.2's from `a46f4f6`, without v0.1.5's
+`system_entry_event`, `ethic_attraction.op|per_*`, `leader_trait_modifier`'s new key and
+`potential_json`, and the fixed static modifiers and name lists — the Linux machine had the 4.5.3
+beta. The planner reads none of those tables. Regenerate from the public game (switch Steam's
+branch, or the Mac's install).
+
 **All code is English** — names, comments and output — even when the session is in German.
 
 ## ⚠ Determinism
