@@ -23,6 +23,8 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 
 ### Fixed
 
+- `prescripted_name` also holds the name lists' fleet and army names that differ from their key
+  (`NECROID1_FLEET_MaelstromFleet` = "Maelstrom Fleet"), which a save names fleets by.
 - `ethic_attraction.factor_text` is NULL, not the text `None`, for a rule without a value.
 - `building_modifier`: the Fallen Empire buildings' job automation, which 4.5.3 moved into the
   inline script `jobs/fe_automation` (the regular and the gestalt job, as before), including
