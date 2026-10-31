@@ -69,6 +69,20 @@ The game's script format has quirks that produce silently wrong trees rather tha
 - **`if` values are `IfBlock`s** whose `.chain` keeps their own `else_if`/`else` — duplicate-key
   promotion loses that pairing once a block has several `if`s.
 
+## ⚠ After a game update: diff the data, not only the run
+
+The extraction can run cleanly on a new game version and still lose data — 4.5.3 (beta 7793)
+rewrote ethic attraction (`add` for `factor`), moved Fallen Empire automation into an inline
+script, and nothing failed. Extract to a temp file and compare it table by table with the
+committed `sql/stellaris.sql` (load both into SQLite; per table, rows only in one); a table that
+shrinks, or a column that turns NULL, is a format change to read, not a game change.
+
+Two ways values went missing unnoticed (both fixed 2026-10-31): a value written as an `@variable`
+from `common/scripted_variables` is dropped unless the step passes `scripted_vars` (static
+modifiers lost 174, among them every leader class's governor effect); and a table keyed so that
+two rows collide with `INSERT OR IGNORE` keeps the first silently (leader traits' triggered
+variants of one modifier).
+
 ## Conventions
 
 **Civics and origins have a second extractor** — `../stellaris-mod-FirstContact-MeaningfulLabels/tools/gen_empire_intel.py`,
