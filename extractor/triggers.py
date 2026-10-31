@@ -248,6 +248,8 @@ def normalize_trigger(block, dlc_triggers: dict[str, str] | None = None,
             return []
         args: list = []
         for k, v in node.items():
+            # `owner? = {…}` (4.5.3): the scope if it exists — the same test, false without one
+            k = k[:-1] if k.endswith('?') and isinstance(v, (dict, list)) else k
             if k in _TEXT_KEYS or k in ('if', 'else_if', 'else'):
                 continue  # if-chains are handled together below
             for item in (v if isinstance(v, list) else [v]):

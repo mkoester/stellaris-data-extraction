@@ -233,8 +233,13 @@ CREATE TABLE ethic_attraction (
     kind         TEXT NOT NULL,            -- 'tag': a reason the tooltip names (pop_attraction_tag);
                                            -- 'country': an empire-wide factor (country_attraction)
     description  TEXT,                     -- localised desc, e.g. "Owns Robots"
-    factor       REAL,                     -- 'country': the factor, when a number
+    op           TEXT,                     -- 'country': 'factor' (× it, 4.5.2) or 'add' (+ it, 4.5.3),
+                                           -- applied in sort_order onto a base of 1
+    factor       REAL,                     -- 'country': the number, when one
     factor_text  TEXT,                     -- 'country': the script value otherwise
+    per_json     TEXT,                     -- 'country': what it counts (a trigger leaf: the ruler and
+                                           -- councilors with the ethic); the number is factor + per_value each
+    per_value    REAL,
     trigger_json TEXT,                     -- the condition, normalised; NULL = always
     PRIMARY KEY (ethic_key, sort_order)
 );
@@ -1088,11 +1093,13 @@ CREATE TABLE leader_trait (
 );
 CREATE TABLE leader_trait_modifier (
     trait_key      TEXT NOT NULL,
-    scope          TEXT NOT NULL,          -- where it applies: country, self, councilor, fleet, army, planet, sector
+    scope          TEXT NOT NULL,          -- where it applies: modifier (wherever assigned), self, councilor,
+                                           -- fleet, army, planet, sector, galcom, federation, background_planet
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
+    potential_json TEXT,                   -- a triggered block's condition, normalised (THIS the leader); NULL: always
     sort_order     INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (trait_key, scope, modifier_key)
+    PRIMARY KEY (trait_key, sort_order)    -- one modifier may come under several conditions
 );
 -- The empire focus (common/country_focus): categories, the cards (tasks) and the rewards per
 -- category, each a research option offered at `cost` focus progress.
@@ -1146,6 +1153,22 @@ CREATE TABLE astral_action_cooldown (
     key   TEXT PRIMARY KEY,                -- e.g. "action_dimensional_lock"
     name  TEXT,
     days  INTEGER NOT NULL
+);
+-- The events entering a system fires (on_entering_system_first_time, on_entering_system,
+-- on_entering_system_fleet), by the star flags they test on that system (system_events.py).
+DROP TABLE IF EXISTS system_entry_event;
+CREATE TABLE system_entry_event (
+    event_id            TEXT PRIMARY KEY,      -- e.g. "leviathans.3202"
+    on_action           TEXT NOT NULL,         -- on_entering_system_first_time | _system | _system_fleet
+    title               TEXT,                  -- e.g. "Crystalline Asteroids"
+    description         TEXT,                  -- the first desc; a scope's name as "…"
+    star_flags_json     TEXT NOT NULL,         -- the system has all of them, e.g. ["guardians_hive_system"]
+    any_star_flags_json TEXT,                  -- and one of these (an OR), e.g. enclave.100's tunnels
+    not_star_flags_json TEXT,                  -- and none of these, e.g. ["hivers_defeated"]
+    once_flag           TEXT,                  -- a country flag that makes it fire once per empire:
+                                               -- the trigger wants it unset, the event sets it
+                                               -- (apoc.1: encountered_first_gateway)
+    sort_order          INTEGER NOT NULL       -- its place in the on_action's list
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).

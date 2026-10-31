@@ -69,7 +69,7 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                     "INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES (?, ?, ?, ?)",
                     (key, job, amt, j_order))
             # Jobs are building_job rows already; the rest are the building's effects.
-            mods = [m for m in _building_modifiers(bdef, variables)
+            mods = [m for m in _building_modifiers(bdef, variables, script_loader(inline_scripts_dir))
                     if not re.fullmatch(r'job_\w+_add', m[1])]
             for m_order, (scope, mk, base, _ae, cond) in enumerate(mods):
                 w.execute(
@@ -168,10 +168,7 @@ def _building_resources(bdef: dict, variables: dict[str, float], load_script=Non
         res = next((b for b in reversed(res) if isinstance(b, dict)), None)
     if not isinstance(res, dict):
         return rows
-    inlined = [expand_inline(text, {k: str(v).strip('"') for k, v in ref.items() if k != 'script'})
-               for ref in _as_blocks(res.get('inline_script'))
-               if load_script and isinstance(ref.get('script'), str)
-               for text in [load_script(ref['script'].strip('"'))] if text]
+    inlined = _expand_inline_refs(res, load_script)
     for kind in ('cost', 'upkeep', 'produces'):
         blocks = [b for src in (res, *inlined) for b in _as_blocks(src.get(kind)) if isinstance(b, dict)]
         block = next((b for b in blocks if 'trigger' not in b), blocks[0] if blocks else None)
@@ -229,10 +226,27 @@ def _perk_gate(block: dict) -> tuple[str, bool] | None:
     return (m.group(1), negated)
 
 
-def _building_modifiers(bdef: dict, variables: dict[str, float]
+def _expand_inline_refs(block: dict, load_script, only: frozenset[str] | None = None) -> list[dict]:
+    """The `inline_script`s a block names (those in `only`, when given), their `$PARAM$`s filled
+    in and parsed; [] without a `load_script` (name → text or None)."""
+    return [expand_inline(text, {k: str(v).strip('"') for k, v in ref.items() if k != 'script'})
+            for ref in _as_blocks(block.get('inline_script'))
+            if load_script and isinstance(ref.get('script'), str)
+            and (only is None or ref['script'].strip('"') in only)
+            for text in [load_script(ref['script'].strip('"'))] if text]
+
+
+# The building-level inline scripts whose modifiers count. Only these: the others (capital,
+# wilderness, jobs/*_add, …) were never read, and reading them changes 4.5.2's values too.
+_MODIFIER_SCRIPTS = frozenset({'jobs/fe_automation'})
+
+
+def _building_modifiers(bdef: dict, variables: dict[str, float], load_script=None
                         ) -> list[tuple[str, str, float, float | None, str | None]]:
     """A building's modifiers, aggregated per (scope, key) into
-    [(scope, key, base_value, ae_value, condition)].
+    [(scope, key, base_value, ae_value, condition)]. Blocks from the `_MODIFIER_SCRIPTS` the
+    building inlines count too (`load_script` as for `_building_resources`): 4.5.3 moved the
+    Fallen Empire buildings' job automation into `jobs/fe_automation`.
 
     base_value is the value with no ascension perks; ae_value is the *total* with
     Archaeo-Engineers (None when unchanged). A block gated `NOT archaeoengineers`
@@ -247,8 +261,9 @@ def _building_modifiers(bdef: dict, variables: dict[str, float]
         return acc.setdefault((scope, key),
                               {'base': 0.0, 'ae': 0.0, 'ae_seen': False, 'other': {}})
 
+    sources = (bdef, *_expand_inline_refs(bdef, load_script, _MODIFIER_SCRIPTS))
     for scope, field, triggered in _BUILDING_MOD_FIELDS:
-        for block in _as_blocks(bdef.get(field)):
+        for block in (b for src in sources for b in _as_blocks(src.get(field))):
             gate = _perk_gate(block) if triggered else None
             for key, raw in block.items():
                 if key in _BUILDING_MOD_SKIP:

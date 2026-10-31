@@ -23,6 +23,14 @@ class TestNormalizeTrigger(unittest.TestCase):
         self.assertEqual(normalize_trigger(block('a = yes b = no')),
                          {'op': 'and', 'args': [L('a', 'yes'), L('b', 'no')]})
 
+    def test_safe_scope_is_the_scope(self):
+        # 4.5.3's advanced_traits_have_reduced_cost: `owner? = { … }`
+        self.assertEqual(normalize_trigger(block('owner? = { has_tradition = tr_x }')),
+                         L('owner', 'scope'))
+        unwrap = lambda k, v: normalize_trigger(v) if k == 'owner' else None
+        self.assertEqual(normalize_trigger(block('owner? = { has_tradition = tr_x }'), structured=unwrap),
+                         L('has_tradition', 'tr_x'))
+
     def test_empty_block_is_none(self):
         self.assertIsNone(normalize_trigger(block('')))
         self.assertIsNone(normalize_trigger(None))

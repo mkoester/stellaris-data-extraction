@@ -5,10 +5,19 @@ from extractor.writer import Writer
 
 
 class ExtractStaticModifiersTest(unittest.TestCase):
-    def run_extract(self, mods: dict, loc: dict) -> Writer:
+    def run_extract(self, mods: dict, loc: dict, scripted_vars: dict | None = None) -> Writer:
         w = Writer(None, ':memory:')
-        extract_static_modifiers(mods, loc, w, verbose=False)
+        extract_static_modifiers(mods, loc, w, verbose=False, scripted_vars=scripted_vars)
         return w
+
+    def test_scripted_variables_resolved(self):
+        # 4.5.3 skill_official_planet_governor: its job output from common/scripted_variables
+        w = self.run_extract(
+            {'skill_official_planet_governor': {'custom_tooltip': 'tt', 'planet_jobs_energy_produces_mult': '@planet_job_mult',
+                                                'species_empire_size_mult': '@unknown_var'}},
+            {}, {'@planet_job_mult': 0.02})
+        self.assertEqual(w._conn.execute('SELECT modifier_key, modifier_value FROM static_modifier_modifier').fetchall(),
+                         [('planet_jobs_energy_produces_mult', 0.02)])
 
     def test_name_description_and_effects(self):
         w = self.run_extract(

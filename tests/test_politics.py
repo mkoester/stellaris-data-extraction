@@ -3,7 +3,8 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.politics import attraction_rules, attraction_structured, expand_inline, owner_scope
+from extractor.politics import (attraction_base, attraction_rules, attraction_structured,
+                                council_value, expand_inline, owner_scope)
 from extractor.triggers import normalize_trigger
 
 # Shaped like common/inline_scripts/pop_faction_types/demand_faction_pleased.txt.
@@ -55,6 +56,74 @@ class TestAttractionRules(unittest.TestCase):
         self.assertEqual(rules[1]['trigger'], {'has_ethic': 'ethic_materialist'})
         self.assertEqual(rules[3]['trigger'], {'exists': 'overlord'})
         self.assertTrue(rules[3]['factor_text'].startswith('value:ethics_from_overlord'))
+        self.assertEqual([r['op'] for r in rules], [None, 'factor', 'factor', 'factor'])
+
+    # 4.5.3 (beta 7793): the same rules as additions onto the base, the empire's block last
+    ETHIC_453 = """
+    country_attraction = {
+        base = 1
+        modifier = { add = 1 has_ethic = ethic_materialist }
+        modifier = { add = -0.25 has_election_type = democratic desc = FROM_AUTHORITY }
+        modifier = { exists = overlord add = value:ethics_from_overlord|ETHIC|materialist| desc = FROM_OVERLORD }
+        modifier = { factor = 0 blocks_ethic_attraction = { ETHIC = materialist } desc = FROM_EMPIRE }
+    }
+    """
+
+    def test_additions_and_factors_keep_their_operation(self):
+        data = Parser(tokenize(self.ETHIC_453)).parse()
+        rules = attraction_rules(data)
+        self.assertEqual([(r['op'], r['factor'], r['factor_text'] is None) for r in rules],
+                         [('add', 1.0, True), ('add', -0.25, True), ('add', None, False),
+                          ('factor', 0.0, True)])
+        self.assertEqual(rules[1]['trigger'], {'has_election_type': 'democratic'})
+        self.assertTrue(rules[2]['factor_text'].startswith('value:ethics_from_overlord'))
+        self.assertEqual(attraction_base(data), 1.0)
+
+    # 4.5.3's count_councilors_with_ethic (common/script_values/01_script_values_paragon.txt)
+    COUNCIL = """
+    count_councilors_with_ethic = {
+        base = 0
+        complex_trigger_modifier = {
+            trigger = count_owned_leader
+            parameters = { limit = { OR = { is_ruler = yes is_councilor = yes } has_ethic = ethic_$ETHIC$ } }
+            mult = @council_ethic_attraction
+            mode = add
+        }
+    }
+    """
+
+    def test_the_council_value_is_a_base_and_an_amount_per_leader(self):
+        block = Parser(tokenize(self.COUNCIL)).parse()['count_councilors_with_ethic']
+        self.assertEqual(council_value(block, {'@council_ethic_attraction': 0.1}), (0.0, 0.1))
+        self.assertIsNone(council_value(block, {}))  # the amount unknown: left a script value
+        block['complex_trigger_modifier']['trigger'] = 'count_owned_pop_amount'
+        self.assertIsNone(council_value(block, {'@council_ethic_attraction': 0.1}))
+
+    def test_a_council_rule_counts_leaders_without_its_guard(self):
+        rules = attraction_rules(Parser(tokenize("""
+        country_attraction = {
+            modifier = {
+                add = value:count_councilors_with_ethic|ETHIC|egalitarian|
+                check_variable_arithmetic = { which = value:count_councilors_with_ethic|ETHIC|egalitarian| value != 0 }
+                desc = FROM_COUNCIL
+            }
+            modifier = {
+                add = value:egalitarian_ethics_from_relations
+                check_variable_arithmetic = { which = value:egalitarian_ethics_from_relations value != 0 }
+            }
+        }""")).parse(), {'count_councilors_with_ethic': (0.0, 0.1)})
+        self.assertEqual({k: rules[0][k] for k in ('op', 'factor', 'factor_text', 'per', 'per_value', 'trigger')},
+                         {'op': 'add', 'factor': 0.0, 'factor_text': None, 'per_value': 0.1, 'trigger': None,
+                          'per': {'leaf': 'council_leader_ethic', 'value': 'ethic_egalitarian'}})
+        # any other script value stays one the save cannot answer, with its condition
+        self.assertEqual(rules[1]['factor_text'], 'value:egalitarian_ethics_from_relations')
+        self.assertIsNone(rules[1]['per'])
+        self.assertIn('check_variable_arithmetic', rules[1]['trigger'])
+
+    def test_no_number_and_no_script_value_is_null_not_none_text(self):
+        rules = attraction_rules(Parser(tokenize(
+            'country_attraction = { modifier = { has_ethic = ethic_materialist } }')).parse())
+        self.assertIsNone(rules[0]['factor_text'])
 
 
 class TestAttractionStructured(unittest.TestCase):

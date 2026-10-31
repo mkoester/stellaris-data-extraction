@@ -4,6 +4,51 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.5] - 2026-10-31
+
+Reads Stellaris 4.5.3 (open beta, build 7793) as well as 4.5.2, which wrote some of it in a new
+form; the extraction ran without an error on 4.5.3 but lost these silently.
+
+### Added
+
+- `system_entry_event`: the popups entering a system fires (`on_entering_system_first_time`,
+  `on_entering_system`, `on_entering_system_fleet`) and the star flags each tests on that system —
+  title, description, the flags needed (all of, and one of where the trigger has an `OR`) and
+  forbidden, and the country flag that makes it show once per empire. 73 of 4.5.3's 163; the
+  hidden ones and those testing no star flag are left out.
+- `ethic_attraction.op`: how a `country_attraction` rule applies — `factor` (× it, 4.5.2) or
+  `add` (+ it, 4.5.3, onto a base of 1), in `sort_order`. 4.5.3's `add` rules had no number.
+- The define `TECH_COST_DIFFICULTY_SCALE_MULT` (0.025): how much the difficulty raises tech costs,
+  for the empire dashboard's research due dates.
+- `leader_trait_modifier`: what a trait does while its leader is the Galactic Community's or the
+  federation's delegate (scopes `galcom`, `federation`), and on its home colony
+  (`background_planet`); and the triggered blocks with their condition (`potential_json`) — 748
+  modifiers of 145 traits were missing, Righteous's crime among them — and the blocks a trait
+  pulls in by `inline_script` (the Expertise traits' Technocracy research, × their tier). The key is now
+  (`trait_key`, `sort_order`): one modifier may come under several conditions.
+- The defines `LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE` / `_SCALE_VALUE` (100, 300) and
+  `LEADER_BASE_SKILL_CAP` (10): when a leader levels up, for the empire dashboard's Upcoming list.
+- The define `LEADER_POOL_REFRESH_TIME` (1800 days): when the recruitable leaders are replaced,
+  for the empire dashboard's Upcoming list.
+- `ethic_attraction.per_json` / `per_value`: "From Council" read from its script value
+  (`count_councilors_with_ethic`: + 0.1 per ruler or councilor with the ethic), so a save can
+  answer it — the rule's number is `factor` + `per_value` for each leader the leaf counts.
+
+### Fixed
+
+- `modifier_label.positive_is_good`: lower is better for devastation too
+  (`planet_storm_devastation_mult`, a scientist governor's −2 % a level).
+- `static_modifier_modifier`: effects whose value is a scripted variable (`@planet_job_mult`)
+  were left out — 174 of them, among them every leader class's governor effect per level
+  (`skill_official_planet_governor`, …).
+- `prescripted_name` also holds the name lists' fleet and army names that differ from their key
+  (`NECROID1_FLEET_MaelstromFleet` = "Maelstrom Fleet"), which a save names fleets by.
+- `ethic_attraction.factor_text` is NULL, not the text `None`, for a rule without a value.
+- `building_modifier`: the Fallen Empire buildings' job automation, which 4.5.3 moved into the
+  inline script `jobs/fe_automation` (the regular and the gestalt job, as before), including
+  4.5.3's new Logistic Drone automation of the Virtual Bliss Plaza and Omni-Bliss Nexus.
+- Triggers: a safe scope (`owner? = { … }`) is the scope (`owner`), no longer a test of its own.
+
 ## [0.1.4] - 2026-10-31
 
 ### Added

@@ -301,8 +301,11 @@ def _entry_years(m: dict, variables: dict[str, float]) -> int | None:
     return None
 
 
-def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, float]]:
-    """A static modifier name → its numeric (modifier_key, value) effects."""
+def _resolve_static_modifier(name: str, static_mods: dict,
+                             variables: dict[str, float] | None = None) -> list[tuple[str, float]]:
+    """A static modifier name → its numeric (modifier_key, value) effects; an `@variable` value
+    resolved from `variables` (common/scripted_variables: the leaders' `skill_*` governor effects
+    are `@planet_job_mult` …), else left out."""
     block = static_mods.get(name)
     if isinstance(block, list):
         merged: dict = {}
@@ -322,13 +325,15 @@ def _resolve_static_modifier(name: str, static_mods: dict) -> list[tuple[str, fl
         if mod_key in _NON_MODIFIER_KEYS:
             continue
         value = _resolve_modifier_float(mod_val)
+        if value is None and variables:
+            value = _resolve_var(mod_val, variables)
         if value is not None:
             out.append((mod_key, value))
     return out
 
 
 def extract_static_modifiers(static_mods: dict, loc: dict[str, str], w: Writer,
-                             verbose: bool) -> None:
+                             verbose: bool, scripted_vars: dict[str, float] | None = None) -> None:
     """Every static modifier (common/static_modifiers) with its name, description and numeric
     effects — for the empire dashboard, which lists those a save puts on the empire
     (`country.timed_modifier`). A `show_only_custom_tooltip` one keeps no effects (the game hides
@@ -343,7 +348,7 @@ def extract_static_modifiers(static_mods: dict, loc: dict[str, str], w: Writer,
         tooltip = _clean_loc(loc[tip_key], loc) if isinstance(tip_key, str) and tip_key in loc else None
         w.execute("INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES (?, ?, ?, ?)",
                   (key, name, desc, tooltip))
-        for order, (mod_key, value) in enumerate(_resolve_static_modifier(key, static_mods)):
+        for order, (mod_key, value) in enumerate(_resolve_static_modifier(key, static_mods, scripted_vars)):
             w.execute("""INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES (?, ?, ?, ?)""",
                       (key, mod_key, value, order))

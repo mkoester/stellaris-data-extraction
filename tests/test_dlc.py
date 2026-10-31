@@ -58,6 +58,13 @@ class TestPrescriptedNames(unittest.TestCase):
         self.assertEqual(prescripted_names(loc),
                          [('HUM1_SHIP_PeshnabtheFaithful', 'Peshnab the Faithful')])
 
+    def test_fleet_and_army_names_too(self):
+        # 4.5.3 name_list_NEC1_l_english.yml: a fleet a save names by key
+        loc = {'NECROID1_FLEET_MaelstromFleet': 'Maelstrom Fleet', 'NECROID1_FLEET_Vanguard': 'Vanguard',
+               'NECROID1_ARMY_BoneLegion': 'Bone Legion'}
+        self.assertEqual(prescripted_names(loc), [('NECROID1_ARMY_BoneLegion', 'Bone Legion'),
+                                                  ('NECROID1_FLEET_MaelstromFleet', 'Maelstrom Fleet')])
+
 
 if __name__ == '__main__':
     unittest.main()
