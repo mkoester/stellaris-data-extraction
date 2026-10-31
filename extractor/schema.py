@@ -643,6 +643,14 @@ CREATE TABLE flag_asset (
 
 -- Flag colour swatches from flags/colors.txt: the `map` colour of each, which the galaxy map
 -- uses for an empire's territory and borders (a save's country.flag.colors names its swatches).
+-- Shipsets (common/graphical_culture) and the ship kinds each builds: `uses_ship_category`
+-- (empire dashboard: a bio-ship empire researches the bio hulls, not Battleships).
+DROP TABLE IF EXISTS graphical_culture;
+CREATE TABLE graphical_culture (
+    key             TEXT PRIMARY KEY,  -- e.g. "biogenesis_02"
+    ship_kinds_json TEXT NOT NULL      -- ["bio_ship","space_amoeba",…]; [] where none listed
+);
+
 DROP TABLE IF EXISTS flag_color;
 CREATE TABLE flag_color (
     key TEXT PRIMARY KEY,          -- e.g. "blue"
@@ -1340,6 +1348,7 @@ DROP TABLE IF EXISTS technology_requirement;
 CREATE TABLE technology_requirement (
     tech_key           TEXT PRIMARY KEY,
     prerequisites_json TEXT NOT NULL,      -- ["tech_sensors_4"]: all researched first
+    prerequisites_any_json TEXT NOT NULL DEFAULT '[]', -- [["tech_battleships","tech_stingers"]]: one of each group researched first (OR)
     potential_json     TEXT,               -- normalised trigger: who can get it at all (NULL: anyone)
     is_rare            INTEGER NOT NULL DEFAULT 0,
     is_dangerous       INTEGER NOT NULL DEFAULT 0

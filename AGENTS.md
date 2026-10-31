@@ -37,11 +37,10 @@ elsewhere (`--out $TMPDIR/beta.sql`). `scripts/release-check` fails on a dump wh
 from `extractor/schema.py` or whose branch is not `public`. `python3 -m extractor.steam <game dir>`
 prints the installed branch.
 
-**The dump released with v0.1.5 (2026-10-31) is stale**: 4.5.2's from `a46f4f6`, without v0.1.5's
-`system_entry_event`, `ethic_attraction.op|per_*`, `leader_trait_modifier`'s new key and
-`potential_json`, and the fixed static modifiers and name lists — the Linux machine had the 4.5.3
-beta. The planner reads none of those tables. Regenerate from the public game (switch Steam's
-branch, or the Mac's install).
+**v0.1.5 shipped a stale dump** (4.5.2's, from older code — the Linux machine had the 4.5.3 beta);
+v0.1.6 fixed it. **Compare a regenerated dump table by table with the last one** (rows only in one,
+columns turning NULL — the "After a game update" section's method): v0.1.6's was the first run of
+v0.1.5's code on 4.5.2 files, and that comparison is what showed nothing was lost.
 
 **All code is English** — names, comments and output — even when the session is in German.
 
@@ -69,6 +68,11 @@ The game's script format has quirks that produce silently wrong trees rather tha
   **That also loses the order between different keys**, which effect scripts depend on (a zone
   added before the building put into it). Read effects with `parse_ordered()` in `game_start.py`,
   which keeps file order and parses only `limit` blocks as dicts.
+- **A block mixing bare entries with `key = value` loses the bare ones**, and a repeated key
+  whose values are lists merges them into one list: `{ OR = { a b } c OR = { d e } }` parses as
+  `{'OR': ['a', 'b', ['d', 'e']]}` — `c` is gone, and so is the grouping. Mega-Engineering and six
+  other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
+  `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys

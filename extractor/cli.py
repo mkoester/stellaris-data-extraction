@@ -22,7 +22,8 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .misc import extract_dlc, extract_prescripted_names, host_checks, random_name_keys, extract_named_colors, extract_planet_classes
+from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys,
+                   extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
@@ -31,7 +32,8 @@ from .situations import extract_situations
 from .system_events import extract_system_entry_events
 from .steam import release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
-from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
+from .tech import (extract_fallen_empire_techs, extract_repeatable_techs, extract_techs,
+                   prerequisite_blocks)
 from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index, _signals, dlc_trigger_map, extract_scripted_triggers
@@ -393,6 +395,11 @@ Examples:
     if planet_classes:
         extract_planet_classes(planet_classes, loc, w, args.verbose)
 
+    # --- shipsets and the ship kinds they build ---
+    print(f"\n[shipsets] {install_dir / 'common' / 'graphical_culture'}", file=progress)
+    extract_graphical_cultures(_merge_dir(install_dir / 'common' / 'graphical_culture', progress),
+                               w, args.verbose)
+
     # --- prescripted (predefined) empires ---
     print(f"\n[empires] {prescripted_dir}", file=progress)
     if prescripted_dir.exists():
@@ -443,8 +450,11 @@ Examples:
 
     # --- technologies (non-repeatable, with base cost) ---
     print(f"\n[techs] {technology_dir}", file=progress)
+    prereq_blocks: dict = {}
+    for f in sorted(technology_dir.glob('*.txt')) if technology_dir.exists() else []:
+        prereq_blocks.update(prerequisite_blocks(f.read_text(encoding='utf-8-sig', errors='replace')))
     extract_techs(technologies, loc, scripted_vars, w, args.verbose,
-                  dlc_trigger_map(_scripted_trigger_index(install_dir)))
+                  dlc_trigger_map(_scripted_trigger_index(install_dir)), prereq_blocks)
 
     # --- repeatable technologies ---
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)

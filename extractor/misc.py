@@ -1,5 +1,6 @@
 """Extraction: DLC metadata, named colors, planet classes."""
 
+import json
 import re
 from .dlc_dates import DLC_RELEASE_DATES
 from .localisation import _clean_loc
@@ -81,6 +82,25 @@ def extract_named_colors(data: dict, source_file: str, w: Writer, verbose: bool)
         """, (color_key, r, g, b, a, source_file))
         if verbose:
             print(f"  Color: {color_key} | rgba({r},{g},{b},{a})")
+    w.commit()
+
+
+def graphical_cultures(data: dict) -> list[tuple[str, str]]:
+    """Each shipset (`common/graphical_culture`) with the ship kinds it builds (`ship_kinds`, a
+    JSON list in file order; `[]` where it lists none). `uses_ship_category = bio_ship` asks the
+    country's shipset for `bio_ship` — the Biogenesis shipsets, whose techs are the bio hulls
+    (Stingers, not Battleships). Pure."""
+    return sorted(
+        (key, json.dumps([str(k).strip('"') for k in _to_list(v.get('ship_kinds'))]))
+        for key, v in data.items() if isinstance(v, dict))
+
+
+def extract_graphical_cultures(data: dict, w: Writer, verbose: bool) -> None:
+    for key, kinds in graphical_cultures(data):
+        w.execute('INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES (?, ?)',
+                  (key, kinds))
+        if verbose:
+            print(f"  Shipset: {key} {kinds}")
     w.commit()
 
 
