@@ -425,7 +425,7 @@ Examples:
                           inline_scripts_dir, w, args.verbose)
     extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose)
     print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
-    extract_static_modifiers(static_mods, loc, w, args.verbose)
+    extract_static_modifiers(static_mods, loc, w, args.verbose, scripted_vars)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
     extract_job_swaps(install_dir, loc, scripted_vars, inline_scripts_dir, w, args.verbose)
 

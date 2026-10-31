@@ -27,6 +27,9 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 
 ### Fixed
 
+- `static_modifier_modifier`: effects whose value is a scripted variable (`@planet_job_mult`)
+  were left out — 174 of them, among them every leader class's governor effect per level
+  (`skill_official_planet_governor`, …).
 - `prescripted_name` also holds the name lists' fleet and army names that differ from their key
   (`NECROID1_FLEET_MaelstromFleet` = "Maelstrom Fleet"), which a save names fleets by.
 - `ethic_attraction.factor_text` is NULL, not the text `None`, for a rule without a value.
