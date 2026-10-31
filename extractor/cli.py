@@ -31,7 +31,8 @@ from .situations import extract_situations
 from .system_events import extract_system_entry_events
 from .steam import release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
-from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
+from .tech import (extract_fallen_empire_techs, extract_repeatable_techs, extract_techs,
+                   prerequisite_blocks)
 from .traditions import extract_edicts_agendas, extract_traditions
 from .traits import TRAIT_CATEGORIES, extract_trait_categories, extract_trait_modifiers, extract_traits, is_species_trait_file
 from .triggers import _scripted_trigger_index, _signals, dlc_trigger_map, extract_scripted_triggers
@@ -443,8 +444,11 @@ Examples:
 
     # --- technologies (non-repeatable, with base cost) ---
     print(f"\n[techs] {technology_dir}", file=progress)
+    prereq_blocks: dict = {}
+    for f in sorted(technology_dir.glob('*.txt')) if technology_dir.exists() else []:
+        prereq_blocks.update(prerequisite_blocks(f.read_text(encoding='utf-8-sig', errors='replace')))
     extract_techs(technologies, loc, scripted_vars, w, args.verbose,
-                  dlc_trigger_map(_scripted_trigger_index(install_dir)))
+                  dlc_trigger_map(_scripted_trigger_index(install_dir)), prereq_blocks)
 
     # --- repeatable technologies ---
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)

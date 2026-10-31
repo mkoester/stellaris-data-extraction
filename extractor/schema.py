@@ -1340,6 +1340,7 @@ DROP TABLE IF EXISTS technology_requirement;
 CREATE TABLE technology_requirement (
     tech_key           TEXT PRIMARY KEY,
     prerequisites_json TEXT NOT NULL,      -- ["tech_sensors_4"]: all researched first
+    prerequisites_any_json TEXT NOT NULL DEFAULT '[]', -- [["tech_battleships","tech_stingers"]]: one of each group researched first (OR)
     potential_json     TEXT,               -- normalised trigger: who can get it at all (NULL: anyone)
     is_rare            INTEGER NOT NULL DEFAULT 0,
     is_dangerous       INTEGER NOT NULL DEFAULT 0

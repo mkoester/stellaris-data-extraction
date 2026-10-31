@@ -3,6 +3,7 @@
 import json
 from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
+from .game_start import parse_ordered
 from .triggers import normalize_trigger
 from .writer import Writer
 
@@ -105,16 +106,48 @@ def tech_base_cost(raw, variables: dict[str, float]) -> float | None:
         return None
 
 
+def prerequisite_blocks(text: str) -> dict[str, list[tuple]]:
+    """Each tech's `prerequisites` block in a technology file, in file order. The dict parser
+    loses a block's bare entries once it also holds `OR = { … }` (4.5.2 Mega-Engineering:
+    `tech_zero_point_power` beside two OR groups came out as no prerequisite at all) and merges
+    repeated ORs into one list; `parse_ordered` keeps both. Pure."""
+    out: dict[str, list[tuple]] = {}
+    for key, _op, value in parse_ordered(text):
+        if isinstance(value, list):
+            blocks = [v for k, _o, v in value if k == 'prerequisites' and isinstance(v, list)]
+            if blocks:
+                out[key] = blocks[-1]
+    return out
+
+
+def prerequisites(block: list[tuple]) -> tuple[list[str], list[list[str]]]:
+    """A `prerequisites` block → (techs all needed, groups of which one each is needed), sorted."""
+    all_of = sorted(k.strip('"') for k, op, _v in block if op is None)
+    any_of = sorted(
+        group for group in (
+            sorted(k.strip('"') for k, op, _v in v if op is None)
+            for k, _o, v in block if k == 'OR' and isinstance(v, list))
+        if group)
+    return all_of, any_of
+
+
 def tech_requirement(data: dict, dlc_triggers: dict[str, str] | None,
-                     variables: dict[str, float]) -> tuple:
-    """A tech's prerequisites (JSON list, sorted), its `potential` (normalised trigger as JSON,
-    None when absent) and whether it is rare and dangerous (1/0). Pure."""
-    pre = data.get('prerequisites')
-    pre = pre if isinstance(pre, list) else [pre] if pre is not None else []
-    flat = sorted(str(x).strip('"') for x in pre if not isinstance(x, dict))
+                     variables: dict[str, float], block: list[tuple] | None = None) -> tuple:
+    """A tech's prerequisites (JSON list, sorted: all researched first), its alternatives (JSON
+    list of sorted groups: one of each researched first — `OR` in the block), its `potential`
+    (normalised trigger as JSON, None when absent) and whether it is rare and dangerous (1/0).
+    `block` is the ordered `prerequisites` (`prerequisite_blocks`); without it, the dict
+    parser's flat list. Pure."""
+    if block is not None:
+        flat, groups = prerequisites(block)
+    else:
+        pre = data.get('prerequisites')
+        pre = pre if isinstance(pre, list) else [pre] if pre is not None else []
+        flat, groups = sorted(str(x).strip('"') for x in pre if not isinstance(x, (dict, list))), []
     potential = data.get('potential')
     tree = normalize_trigger(potential, dlc_triggers, variables) if isinstance(potential, dict) else None
-    return (json.dumps(flat), json.dumps(tree, separators=(',', ':')) if tree else None,
+    return (json.dumps(flat), json.dumps(groups),
+            json.dumps(tree, separators=(',', ':')) if tree else None,
             int(str(data.get('is_rare')) == 'yes'), int(str(data.get('is_dangerous')) == 'yes'))
 
 
@@ -125,10 +158,12 @@ def extract_techs(
     w: Writer,
     verbose: bool,
     dlc_triggers: dict[str, str] | None = None,
+    prerequisite_blocks: dict[str, list[tuple]] | None = None,
 ) -> None:
     """All non-repeatable techs with their base cost and what researching them needs
-    (`technology_requirement`). @variables come from the global scripted_variables and the
-    technology files' own top-level @definitions."""
+    (`technology_requirement`; prerequisites from `prerequisite_blocks` where given). @variables
+    come from the global scripted_variables and the technology files' own top-level
+    @definitions."""
     variables = dict(scripted_vars)
     for k, v in technologies.items():
         if k.startswith('@'):
@@ -162,9 +197,11 @@ def extract_techs(
         _write_tech_modifiers(w, loc, 'technology_modifier', key, technologies[key], variables, verbose)
         w.execute(
             """INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES (?, ?, ?, ?, ?)""",
-            (key, *tech_requirement(technologies[key], dlc_triggers, variables)))
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (key, *tech_requirement(technologies[key], dlc_triggers, variables,
+                                    (prerequisite_blocks or {}).get(key))))
         if verbose:
             print(f"  {key} ({area}) tier={tier} cost={cost}")
 

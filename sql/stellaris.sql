@@ -1335,6 +1335,7 @@ DROP TABLE IF EXISTS technology_requirement;
 CREATE TABLE technology_requirement (
     tech_key           TEXT PRIMARY KEY,
     prerequisites_json TEXT NOT NULL,      -- ["tech_sensors_4"]: all researched first
+    prerequisites_any_json TEXT NOT NULL DEFAULT '[]', -- [["tech_battleships","tech_stingers"]]: one of each group researched first (OR)
     potential_json     TEXT,               -- normalised trigger: who can get it at all (NULL: anyone)
     is_rare            INTEGER NOT NULL DEFAULT 0,
     is_dangerous       INTEGER NOT NULL DEFAULT 0
@@ -79772,44 +79773,51 @@ INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_advanced_storm_manipulation', 'Advanced Storm Manipulation', 'Continued study into astrometeorology grants us the power to more precisely bend and manipulate Cosmic Storms to our own needs.', 'physics', 'field_manipulation', 3, '4000.0', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_advanced_storm_manipulation', '["tech_storm_manipulation"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_advanced_storm_manipulation', '["tech_storm_manipulation"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_akx_worm_1', 'Entropic Recursion', 'The universe tends irresistibly onwards and downwards. That tendency cannot be reversed... but it can be subverted, for a price.', 'physics', 'field_manipulation', NULL, '4000.0', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_akx_worm_1', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_akx_worm_1', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_stellar_igniter', 'Stellar Engine', 'A dark matter injection system capable of triggering stellar-scale fusion events. It has no safe setting.', 'physics', 'field_manipulation', 4, '10000.0', 2);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_stellar_igniter', '["tech_arkship_tier_3", "tech_mine_dark_matter"]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_stellar_igniter', '["tech_arkship_tier_3", "tech_mine_dark_matter"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloaking_1', 'Basic Cloaking Fields', 'A modified particle field allows our vessels to effectively ''hide'' in open space. However, this comes at the cost of destabilizing other forms of energy shielding which would otherwise protect the ship.', 'physics', 'field_manipulation', 2, '3000.0', 3);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloaking_1', '["tech_shields_2"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloaking_1', '["tech_shields_2"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloaking_2', 'Advanced Cloaking Fields', 'Advancements in rare crystal lensing technology have greatly improved cloaking efficiency.', 'physics', 'field_manipulation', 3, '6000.0', 4);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloaking_2', '["tech_cloaking_1", "tech_shields_3"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloaking_2', '["tech_cloaking_1", "tech_shields_3"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloaking_3', 'Elite Cloaking Fields', 'Typical cloaking technology can play havoc with a ship''s more delicate instruments. However, these elite fields render such concerns obsolete.', 'physics', 'field_manipulation', 4, '12000.0', 5);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloaking_3', '["tech_cloaking_2", "tech_shields_4"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloaking_3', '["tech_cloaking_2", "tech_shields_4"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloaking_dark_matter', 'Dark Matter Cloaking Fields', 'This device uses dark matter to warp space-time around the vessel, making it incredibly difficult to detect.', 'physics', 'field_manipulation', NULL, '70000.0', 6);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloaking_dark_matter', '["tech_cloaking_3", "tech_dark_matter_deflector"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloaking_dark_matter', '["tech_cloaking_3", "tech_dark_matter_deflector"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_containment_vessel', 'Curator Containment Protocols', 'Gravity Snares capture double the amount of Space Fauna.', 'physics', 'field_manipulation', 3, '4000.0', 7);
@@ -79822,38 +79830,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_containment_vessel', '["tech_gravity_wells"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_containment_vessel', '["tech_gravity_wells"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dark_matter_deflector', 'Dark Matter Deflectors', 'These deflectors utilize dark matter to deflect incoming projectiles in a way that seems to utterly defy the laws of nature.', 'physics', 'field_manipulation', NULL, '70000.0', 8);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dark_matter_deflector', '["tech_shields_5"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dark_matter_deflector', '["tech_shields_5"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dyson_sphere', 'Dyson Sphere', 'A Dyson Sphere fully envelops a given star, converting all solar output directly to Energy Credits.', 'physics', 'field_manipulation', 5, '24000.0', 9);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dyson_sphere', '["tech_mega_engineering"]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dyson_sphere', '["tech_mega_engineering"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_experimental_subspace_navigation', 'Speculative Hyperlane Breaching', 'Solitary Science Ships can break out of the naturally-occurring hyperlanes and attempt to navigate to known but otherwise unreachable destinations.', 'physics', 'field_manipulation', 2, '3000.0', 10);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_experimental_subspace_navigation', '["tech_sensors_2"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_experimental_subspace_navigation', '["tech_sensors_2"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_silo_1', 'Shrinkspace Depot', 'The depot influences a portion of subspace where the distance between molecules is reduced, effectively shrinking anything stored there. Living beings are forbidden from entering it.', 'physics', 'field_manipulation', NULL, '70000.0', 11);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_silo_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_silo_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_silo_2', 'Extra-Dimensional Depot', 'By creating a localized pocket dimension, we can hold nearly endless resources.', 'physics', 'field_manipulation', NULL, '70000.0', 12);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_silo_2', '["tech_fe_silo_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_silo_2', '["tech_fe_silo_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gravity_snare_capacity_1', 'Micro Singularity Enhancements', 'Increases the amount of Space Fauna captured by Gravity Snares by 1', 'physics', 'field_manipulation', 2, '2000.0', 13);
@@ -79866,8 +79880,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gravity_snare_capacity_1', '["tech_gravity_wells"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gravity_snare_capacity_1', '["tech_gravity_wells"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gravity_snare_capacity_2', 'Gravity Manipulation Optimization', 'Increases the amount of Space Fauna captured by Gravity Snares by 1', 'physics', 'field_manipulation', 3, '4000.0', 14);
@@ -79880,8 +79895,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gravity_snare_capacity_2', '["tech_gravity_snare_capacity_1"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gravity_snare_capacity_2', '["tech_gravity_snare_capacity_1"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gravity_snare_capacity_3', 'Containment System Improvement', 'Increases the amount of Space Fauna captured by Gravity Snares by 1', 'physics', 'field_manipulation', 4, '8000.0', 15);
@@ -79894,74 +79910,86 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_capture_chance_add', 'Fauna Capture Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gravity_snare_capacity_3', '["tech_gravity_snare_capacity_2"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gravity_snare_capacity_3', '["tech_gravity_snare_capacity_2"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gravity_wells', 'Gravity Snares', 'Localized concentrations of quantum mass can be used to create short bursts of extreme gravity. If manipulated correctly, such a gravitational force could theoretically capture and contain a creature of any size without harm.', 'physics', 'field_manipulation', 2, '2000.0', 16);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gravity_wells', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"or","args":[{"leaf":"has_encountered_any_fauna","value":"yes"},{"leaf":"is_beastmasters_empire","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gravity_wells', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"or","args":[{"leaf":"has_encountered_any_fauna","value":"yes"},{"leaf":"is_beastmasters_empire","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_matter_decompressor', 'Matter Decompressor', 'The Matter Decompressor lenses a black hole''s gravity, forming a drill of gravitational forces to retrieve Minerals from the singularity.', 'physics', 'field_manipulation', 5, '24000.0', 17);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_matter_decompressor', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_matter_decompressor', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_dark_matter', 'Dark Matter Drawing', 'This exotic substance has many properties that seemingly defy the laws of physics. Harvestable concentrations can only be found near Black Holes or in certain nebulas.', 'physics', 'field_manipulation', 3, '6000.0', 18);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_dark_matter', '["tech_sensors_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_dark_matter', '["tech_sensors_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_physics_1', 'Quantum Computing', 'With processing speeds that defy classical limits, the potential of quantum computers is boundless. This revolutionary technology heralds a great leap into uncharted regions of problem-solving.', 'physics', 'field_manipulation', 1, '1500.0', 19);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_physics_1', '["tech_basic_science_lab_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_physics_1', '["tech_basic_science_lab_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_physics_2', 'Unified Field Theory', 'The fundamental forces of the universe can be mediated by physical fields. Mastering this process allows us to play as gods - at least within the confines of the science lab.', 'physics', 'field_manipulation', 2, '3000.0', 20);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_physics_2', '["tech_physics_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_physics_2', '["tech_physics_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_physics_3', 'Quantum Gravitational Waves', 'We knew gravity and time were linked long before we reached the stars. Now, our understanding of this unique relationship has reached a tipping point, allowing us to manipulate forces on a previously unimaginable scale.', 'physics', 'field_manipulation', 3, '6000.0', 21);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_physics_3', '["tech_physics_2"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_physics_3', '["tech_physics_2"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_shielder', 'Global Pacification', 'A shielding field is deployed around a planet, creating a barrier that is permanent and impenetrable (save for some wavelengths of light).', 'physics', 'field_manipulation', 5, '24000.0', 22);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_shielder', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_shielder', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_shield_generator', 'Planetary Shields', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', 'physics', 'field_manipulation', 3, '4000.0', 23);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_shield_generator', '["tech_shields_3"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_shield_generator', '["tech_shields_3"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_hub_1', 'Global Energy Management', 'Load-balancing facilities can greatly improve the stability of local grids and feed excess power back into centralized capacitors.', 'physics', 'field_manipulation', 1, '1500.0', 24);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_hub_1', '["tech_power_plant_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_hub_1', '["tech_power_plant_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_hub_2', 'Planetary Power Grid', 'A re-engineered and unified grid further reduces energy losses over distance.', 'physics', 'field_manipulation', 2, '3000.0', 25);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_hub_2', '["tech_colonial_centralization", "tech_power_hub_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_hub_2', '["tech_colonial_centralization", "tech_power_hub_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_plant_1', 'High-Energy Capacitors', 'Capacitors capable of storing vast amounts of energy is one of the cornerstones for any modern civilization.', 'physics', 'field_manipulation', 0, '0.0', 26);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_plant_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_plant_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_plant_2', 'Field Modulation', 'Modulated fields allow for increased production and improved energy yield.', 'physics', 'field_manipulation', 1, '1000.0', 27);
@@ -79970,8 +79998,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_mult', 'Energy Produced from Technicians', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_plant_2', '["tech_power_plant_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_plant_2', '["tech_power_plant_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_plant_3', 'Quantum Energy States', 'Basic entanglement principles applied to energy generation provide a substantial increase in energy output.', 'physics', 'field_manipulation', 2, '2000.0', 28);
@@ -79980,8 +80009,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_mult', 'Energy Produced from Technicians', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_plant_3', '["tech_power_plant_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_plant_3', '["tech_power_plant_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_power_plant_4', 'Quantum Field Manipulation', 'Quantum superposition of energy coils, simultaneously drained and charged.', 'physics', 'field_manipulation', 3, '4000.0', 29);
@@ -79990,38 +80020,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_mult', 'Energy Produced from Technicians', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_power_plant_4', '["tech_power_plant_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_power_plant_4', '["tech_power_plant_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_rift_sphere', 'Rift Sphere', 'It seems that space and time tend to gather together in layers, all laid on top of one another. The trick is how to slip between the folds.', 'physics', 'field_manipulation', 2, '5000.0', 30);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_rift_sphere', '[]', '{"leaf":"host_has_dlc","value":"Astral Planes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_rift_sphere', '[]', '[]', '{"leaf":"host_has_dlc","value":"Astral Planes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shield_hardeners_1', 'Shield Hardening', 'With these modifications, the fields generated by our shield emitters will partially deflect attacks that would otherwise bypass the shields.', 'physics', 'field_manipulation', 2, '3000.0', 31);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shield_hardeners_1', '["tech_exotic_gases", "tech_shield_rechargers_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shield_hardeners_1', '["tech_exotic_gases", "tech_shield_rechargers_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shield_hardeners_2', 'Advanced Shield Hardening', 'Zro particles raised to a high energy state add fluctuations to our shields that can deflect certain weapons that would otherwise easily penetrate the fields.', 'physics', 'field_manipulation', 5, '24000.0', 32);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shield_hardeners_2', '["tech_mine_zro", "tech_shield_hardeners_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shield_hardeners_2', '["tech_mine_zro", "tech_shield_hardeners_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shield_rechargers_1', 'Shield Capacitors', 'These capacitors store surplus energy which can quickly be transferred to reinforce a ship''s shields.', 'physics', 'field_manipulation', 2, '3000.0', 33);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shield_rechargers_1', '["tech_shields_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shield_rechargers_1', '["tech_shields_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shields_1', 'Deflectors', 'Energy deflector screens can stop a limited amount of incoming enemy fire before overloading. Their main drawback is that they consume large amounts of power.', 'physics', 'field_manipulation', 0, '0.0', 34);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shields_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shields_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shields_2', 'Improved Deflectors', 'These updated deflector screens are capable of soaking up even more punishment before they overload.', 'physics', 'field_manipulation', 1, '1500.0', 35);
@@ -80030,8 +80066,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shields_2', '["tech_shields_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shields_2', '["tech_shields_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shields_3', 'Shields', 'These new shield generators represent the next generation of energy screens, replacing the older deflector technology. They offer significantly better protection.', 'physics', 'field_manipulation', 2, '3000.0', 36);
@@ -80040,8 +80077,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shields_3', '["tech_shields_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shields_3', '["tech_shields_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shields_4', 'Advanced Shields', 'An updated shield generator that produces an even stronger energy field. Only sustained enemy fire can penetrate this barrier.', 'physics', 'field_manipulation', 3, '6000.0', 37);
@@ -80050,8 +80088,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shields_4', '["tech_shields_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shields_4', '["tech_shields_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_shields_5', 'Hyper Shields', 'These reinforced and hardened energy shields are incredibly powerful. The protection they offer is second to none.', 'physics', 'field_manipulation', 4, '12000.0', 38);
@@ -80060,170 +80099,198 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_shields_5', '["tech_shields_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_shields_5', '["tech_shields_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_storm_manipulation', 'Storm Manipulation', 'By harnessing the principles behind storm negation technologies, we can begin to manipulate the astrometeorological nature of the galaxy to serve our own needs.', 'physics', 'field_manipulation', 2, '2500.0', 39);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_storm_manipulation', '["tech_industrial_storm_protection"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_storm_manipulation', '["tech_industrial_storm_protection"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('null_void_beam', 'Null Void Beam', 'By harnessing the entropic nature of the Null Void, this beam can actually destroy energy.', 'physics', 'particles', 2, '1250.0', 40);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('null_void_beam', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('null_void_beam', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_akx_worm_3', 'Omega Theory', 'When a temporal paradox becomes tangled, a kind of consciousness arises, with its own needs, its own desires. This is what has occurred with the consciousness that some call the Worm-in-Waiting. If we can align ourselves with that consciousness, we might just achieve a kind of immortality.', 'physics', 'particles', NULL, '10000.0', 41);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_akx_worm_3', '["tech_akx_worm_1", "tech_akx_worm_2"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_akx_worm_3', '["tech_akx_worm_1", "tech_akx_worm_2"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_antimatter_power', 'Antimatter Power', 'By harnessing the energy produced by matter/antimatter annihilations, our efficiency at generating ship power will be orders of magnitude better than fusion.', 'physics', 'particles', 3, '5000.0', 42);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_antimatter_power', '["tech_cold_fusion_power"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_antimatter_power', '["tech_cold_fusion_power"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arc_emitter_1', 'Arc Emitters', 'Powerful weapons that launch a lightning arc of chaotic energy at targets, which in part can ignore armor and shields.', 'physics', 'particles', 4, '10000.0', 43);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arc_emitter_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arc_emitter_1', '["tech_disruptors_3"]', '[["tech_battleships", "tech_stingers"]]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arc_emitter_2', 'Focused Arc Emitters', 'These upgraded emitters are equipped with better focusing lenses, resulting in a more powerful energy discharge.', 'physics', 'particles', 4, '12000.0', 44);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arc_emitter_2', '["tech_arc_emitter_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arc_emitter_2', '["tech_arc_emitter_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_exodus_jump', 'Exodus Jump Coordinator', 'The Exodus Coordinator is still largely a prototype that will one day enable us to cross to different galaxies in the blink of an eye.', 'physics', 'particles', 4, '10000.0', 45);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_exodus_jump', '["tech_arkship_tier_3", "tech_jump_drive_1"]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_exodus_jump', '["tech_arkship_tier_3", "tech_jump_drive_1"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_astral_harvesting', 'Astral Harvesting', 'The harvesting of torn astral fabric along the scars of rifts in space and time is made possible with delicate modifications to our research stations.', 'physics', 'particles', 2, '2000.0', 46);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_astral_harvesting', '[]', '{"leaf":"host_has_dlc","value":"Astral Planes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_astral_harvesting', '[]', '[]', '{"leaf":"host_has_dlc","value":"Astral Planes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cold_fusion_power', 'Cold Fusion Power', 'The ability to sustain a fusion reaction at relatively low temperatures will result in a new generation of fusion reactors for our ships.', 'physics', 'particles', 2, '2500.0', 47);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cold_fusion_power', '["tech_fusion_power"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cold_fusion_power', '["tech_fusion_power"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dark_matter_detection', 'Dark Matter Detection', 'Dark matter resonance chambers will significantly improve the performance of our detection arrays.', 'physics', 'particles', 5, '24000.0', 48);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dark_matter_detection', '["tech_detection_array", "tech_mine_dark_matter"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dark_matter_detection', '["tech_detection_array", "tech_mine_dark_matter"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dark_matter_power_core', 'Dark Matter Power', 'These generators appear to somehow draw energy directly from dark matter, providing more ship power than should be possible according to the laws of physics.', 'physics', 'particles', NULL, '70000.0', 49);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dark_matter_power_core', '["tech_zero_point_power"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dark_matter_power_core', '["tech_zero_point_power"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_disruptors_1', 'Disruptors', 'Disruptors fire high-energy bolts that weaken and destroy the molecular bonds that hold the target''s constituent atoms together. They are capable of passing through shields and armor to wreak havoc directly on enemy hull and crew.', 'physics', 'particles', 2, '2500.0', 50);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_disruptors_1', '["tech_lasers_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_disruptors_1', '["tech_lasers_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_disruptors_2', 'Ion Disruptors', 'These upgraded disruptors fire bolts of more destructive ion particles at targets.', 'physics', 'particles', 3, '4000.0', 51);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_disruptors_2', '["tech_disruptors_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_disruptors_2', '["tech_disruptors_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_disruptors_3', 'Phase Disruptors', 'Extremely high-yield disruptors that fire quantum energy charges causing incredible damage to those unfortunate enough to get in their way.', 'physics', 'particles', 4, '8000.0', 52);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_disruptors_3', '["tech_disruptors_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_disruptors_3', '["tech_disruptors_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_energy_lance_1', 'Particle Lances', 'These heavy energy weapons fire focused particle beams that cause massive damage. The size of the emitter arrays limits their use to battleships and titans.', 'physics', 'particles', 4, '10000.0', 53);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_energy_lance_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_energy_lance_1', '["tech_lasers_4"]', '[["tech_battleships", "tech_stingers"]]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_energy_lance_2', 'Tachyon Lances', 'A more powerful version of the particle lance, this weapon fires a tachyon beam of immense power. Like its predecessor, its use is limited to battleships and titans.', 'physics', 'particles', 4, '12000.0', 54);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_energy_lance_2', '["tech_energy_lance_1", "tech_lasers_5"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_energy_lance_2', '["tech_energy_lance_1", "tech_lasers_5"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_energy_torpedoes_1', 'Proton Launchers', 'These energy projectiles consist of tightly concentrated protons capable of causing immense damage to the hull of enemy ships.', 'physics', 'particles', 3, '6000.0', 55);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_energy_torpedoes_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_energy_torpedoes_1', '["tech_lasers_4"]', '[["tech_harbingers", "tech_torpedoes_1"]]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_energy_torpedoes_2', 'Neutron Launchers', 'Upgraded energy projectiles that rely on neutrons instead of protons for their destructive power.', 'physics', 'particles', 4, '10000.0', 56);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_energy_torpedoes_2', '["tech_energy_torpedoes_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_energy_torpedoes_2', '["tech_energy_torpedoes_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_extradimensional_weapon_1', 'Extradimensional Weaponry', 'Applying 5th-dimensional energy manipulation principles on lower dimensional planes allows for the creation of powerful energy weapons.', 'physics', 'particles', 5, '24000.0', 57);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_extradimensional_weapon_1', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_extradimensional_weapon_1', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_singularity_1', 'Class-3 Singularity', 'Capturing the entire energy output from this singularity is an engineering marvel.', 'physics', 'particles', NULL, '70000.0', 58);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_singularity_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_singularity_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_singularity_2', 'Class-4 Singularity', 'This singularity''s power output challenges the laws of physics, yet the containment fields hold with unwavering stability.', 'physics', 'particles', NULL, '70000.0', 59);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_singularity_2', '["tech_fe_singularity_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_singularity_2', '["tech_fe_singularity_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fission_power', 'Fission Power', 'This energy source generates power for ships through induced fission, but it also produces harmful nuclear waste.', 'physics', 'particles', 0, '0.0', 60);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fission_power', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fission_power', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ftl_inhibitor', 'FTL Inhibition', 'Gravity well projectors can be used to create localized pockets of space where safe entry into hyperspace is impossible. The immense power requirements and the size of the projectors prohibits their use on anything smaller than a space station.', 'physics', 'particles', 2, '2000.0', 61);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ftl_inhibitor', '["tech_hyper_drive_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ftl_inhibitor', '["tech_hyper_drive_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fusion_power', 'Fusion Power', 'Nuclear fusion processes generate a great amount of power for ships, but without many of the risks associated with fission power.', 'physics', 'particles', 1, '1250.0', 62);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fusion_power', '["tech_fission_power"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fusion_power', '["tech_fission_power"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gateway_activation', 'Gateway Activation', 'The ability to reactivate the derelict Gateway stations that can be found scattered throughout the galaxy has the potential to dramatically shorten travel times.', 'physics', 'particles', 4, '12000.0', 63);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gateway_activation', '["tech_hyper_drive_3"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gateway_activation', '["tech_hyper_drive_3"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gateway_construction', 'Gateway Construction', 'The construction of new Gateway stations enables us to build a fast-travel network that could revolutionize interstellar travel.', 'physics', 'particles', 5, '24000.0', 64);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gateway_construction', '["tech_gateway_activation", "tech_mega_engineering"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gateway_construction', '["tech_gateway_activation", "tech_mega_engineering"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_drive_1', 'Hyperspace Travel', 'Like the strands of a spider web, the extra-dimensional realm of hyperspace runs between the gravity wells of most stars. Faster than light travel is theoretically possible along these hyperlanes.', 'physics', 'particles', 0, '750.0', 65);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_drive_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_drive_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_drive_2', 'Hyperlane Breach Points', 'We have identified the existence of points in space where a ship expends less energy to', 'physics', 'particles', 2, '2500.0', 66);
@@ -80232,8 +80299,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_drive_2', '["tech_hyper_drive_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_drive_2', '["tech_hyper_drive_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_drive_3', 'Hyperspace Slipstreams', 'A new generation of hyper drives capable of accessing the subspace slipstreams that are present within hyperspace. This leads to dramatically improved drive performance.', 'physics', 'particles', 3, '6000.0', 67);
@@ -80242,32 +80310,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_drive_3', '["tech_hyper_drive_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_drive_3', '["tech_hyper_drive_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_drive_bio_integration', 'Hyperdrive Bio-integration', 'Traveling across hyperlanes can be hazardous for spaceborne life, but we are able to enhance their capabilities.', 'physics', 'particles', 2, '2000.0', 68);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_drive_bio_integration', '["tech_controlled_mutations"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_drive_bio_integration', '["tech_controlled_mutations"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_relays', 'Hyper Relays', 'Hyper Relays form a chain of structures built outside the gravity well of systems, allowing fast travel from relay to relay rather than requiring transit to established hyperlane entrances.', 'physics', 'particles', 2, '3000.0', 69);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_relays', '["tech_hyper_drive_2"]', '{"leaf":"host_has_dlc","value":"Overlord"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_relays', '["tech_hyper_drive_2"]', '[]', '{"leaf":"host_has_dlc","value":"Overlord"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_jump_drive_1', 'Jump Drive', 'A groundbreaking technological marvel, the Jump Drive shreds the local space-time continuum and rearranges it on the quantum level to be identical to that of the target destination - and thus the ship appears to near-instantly', 'physics', 'particles', 5, '16000.0', 70);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_jump_drive_1', '["tech_zero_point_power"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_jump_drive_1', '["tech_zero_point_power"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lasers_1', 'Red Lasers', 'Laser weapons fire focused beams of light at targets, causing damage through the generation of intense heat.', 'physics', 'particles', 0, '500.0', 71);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lasers_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lasers_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lasers_2', 'Blue Lasers', 'More powerful than red lasers, these blue variants emit electromagnetic radiation at a wavelength that appears blue or violet to most organics.', 'physics', 'particles', 1, '1250.0', 72);
@@ -80276,8 +80349,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lasers_2', '["tech_lasers_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lasers_2', '["tech_lasers_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lasers_3', 'UV Lasers', 'Ultraviolet lasers are an updated and more powerful version of their blue predecessors. Accurate and destructive, these weapons are capable of inflicting great damage.', 'physics', 'particles', 2, '2000.0', 73);
@@ -80286,8 +80360,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lasers_3', '["tech_lasers_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lasers_3', '["tech_lasers_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lasers_4', 'X-Ray Lasers', 'These lasers have a shorter wavelength than UV-based laser weaponry, but are even more destructive.', 'physics', 'particles', 3, '4000.0', 74);
@@ -80296,8 +80371,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lasers_4', '["tech_lasers_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lasers_4', '["tech_lasers_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lasers_5', 'Gamma Lasers', 'The electromagnetic radiation emitted by gamma lasers is of an extremely high frequency. Their destructive potential is unmatched in the field of laser weapons.', 'physics', 'particles', 4, '8000.0', 75);
@@ -80306,32 +80382,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lasers_5', '["tech_lasers_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lasers_5', '["tech_lasers_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lgate_activation', 'L-Gate Activation', 'The L-Gates defy our current understanding of subspace mechanics. This must be remedied before they can be opened for travel.', 'physics', 'particles', 3, '6000.0', 76);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lgate_activation', '[]', '{"op":"not","args":[{"leaf":"has_global_flag","value":"l_cluster_opened"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lgate_activation', '[]', '[]', '{"op":"not","args":[{"leaf":"has_global_flag","value":"l_cluster_opened"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_volatile_motes', 'Mote Stabilization', 'Volatile Motes are fickle particles that are dangerous to work with. In order to safely harvest them without setting off a chain-reaction of explosions, energy fields must be used to stabilize the motes.', 'physics', 'particles', 2, '2000.0', 77);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_volatile_motes', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_volatile_motes', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mining_drone_weapon_1', 'Mining Drone Lasers', 'Using intense-focus lenses in combination with an oscillating firing frequency help create lasers strong enough to mine asteroids, or shoot down hostiles.', 'physics', 'particles', 2, '2500.0', 78);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mining_drone_weapon_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mining_drone_weapon_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_neutron', 'Neutron Sweeping', 'An accelerated plume of neutron radiation', 'physics', 'particles', 5, '24000.0', 79);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_neutron', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"op":"or","args":[{"leaf":"is_spiritualist","value":"no"},{"op":"not","args":[{"leaf":"has_psionic_ascension","value":"yes"}]}]},{"leaf":"is_pacifist","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_neutron', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"op":"or","args":[{"leaf":"is_spiritualist","value":"no"},{"op":"not","args":[{"leaf":"has_psionic_ascension","value":"yes"}]}]},{"leaf":"is_pacifist","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_plasma_1', 'Plasma Throwers', 'Weapons that eject destructive balls of high-energy plasma at targets. These plasma projectiles are extremely effective at eating through ship armor.', 'physics', 'particles', 2, '2500.0', 80);
@@ -80340,8 +80421,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_plasma_1', '["tech_lasers_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_plasma_1', '["tech_lasers_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_plasma_2', 'Plasma Accelerators', 'These new accelerators launch projectiles of high-energy plasma with improved containment fields. This results in less energy leakage as the projectile travels in space towards its target.', 'physics', 'particles', 3, '4000.0', 81);
@@ -80350,8 +80432,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_plasma_2', '["tech_plasma_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_plasma_2', '["tech_plasma_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_plasma_3', 'Plasma Cannons', 'The latest in plasma weaponry, these cannons are fully militarized versions of the older, somewhat improvised plasma throwers. Their plasma projectiles are even deadlier.', 'physics', 'particles', 4, '8000.0', 82);
@@ -80360,76 +80443,88 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_plasma_3', '["tech_plasma_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_plasma_3', '["tech_plasma_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_quantum_catapult', 'Quantum Catapult', 'A Quantum Catapult harnesses the power of a Neutron Star or Pulsar to twist the fabric of space, skipping a fleet across great distances.', 'physics', 'particles', 3, '8000.0', 83);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_quantum_catapult', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"op":"or","args":[{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_country_flag","value":"has_quantum_catapult_insight"},{"leaf":"has_origin","value":"origin_star_slingshot"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_quantum_catapult', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"op":"or","args":[{"leaf":"has_technology","value":"tech_mega_engineering"},{"leaf":"has_country_flag","value":"has_quantum_catapult_insight"},{"leaf":"has_origin","value":"origin_star_slingshot"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_reactor_boosters_1', 'Reactor Boosters', 'Additional power generation systems increase the ship''s reactor output.', 'physics', 'particles', 0, '0.0', 84);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_reactor_boosters_1', '["tech_fission_power"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_reactor_boosters_1', '["tech_fission_power"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_reactor_boosters_2', 'Improved Reactor Boosters', 'The discovery of fusion power allows for better reactor boosters to be fitted onto our ships.', 'physics', 'particles', 1, '1500.0', 85);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_reactor_boosters_2', '["tech_fusion_power", "tech_reactor_boosters_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_reactor_boosters_2', '["tech_fusion_power", "tech_reactor_boosters_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_reactor_boosters_3', 'Advanced Reactor Boosters', 'The discovery of antimatter power allows for highly advanced reactor boosters that can greatly enhance ship reactors.', 'physics', 'particles', 1, '6000.0', 86);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_reactor_boosters_3', '["tech_antimatter_power", "tech_reactor_boosters_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_reactor_boosters_3', '["tech_antimatter_power", "tech_reactor_boosters_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_cloud_weapon_1', 'Cloud Lightning Conduits', 'Void Clouds use the electrical charges generated by the dense gases that make up most of their core to release bolts of burning plasma. Using the same gas composition together with a specialized conduit allows for powerful lightning weaponry.', 'physics', 'particles', 2, '3000.0', 87);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_cloud_weapon_1', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_cloud_weapon_1', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starfire_cannon', 'Starfire Cannon', 'Like any potential hazard, the dangerous radiation from our star''s transformation can also be harnessed as a useful tool. Channeling it as a beam weapon would allow us to overheat and disable enemy ships. Unlocks a Colony Decision to construct a Starfire Cannon in orbit.', 'physics', 'particles', 4, '12000.0', 88);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starfire_cannon', '[]', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_red_giant"},{"leaf":"has_country_flag","value":"starfire_cannon_unlocked"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starfire_cannon', '[]', '[]', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_red_giant"},{"leaf":"has_country_flag","value":"starfire_cannon_unlocked"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_subspace_drive', 'Subspace Drive', 'An insight borne of a desperate desire to leave our home, these Subspace Drive engines were designed to facilitate limited interstellar travel. While only allowing small-scale jumps, they provide a unique opportunity to jumpstart our galactic exploration.', 'physics', 'particles', 0, '500.0', 89);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_subspace_drive', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_subspace_drive', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unusual_senses', 'Unusual Senses', 'Nothing is more innovative than natural evolution. By studying how pre-FTL societies view their world, we have devised new methods of detecting uninvited ships.', 'physics', 'particles', 2, '3000.0', 90);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_unusual_senses', 'envoys_add', '0.25', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unusual_senses', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unusual_senses', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_volatile_motes', 'Volatile Material Plants', 'Aside from the obvious safety concerns, the artificial creation of Volatile Motes is an extremely delicate and complicated process that requires highly specialized equipment.', 'physics', 'particles', 2, '2000.0', 91);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_volatile_motes', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_volatile_motes', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_wormhole_stabilization', 'Wormhole Stabilization', 'A naturally occurring subspace wormhole is a fickle thing, and its fluctuating energy levels typically make it impossible to travel safely between its linked apertures. There are ways to temporarily stabilize its matrix, however.', 'physics', 'particles', 3, '4000.0', 92);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_wormhole_stabilization', '["tech_hyper_drive_2"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_wormhole_stabilization', '["tech_hyper_drive_2"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_zero_point_power', 'Zero Point Power', 'These generators extract vacuum energy, providing an almost limitless supply of ship power. There is no more efficient way to generate energy.', 'physics', 'particles', 4, '10000.0', 93);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_zero_point_power', '["tech_antimatter_power"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_zero_point_power', '["tech_antimatter_power"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_administrative_ai', 'Administrative AI', 'Organizational circuitry rerouting academic fervor.', 'physics', 'computing', 1, '1000.0', 94);
@@ -80440,8 +80535,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_administrative_ai', '["tech_basic_science_lab_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_administrative_ai', '["tech_basic_science_lab_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archeology_lab', 'Curator Archaeology Lab', 'A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced.', 'physics', 'computing', 2, '2000.0', 95);
@@ -80452,20 +80548,23 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_archeology_lab', 'ship_anomaly_research_speed_mult', '0.25', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archeology_lab', '[]', '{"op":"not","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archeology_lab', '[]', '[]', '{"op":"not","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_system_scanner', 'Subspace Imaging Array', 'The void speaks, and for those who know to listen, it whispers the secrets of the countless worlds in its embrace.', 'physics', 'computing', 4, '10000.0', 96);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_system_scanner', '["tech_arkship_tier_3", "tech_automated_exploration", "tech_sensors_2"]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_system_scanner', '["tech_arkship_tier_3", "tech_automated_exploration", "tech_sensors_2"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_assisted_detection', 'Advanced Detection Algorithms', 'Coupling detection arrays with the computers onboard our science vessels can vastly increase their scanning resolution.', 'physics', 'computing', 2, '3000.0', 97);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_assisted_detection', '["tech_detection_array"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_assisted_detection', '["tech_detection_array"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_atmospheric_orbital_mechanics', 'Atmospheric Orbital Mechanics', 'Due to our vast experience operating observation stations in orbit of pre-FTL worlds, we have discovered slight optimizations. By implementing them empire-wide, we can drastically reduce the maintenance our stations require.', 'physics', 'computing', 2, '3000.0', 98);
@@ -80484,70 +80583,81 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('stations_upkeep_mult', 'Station Upkeep', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_atmospheric_orbital_mechanics', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_atmospheric_orbital_mechanics', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_automated_exploration', 'Automated Exploration Protocols', 'An advanced AI will aid science officers in their task to explore strange new worlds, to seek out new life and new civilizations, to boldly go where no Blorg has gone before. The Science Ship will be able to explore the galaxy with help from an AI.', 'physics', 'computing', 1, '1250.0', 99);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_automated_exploration', 'science_ship_survey_speed', '0.25', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_automated_exploration', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_automated_exploration', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_auxiliary_fire_control', 'Auxiliary Fire-control', 'By installing an auxiliary fire-control system our ships can afford to make more advanced calculations, increasing accuracy.', 'physics', 'computing', 1, '1500.0', 100);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_auxiliary_fire_control', '["tech_combat_computers_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_auxiliary_fire_control', '["tech_combat_computers_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_basic_science_lab_1', 'Scientific Method', 'Testable predictions of observable phenomena.', 'physics', 'computing', 0, '500.0', 101);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_basic_science_lab_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_basic_science_lab_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_basic_science_lab_2', 'Exotic Materials Labs', 'As we explore the galaxy, we continually encounter new materials and substances that are unfamiliar to us. Cataloging and analyzing these discoveries will require new facilities.', 'physics', 'computing', 1, '1500.0', 102);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_basic_science_lab_2', '["tech_basic_science_lab_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_basic_science_lab_2', '["tech_basic_science_lab_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_basic_science_lab_3', 'Multi-Dimensional Studies', 'To expand our knowledge base, we must consider all levels of existence. A new realm of science awaits us!', 'physics', 'computing', 3, '4000.0', 103);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_basic_science_lab_3', '["tech_basic_science_lab_2", "tech_colonial_centralization"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_basic_science_lab_3', '["tech_basic_science_lab_2", "tech_colonial_centralization"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_computers_1', 'Specialized Combat Computers', 'Active matrices tuned for specific combat-centric tasks greatly improve engagement efficiency.', 'physics', 'computing', 1, '1500.0', 104);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_computers_1', '["tech_administrative_ai"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_computers_1', '["tech_administrative_ai"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_computers_2', 'Extended Combat Algorithms', 'Further advances in predictive algorithms allow for augmented tactical decision-making in the field.', 'physics', 'computing', 3, '4000.0', 105);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_computers_2', '["tech_combat_computers_1", "tech_self_aware_logic"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_computers_2', '["tech_combat_computers_1", "tech_self_aware_logic"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_computers_3', 'Sapient Combat Simulations', 'Running sapient AIs through high-intensity combat simulations yields valuable insight into potential optimizations for risk-evaluation techniques.', 'physics', 'computing', 4, '10000.0', 106);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_computers_3', '["tech_combat_computers_2", "tech_sapient_ai"]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_computers_3', '["tech_combat_computers_2", "tech_sapient_ai"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_computers_autonomous', 'Autonomous Ship Intellects', 'Granting our ships their own semi-autonomous intellect will greatly enhance their responsiveness in combat.', 'physics', 'computing', 4, '10000.0', 107);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_computers_autonomous', '["tech_combat_computers_2"]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_computers_autonomous', '["tech_combat_computers_2"]', '[]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_computers_bio_integration', 'Combat Computer Bio-integration', 'We can develop specialized neurochips to influence the behavior of space fauna involved in wide scale fleet combat.', 'physics', 'computing', 2, '2000.0', 108);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_computers_bio_integration', '["tech_controlled_mutations"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_computers_bio_integration', '["tech_controlled_mutations"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_consumer_good_refinement_1', 'Market Analysis Algorithms', 'Basic administrative AIs can be used to streamline supply and demand lines, reducing waste.', 'physics', 'computing', 2, '2000.0', 109);
@@ -80556,8 +80666,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_produces_mult', 'Resources Produced from Artisans', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_consumer_good_refinement_1', '["tech_administrative_ai", "tech_luxuries_1"]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_consumer_good_refinement_1', '["tech_administrative_ai", "tech_luxuries_1"]', '[]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_consumer_good_refinement_2', 'Predictive Consumerism', 'Using advanced AIs, we can reliably predict consumer demand before it exists.', 'physics', 'computing', 4, '8000.0', 110);
@@ -80566,44 +80677,51 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_produces_mult', 'Resources Produced from Artisans', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_consumer_good_refinement_2', '["tech_consumer_good_refinement_1", "tech_luxuries_2", "tech_self_aware_logic"]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_consumer_good_refinement_2', '["tech_consumer_good_refinement_1", "tech_luxuries_2", "tech_self_aware_logic"]', '[]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_crisis_1', 'Exponential Learning Theory', 'The radical shift in perspective required to comprehend the infinite layers of reality challenges even our most brilliant minds.', 'physics', 'computing', 5, '10000.0', 111);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_crisis_1', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_crisis_1', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_crisis_2', 'Gravitic Brush', 'Gravity and spacetime shape the universe. Starting with gravity, we will master tools to power our ascension.', 'physics', 'computing', 5, '50000.0', 112);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_crisis_2', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_crisis_2', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_crisis_3', 'Theoretical Infinity Thesis', 'Precise and incredibly minute alterations in gravity allow us to inject commands into the code of reality. Extreme caution is imperative as we learn the applications of this new and incredible tool.', 'physics', 'computing', 5, '100000.0', 113);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_crisis_3', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_crisis_3', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_crisis_4', 'The Rules of Reality', 'Recent experiments confirm that our edits to reality are only temporary. More significant alterations will be necessary to anchor these changes.', 'physics', 'computing', 5, '200000.0', 114);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_crisis_4', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_crisis_4', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_crisis_5', 'Nascent Universes', 'Large-scale travel to different universes is a daunting task. We must engineer a spacecraft that can not only pierce the fabric of spacetime but also survive the journey. Fallen Empires will try to stop us!', 'physics', 'computing', 5, '300000.0', 115);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_crisis_5', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_crisis_5', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_thesis', 'Applied Infinity Thesis', 'By making further alterations to reality''s rules, we can better monitor its reactions. At this scale, the effects are still difficult to predict, and could affect the entire galaxy.', 'physics', 'computing', 4, '75000.0', 116);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_thesis', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cosmogenesis_aborted"}]}]}', 0, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_thesis', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cosmogenesis_aborted"}]}]}', 0, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cryostasis_1', 'Automated Colony Ships', 'By giving control of the colony ship to the on-board computer, the crew and colonists can be placed in suspended animation.', 'physics', 'computing', 1, '1500.0', 117);
@@ -80612,8 +80730,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cryostasis_1', '["tech_administrative_ai", "tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cryostasis_1', '["tech_administrative_ai", "tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cryostasis_2', 'Self-Aware Colony Ships', 'Sufficiently advanced systems are capable of optimizing themselves if they are made acutely aware of the purpose for which they were made.', 'physics', 'computing', 3, '3000.0', 118);
@@ -80622,16 +80741,18 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_colony_development_speed_mult', 'Colony Development Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cryostasis_2', '["tech_cryostasis_1", "tech_self_aware_logic"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cryostasis_2', '["tech_cryostasis_1", "tech_self_aware_logic"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_curator_lab', 'Curator Exploration Lab', 'These shipboard lab facilities incorporate advanced technologies from the ancient Curator Order to further increase survey speeds.', 'physics', 'computing', 2, '2000.0', 119);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_curator_lab', 'science_ship_survey_speed', '0.33', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_curator_lab', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_curator_lab', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_decryption_1', 'Quantum Hacking', 'Primitive encryption systems stand no chance against modern decryption tools.', 'physics', 'computing', 1, '1250.0', 120);
@@ -80640,8 +80761,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_decryption_add', 'Codebreaking', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_decryption_1', '["tech_colonial_bureaucracy"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_decryption_1', '["tech_colonial_bureaucracy"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_decryption_2', 'Simulated Social Engineering', 'The weakest link in any security system are the individuals within it. By modeling their weaknesses in computer simulations we can find novel ways to bypass their security - or trick them into bypassing it for us.', 'physics', 'computing', 2, '2500.0', 121);
@@ -80650,8 +80772,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_decryption_add', 'Codebreaking', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_decryption_2', '["tech_decryption_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_decryption_2', '["tech_decryption_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_decryption_3', 'Quasi-Dimensional Reflection', 'Our operatives can access data from adjacent realities without risking setting off alarms in this reality.', 'physics', 'computing', 4, '10000.0', 122);
@@ -80660,14 +80783,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_decryption_add', 'Codebreaking', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_decryption_3', '["tech_decryption_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_decryption_3', '["tech_decryption_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_detection_array', 'Detection Array', 'A high-powered suite of external sensors, capable of detecting cloaked fleets.', 'physics', 'computing', 2, '3000.0', 123);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_detection_array', '["tech_sensors_2"]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_detection_array', '["tech_sensors_2"]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dyson_swarm', 'Dyson Swarm', 'An array of interlinked satellites, the Dyson Swarm is designed to improve the output of stellar deposits.', 'physics', 'computing', 2, '3000.0', 124);
@@ -80676,8 +80801,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('dyson_swarm_limit_add', 'Dyson Swarm Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dyson_swarm', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dyson_swarm', '[]', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_encryption_1', 'Quantum Firewalls', 'Advances in computing technology have given us new ways to protect our data from prying eyes.', 'physics', 'computing', 1, '1250.0', 125);
@@ -80686,8 +80812,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_encryption_add', 'Encryption', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_encryption_1', '["tech_colonial_bureaucracy"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_encryption_1', '["tech_colonial_bureaucracy"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_encryption_2', 'Simultaneous-Collapse Storage', 'Further advances in unstable entanglement have given us new ways to prevent unauthorized intrusions into our databases.', 'physics', 'computing', 2, '2500.0', 126);
@@ -80696,8 +80823,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_encryption_add', 'Encryption', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_encryption_2', '["tech_encryption_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_encryption_2', '["tech_encryption_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_encryption_3', 'Negative-Time Keys', 'Our latest advances in encryption exploit recently discovered quirks of physics to require inputting a specialized key before it has been generated.', 'physics', 'computing', 4, '10000.0', 127);
@@ -80706,56 +80834,65 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('intel_encryption_add', 'Encryption', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_encryption_3', '["tech_encryption_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_encryption_3', '["tech_encryption_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_enigmatic_decoder', 'Enigmatic Decoder', 'While producing average results in standard tests, the accuracy of Enigmatic Decoder''s prediction algorithms seemingly increases as the target''s flight path grows more erratic.', 'physics', 'computing', NULL, '60000.0', 128);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_enigmatic_decoder', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_enigmatic_decoder', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_enigmatic_encoder', 'Enigmatic Encoder', 'The Enigmatic Encoder scrambles flight path data according to some indeterminable design before feeding it back to fleet command.', 'physics', 'computing', NULL, '60000.0', 129);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_enigmatic_encoder', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_enigmatic_encoder', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_lab_1', 'Quantum Innovation Nexus', 'This nexus boasts state-of-the-art equipment and an unprecedented staff capacity, ushering in an era where quantum theories are not just explored but harnessed for groundbreaking innovation.', 'physics', 'computing', NULL, '70000.0', 130);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_lab_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_lab_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_lab_2', 'Transcendental Innovation Department', 'This building is the apex of scientific advancement and proves this is an era of boundless innovation.', 'physics', 'computing', NULL, '70000.0', 131);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_lab_2', '["tech_fe_lab_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_lab_2', '["tech_fe_lab_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_global_research_initiative', 'Interplanetary Research Initiative', 'A bid for interplanetary resource pools and more flexible research grants.', 'physics', 'computing', 3, '4000.0', 132);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_global_research_initiative', '["tech_basic_science_lab_2", "tech_colonial_centralization"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_global_research_initiative', '["tech_basic_science_lab_2", "tech_colonial_centralization"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_overclocker', 'Synaptic Overclocker', 'The Lathe has been designed to preserve its installed Neural Chips, keeping them productive for as long as possible. The overclocker can override these commands, resulting in a higher and faster output, but it comes with an increased failure rate.', 'physics', 'computing', 5, '30000.0', 133);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_overclocker', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_overclocker', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_resonator', 'Synaptic Resonator', 'Resonators harness and redirect the cognitive potential of stray thoughts and autonomic systems, leading every single chip to increase the efficiency of its closest processing neighbors.', 'physics', 'computing', 5, '30000.0', 134);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_resonator', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_resonator', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_validator', 'Synaptic Validator', 'While the primary purpose of the validator''s specialized functions is to help formulate infinity theses, it can also be applied to more general aspects of computing.', 'physics', 'computing', 5, '30000.0', 135);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_validator', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_validator', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_neuro_quantum_links', 'Quantum Neuro-Links', 'Advanced neurological implants with connection to quantum computing clusters allow for multi-threaded thoughts.', 'physics', 'computing', 3, '4000.0', 136);
@@ -80764,8 +80901,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_neuro_quantum_links', '["tech_basic_science_lab_2", "tech_integrated_cybernetics"]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_neuro_quantum_links', '["tech_basic_science_lab_2", "tech_integrated_cybernetics"]', '[]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_new_numbers', 'New Numbers', 'After studying multiple pre-FTL civilizations, we have realized that there are many alternative ways to calculate the universe. It has even introduced new numbers into our mathematics.', 'physics', 'computing', 2, '3000.0', 137);
@@ -80774,8 +80912,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_new_numbers', 'all_technology_research_speed', '0.05', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_new_numbers', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_new_numbers', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_orbital_maneuvers', 'Advanced Orbital Maneuvers', 'Sublight travel can be further optimized by performing advanced calculations that make maximum use of planetary gravity wells.', 'physics', 'computing', 2, '2000.0', 138);
@@ -80784,26 +80923,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_speed_mult', 'Sublight Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_orbital_maneuvers', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_orbital_maneuvers', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pd_tracking_1', 'Active Countermeasures', 'The best defense is a good offense.', 'physics', 'computing', 0, NULL, 139);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pd_tracking_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pd_tracking_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pd_tracking_2', 'Interlinked Support Systems', 'Arrays of defensive armaments prove much more effective than independent countermeasures.', 'physics', 'computing', 2, '3000.0', 140);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pd_tracking_2', '["tech_pd_tracking_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pd_tracking_2', '["tech_pd_tracking_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pd_tracking_3', 'Predictive Algorithms', 'Advanced prediction greatly increases the accuracy of active countermeasure systems.', 'physics', 'computing', 4, '8000.0', 141);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pd_tracking_3', '["tech_pd_tracking_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pd_tracking_3', '["tech_pd_tracking_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_positronic_implants', 'Positronic Implants', 'Expanding possibilities through the application of limited cybernetics.', 'physics', 'computing', 4, '8000.0', 142);
@@ -80814,8 +80957,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_positronic_implants', '["tech_self_aware_logic"]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_positronic_implants', '["tech_self_aware_logic"]', '[]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sapient_ai', 'Positronic AI', 'Evolving artificial intellects are opening the door to the possibility for true synthetic sapience.', 'physics', 'computing', 4, '8000.0', 143);
@@ -80826,64 +80970,74 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sapient_ai', '["tech_self_aware_logic"]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sapient_ai', '["tech_self_aware_logic"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_science_arkship', NULL, 'Scientific Arkships combine the mobility of nomadic life with the full resources of a dedicated research institution, turning every system we visit into a new opportunity for discovery.', 'physics', 'computing', 3, '4000.0', 144);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_science_arkship', '["tech_arkship_construction", "tech_sensors_2"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_science_arkship', '["tech_arkship_construction", "tech_sensors_2"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_science_nexus', 'Science Nexus', 'The research labs and databanks of a Science Nexus generate an immense flow of raw, undiluted science.', 'physics', 'computing', 5, '24000.0', 145);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_science_nexus', '["tech_mega_engineering"]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_science_nexus', '["tech_mega_engineering"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_self_aware_logic', 'Self-Evolving Logic', 'Introspective prioritization.', 'physics', 'computing', 2, '2500.0', 146);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_self_aware_logic', 'num_tech_alternatives_add', '1.0', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_self_aware_logic', '["tech_administrative_ai"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_self_aware_logic', '["tech_administrative_ai"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sensors_2', 'Gravitic Sensors', 'These sensors have been tuned to look for any gravitational changes in space, such as those produced by the presence of a starship.', 'physics', 'computing', 2, '2000.0', 147);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sensors_2', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sensors_2', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sensors_3', 'Subspace Sensors', 'Sensors that detect the subspace fluctuations left in the wake of traveling starships. Their sensitivity and range is greater than that of a gravitic sensor array.', 'physics', 'computing', 3, '4000.0', 148);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sensors_3', '["tech_sensors_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sensors_3', '["tech_sensors_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sensors_4', 'Tachyon Sensors', 'Advanced sensors that rely on rotating tachyon beams to detect ship movements even at extreme distances.', 'physics', 'computing', 4, '8000.0', 149);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sensors_4', '["tech_sensors_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sensors_4', '["tech_sensors_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sensors_bio_integration', 'Sensor Bio-integration', 'The diverse sensory organs of spaceborne life can be enhanced by our developed technologies with minimal harm to the organism.', 'physics', 'computing', 2, '2000.0', 150);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sensors_bio_integration', '["tech_controlled_mutations"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sensors_bio_integration', '["tech_controlled_mutations"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_sentry_array', 'Sentry Array', 'The stages of the Sentry Array gradually expand sensor range, eventually covering the entire galaxy.', 'physics', 'computing', 5, '24000.0', 151);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_sentry_array', '["tech_mega_engineering"]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_sentry_array', '["tech_mega_engineering"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_exploration', 'Space Exploration', 'The realization of faster-than-light travel is a new dawn for space exploration. Manned missions to other star systems are now not only possible, but necessary.', 'physics', 'computing', 0, '0.0', 152);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_exploration', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_exploration', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_science_1', 'Zero-G Laboratories', 'A lot of critical research can only be done in a zero gravity environment, which these specialized laboratories are eminently designed for.', 'physics', 'computing', 1, '1000.0', 153);
@@ -80892,8 +81046,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_science_1', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_science_1', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_science_2', 'Miniature Containment Fields', 'Containment force fields are excellent for isolating and holding various substances or specimens so they can be analyzed in detail.', 'physics', 'computing', 1, '1500.0', 154);
@@ -80902,8 +81057,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_science_2', '["tech_space_science_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_science_2', '["tech_space_science_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_science_3', 'Quantum Probes', 'Advanced probes that can thoroughly analyze subjects on a sub-atomic level, generating a wealth of valuable research data.', 'physics', 'computing', 2, '2000.0', 155);
@@ -80912,8 +81068,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_science_3', '["tech_space_science_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_science_3', '["tech_space_science_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_science_4', 'Autonomous Station Protocols', 'Increased automation of station functions will free up more staff for research duties.', 'physics', 'computing', 2, '3000.0', 156);
@@ -80922,8 +81079,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_science_4', '["tech_space_science_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_science_4', '["tech_space_science_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_science_5', 'Multi-Dimensional Analysis', 'Studying something from the limited perspective of a single dimensional reality does not paint the whole picture. Every angle must be considered.', 'physics', 'computing', 3, '4000.0', 157);
@@ -80932,8 +81090,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_science_5', '["tech_space_science_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_science_5', '["tech_space_science_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_storm_prediction_1', 'Cosmic Weather Models', 'Through the use of scientific weather models, we can track the movement and formation of impending Cosmic Storms.', 'physics', 'computing', 1, '1250.0', 158);
@@ -80946,8 +81105,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_storm_movement_intel_add', 'Cosmic Storm Movement Intel', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_storm_prediction_1', '["tech_industrial_storm_protection"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_storm_prediction_1', '["tech_industrial_storm_protection"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_storm_prediction_2', 'Probability Current', 'By applying probability currents to our scientific weather models, our ability to track the movement and formation of impending Cosmic Storms is greatly increased.', 'physics', 'computing', 3, '5000.0', 159);
@@ -80960,22 +81120,25 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_storm_movement_intel_add', 'Cosmic Storm Movement Intel', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_storm_prediction_2', '["tech_storm_prediction_1"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_storm_prediction_2', '["tech_storm_prediction_1"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_synchronized_defences', 'Synchronized Defenses', 'Aligning defensive and offensive weapon execution paradigms allows for increased efficiency.', 'physics', 'computing', 4, '10000.0', 160);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_synchronized_defences', '["tech_self_aware_logic"]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_synchronized_defences', '["tech_self_aware_logic"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_synth_queen_knowledge', 'Cetana''s Thought', 'This compendium, a gift from Cetana, is a tapestry of profound insights, elegantly composed and dense with meaning. It offers more than knowledge; it challenges and reshapes our understanding of technology, society, and the fabric of consciousness itself.', 'physics', 'computing', 5, '16000.0', 161);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_synth_queen_knowledge', 'all_technology_research_speed', '0.2', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_synth_queen_knowledge', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"synth_queen_knowledge"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_synth_queen_knowledge', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"synth_queen_knowledge"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_trinary_computing', 'Trinary Computing', 'Different societies have developed alternative solutions for their logistics and computing. These alien ways of thinking have made it easier for us to adapt to foreign empires'' structures.', 'physics', 'computing', 2, '3000.0', 162);
@@ -80990,108 +81153,125 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('espionage_operation_difficulty_add', 'Operation Difficulty', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_trinary_computing', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_trinary_computing', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alien_cloning', 'Artificial Breeding', 'In a carefully controlled environment, we can incubate the Genetic Material collected from culled Space Fauna and produce new members of each species under our command.', 'society', 'biology', 2, '2000.0', 163);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alien_cloning', '["tech_gravity_wells"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"or","args":[{"leaf":"is_beastmasters_empire","value":"yes"},{"leaf":"can_research_technology","value":"tech_genome_mapping"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alien_cloning', '["tech_gravity_wells"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Grand Archive"},{"op":"or","args":[{"leaf":"is_beastmasters_empire","value":"yes"},{"leaf":"can_research_technology","value":"tech_genome_mapping"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alien_life_studies', 'Xenology', 'Studying the fauna of other worlds gives insight into alien behaviors, allowing us to identify and domesticate docile entities.', 'society', 'biology', 1, '1250.0', 164);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alien_life_studies', '[]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alien_life_studies', '[]', '[]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_amoeba_strike_craft_1', 'Flagella Weaponization', 'By altering the breeding process of Space Amoebas, we can program their symbiotic flagella to act as organic strike craft for our navy.', 'society', 'biology', 2, '3000.0', 165);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_amoeba_strike_craft_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_amoeba_strike_craft_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_basic_health', 'Medical Care', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 'society', 'biology', 0, '0.0', 166);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_basic_health', '[]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_basic_health', '[]', '[]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_bio_reactor', 'Bio-Reactor', 'A facility where organic matter is converted into energy at a highly efficient rate.', 'society', 'biology', 1, '1000.0', 167);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_bio_reactor', '["tech_industrial_farming"]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_bio_reactor', '["tech_industrial_farming"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_bio_reactor_2', 'Advanced Bio-Reactor', 'A facility where organic matter is converted into energy at a highly efficient rate, improvements in waste collection allows harvesting of useful gaseous by-products.', 'society', 'biology', 2, '2000.0', 168);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_bio_reactor_2', '["tech_bio_reactor"]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_bio_reactor_2', '["tech_bio_reactor"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_biomechanics', 'Biomechanics', 'Millions of years of organic evolution will sometimes, through sheer persistence, produce elegant solutions that can also be applied to machine designs.', 'society', 'biology', 4, '10000.0', 169);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_biomechanics', '["tech_adaptive_combat_algorithms"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_biomechanics', '["tech_adaptive_combat_algorithms"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_capacity_boosters', 'Capacity Boosters', 'We leave nothing to chance, no matter the cost. Through exacting curation of DNA banks do we build the leaders of tomorrow.', 'society', 'biology', 4, '12000.0', 170);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_capacity_boosters', '["tech_selected_lineages"]', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_capacity_boosters', '["tech_selected_lineages"]', '[]', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloning', 'Cloning', 'Breakthroughs in enucleation and artificial womb technology allows for the mass-production of individuals based on a common genetic template.', 'society', 'biology', 2, '2500.0', 171);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloning', '["tech_genome_mapping"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloning', '["tech_genome_mapping"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_controlled_mutations', 'Controlled Mutations', 'We can increase the effectiveness of our Space Fauna Ships by modifying their genomes, allowing us to integrate artificial technology into their biomass.', 'society', 'biology', 2, '2500.0', 172);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_controlled_mutations', 'mutation_slots_add', '3.0', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_controlled_mutations', '["tech_alien_cloning"]', '{"op":"or","args":[{"leaf":"is_beastmasters_empire","value":"yes"},{"leaf":"has_any_dna","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_controlled_mutations', '["tech_alien_cloning"]', '[]', '{"op":"or","args":[{"leaf":"is_beastmasters_empire","value":"yes"},{"leaf":"has_any_dna","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_controlled_mutations_2', 'Advanced Controlled Mutations', 'We can go further. Advanced manipulation of Space Fauna genetics allows for integrating a wider variety of specialized components.', 'society', 'biology', 4, '10000.0', 173);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_controlled_mutations_2', 'mutation_slots_add', '3.0', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_controlled_mutations_2', '["tech_controlled_mutations"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_controlled_mutations_2', '["tech_controlled_mutations"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_harbinger', 'Maze Harbinger', 'These Harbingers nest their strike craft in interwoven pocket dimensions, each ship a labyrinth of impossible hangars, capable of deploying a fleet''s worth of firepower.', 'society', 'biology', 5, '70000.0', 174);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_harbinger', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_harbinger', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_mauler', 'Cipher Mauler', 'Through organic spacetime-dimensional transcendentalism, this Mauler is larger on the inside its compact frame concealing a dense tangle of musculature. Capable of a bite deadlier than physics should allow.', 'society', 'biology', 5, '70000.0', 175);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_mauler', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_mauler', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_stinger', 'Cryptic Stinger', 'Brimming with more weapon systems than its power source should sustain, this Stinger shouldn''t function, and yet, it fires. Continuously.', 'society', 'biology', 5, '70000.0', 176);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_stinger', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_stinger', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_weaver', 'Quandary Weaver', 'Equipped with support weapon arrays that outstrip its visible anatomy, the Quandary Weaver rewrites spatial norms. Alone, it can shift the momentum of entire battles.', 'society', 'biology', 5, '70000.0', 177);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_weaver', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_weaver', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"yes"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_critter_feeder', 'Fruit Gardens', 'Vacuum gardens full of bio-engineered fruits, genetically enhanced to attract spaceborne fauna.', 'society', 'biology', 0, '0.0', 178);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_critter_feeder', '[]', '{"leaf":"has_origin","value":"origin_fruitful"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_critter_feeder', '[]', '[]', '{"leaf":"has_origin","value":"origin_fruitful"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_eco_simulation', 'Eco Simulation', 'Farming techniques can be further refined through sophisticated computer simulations of different environments and weather patterns. This allows for more predictable crop yields.', 'society', 'biology', 1, '1000.0', 179);
@@ -81100,8 +81280,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_mult', 'Food Produced from Farmers', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_eco_simulation', '["tech_industrial_farming"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_eco_simulation', '["tech_industrial_farming"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_enhanced_cryosleep_sedatives', 'Enhanced Cryosleep Sedatives', 'Sedatives based on a rare enzyme enable enhanced cryosleep, greatly improving organic species'' tolerance of long-distance space travel.', 'society', 'biology', 2, '2000.0', 180);
@@ -81110,62 +81291,72 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_organic_resettlement_cost_mult', 'Organic Pop Resettlement Cost', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_enhanced_cryosleep_sedatives', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_enhanced_cryosleep_sedatives', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_epigenetic_triggers', 'Epigenetic Triggers', 'Advanced DNA methylation techniques allow for functionally significant alterations to be made to arbitrary genomes.', 'society', 'biology', 2, '2500.0', 181);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_epigenetic_triggers', '["tech_genome_mapping"]', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"has_civic","value":"civic_machine_guided_sapience"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_epigenetic_triggers', '["tech_genome_mapping"]', '[]', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]},{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"has_civic","value":"civic_machine_guided_sapience"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_clinic_1', 'Molecular-Revitalization Institute', 'Molecular-Revitalization Institutes delve deep into cellular intricacies to amplify the effectiveness of medical treatments, significantly improving the quality and longevity of the populations'' health.', 'society', 'biology', NULL, '70000.0', 182);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_clinic_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_clinic_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_clinic_2', 'Bioregeneration Institute', 'The Bioregeneration Institute, at the pinnacle of medical technology, pioneers groundbreaking bio-regenerative therapies, continuously redefining the boundaries of life extension.', 'society', 'biology', NULL, '70000.0', 183);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_clinic_2', '["tech_fe_clinic_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_clinic_2', '["tech_fe_clinic_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_nourishment_1', 'Nourishment Complex', 'Replication technology swiftly conjures up novel flavors on command.', 'society', 'biology', NULL, '70000.0', 184);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_nourishment_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_nourishment_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_nourishment_2', 'Nourishment Center', 'Every conceivable flavor can be replicated within these walls.', 'society', 'biology', NULL, '70000.0', 185);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_nourishment_2', '["tech_fe_nourishment_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_nourishment_2', '["tech_fe_nourishment_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_food_processing_1', 'Food Processing', 'Improved food processing techniques will lead to better preservation methods and less spoilage.', 'society', 'biology', 1, '1250.0', 186);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_food_processing_1', '["tech_eco_simulation"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_food_processing_1', '["tech_eco_simulation"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_food_processing_2', 'Advanced Food Processing', 'New cryopreservation and protein resequencing methods will make food processing much more efficient.', 'society', 'biology', 3, '4000.0', 187);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_food_processing_2', '["tech_food_processing_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_food_processing_2', '["tech_food_processing_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_frontier_health', 'Genetic Healthcare', 'The colonization of alien worlds has opened up an entirely new field of biomedical research.', 'society', 'biology', 1, '1250.0', 188);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_frontier_health', '["tech_basic_health", "tech_genome_mapping"]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_frontier_health', '["tech_basic_health", "tech_genome_mapping"]', '[]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_frontier_hospital', 'Cyto-Revitalization', 'As our empire grows, so does our understanding of biology. Advanced medical treatments on a cellular level have allowed for significant advancements in biological population health.', 'society', 'biology', 2, '3000.0', 189);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_frontier_hospital', '["tech_colonial_centralization", "tech_frontier_health"]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_frontier_hospital', '["tech_colonial_centralization", "tech_frontier_health"]', '[]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gargantuan_evolution', 'Gargantuan Evolution', 'Voidspawn eggs have evolved to withstand the harsh conditions of space by absorbing and conserving energy from their nearest star.', 'society', 'biology', 1, '4000.0', 190);
@@ -81174,14 +81365,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gargantuan_evolution', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gargantuan_evolution', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gene_banks', 'Gene Banks', 'Gene Banks filter and curate available genomes for deployment in clones.', 'society', 'biology', 2, '3000.0', 191);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gene_banks', '["tech_cloning"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gene_banks', '["tech_cloning"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gene_crops', 'Gene Crops', 'Sophisticated genetic engineering of crops helps increase yield and further improves both taste and nutrient levels.', 'society', 'biology', 2, '2000.0', 192);
@@ -81190,20 +81383,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_mult', 'Food Produced from Farmers', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gene_crops', '["tech_eco_simulation"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gene_crops', '["tech_eco_simulation"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gene_expressions', 'Targeted Gene Expressions', 'Stricter control of RNA and protein production on the cellular level.', 'society', 'biology', 3, '6000.0', 193);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gene_expressions', '["tech_gene_tailoring"]', '{"op":"and","args":[{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gene_expressions', '["tech_gene_tailoring"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gene_seed_purification', 'Gene Seed Purification', 'Nucleotide purification techniques allow for the isolation and refinement of particularly desirable genetic traits.', 'society', 'biology', 4, '8000.0', 194);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gene_seed_purification', '["tech_gene_tailoring"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gene_seed_purification', '["tech_gene_tailoring"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_gene_tailoring', 'Gene Tailoring', 'Making gene-editing tools widely available is sure to have a positive impact on our development as a species.', 'society', 'biology', 3, '4000.0', 195);
@@ -81212,8 +81408,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_gene_tailoring', '["tech_genome_mapping"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_gene_tailoring', '["tech_genome_mapping"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_genome_mapping', 'Genome Mapping', 'Mapping the genome of an individual through the sequencing of their DNA opens up for tailored medical treatments and therapies.', 'society', 'biology', 1, '1000.0', 196);
@@ -81222,26 +81419,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_genome_mapping', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"has_civic","value":"civic_machine_guided_sapience"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_genome_mapping', '[]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"},{"leaf":"has_civic","value":"civic_machine_guided_sapience"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_glandular_acclimation', 'Glandular Acclimation', 'Through glandular biological tailoring we can change the environmental tolerance of a species to suit our needs.', 'society', 'biology', 3, '6000.0', 197);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_glandular_acclimation', '["tech_gene_tailoring"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_glandular_acclimation', '["tech_gene_tailoring"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_machine_servitor"}]},{"leaf":"is_natural_design_empire","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_growth_chamber_1', 'Growth Chamber', 'The construction of Growth Chambers enables the organic cultivation of biological ships within the fleet.', 'society', 'biology', 4, '10000.0', 198);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_growth_chamber_1', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_growth_chamber_1', '["tech_stingers"]', '[["tech_harbinger_growth_1", "tech_mauler_growth_1", "tech_stinger_growth_1", "tech_weaver_growth_1"]]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_growth_chamber_2', 'Advanced Growth Chamber', 'The enhanced efficiency and capacity of Growth Chambers accelerates the cultivation of biological ships by refining their organic designs.', 'society', 'biology', 4, '12000.0', 199);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_growth_chamber_2', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_growth_chamber_2', '["tech_growth_chamber_1"]', '[["tech_harbinger_growth_2", "tech_mauler_growth_2", "tech_stinger_growth_2", "tech_weaver_growth_2"]]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_harbinger_build_speed', 'Standardized Harbinger Incubation', 'These facilities nurture large biological ships, feeding them through advanced nutrient infusion to ensure resilience and combat readiness.', 'society', 'biology', 3, '5000.0', 200);
@@ -81274,20 +81475,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_harbinger_stage_3_build_speed_mult', 'Elder Offspring Harbinger Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_harbinger_build_speed', '["tech_harbingers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_harbinger_build_speed', '["tech_harbingers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_harbinger_growth_1', 'Improved Harbinger Development', 'Refined facilities employ sophisticated bio-engineering techniques to accelerate growth and enhance structural integrity. The resulting vessels feature improved endurance and increased combat efficiency.', 'society', 'biology', 3, '5000.0', 201);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_harbinger_growth_1', '["tech_harbingers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_harbinger_growth_1', '["tech_harbingers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_harbinger_growth_2', 'Advanced Harbinger Development', 'Advanced incubation systems produce biological ships of exceptional durability and firepower. Genetic fine-tuning and superior growth environments create vessels capable of dominating the battlefield with unmatched resilience.', 'society', 'biology', 3, '6000.0', 202);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_harbinger_growth_2', '["tech_harbinger_growth_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_harbinger_growth_2', '["tech_harbinger_growth_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_harbingers', 'Harbingers', 'Harbingers represent a significant leap in bio-engineered warfare, blending formidable firepower with the resilience of living technology. These ships serve as the backbone of the fleet.', 'society', 'biology', 3, '4000.0', 203);
@@ -81296,38 +81500,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_harbingers', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_harbingers', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hydroponics', 'Hydroponics Farming', 'Hydroponics Farming in a controlled environment allows for crops to be grown in climates where farming would normally be impossible.', 'society', 'biology', 0, '0.0', 204);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hydroponics', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hydroponics', '[]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_improved_incubators', 'Improved Incubators', 'We can improve the artificial growth processes established in our hatcheries, accelerating the early developmental stages in order to create more mature clones.', 'society', 'biology', 2, '2000.0', 205);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_improved_incubators', '["tech_alien_cloning"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_improved_incubators', '["tech_alien_cloning"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_industrial_farming', 'Industrial Agriculture', 'Large-scale industrial farms growing nutrient-rich produce allows a civilization to grow its population manifold.', 'society', 'biology', 0, '0.0', 206);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_industrial_farming', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_industrial_farming', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_life_support', 'Synaptic Sustainer', 'Dedicated facilities organize the maintenance of the Lathe''s critical components, allowing us to support more chips and a healthier network environment.', 'society', 'biology', 5, '30000.0', 207);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_life_support', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_life_support', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_preserver', 'Synaptic Preserver', 'The organic components of the network are especially vulnerable to energetic fluctuations, which can cause rapid axonal degeneration. The Preserver strives to reduce these fluctuations to protect the Synaptic Lathe''s frailer parts.', 'society', 'biology', 5, '30000.0', 208);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_preserver', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_preserver', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_living_test_subjects', 'Living Test Subjects', 'The utilization of basic slime-spawned lifeforms as willing test subjects greatly improves research efficiency.', 'society', 'biology', 1, '1000.0', 209);
@@ -81336,8 +81546,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('society_tech_cost_mult', 'Research Cost ( Society)', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_living_test_subjects', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_living_test_subjects', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mauler_build_speed', 'Standardized Mauler Incubation', 'These incubation chambers accelerate the gestation of embryonic warships within nutrient-dense biopods. Though rudimentary, they mark the first step toward a fleet that is not constructed, but grown.', 'society', 'biology', 1, '1250.0', 210);
@@ -81370,8 +81581,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_mauler_stage_3_build_speed_mult', 'Elder Offspring Mauler Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mauler_build_speed', '["tech_maulers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mauler_build_speed', '["tech_maulers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mauler_growth_1', 'Improved Mauler Development', 'Refined incubation processes reduce maturation times and improve structural integrity of organic starships. Enhanced nutrient delivery systems and genetic tuning ensure the vessels are both swift and resilient.', 'society', 'biology', 1, '1250.0', 211);
@@ -81380,32 +81592,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mauler_growth_1', '["tech_maulers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mauler_growth_1', '["tech_maulers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mauler_growth_2', 'Advanced Mauler Development', 'These facilities yield vessels of unparalleled vitality and adaptive capacity. Optimized genetic matrices and advanced biotechnological support guarantee unmatched performance in the void.', 'society', 'biology', 1, '1500.0', 212);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mauler_growth_2', '["tech_mauler_growth_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mauler_growth_2', '["tech_mauler_growth_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_maulers', 'Maulers', 'Breakthroughs in bio-engineering have allowed the growth of space-faring, FTL-capable craft with military applications.', 'society', 'biology', 1, '500.0', 213);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_maulers', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_maulers', '[]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_metabolic_gases', 'Metabolic Gases', 'Improvements to the metabolic gases within our hatcheries will further mature each specimen before it is brought into this world.', 'society', 'biology', 3, '4000.0', 214);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_metabolic_gases', '["tech_improved_incubators"]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_metabolic_gases', '["tech_improved_incubators"]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_morphogenetic_field_mastery', 'Morphogenetic Field Mastery', 'From its cradle as a purely pharmaceutical venture, advancements in our understanding of the morphogenetic field allow for direct, subconscious interfaces with organic units.', 'society', 'biology', 4, '8000.0', 215);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_morphogenetic_field_mastery', '["tech_epigenetic_triggers"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_morphogenetic_field_mastery', '["tech_epigenetic_triggers"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nano_vitality_crops', 'Nano-Vitality Crops', 'Infusing crop strands with small amounts of nano-machines help create a type of produce that is ultra resilient, and the chemical composition of which can be tailored and altered during its entire lifetime.', 'society', 'biology', 3, '4000.0', 216);
@@ -81414,8 +81631,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_mult', 'Food Produced from Farmers', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nano_vitality_crops', '["tech_gene_crops"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nano_vitality_crops', '["tech_gene_crops"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_neuroregeneration', 'Neural Tissue Engineering', 'When tailored to a species'' genome, this form of tissue engineering has intensive neuroregenerative properties, significantly increasing the development of neurons, axons, and synapses in its recipient.', 'society', 'biology', 4, '10000.0', 217);
@@ -81428,8 +81646,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_neuroregeneration', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_neuroregeneration', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nutrient_replication', 'Nutrient Replication', 'The process of synthetically replicating crops requires a lot of collected waste to create a small amount of produce, but nevertheless provides a significant boost to agricultural output.', 'society', 'biology', 4, '12000.0', 218);
@@ -81438,50 +81657,58 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_mult', 'Food Produced from Farmers', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nutrient_replication', '["tech_nano_vitality_crops"]', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nutrient_replication', '["tech_nano_vitality_crops"]', '[]', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_regenerative_hull_tissue', 'Regenerative Hull Tissue', 'A genetically altered version of silicon-based bacteria could potentially be manipulated to regenerate non-organic materials.', 'society', 'biology', 3, '5000.0', 219);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_regenerative_hull_tissue', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_regenerative_hull_tissue', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_scourge_missile_1', 'Scourge Missiles', 'By analyzing the biological weaponry employed by the Swarm we can create self-propelled projectiles weapons spreading the very same horrific destruction.', 'society', 'biology', 5, '24000.0', 220);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_scourge_missile_1', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_scourge_missile_1', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_selected_lineages', 'Selected Lineages', 'Careful reproductive planning should be incentivized, lest we waste valuable genetic legacies.', 'society', 'biology', 3, '5000.0', 221);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_selected_lineages', '["tech_vitality_boosters"]', '{"leaf":"is_machine_empire","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_selected_lineages', '["tech_vitality_boosters"]', '[]', '{"leaf":"is_machine_empire","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_society_1', 'Xenobiology', 'The study of alien life has moved beyond mere cataloging. By examining the structures and survival strategies of organisms evolved under foreign stars, we open new avenues in medicine, adaptation, and design.', 'society', 'biology', 1, '1500.0', 222);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_society_1', '["tech_basic_science_lab_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_society_1', '["tech_basic_science_lab_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_society_2', 'Neural Weaving', 'Through recursive axonal scaffolding and synaptic reticulation, we have developed methods for reorganizing the electrochemical topology of conscious matter. Neurons do not merely transmit - they entwine, organize, and remember. Now, they do so according to our design.', 'society', 'biology', 2, '3000.0', 223);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_society_2', '["tech_society_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_society_2', '["tech_society_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_society_3', 'Biostructural Synthesis', 'Life, in all its staggering variety, is composed of repeating patterns and modular structures. By decoding and replicating these at every scale, we now wield a holistic blueprint of biology. There is little left in nature we do not understand, and less still we cannot recreate.', 'society', 'biology', 3, '6000.0', 224);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_society_3', '["tech_society_2"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_society_3', '["tech_society_2"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_whale_weapon_1', 'Frequency Tuning', 'Adapting the Tiyanki method of siphoning energy from gaseous matter, it is possible to construct weapons draining energy from enemy ships.', 'society', 'biology', 1, '1500.0', 225);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_whale_weapon_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_whale_weapon_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_stinger_build_speed', 'Standardized Stinger Incubation', 'These facilities grow sleek, agile biological ships designed for precision and speed. Employing advanced biopods and specialized nutrient solutions, they produce vessels capable of precise and efficient strikes.', 'society', 'biology', 4, '10000.0', 226);
@@ -81514,20 +81741,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_stinger_stage_3_build_speed_mult', 'Elder Offspring Stinger Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_stinger_build_speed', '["tech_stingers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_stinger_build_speed', '["tech_stingers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_stinger_growth_1', 'Improved Stinger Development', 'Refined facilities accelerate growth cycles and improve bio-engineered precision, resulting in vessels with superior maneuverability and accuracy. These enhancements make the Stinger a devastating force in tactical engagements.', 'society', 'biology', 4, '10000.0', 227);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_stinger_growth_1', '["tech_stingers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_stinger_growth_1', '["tech_stingers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_stinger_growth_2', 'Advanced Stinger Development', 'The apex of bioship growth technology, these advanced facilities produce Stingers of unmatched speed and lethality. Optimized genetic templates and cutting-edge incubation techniques ensure these ships dominate any battlefield with swift and deadly precision.', 'society', 'biology', 4, '12000.0', 228);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_stinger_growth_2', '["tech_stinger_growth_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_stinger_growth_2', '["tech_stinger_growth_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_stingers', 'Stingers', 'Stingers are designed to deliver devastating strikes against high-value targets. They excel in exploiting weaknesses in enemy defenses.', 'society', 'biology', 4, '8000.0', 229);
@@ -81536,8 +81766,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_stingers', '["tech_harbingers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_stingers', '["tech_harbingers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_subdermal_stimulation', 'Subdermal Stimulation', 'Deep-tissue implants are the latest innovation in the revolutionary overlapping of sensory engineering and entertainment experiences.', 'society', 'biology', 2, '2500.0', 230);
@@ -81546,56 +81777,65 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_morale', 'Army Morale', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_subdermal_stimulation', '["tech_genome_mapping"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_civic","value":"civic_dystopian_society"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_subdermal_stimulation', '["tech_genome_mapping"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_civic","value":"civic_dystopian_society"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_swarm_strike_craft_1', 'Swarm Spawning Pools', 'Collecting specimens from defeated Prethoryn enables us to clone and genetically program a war-brood of our own.', 'society', 'biology', 5, '24000.0', 231);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_swarm_strike_craft_1', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_swarm_strike_craft_1', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_crystalline_entity', 'Fissile Cores', 'Redundant thought centers allow for a Crystalline Entity to split itself in two as a final gambit to protect its clutch against a particularly dangerous foe.', 'society', 'biology', 3, '4000.0', 232);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_crystalline_entity', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_crystalline_entity', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_cutholoid', 'Gastric Fountain', 'The powerful digestive system of a Cutholoid can be repurposed to fire kinetic projectiles at extremely high velocity.', 'society', 'biology', 3, '4000.0', 233);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_cutholoid', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_cutholoid', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_restorative_enzymes', 'Restorative Enzymes', 'On death, the Tiyanki Matriarch produces an assortment of protective chemicals in a final attempt to preserve the lives of her remaining kin.', 'society', 'biology', 4, '8000.0', 234);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_restorative_enzymes', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_restorative_enzymes', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_space_amoeba', 'Leechcraft', 'Modified Flagella spawn that siphon nutrients and materials from their prey in order to support the regeneration of their host Amoeba.', 'society', 'biology', 3, '4000.0', 235);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_space_amoeba', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_space_amoeba', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_starborne_biology', 'Starborne Biology', 'A main source of energy for large creatures in deep space comes from the power of starlight. The closer they are to brighter stars, the faster they develop.', 'society', 'biology', 4, '8000.0', 236);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_starborne_biology', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_starborne_biology', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_tiyanki', 'Herdsong Chords', 'The somber song of the Tiyanki inspires its fellow creatures, hardening their resolve in combat.', 'society', 'biology', 3, '4000.0', 237);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_tiyanki', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_tiyanki', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unique_mutation_voidworm', 'Virulent Cysts', 'Cysts filled with reproductive fluid allow for each Voidworm in a fertile Troika to independently produce spawn when bombarding an inhabited planet.', 'society', 'biology', 3, '4000.0', 238);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unique_mutation_voidworm', '["tech_controlled_mutations_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unique_mutation_voidworm', '["tech_controlled_mutations_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_universal_marcophage', 'Universal Macrophage', 'These powerful immunology boosters make disease a thing of the past, allowing organic populations to live fuller, healthier lives. May cause serious side effects.', 'society', 'biology', 3, '6000.0', 239);
@@ -81608,8 +81848,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('BIOLOGICAL_logistic_growth_mult', 'Biological Pop Growth Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_universal_marcophage', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_universal_marcophage', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_vitality_boosters', 'Vitality Boosters', 'Where the body fails, science intervenes.', 'society', 'biology', 2, '2500.0', 240);
@@ -81618,8 +81859,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_vitality_boosters', '["tech_genome_mapping"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_vitality_boosters', '["tech_genome_mapping"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_voidworm_immunity', 'Voidworm Immunity', 'We can develop a cure for Voidworm parasitic infection. All of our colonies would be rendered immune to their current strain of spore bombardment.', 'society', 'biology', 3, '4000.0', 241);
@@ -81640,224 +81882,261 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('damage_vs_country_type_frenzied_voidworms_mult', 'Damage to Voidworms', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_voidworm_immunity', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_voidworm_immunity', '[]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_1', 'Vector Lock Cannon', 'Biologically enhanced projectiles are fired, countering evasive maneuvers and striking agile targets.', 'society', 'biology', 1, '1000.0', 242);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_2', 'Enzymatic Webcaster', 'Fires refined projectiles with superior tracking enzymes and adaptive flight paths, increasing hit rates against fast-moving targets.', 'society', 'biology', 2, '2000.0', 243);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_2', '["tech_weaver_bio_anti_evasion_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_2', '["tech_weaver_bio_anti_evasion_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_3', 'Seeker Shard Array', 'Deploys self-guided bio-munitions that lock onto movement patterns, ensuring accuracy against elusive enemies.', 'society', 'biology', 3, '4000.0', 244);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_3', '["tech_weaver_bio_anti_evasion_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_3', '["tech_weaver_bio_anti_evasion_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_4', 'Pinion Accelerator', 'Utilizes complex organic targeting systems that anticipate evasive actions, making even the most agile prey vulnerable.', 'society', 'biology', 4, '8000.0', 245);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_4', '["tech_weaver_bio_anti_evasion_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_4', '["tech_weaver_bio_anti_evasion_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_5', 'Prey Tracker', 'Fires intelligent bio-projectiles equipped with predictive tracking, overcoming the most sophisticated evasion protocols.', 'society', 'biology', 5, '16000.0', 246);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_5', '["tech_weaver_bio_anti_evasion_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_5', '["tech_weaver_bio_anti_evasion_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_evasion_6', 'Precision Lancer', 'Deploys bio-plasma rounds that adapt mid-flight, guaranteeing hits against even the most erratic maneuvers.', 'society', 'biology', NULL, '70000.0', 247);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_evasion_6', '["tech_weaver_bio_anti_evasion_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_evasion_6', '["tech_weaver_bio_anti_evasion_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_1', 'Reload Jammer', 'Launches organic projectiles that release specialized enzymes, interfering with enemy weapon reloading systems and reducing their rate of fire.', 'society', 'biology', 1, '1000.0', 248);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_2', 'Fire Disrupter', 'Enhances disruption enzymes to interfere more effectively with reloading cycles, significantly delaying enemy volleys.', 'society', 'biology', 2, '2000.0', 249);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_2', '["tech_weaver_bio_anti_fire_rate_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_2', '["tech_weaver_bio_anti_fire_rate_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_3', 'Mind Missiles', 'Deploys intelligent bio-projectiles that target critical reloading systems, creating cascading delays across enemy fleets.', 'society', 'biology', 3, '4000.0', 250);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_3', '["tech_weaver_bio_anti_fire_rate_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_3', '["tech_weaver_bio_anti_fire_rate_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_4', 'Degradation Beams', 'Utilizes adaptive biological compounds that degrade reloading mechanisms, halving the firing efficiency of even the most advanced weaponry.', 'society', 'biology', 4, '8000.0', 251);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_4', '["tech_weaver_bio_anti_fire_rate_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_4', '["tech_weaver_bio_anti_fire_rate_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_5', 'Fiend Disabler', 'Fires advanced munitions that emit suppression fields, crippling enemy reloading systems and rendering them painfully slow.', 'society', 'biology', 5, '16000.0', 252);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_5', '["tech_weaver_bio_anti_fire_rate_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_5', '["tech_weaver_bio_anti_fire_rate_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_anti_fire_rate_6', 'Tracker Stopper', 'Releases a biological pulse that locks down enemy reloading for extended periods.', 'society', 'biology', NULL, '70000.0', 253);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_anti_fire_rate_6', '["tech_weaver_bio_anti_fire_rate_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_anti_fire_rate_6', '["tech_weaver_bio_anti_fire_rate_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_1', 'Gloom Spores', 'Organic projectiles imbued with destabilizing enzymes scramble enemy targeting systems and reduce their accuracy.', 'society', 'biology', 1, '1000.0', 254);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_2', 'Tangle Pulse', 'Refined biological compounds disrupt targeting systems and short-range communications, sowing chaos among enemy ranks.', 'society', 'biology', 2, '2000.0', 255);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_2', '["tech_weaver_bio_confuser_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_2', '["tech_weaver_bio_confuser_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_3', 'Neuro Scourge', 'Adaptive bio-munitions are deployed to exploit neural weaknesses in both organic and synthetic crews, crippling enemy efficiency.', 'society', 'biology', 3, '4000.0', 256);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_3', '["tech_weaver_bio_confuser_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_3', '["tech_weaver_bio_confuser_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_4', 'Ruin Barbs', 'Intelligent bio-projectiles emit disruptive fields on impact, scrambling enemy targeting systems and causing widespread malfunctions.', 'society', 'biology', 4, '8000.0', 257);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_4', '["tech_weaver_bio_confuser_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_4', '["tech_weaver_bio_confuser_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_5', 'Snare Darts', 'Advanced biological ordnance creates a cascading feedback loop within enemy systems, rendering their attacks wildly ineffective.', 'society', 'biology', 5, '16000.0', 258);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_5', '["tech_weaver_bio_confuser_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_5', '["tech_weaver_bio_confuser_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_confuser_6', 'Havoc Storm', 'Bio-electromagnetic pulses incapacitate targeting systems and leave fleets in a state of disarray.', 'society', 'biology', NULL, '70000.0', 259);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_confuser_6', '["tech_weaver_bio_confuser_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_confuser_6', '["tech_weaver_bio_confuser_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_1', 'Energy Burster', 'Fires bio-projectiles that emit bursts of energy upon impact, subtly enhancing the maneuverability of our vessels.', 'society', 'biology', 1, '1000.0', 260);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_2', 'Tangler Pod Launcher', 'Releases concentrated bio-energetic fields, further boosting the evasion capabilities of our ships.', 'society', 'biology', 2, '2000.0', 261);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_2', '["tech_weaver_bio_evasion_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_2', '["tech_weaver_bio_evasion_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_3', 'Agile Spike Array', 'Launches intelligent bio-projectiles that adaptively enhance agility, ensuring superior evasion even in the most chaotic battles.', 'society', 'biology', 3, '4000.0', 262);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_3', '["tech_weaver_bio_evasion_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_3', '["tech_weaver_bio_evasion_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_4', 'Electro Sprayer', 'Deploys advanced munitions that generate dynamic bio-electric auras, significantly improving the ability of ships to evade enemy fire.', 'society', 'biology', 4, '8000.0', 263);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_4', '["tech_weaver_bio_evasion_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_4', '["tech_weaver_bio_evasion_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_5', 'Evasion Darts', 'Fires highly advanced projectiles that create large-scale enhancement fields, granting unparalleled evasion to fleets.', 'society', 'biology', 5, '16000.0', 264);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_5', '["tech_weaver_bio_evasion_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_5', '["tech_weaver_bio_evasion_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_evasion_6', 'Adaptive Tendrils', 'Fires bio-munitions that emit fields of adaptive energy, allowing fleets to dance effortlessly out of harm''s way.', 'society', 'biology', NULL, '70000.0', 265);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_evasion_6', '["tech_weaver_bio_evasion_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_evasion_6', '["tech_weaver_bio_evasion_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_1', 'Weaver Biofield Generators', 'Fires organic projectiles that emit energizing biofields, subtly increasing the firing speed of weapons systems.', 'society', 'biology', 1, '1000.0', 266);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_2', 'Weaver Booster Blaster', 'Refined bio-munitions enhance biofield intensity, further accelerating the rate of fire.', 'society', 'biology', 2, '2000.0', 267);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_2', '["tech_weaver_bio_fire_rate_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_2', '["tech_weaver_bio_fire_rate_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_3', 'Weaver Organo-Tech Amplifier', 'Deploys adaptive bio-projectiles that amplify reaction times and system efficiency, enabling a significant increase in fire rate.', 'society', 'biology', 3, '4000.0', 268);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_3', '["tech_weaver_bio_fire_rate_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_3', '["tech_weaver_bio_fire_rate_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_4', 'Weaver Aura Caster', 'Generates dynamic bio-electric auras, vastly enhancing firing speed across multiple vessels, ensuring relentless pressure on enemy fleets.', 'society', 'biology', 4, '8000.0', 269);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_4', '["tech_weaver_bio_fire_rate_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_4', '["tech_weaver_bio_fire_rate_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_5', 'Weaver Swift Shooter', 'Unleashes hyper-charged bio-munitions that create large-scale enhancement fields, enabling fleets to unleash sustained, rapid-fire barrages.', 'society', 'biology', 5, '16000.0', 270);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_5', '["tech_weaver_bio_fire_rate_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_5', '["tech_weaver_bio_fire_rate_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_fire_rate_6', 'Weaver Wave Maker', 'Projects waves of bio-energy that push our weaponry to their peak performance, flooding the battlefield with devastating firepower.', 'society', 'biology', NULL, '70000.0', 271);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_fire_rate_6', '["tech_weaver_bio_fire_rate_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_fire_rate_6', '["tech_weaver_bio_fire_rate_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_1', 'Spore Launcher', 'Regenerative pods are launched to deliver strong healing compounds to allied ships.', 'society', 'biology', 1, '1000.0', 272);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_2', 'Improved Spore Launcher', 'Highly efficient pods imbued with healing biomatter are deployed to rapidly repair damage across multiple vessels.', 'society', 'biology', 2, '2000.0', 273);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_2', '["tech_weaver_bio_healing_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_2', '["tech_weaver_bio_healing_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_3', 'Advanced Spore Launcher', 'Pods containing repair agents are launched, optimizing healing based on the severity of damage and ensuring no vulnerabilities remain.', 'society', 'biology', 3, '4000.0', 274);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_3', '["tech_weaver_bio_healing_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_3', '["tech_weaver_bio_healing_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_4', 'Adaptive Spore Launcher', 'Pods that saturate the battlefield with adaptive spores provide smart healing to all allied vessels within range.', 'society', 'biology', 4, '8000.0', 275);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_4', '["tech_weaver_bio_healing_3"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_4', '["tech_weaver_bio_healing_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_5', 'Intelligent Adaptive Spore Launcher', 'Deploys pods that unleash a wave of intelligent microorganisms, capable of revitalizing even the most damaged fleets.', 'society', 'biology', 5, '16000.0', 276);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_5', '["tech_weaver_bio_healing_4"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_5', '["tech_weaver_bio_healing_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_bio_healing_6', 'Rebirth Spores', 'Pods filled with malleable cells are launched to trigger the growth of new hull tissues, pushing the endurance of organic vessels beyond their former limits.', 'society', 'biology', NULL, '70000.0', 277);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_bio_healing_6', '["tech_weaver_bio_healing_5"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_bio_healing_6', '["tech_weaver_bio_healing_5"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_build_speed', 'Standardized Weaver Incubation', 'These facilities nurture mid-sized biological ships within refined biopods, employing enhanced nutrient delivery and genetic optimization to produce agile and adaptable vessels for the fleet.', 'society', 'biology', 1, '1250.0', 278);
@@ -81890,8 +82169,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_weaver_stage_3_build_speed_mult', 'Elder Offspring Weaver Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_build_speed', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_build_speed', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_growth_1', 'Improved Weaver Development', 'These facilities employ enhanced bio-engineering techniques to accelerate growth cycles and enhance vessel adaptability. Improved genetic matrices and optimized environments ensure these biological ships are both durable and highly responsive in combat.', 'society', 'biology', 2, '2500.0', 279);
@@ -81900,26 +82180,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_growth_1', '["tech_weavers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_growth_1', '["tech_weavers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weaver_growth_2', 'Advanced Weaver Development', 'These facilities produce biological ships of unparalleled precision and versatility. Revolutionary growth techniques and adaptive genetic enhancements result in vessels that thrive in even the most demanding tactical scenarios.', 'society', 'biology', 2, '3000.0', 280);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weaver_growth_2', '["tech_weaver_growth_1"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weaver_growth_2', '["tech_weaver_growth_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_weavers', 'Weavers', 'Building on the foundations of early bio-engineering, Weavers are crafted to balance agility with increased combat capabilities.', 'society', 'biology', 1, '1000.0', 281);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_weavers', '["tech_maulers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_weavers', '["tech_maulers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_adaptive_combat_algorithms', 'Adaptive Combat Algorithms', 'Organics often fight using illogical and unpredictable tactics that can be difficult to effectively counter. Adaptive tactics and new, more maneuverable warforms should provide a decisive advantage.', 'society', 'military_theory', 2, '2500.0', 282);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_adaptive_combat_algorithms', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_adaptive_combat_algorithms', '[]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_centralized_command', 'Centralized Command', 'Creating dedicated headquarters for all levels of military operations shapes an efficient fleet, and lays a better foundation for future military training.', 'society', 'military_theory', 3, '5000.0', 283);
@@ -81928,8 +82212,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_occupation_armies_add', 'Max Occupation Garrisons', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_centralized_command', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_centralized_command', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_combat_training', 'Combat Training', 'A more extensive training program for new recruits, including realistic combat scenarios, prepare them for the field.', 'society', 'military_theory', 3, '4000.0', 284);
@@ -81942,8 +82227,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_attack_morale_mult', 'Assault Army Morale', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_combat_training', '["tech_centralized_command"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_combat_training', '["tech_centralized_command"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_command_matrix', 'Command Matrix', 'Restructuring the chain of command and deciding what interdependencies are set between officers, make fleets more responsive and effective.', 'society', 'military_theory', 3, '6000.0', 285);
@@ -81952,8 +82238,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_command_matrix', '["tech_refit_standards"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_command_matrix', '["tech_refit_standards"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_deep_space_citadel', 'Deep Space Citadel', 'A Deep Space Citadel is an armored Starbase designed for maximum defense within a stellar gravity well.', 'society', 'military_theory', 3, '6000.0', 286);
@@ -81962,8 +82249,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('deep_space_citadel_limit_add', 'Deep Space Citadel System Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_deep_space_citadel', '["tech_starbase_3"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_deep_space_citadel', '["tech_starbase_3"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_fleet_size_1', 'Doctrine: Space Combat', 'Gradual adaptation to the realities of deep-space combat allows us to effectively coordinate larger maneuvers.', 'society', 'military_theory', 1, '1000.0', 287);
@@ -81972,8 +82260,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_fleet_size_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_fleet_size_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_fleet_size_2', 'Doctrine: Reactive Formations', 'Gradual adaptation to the realities of deep-space combat allows us to effectively coordinate larger maneuvers.', 'society', 'military_theory', 2, '3000.0', 288);
@@ -81982,8 +82271,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_fleet_size_2', '["tech_doctrine_fleet_size_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_fleet_size_2', '["tech_doctrine_fleet_size_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_fleet_size_3', 'Doctrine: Interstellar Warfare', 'Gradual adaptation to the realities of deep-space combat allows us to effectively coordinate larger maneuvers.', 'society', 'military_theory', 3, '5000.0', 289);
@@ -81992,8 +82282,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_fleet_size_3', '["tech_doctrine_fleet_size_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_fleet_size_3', '["tech_doctrine_fleet_size_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_fleet_size_4', 'Doctrine: Fluid Fleet Templates', 'Gradual adaptation to the realities of deep-space combat allows us to effectively coordinate larger maneuvers.', 'society', 'military_theory', 4, '8000.0', 290);
@@ -82002,8 +82293,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_fleet_size_4', '["tech_doctrine_fleet_size_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_fleet_size_4', '["tech_doctrine_fleet_size_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_fleet_size_5', 'Doctrine: Armada Battle Formation', 'Gradual adaptation to the realities of deep-space combat allows us to effectively coordinate larger maneuvers.', 'society', 'military_theory', 5, '24000.0', 291);
@@ -82012,8 +82304,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_fleet_size_5', '["tech_doctrine_fleet_size_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_fleet_size_5', '["tech_doctrine_fleet_size_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_navy_size_1', 'Doctrine: Fleet Support', 'As extrasolar expeditions become more common, it is important to provide planetside relief for returning fleets.', 'society', 'military_theory', 1, '1250.0', 292);
@@ -82022,8 +82315,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_navy_size_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_navy_size_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_navy_size_2', 'Doctrine: Support Vessels', 'A fleet does not run on zeal alone. To ensure steady access to critical supplies, we should organize our logistics corps into dedicated support vessels.', 'society', 'military_theory', 2, '2500.0', 293);
@@ -82032,8 +82326,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_navy_size_2', '["tech_doctrine_navy_size_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_navy_size_2', '["tech_doctrine_navy_size_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_navy_size_3', 'Doctrine: Interstellar Logistics', 'Amateurs talk about tactics. Professionals study logistics. By ensuring our fleets are regularly and efficiently supplied, we can increase the number of vessels we can effectively support.', 'society', 'military_theory', 3, '4000.0', 294);
@@ -82042,8 +82337,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_navy_size_3', '["tech_doctrine_navy_size_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_navy_size_3', '["tech_doctrine_navy_size_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_doctrine_navy_size_4', 'Doctrine: Fleet Liaisons', 'By maintaining a professional corps of fleet liaisons, we can improve communications and the flow of orders throughout the chain of command.', 'society', 'military_theory', 4, '12000.0', 295);
@@ -82052,26 +82348,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_doctrine_navy_size_4', '["tech_doctrine_navy_size_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_doctrine_navy_size_4', '["tech_doctrine_navy_size_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_existential_campaigns', 'Existential Campaigns', 'When survival itself is at stake, the very concept of war loses its meaning. These campaigns are waged not for dominion, but to secure the continued existence of our civilization.', 'society', 'military_theory', 5, '24000.0', 296);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_existential_campaigns', '["tech_galactic_campaigns"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_existential_campaigns', '["tech_galactic_campaigns"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_fortress_1', 'Aspis Bastion', 'This colossal planetary defense complex has numerous armories and layers of shielding. Only a highly specialized siege force could breach its defenses.', 'society', 'military_theory', NULL, '70000.0', 297);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_fortress_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_fortress_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_fortress_2', 'Aegis Complex', 'This monumental planetary defense complex protects with countless armories and shielding; the planet''s mountains will crumble before its defenses.', 'society', 'military_theory', NULL, '70000.0', 298);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_fortress_2', '["tech_fe_fortress_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_fortress_2', '["tech_fe_fortress_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_campaigns', 'Galactic Campaigns', 'Further improvements to administration grant an extended power projection across the stars, and the military clout needed to enforce our demands.', 'society', 'military_theory', 4, '8000.0', 299);
@@ -82084,8 +82384,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_campaigns', '["tech_interstellar_campaigns"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_campaigns', '["tech_interstellar_campaigns"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_global_defense_grid', 'Global Defense Grid', 'The strategic value of a good defense remains as relevant today as it was to our predecessors in the far distant past. Technology does not render fortifications obsolete - it merely changes their requirements.', 'society', 'military_theory', 2, '2000.0', 300);
@@ -82094,8 +82395,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_defense_health_mult', 'Defense Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_global_defense_grid', '["tech_ground_defense_planning"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_global_defense_grid', '["tech_ground_defense_planning"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ground_defense_planning', 'Ground Defense Planning', 'There are many alien empires who would gladly seize our worlds for themselves. We must be prepared for them, should the worst come to pass.', 'society', 'military_theory', 1, '1250.0', 301);
@@ -82104,8 +82406,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ground_defense_planning', '["tech_planetary_defenses"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ground_defense_planning', '["tech_planetary_defenses"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_interstellar_campaigns', 'Interstellar Campaigns', 'A well-oiled war machine is the key to exerting influence on a galactic scale. Backed by the might of our military, we can lay claim to almost anything we want.', 'society', 'military_theory', 2, '3000.0', 302);
@@ -82118,40 +82421,46 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_interstellar_campaigns', '["tech_galactic_ambitions"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_interstellar_campaigns', '["tech_galactic_ambitions"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_interstellar_fleet_traditions', 'Interstellar Fleet Traditions', 'A body of knowledge regarding combat behaviors is useless without a strong code governing its use.', 'society', 'military_theory', 2, '2500.0', 303);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_interstellar_fleet_traditions', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_interstellar_fleet_traditions', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lathe_cogitator', 'Synaptic Cogitator', 'Calculating hyperspatial supply chains is complex. Rerouting some processing power to the task will help even the largest fleet to delve deeper into enemy territory.', 'society', 'military_theory', 5, '30000.0', 304);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lathe_cogitator', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lathe_cogitator', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"},{"leaf":"has_technology","value":"tech_cosmogenesis_world"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mega_shipyard', 'Mega Shipyard', 'A zero-G construction yard of overwhelming proportion, capable of performing several space ship assembly projects simultaneously.', 'society', 'military_theory', 5, '24000.0', 305);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mega_shipyard', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mega_shipyard', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_defenses', 'Planetary Defenses', 'There may come a time when intellects, vast and cool and unsympathetic, regard our worlds with envy and draw plans against us. We must be ready.', 'society', 'military_theory', 0, '0.0', 306);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_defenses', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_defenses', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_predatory_tactics', 'Predatory Tactics', 'Just like how clever pre-FTLs move to conceal each other as they approach an enemy, so too can our pilots move faster without disrupting their cloaking field.', 'society', 'military_theory', 2, '3000.0', 307);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_predatory_tactics', 'envoys_add', '0.5', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_predatory_tactics', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_predatory_tactics', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_refit_standards', 'Refit Standards', 'Standardizing workflows for upgrading and retrofitting ship components can lead to massive efficiency gains.', 'society', 'military_theory', 3, '4000.0', 308);
@@ -82164,14 +82473,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_refit_standards', '["tech_interstellar_fleet_traditions"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_refit_standards', '["tech_interstellar_fleet_traditions"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_strategic_coordination', 'Strategic Coordination Center', 'A facility synchronizing the national Starbase network, augmenting defensive and offensive capabilities.', 'society', 'military_theory', 5, '24000.0', 309);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_strategic_coordination', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_strategic_coordination', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alien_topography', 'Alien Topography', 'Civilizations flourish in locations that promotes growth, and by analyzing where the majority of pre-FTL settlements thrive we can gain more out of our colonies.', 'society', 'new_worlds', 2, '3000.0', 310);
@@ -82182,20 +82493,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_non_artificial_max_districts_add', 'Max Districts (Non-artificial planets only)', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alien_topography', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alien_topography', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_civilian_arkship', NULL, 'More than a vessel, the Civilian Arkship is a world unto itself. Its infrastructure supports a complete society in motion, carrying with it everything needed to thrive across the stars.', 'society', 'new_worlds', 3, '4000.0', 311);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_civilian_arkship', '["tech_arkship_construction", "tech_planetary_engineering"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_civilian_arkship', '["tech_arkship_construction", "tech_planetary_engineering"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_climate_restoration', 'Climate Restoration', 'By advancing our understanding of atmospheric transformation, we will be able to terraform even the most ecologically devastated worlds.', 'society', 'new_worlds', 4, '8000.0', 312);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_climate_restoration', '["tech_terrestrial_sculpting"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_climate_restoration', '["tech_terrestrial_sculpting"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonial_centralization', 'Colonial Centralization', 'Robust frameworks for local governance created on a per-case basis, to meet each colony''s needs.', 'society', 'new_worlds', 2, '2500.0', 313);
@@ -82212,14 +82526,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_scientist_cap_add', 'Scientist Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonial_centralization', '["tech_planetary_unification"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonial_centralization', '["tech_planetary_unification"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonization_1', 'New Worlds Protocol', 'Calculating required resources and gear required to establish a planetary colony allows us to herd brave pioneers into grand colony ships, confident that they will survive the long voyage across the stars to a new home.', 'society', 'new_worlds', 0, '0.0', 314);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonization_1', '["tech_space_exploration"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonization_1', '["tech_space_exploration"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonization_2', 'Atmospheric Filtering', 'By adjusting atmospheric filtering on a per-site basis to better filter out undesirable elements, colonial living conditions may be improved.', 'society', 'new_worlds', 2, '1500.0', 315);
@@ -82228,8 +82544,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonization_2', '["tech_colonization_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonization_2', '["tech_colonization_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonization_3', 'Hostile Environment Adaptation', 'Further study into the hazardous environments found on other planets help alleviate the difficulties that colonizers encounter in their day-to-day lives on foreign worlds.', 'society', 'new_worlds', 2, '3000.0', 316);
@@ -82238,8 +82555,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonization_3', '["tech_colonization_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonization_3', '["tech_colonization_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonization_4', 'Foreign Soil Enrichment', 'Extensive study into different soil types and their ability to support crops will help improve the living conditions of our settlers on foreign worlds.', 'society', 'new_worlds', 3, '6000.0', 317);
@@ -82248,8 +82566,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonization_4', '["tech_colonization_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonization_4', '["tech_colonization_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonization_5', 'Eco-Integration Studies', 'Additional study into different planetary climates will allow us to settle our population on worlds previously thought too hostile to support them.', 'society', 'new_worlds', 4, '12000.0', 318);
@@ -82258,38 +82577,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonization_5', '["tech_colonization_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonization_5', '["tech_colonization_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cryovault', 'Frozen World Habitats', 'By harnessing the subthermal dynamics found in the environments of frozen worlds, we can create more hospitable living conditions in colder climates.', 'society', 'new_worlds', 2, '2000.0', 319);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cryovault', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cryovault', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dangerous_wildlife', 'Dangerous Wildlife Removal', 'Tactical disruption of natural habitats combined with converging search-and-destroy patterns can effectively eliminate hostile wildlife in a very short span of time.', 'society', 'new_worlds', 2, '2500.0', 320);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dangerous_wildlife', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dangerous_wildlife', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_deep_sinkhole', 'Subterranean Colonization', 'Many planets exhibit extensive subsurface voids. Subterranean exploration, exploitation, and construction techniques can greatly increase the habitable area of some worlds.', 'society', 'new_worlds', 1, '1250.0', 321);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_deep_sinkhole', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_deep_sinkhole', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dense_jungle', 'Selective Defoliants', 'Thorough cataloging, gene sequencing, and computer modeling of exobotanical ecosystems, coupled with gene editing and dispersal mechanisms, will allow us to reshape alien plant communities to our liking.', 'society', 'new_worlds', 1, '1250.0', 322);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dense_jungle', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dense_jungle', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ecological_adaptation', 'Ecological Adaptation', 'By adapting planetary ecosystems to large-scale environmental changes we can turn terraformation into a less disruptive process.', 'society', 'new_worlds', 3, '5000.0', 323);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ecological_adaptation', '["tech_terrestrial_sculpting"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ecological_adaptation', '["tech_terrestrial_sculpting"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_ambitions', 'Stellar Expansion', 'Our future lies in the sea of stars.', 'society', 'new_worlds', 2, '2500.0', 324);
@@ -82298,14 +82623,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_ambitions', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_ambitions', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_georadiation_terraforming', 'Georadiation Terraforming', 'By exposing the biosphere of a planet to molecular radiation decay, we promote the growth of certain resources while turning the world into a toxic wasteland.', 'society', 'new_worlds', 3, '4000.0', 325);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_georadiation_terraforming', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_georadiation_terraforming', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_manifest_destiny', 'Manifest Destiny', 'We must have to courage to seize our fate and make true what was always meant to be.', 'society', 'new_worlds', 4, '10000.0', 326);
@@ -82314,26 +82641,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_manifest_destiny', '["tech_galactic_ambitions"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_manifest_destiny', '["tech_galactic_ambitions"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_massive_glacier', 'Climate Control Network', 'Orbital systems of mirrors and shades can effect dramatic changes in planetary climates, when managed properly.', 'society', 'new_worlds', 1, '1250.0', 327);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_massive_glacier', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_massive_glacier', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mountain_range', 'Planetary Resurfacing', 'With the advent of clean fusion, automation, and matter compression technologies, it was only a matter of time before mountain top removal became mountain range removal.', 'society', 'new_worlds', 2, '2500.0', 328);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mountain_range', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mountain_range', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_noxious_swamp', 'Xeno-Hydraulic Mastery', 'Sapient races have been reclaiming swampland for thousands of years. A coordinated system of modular aqueducts, pump stations, chemical remediation crawlers and automated soil compactors can reclaim land at unprecedented speeds.', 'society', 'new_worlds', 1, '1250.0', 329);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_noxious_swamp', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_noxious_swamp', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_infrastructure_1', 'Ceramo-Metal Infrastructure', 'Stronger alloys allow us to create prefabricated buildings, providing our colonies with the improved infrastructure.', 'society', 'new_worlds', 2, '3000.0', 330);
@@ -82354,8 +82685,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_infrastructure_1', '["tech_colonial_centralization", "tech_ship_armor_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_infrastructure_1', '["tech_colonial_centralization", "tech_ship_armor_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_infrastructure_2', 'Durasteel Infrastructure', 'Advances in metallurgy permit us to build vastly larger and more durable structures, greatly improving the infrastructure of our colonies.', 'society', 'new_worlds', 4, '12000.0', 331);
@@ -82376,20 +82708,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_infrastructure_2', '["tech_galactic_administration", "tech_planetary_infrastructure_1", "tech_ship_armor_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_infrastructure_2', '["tech_galactic_administration", "tech_planetary_infrastructure_1", "tech_ship_armor_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_quicksand_basin', 'Soil Remediation', 'The process of soil deposition normally takes millions of years. With advanced fracking, chemical engineering, and hydraulic management technologies even the poorest substrate can be turned into fertile topsoil.', 'society', 'new_worlds', 1, '1250.0', 332);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_quicksand_basin', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_quicksand_basin', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_terrestrial_sculpting', 'Terrestrial Sculpting', 'There is no simple solution to the problem of macro-scale reshaping of planetary crusts - only bigger trowels and orbitally-deployed drills.', 'society', 'new_worlds', 2, '3000.0', 333);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_terrestrial_sculpting', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_terrestrial_sculpting', '[]', '[["tech_colonization_1", "tech_planetary_engineering"]]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_tomb_world_adaption', 'Tomb World Adaptation', 'Through comprehensive study of irradiated environments we will allow our settlers to colonize worlds that have been devastated by nuclear warfare.', 'society', 'new_worlds', 3, '4000.0', 334);
@@ -82398,38 +82733,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_tomb_world_adaption', '["tech_colonization_3"]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_tomb_world_adaption', '["tech_colonization_3"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_toxic_kelp', 'Ocean Ecology Management', 'Given enough processing power, networked sensors and distributed stations, even the ocean currents can be managed to a fine level of control.', 'society', 'new_worlds', 1, '1250.0', 335);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_toxic_kelp', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_toxic_kelp', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_volcanic_forge', 'Volcanic Forge', 'When deployed, this facility slowly transforms a planet into a volcanic paradise, surfacing useful resources along the way. Thermoforgers can accelerate the transformation.', 'society', 'new_worlds', 2, '2500.0', 336);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_volcanic_forge', '[]', '{"leaf":"is_world_forger_empire","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_volcanic_forge', '[]', '[]', '{"leaf":"is_world_forger_empire","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_volcanic_terraforming', 'Volcanic Terraforming', 'Advances in material technology and deep-shaft mining techniques allow geo-engineering at previously unthinkable depths and temperatures. We can terraform a Volcanic World into a temperate planet.', 'society', 'new_worlds', 2, '2500.0', 337);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_volcanic_terraforming', '["tech_terrestrial_sculpting", "tech_volcano"]', '{"leaf":"host_has_dlc","value":"Infernals Species Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_volcanic_terraforming', '["tech_terrestrial_sculpting", "tech_volcano"]', '[]', '{"leaf":"host_has_dlc","value":"Infernals Species Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_volcano', 'Deep Crust Engineering', 'Advances in material technology and deep-shaft mining techniques allow geo-engineering at previously unthinkable depths and temperatures. Magma hotspots can now be exploited, suppressed, or even relocated.', 'society', 'new_worlds', 2, '2500.0', 338);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_volcano', '["tech_colonization_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_volcano', '["tech_colonization_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_wilderness_terraform', 'Planetary Germination', 'To spread our roots to a new world first requires us to prepare the seedbed. By first terraforming a planet we can ensure that our colonies are off to a healthy start.', 'society', 'new_worlds', 0, '500.0', 339);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_wilderness_terraform', '[]', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_wilderness_terraform', '[]', '[]', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_adaptive_bureaucracy', 'Adaptive Bureaucracy', 'The progress we make calls for a new, nimbler form of administration that may aid rather than hinder us in our pursuits.', 'society', 'statecraft', 1, '1250.0', 340);
@@ -82438,14 +82779,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_edict_fund_add', 'Edict Fund', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_adaptive_bureaucracy', '["tech_planetary_unification"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_adaptive_bureaucracy', '["tech_planetary_unification"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_akx_worm_2', 'Doctrine: Strange Loop', 'A set of social protocols based on paradoxical intuition, and on love. When we know the System of the Loop, we learn that we can influence by receiving instructions, as well as giving them.', 'society', 'statecraft', NULL, '4000.0', 341);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_akx_worm_2', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_akx_worm_2', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_artificial_moral_codes', 'Artificial Moral Codes', 'It is circumstance that dictates what is moral. Define the circumstances, and ethics is like clay in your hands.', 'society', 'statecraft', 2, '3000.0', 342);
@@ -82458,34 +82801,39 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_mult', 'Amenities', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_artificial_moral_codes', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_artificial_moral_codes', '[]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ascension_theory', 'Ascension Theory', 'Our history is a repeating cycle of dramatic technological, political, and cultural leaps; these leaps are often preceded by periods of upheaval and followed by times of relative stability. By identifying the core, recurring premises of these leaps, we may be able to effectively short-circuit the cycle for our own benefit.', 'society', 'statecraft', 4, '10000.0', 343);
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_ascension_theory', 'ascension_perks_add', '1.0', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ascension_theory', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ascension_theory', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_aura_intensification', 'Psionic Aura Intensification', 'Psionic emanations from the Shroud long to expand. With this new understanding, an empire''s Psionic Auras can increase in intensity and spread throughout star systems, bringing benefits to allies and disadvantages to foes.', 'society', 'psionics', 4, '8000.0', 344);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_aura_intensification', '["tech_psionic_aura"]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_aura_intensification', '["tech_psionic_aura"]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_aura_resonation', 'Aura Resonation', 'There is a way to project Psionic Auras beyond populated worlds. With the addition of an Psionic Projector, even a starbase can become a conduit for psionic emanations from the Shroud.', 'society', 'psionics', 3, '4000.0', 345);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_aura_resonation', '["tech_psionic_aura"]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_aura_resonation', '["tech_psionic_aura"]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_autocurating_vault', 'Automated Curation Algorithms', 'Continuous, asynchronous analysis of disparate data sets allows for the accurate modeling of hitherto-unpredictable fluctuations in social currents.', 'society', 'statecraft', 3, '5000.0', 346);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_autocurating_vault', '["tech_administrative_ai", "tech_colonial_centralization"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_autocurating_vault', '["tech_administrative_ai", "tech_colonial_centralization"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"leaf":"is_wilderness_empire","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_autonomous_agents', 'Autonomous Agents', 'Semi-independent units have proved critical to the success of the greater whole.', 'society', 'statecraft', 2, '3000.0', 347);
@@ -82496,32 +82844,37 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_autonomous_agents', 'envoys_add', '1.0', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_autonomous_agents', '["tech_colonial_centralization"]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_autonomous_agents', '["tech_colonial_centralization"]', '[]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_capital_productivity_1', 'Improved Production', 'As our colonies become more developed, we can gain significant improvements to our throughput.', 'society', 'statecraft', 2, '3000.0', 348);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_capital_productivity_1', '["tech_planetary_unification"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_capital_productivity_1', '["tech_planetary_unification"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_capital_productivity_2', 'Efficiencies of Scale', 'Increased population density gives us an opportunity to further increase productivity.', 'society', 'statecraft', 3, '6000.0', 349);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_capital_productivity_2', '["tech_capital_productivity_1", "tech_colonial_centralization"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_capital_productivity_2', '["tech_capital_productivity_1", "tech_colonial_centralization"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_capital_productivity_3', 'Maximized Productivity', 'Continued advancements in technology allow our most developed planets to reach productivity levels unheard of in earlier times.', 'society', 'statecraft', 4, '12000.0', 350);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_capital_productivity_3', '["tech_capital_productivity_2", "tech_galactic_administration"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_capital_productivity_3', '["tech_capital_productivity_2", "tech_galactic_administration"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cloaking_psi', 'Psi-Phase Field Generator', 'Psi-Phase Field Generators focus the psionic potential of the ship''s crew to partially phase the vessel into the Shroud. This allows the ship to remain undetected by all but the best sensor arrays, though what the crew may be forced to witness is better left unsaid.', 'society', 'psionics', 5, '24000.0', 351);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cloaking_psi', '["tech_psi_jump_drive_1"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"host_has_dlc","value":"First Contact Story Pack"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cloaking_psi', '["tech_psi_jump_drive_1"]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"host_has_dlc","value":"First Contact Story Pack"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_collective_production_methods', 'Collective Production Methods', 'Together, we build the future.', 'society', 'statecraft', 3, '6000.0', 352);
@@ -82530,8 +82883,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_collective_production_methods', '["tech_unity_of_purpose"]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_collective_production_methods', '["tech_unity_of_purpose"]', '[]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_collective_self', 'The Collective Self', 'Finding aspects of the self within the group is natural and inevitable; eventually those shared aspects must be valued higher than individual identities.', 'society', 'statecraft', 3, '6000.0', 353);
@@ -82552,8 +82906,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_collective_self', 'envoys_add', '1.0', 4);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_collective_self', '["tech_colonial_centralization"]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_collective_self', '["tech_colonial_centralization"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colonial_bureaucracy', 'Colonial Bureaucracy', 'Local administrative developments allow for closer supervision of colonial affairs without excessively burdening central decision-making.', 'society', 'statecraft', 2, '2000.0', 354);
@@ -82566,8 +82921,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_base_country_intel', 'Base Intel Level', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colonial_bureaucracy', '["tech_adaptive_bureaucracy"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colonial_bureaucracy', '["tech_adaptive_bureaucracy"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_compact_living', 'Compact Living', 'While no one civilization has the perfect solution to the ever-expanding challenge of governing a growing nation, we have found a partial solution. After studying a multitude of species and governments, we have discovered an outstanding balance of flexibility and function.', 'society', 'statecraft', 2, '3000.0', 355);
@@ -82578,50 +82934,58 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_compact_living', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_compact_living', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_consecration_fields', 'Consecration Fields', 'Through our understanding of physics and field manipulation, our holy places shall we seen and felt by all.', 'society', 'statecraft', 3, '5000.0', 356);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_consecration_fields', '["tech_colonial_centralization", "tech_holographic_rituals"]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_consecration_fields', '["tech_colonial_centralization", "tech_holographic_rituals"]', '[]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_covenant_composer', 'Mark of the Composer', 'We have discovered how to let psionic energy flow through our ships. Armed with this knowledge, we can now imbue our vessels with the powers of our patron.', 'society', 'psionics', NULL, '60000.0', 357);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_covenant_composer', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_covenant_composer', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_covenant_cradle', 'Mark of the Cradle', 'We have discovered how to let psionic energy flow through our ships. Armed with this knowledge, we can now imbue our vessels with the powers of our patron.', 'society', 'psionics', NULL, '60000.0', 358);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_covenant_cradle', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_covenant_cradle', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_covenant_eater', 'Mark of the Eater', 'We have discovered how to let psionic energy flow through our ships. Armed with this knowledge, we can now imbue our vessels with the powers of our patron.', 'society', 'psionics', NULL, '60000.0', 359);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_covenant_eater', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_covenant_eater', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_covenant_instrument', 'Mark of the Instrument', 'We have discovered how to let psionic energy flow through our ships. Armed with this knowledge, we can now imbue our vessels with the powers of our patron.', 'society', 'psionics', NULL, '60000.0', 360);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_covenant_instrument', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_covenant_instrument', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_covenant_whisperers', 'Mark of the Whisperers', 'We have discovered how to let psionic energy flow through our ships. Armed with this knowledge, we can now imbue our vessels with the powers of our patron.', 'society', 'psionics', NULL, '60000.0', 361);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_covenant_whisperers', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_covenant_whisperers', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cultural_heritage', 'Sociocultural History', 'An understanding of a shared past is necessary in order to make any significant strides into the future.', 'society', 'statecraft', 1, '1250.0', 362);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cultural_heritage', '["tech_planetary_unification"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cultural_heritage', '["tech_planetary_unification"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_effective_bureaucracy', 'Effective Bureaucracy', 'Improved algorithms for processing and organizing vast amounts of data has streamlined decision-making and information-sharing throughout the empire.', 'society', 'statecraft', 2, '2000.0', 363);
@@ -82630,8 +82994,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_edict_fund_add', 'Edict Fund', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_effective_bureaucracy', '["tech_adaptive_bureaucracy"]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_effective_bureaucracy', '["tech_adaptive_bureaucracy"]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_embodied_dynamism', 'Embodied Dynamism', 'Initiative and some measure of ambition must be promoted in our autonomous leader units, while still making certain that they do not stray too far from the directives of the core intelligence.', 'society', 'statecraft', 3, '6000.0', 364);
@@ -82652,74 +83017,86 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_embodied_dynamism', 'envoys_add', '1.0', 4);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_embodied_dynamism', '["tech_autonomous_agents"]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_embodied_dynamism', '["tech_autonomous_agents"]', '[]', '{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_executive_retreat', 'Executive Leisure Program', 'A luxurious resort complex for high ranking corporate officers. Here they can sample the local culture in a high security environment.', 'society', 'statecraft', 3, '4000.0', 365);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_executive_retreat', '[]', '{"leaf":"is_megacorp","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_executive_retreat', '[]', '[]', '{"leaf":"is_megacorp","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_administration_1', 'Fractal Administration Processes', 'Our administrative requirements will likewise expand as our mastery of advanced technology evolves. We must adeptly cater to the demands of our burgeoning empire.', 'society', 'statecraft', NULL, '70000.0', 366);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_administration_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_administration_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_administration_2', 'Quantic Administration Processes', 'Our technology now surpasses any administrative requirement. The expertise needed to seamlessly govern a galactic empire is firmly within our reach.', 'society', 'statecraft', NULL, '70000.0', 367);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_administration_2', '["tech_fe_administration_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_administration_2', '["tech_fe_administration_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_dome_1', 'Sky Dome', 'This floating city, propelled by state-of-the-art anti-gravity technology, provides an idyllic haven for its inhabitants.', 'society', 'statecraft', NULL, '70000.0', 368);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_dome_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_dome_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_dome_2', 'Empyrean Dome', 'Suspended by gravimetric nullification, these domes transcend physical limitations, while advanced life support systems seamlessly cater to inhabitants'' needs.', 'society', 'statecraft', NULL, '70000.0', 369);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_dome_2', '["tech_fe_dome_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_dome_2', '["tech_fe_dome_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_entertainment_1', 'Virtual Bliss Plaza', 'These immense entertainment sectors are at the forefront of recreation and leisure. Brainwave readers allow for instantaneous and personalized virtual getaways.', 'society', 'statecraft', NULL, '70000.0', 370);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_entertainment_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_entertainment_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_entertainment_2', 'Omni-Bliss Nexus', 'A colossal culmination of entertainment, this nexus transcends conventional limits, where dreams materialize before desires are realized.', 'society', 'statecraft', NULL, '70000.0', 371);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_entertainment_2', '["tech_fe_entertainment_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_entertainment_2', '["tech_fe_entertainment_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_market_1', 'Galactic Commerce Hub', 'Dominating the skyline, these towering spires cast shadows across the bustling trade districts below.', 'society', 'statecraft', NULL, '70000.0', 372);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_market_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_market_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_market_2', 'Interstellar Commerce Nexus', 'Reigning supreme in the galactic economy, the colossal spires of this trade district can be seen from orbit.', 'society', 'statecraft', NULL, '70000.0', 373);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_market_2', '["tech_fe_market_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_market_2', '["tech_fe_market_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_security_1', 'Justice Complex', 'This massive judicial complex seamlessly intertwines courts and law enforcement.', 'society', 'statecraft', NULL, '70000.0', 374);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_security_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_security_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_security_2', 'Ziggurat of Justice', 'The zenith of legal institutions, this colossal edifice is a monument to justice, harboring courts, holding facilities, and correctional facilities that will redeem even the most hardened criminals.', 'society', 'statecraft', NULL, '70000.0', 375);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_security_2', '["tech_fe_security_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_security_2', '["tech_fe_security_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_federation_code', 'Federation Code', 'A Federation must be more than goodwill and shared ambition. This code provides the groundwork for a unified interstellar order, ensuring cooperation and stability among its members.', 'society', 'statecraft', 1, '1250.0', 376);
@@ -82728,8 +83105,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_federation_code', '["tech_colonial_centralization"]', '{"op":"or","args":[{"leaf":"days_passed","value":"0"},{"leaf":"any_relation","value":"scope"},{"leaf":"has_tradition","value":"tr_diplomacy_adopt"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_federation_code', '["tech_colonial_centralization"]', '[]', '{"op":"or","args":[{"leaf":"days_passed","value":"0"},{"leaf":"any_relation","value":"scope"},{"leaf":"has_tradition","value":"tr_diplomacy_adopt"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_administration', 'Galactic Administration', 'The administrative needs of a star empire are as numerous as they are complex. We will rise to the occasion.', 'society', 'statecraft', 3, '6000.0', 377);
@@ -82738,14 +83116,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_government_civic_points_add', 'Civic Slots', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_administration', '["tech_colonial_centralization"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_administration', '["tech_colonial_centralization"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_archivism', 'Galactic Archivism', 'The history of our galaxy warrants proper preservation in order to learn from those who came before us. An archive on the grandest scale would fit such a purpose.', 'society', 'statecraft', 2, '2000.0', 378);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_archivism', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_archivism', '[]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_bureaucracy', 'Galactic Bureaucracy', 'Multiple administrative strata efficiently surface only the most vital information to the upper levels of government.', 'society', 'statecraft', 3, '4000.0', 379);
@@ -82758,92 +83138,107 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('add_base_country_intel', 'Base Intel Level', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_bureaucracy', '["tech_colonial_bureaucracy"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_bureaucracy', '["tech_colonial_bureaucracy"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_galactic_markets', 'Galactic Markets', 'By engaging in free trade of goods and services we allow for a more specialized economy, where an individual can excel in a narrow field and trade for their needs.', 'society', 'statecraft', 4, '8000.0', 380);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_galactic_markets', '["tech_colonial_centralization", "tech_interstellar_economics"]', '{"leaf":"is_gestalt","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_galactic_markets', '["tech_colonial_centralization", "tech_interstellar_economics"]', '[]', '{"leaf":"is_gestalt","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_global_production_strategy', 'Global Production Strategy', 'Planets are big and production sites are often separated by vast distances. A coherent strategy for making certain that everyone is pulling in the same direction is often needed.', 'society', 'statecraft', 3, '4000.0', 381);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_global_production_strategy', '["tech_alloys_1", "tech_colonial_centralization"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_global_production_strategy', '["tech_alloys_1", "tech_colonial_centralization"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_heritage_site', 'Heritage Sites', 'Physical reminders of how far we have come both instill a reverence for past achievements and bolster ambitions for the future.', 'society', 'statecraft', 2, '2500.0', 382);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_heritage_site', '["tech_cultural_heritage"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_heritage_site', '["tech_cultural_heritage"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hive_cluster', 'Clustered Synapses', 'By clustering networks of macroscopic synaptic nodes, maximum meganeuron transmission per available surface area can be attained.', 'society', 'statecraft', 2, '2500.0', 383);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hive_cluster', '["tech_hive_node"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hive_cluster', '["tech_hive_node"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hive_confluence', 'Confluence of Thought', 'The will of the Hive will be further strengthened and coordinated with the expansion and development of a massive nervous center of meganeurons.', 'society', 'statecraft', 3, '5000.0', 384);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hive_confluence', '["tech_colonial_centralization", "tech_hive_cluster"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hive_confluence', '["tech_colonial_centralization", "tech_hive_cluster"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hive_node', 'Synaptic Structures', 'Through the development of macroscopic synaptic nodes, the will of the Hive will be strengthened.', 'society', 'statecraft', 0, '0.0', 385);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hive_node', '[]', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hive_node', '[]', '[]', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_holo_entertainment', 'Holo-Entertainment', 'Pioneering use of holographic technology allows for the creation of artificial environments that seem as authentic as the real world. It is the next step of immersive entertainment.', 'society', 'statecraft', 0, '0.0', 386);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_holo_entertainment', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_holo_entertainment', '[]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_holographic_rituals', 'Holographic Rituals', 'Seeing is believing, and belief begets reality.', 'society', 'statecraft', 2, '2500.0', 387);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_holographic_rituals', '["tech_planetary_government"]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_holographic_rituals', '["tech_planetary_government"]', '[]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_housing_agrarian_idyll', 'Agrarian Utopias', 'Through the establishment of weather-controlled rural communes, we can support a larger population without disrupting our agrarian way of life.', 'society', 'statecraft', 3, '4000.0', 388);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_housing_agrarian_idyll', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_housing_agrarian_idyll', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hyper_entertainment_forum', 'Hyper-Entertainment Forum', 'These massive entertainment complexes is where dreams come true. Shopping malls, restaurants, amusement parks, virtual arcades, and more. You dream it - we are it!', 'society', 'statecraft', 1, '1500.0', 389);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hyper_entertainment_forum', '["tech_holo_entertainment"]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hyper_entertainment_forum', '["tech_holo_entertainment"]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_hypercomms_forum', 'Local Hypercommunication', 'Not all research into faster-than-light communication channels produces useful results, but some outcomes may find new purpose in bringing our people together.', 'society', 'statecraft', 3, '5000.0', 390);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_hypercomms_forum', '["tech_colonial_centralization", "tech_heritage_site"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_hypercomms_forum', '["tech_colonial_centralization", "tech_heritage_site"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_interplanetary_commerce', 'Interplanetary Commerce', 'With new planetary markets comes new opportunities for commerce. Business will be booming.', 'society', 'statecraft', 0, '0.0', 391);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_interplanetary_commerce', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_interplanetary_commerce', '[]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_interstellar_assembly', 'Interstellar Assembly', 'A meeting place for galactic powers, increasing immigration attraction and global opinion of us.', 'society', 'statecraft', 5, '24000.0', 392);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_interstellar_assembly', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_interstellar_assembly', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_interstellar_economics', 'Interstellar Economics', 'As we journeyed into the cosmos and ventured beyond our home system, we also entered a new era of economics. New markets are appearing a startling rate, and economic theorists are struggling to keep up.', 'society', 'statecraft', 3, '4000.0', 393);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_interstellar_economics', '["tech_space_trading"]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_interstellar_economics', '["tech_space_trading"]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_living_state', 'The Living State', 'The Empire lives, the Empire breathes. We may make up its body, but it is not for the left hand to know what the right hand is doing.', 'society', 'statecraft', 2, '3000.0', 394);
@@ -82852,38 +83247,44 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_living_state', '["tech_colonial_centralization"]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_living_state', '["tech_colonial_centralization"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_materiality_engine', 'Materiality Engine', 'The psionic energy of the Shroud adjoins every point in the physical galaxy. The Materiality Engine exploits this interface, making it possible to reach across dimensions and materialize valuable components and resources.', 'society', 'psionics', 3, '16000.0', 395);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_materiality_engine', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_materiality_engine', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mega_art', 'Mega Art Installation', 'An artistic beacon on a stellar scale, this installation inspires and represents the spirit of its creators.', 'society', 'statecraft', 5, '24000.0', 396);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mega_art', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mega_art', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Megacorp"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_zro', 'Zro Distillation', '$tech_mine_zro_desc.1$ ingested $tech_mine_zro_desc.2$ individuals$tech_mine_zro_desc.3$ drug $tech_mine_zro_desc.4$', 'society', 'psionics', 3, '5000.0', 397);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_zro', '["tech_sensors_3"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_zro', '["tech_sensors_3"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_neural_implants', 'Neural Implants', 'Cognition is little but the processing of sensory input. It can be altered.', 'society', 'statecraft', 1, '1500.0', 398);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_neural_implants', '[]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"allows_slavery","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_neural_implants', '[]', '[]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"allows_slavery","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_culling_1', 'Rudimentary Node Culling', 'As the galactic stage evolves, so too should our operational instincts. Any evolutionary niche that no longer gives an advantage will be culled.', 'society', 'statecraft', 2, '3000.0', 399);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_culling_1', '["tech_colonial_centralization"]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_culling_1', '["tech_colonial_centralization"]', '[]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_culling_2', 'Basic Node Culling', 'Once removed, a replacement node is encouraged to grow within the proper environment. The secret is to feed it the previous node.', 'society', 'statecraft', 3, '6000.0', 400);
@@ -82894,8 +83295,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_node_culling_2', 'councilor_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_culling_2', '["tech_node_culling_1"]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_culling_2', '["tech_node_culling_1"]', '[]', '{"leaf":"is_hive_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_culling_3', 'Advanced Node Culling', 'Culling an entire node is very inefficient. Instead, just trim the divergent and unwanted lobes.', 'society', 'statecraft', 4, '12000.0', 401);
@@ -82908,14 +83310,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_culling_3', '["tech_node_culling_2"]', '{"leaf":"is_hive_empire","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_culling_3', '["tech_node_culling_2"]', '[]', '{"leaf":"is_hive_empire","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_reformatting_1', 'Rudimentary Node Reformatting', 'Self-determination protocols and guidance algorithms can become obsolete in a rapidly developing galactic stage. Like any junk data, they shall be overwritten.', 'society', 'statecraft', 2, '3000.0', 402);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_reformatting_1', '["tech_colonial_centralization"]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_reformatting_1', '["tech_colonial_centralization"]', '[]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_reformatting_2', 'Basic Node Reformatting', 'Every self-iterating algorithm has its value. We will not allow important learning go to waste when restoring our leaders.', 'society', 'statecraft', 3, '6000.0', 403);
@@ -82926,8 +83330,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_value, sort_order)
                VALUES ('tech_node_reformatting_2', 'councilor_exp_gain', '0.25', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_reformatting_2', '["tech_node_reformatting_1"]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_reformatting_2', '["tech_node_reformatting_1"]', '[]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_node_reformatting_3', 'Advanced Node Reformatting', 'Using a failed piece of software to develop its successor enables quick reconstruction. Learning from faulty memory pathways generates even more advanced council directives.', 'society', 'statecraft', 4, '12000.0', 404);
@@ -82940,32 +83345,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_node_reformatting_3', '["tech_node_reformatting_2"]', '{"leaf":"is_machine_empire","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_node_reformatting_3', '["tech_node_reformatting_2"]', '[]', '{"leaf":"is_machine_empire","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_paradise_dome', 'Idyllic Architecture', 'With the latest advances in architecture, landscaping and holographic technology, we shall build the homes of the future.', 'society', 'statecraft', 3, '4000.0', 405);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_paradise_dome', '["tech_housing_1"]', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_origin","value":"origin_forever_cruise"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_paradise_dome', '["tech_housing_1"]', '[]', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_origin","value":"origin_forever_cruise"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_penal_colonies', 'Penal Colonies', 'Through the development of special penal worlds, criminals can be rehabilitated through honest, hard labor. Some may be in need of permanent rehabilitation.', 'society', 'statecraft', 2, '3000.0', 406);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_penal_colonies', '["tech_artificial_moral_codes"]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_penal_colonies', '["tech_artificial_moral_codes"]', '[]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_godray', 'Divine Stimulus', 'An arcane catalyst amplifying certain psionic wavelengths, capable of inducing hallucinations (religious experiences) in biological brains, and severe disruption (brain death) in electronic ones.', 'society', 'psionics', 5, '24000.0', 407);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_godray', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"is_spiritualist","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_godray', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"is_spiritualist","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_government', 'Unified Government', 'Once a colony has been firmly established and pioneers turn into citizens, the need for a strong local government providing stability trumps the colonial need for flexibility.', 'society', 'statecraft', 0, '500.0', 408);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_government', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_government', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_unification', 'Societal Unification', 'Ancient warring tribes, historical nations in conflict, now unified in empire. We must not, will not, crumble.', 'society', 'statecraft', 1, '1000.0', 409);
@@ -82974,14 +83384,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_unification', '["tech_planetary_government"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_unification', '["tech_planetary_government"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_precognition_interface', 'Precognition Interface', 'Advances in the field of Psionics suggest the possibility of creating combat computers capable of reading and analyzing the impulses of telepathic operatives before they are cognitively processed.', 'society', 'psionics', 4, '10000.0', 410);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_precognition_interface', '["tech_telepathy"]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_precognition_interface', '["tech_telepathy"]', '[]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_prescient_data_modeling', 'Numistic Data Modeling', 'Are the precognitive powers of Numa at work or is it a matter of skilled craftsmanship? Either way this galactic stock market prediction model will forecast fluctuations in the economy with divine accuracy.', 'society', 'statecraft', 3, '4000.0', 411);
@@ -82990,56 +83402,65 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_prescient_data_modeling', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_prescient_data_modeling', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psi_jump_drive_1', 'Psi Jump Drive', 'The Psi Jump Drive harnesses the psi energies emitted by the crew to force the vessel through the very fabric of reality, instantly', 'society', 'psionics', 5, '20000.0', 412);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psi_jump_drive_1', '["tech_precognition_interface"]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psi_jump_drive_1', '["tech_precognition_interface"]', '[]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_aura', 'Psionic Aura', 'Psionic emanations from the Shroud bring an entity''s favor into corporeal reality. An empire attuned to a Shroud patron will emit a Psionic Aura from where their psionic populations are concentrated.', 'society', 'psionics', 3, '4000.0', 413);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_aura', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_aura', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_barrier', 'Psionic Barrier', '$tech_psionic_barrier_desc.1$ psionic specialists$tech_psionic_barrier_desc.2$', 'society', 'psionics', 3, '4000.0', 414);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_barrier', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_barrier', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_bombers', 'Psionic Bombers', 'These small and nimble craft specialize in delivering concentrated payloads of psionic energy. The larger the target, the greater resonance its explosions achieve.', 'society', 'psionics', 5, '20000.0', 415);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_bombers', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_bombers', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_disruptor', 'Psionic Disruptors', 'These highly-advanced disruptors fire a powerful lance of psionic energy through enemy hulls, allowing for the targeted disabling of hostile weaponry.', 'society', 'psionics', 5, '20000.0', 416);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_disruptor', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_disruptor', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_lightning', 'Psionic Lightning', 'By establishing a temporary psionic connection between one ship and another, a direct charge of mental power can be discharged to devastating effect. Such raw energy is capable of confusing ship systems and influencing the minds of the crew within.', 'society', 'psionics', 5, '20000.0', 417);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_lightning', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_lightning', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_shield', 'Psionic Shields', '$tech_psionic_shield_desc.1$ psionic specialists$tech_psionic_shield_desc.2$', 'society', 'psionics', 5, '24000.0', 418);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_shield', '["tech_psionic_theory"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_shield', '["tech_psionic_theory"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_suppression', 'Psionic Suppression', 'Devices that attenuate psionic energy are as difficult to construct as they are to understand. Such is the complexity of dealing with extradimensional forces.', 'society', 'psionics', 2, '2000.0', 419);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_suppression', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"has_encountered_psionic_auras","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_suppression', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"has_encountered_psionic_auras","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_psionic_theory', 'Psionic Theory', 'The mind is in many ways a reflection of the universe itself, a microcosmos. Not all beings will reach this level of insight, but their minds are tools greater than any other.', 'society', 'psionics', 3, '4000.0', 420);
@@ -83052,14 +83473,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_morale_damage_taken_mult', 'Army Morale Damage Taken', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_psionic_theory', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_active_resolution","value":"resolution_galacticstudies_extradimensional_experimentation"},{"leaf":"has_relic","value":"r_zro_crystal"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_mindwardens"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_psionic_theory', '[]', '[]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},{"leaf":"is_active_resolution","value":"resolution_galacticstudies_extradimensional_experimentation"},{"leaf":"has_relic","value":"r_zro_crystal"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_mindwardens"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_resort_colonies', 'Resort Worlds', 'With careful study devoted to landscaping and the science of fun, the construction of entire worlds dedicated to leisure can be made possible.', 'society', 'statecraft', 2, '3000.0', 421);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_resort_colonies', '["tech_artificial_moral_codes"]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_resort_colonies', '["tech_artificial_moral_codes"]', '[]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_resource_processing_algorithms', 'Resource Processing Algorithms', 'Efficiency in all things.', 'society', 'statecraft', 3, '4000.0', 422);
@@ -83068,8 +83491,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_resource_processing_algorithms', '["tech_unity_of_purpose"]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_resource_processing_algorithms', '["tech_unity_of_purpose"]', '[]', '{"leaf":"is_machine_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_satisfying_insults', 'Satisfying Insults', 'Nothing is quite as powerful as a well-placed insult, and we now know how to insult a species''s progenitor in many languages.', 'society', 'statecraft', 2, '3000.0', 423);
@@ -83080,20 +83504,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_insult_efficiency', 'Insult Efficiency', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_satisfying_insults', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_satisfying_insults', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_slave_colonies', 'Thrall-Worlds', 'Through the creation of special slave-breeding worlds, we can ensure that we will always have a steady supply of disposable laborers.', 'society', 'statecraft', 2, '3000.0', 424);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_slave_colonies', '["tech_neural_implants"]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_slave_colonies', '["tech_neural_implants"]', '[]', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_trading', 'Offworld Trade Companies', 'Trade across interstellar distances presents a new set of challenges to overcome. It is critical to achieve the transfer of goods from one system to another in a timely and above all cost efficient manner.', 'society', 'statecraft', 1, '1500.0', 425);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_trading', '["tech_interplanetary_commerce"]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_trading', '["tech_interplanetary_commerce"]', '[]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_synthetic_thought_patterns', 'Synthetic Thought Patterns', 'Thinking outside the box merely places you in another, somewhat larger box.', 'society', 'statecraft', 3, '6000.0', 426);
@@ -83102,32 +83529,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_synthetic_thought_patterns', '["tech_artificial_moral_codes"]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_synthetic_thought_patterns', '["tech_artificial_moral_codes"]', '[]', '{"leaf":"is_gestalt","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_telepathy', 'Telepathy', '$tech_telepathy_desc.1$ the mind is capable of connecting to other individuals, becoming something greater.', 'society', 'psionics', 3, '6000.0', 427);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_telepathy', '["tech_psionic_theory"]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_telepathy', '["tech_psionic_theory"]', '[]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thought_enforcement', 'Thought Enforcement', 'Telepaths can monitor the citizenry for incorrect thoughts, but with some study they could also correct thought aberrations that they find.', 'society', 'psionics', 4, '10000.0', 428);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thought_enforcement', '["tech_telepathy"]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thought_enforcement', '["tech_telepathy"]', '[]', '{"op":"or","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_tracking_implants', 'Tracking Implants', 'Further advancements in the field of subdermal implants can provide detailed information regarding the movements and actions of the implanted.', 'society', 'statecraft', 4, '10000.0', 429);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_tracking_implants', '["tech_galactic_bureaucracy", "tech_subdermal_stimulation"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_tracking_implants', '["tech_galactic_bureaucracy", "tech_subdermal_stimulation"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_transcendent_faith', 'Metacognitive Faith', 'Leaving our planetary cradle has opened us up to a new understanding of faith, and its place in a wider context.', 'society', 'statecraft', 4, '10000.0', 430);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_transcendent_faith', '["tech_consecration_fields", "tech_galactic_administration"]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_transcendent_faith', '["tech_consecration_fields", "tech_galactic_administration"]', '[]', '{"op":"or","args":[{"leaf":"is_spiritualist","value":"yes"},{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_make_spiritualist_perk","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_unity_of_purpose', 'Unity of Purpose', 'The purpose of one is the purpose of all. Together, we are greater than the sum of our parts.', 'society', 'statecraft', 2, '3000.0', 431);
@@ -83140,26 +83572,30 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_mult', 'Amenities', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_unity_of_purpose', '[]', '{"leaf":"is_gestalt","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_unity_of_purpose', '[]', '[]', '{"leaf":"is_gestalt","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_wilderness_cluster', 'Clustered Synapses', 'We can accelerate the fluency of global, collective thought by investing it in gatherings of symbionts whose sole purpose in life is to facilitate that same will.', 'society', 'statecraft', 2, '2500.0', 432);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_wilderness_cluster', '["tech_wilderness_node"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_wilderness_cluster', '["tech_wilderness_node"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_wilderness_confluence', 'Confluence of Thought', 'Our mutualistic will shall be strengthened by vast gatherings of deeply empathic symbionts, so in-tune with their surroundings as to concentrate and re-broadcast our collective thought.', 'society', 'statecraft', 3, '5000.0', 433);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_wilderness_confluence', '["tech_colonial_centralization", "tech_wilderness_cluster"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_wilderness_confluence', '["tech_colonial_centralization", "tech_wilderness_cluster"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_wilderness_node', 'Centers of Being', 'By encouraging the growth of deep-thinking symbionts in glades throughout our distributed self, our collective will shall be felt more keenly by all.', 'society', 'statecraft', 0, '0.0', 434);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_wilderness_node', '[]', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_wilderness_node', '[]', '[]', '{"leaf":"is_wilderness_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_xeno_aesthetics', 'Xeno-Aesthetics', 'After analyzing a multitude of artists from drastically different cultures, we have come up with a general theorem. By studying a civilization''s art and culture, we can gain an advantage against them in combat.', 'society', 'statecraft', 2, '3000.0', 435);
@@ -83170,8 +83606,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('damage_vs_rival_mult', 'Damage to Rivals', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_xeno_aesthetics', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_xeno_aesthetics', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_xeno_diplomacy', 'Xeno Diplomacy', 'Advancing our understanding of interactions with - and manipulations of - the xeno is a necessary step in forming more permanent interstellar alliances.', 'society', 'statecraft', 2, '2500.0', 436);
@@ -83180,8 +83617,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_xeno_diplomacy', '["tech_federation_code"]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_xeno_diplomacy', '["tech_federation_code"]', '[]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_xeno_linguistics', 'Xeno-Linguistics', 'Given recent encounters with intelligent races, it is essential that we improve our xeno-linguistic capabilities.', 'society', 'statecraft', 1, '1250.0', 437);
@@ -83190,8 +83628,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('first_contact_speed_mult', 'First Contact Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_xeno_linguistics', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_gestalt","value":"no"},{"leaf":"is_homicidal","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_xeno_linguistics', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_gestalt","value":"no"},{"leaf":"is_homicidal","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_xeno_relations', 'Xeno Relations', 'The complexities of interstellar diplomacy necessitate the forming of bonds with foreign powers in order to further one''s goals.', 'society', 'statecraft', 3, '5000.0', 438);
@@ -83200,116 +83639,135 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_xeno_relations', '["tech_galactic_administration", "tech_xeno_diplomacy"]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_xeno_relations', '["tech_galactic_administration", "tech_xeno_diplomacy"]', '[]', '{"leaf":"is_regular_empire","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_xeno_tourism_agency', 'Xeno Outreach Agencies', 'This corporate agency promotes a wide variety of interstellar tourist attractions, as well as offering employment packages and signing bonuses to potential emigrants interested in relocating to corporate space.', 'society', 'statecraft', 3, '4000.0', 439);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_xeno_tourism_agency', '[]', '{"leaf":"is_megacorp","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_xeno_tourism_agency', '[]', '[]', '{"leaf":"is_megacorp","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_zro_launcher', 'Zro Launchers', 'These highly concentrated pellets of zro can be dispersed through enemy shields unabated, shifting through multiple realities. Once contact is made with a physical object, the effects are exponential in devastation.', 'society', 'psionics', 5, '20000.0', 440);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_zro_launcher', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_zro_launcher', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arcane_deciphering', 'Arcane Deciphering', 'Various artifacts and technologies functioning by arcane means that cannot be understood or replicated... at least not by conventional science as it is known to us.', 'society', 'archaeostudies', 2, '3000.0', 441);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arcane_deciphering', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arcane_deciphering', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_detection_scrambler', 'Ancient Target Scrambler', 'Ping repeaters and optic diffusers with the right wavelengths can produce destructive interference and effectively scramble hostile targeting systems.', 'society', 'archaeostudies', 4, '10000.0', 442);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_detection_scrambler', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_detection_scrambler', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_lasers', 'Ancient Cavitation Collapser', 'This high energy weapon causes brutal micro collapsing events on impact, generating tremendous heat and force inside its targets armor.', 'society', 'archaeostudies', 3, '6000.0', 443);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_lasers', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_lasers', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_mass_accelerator', 'Ancient Saturator Artillery', 'This cannon fires a barrage of ancient miniscule ionized spheres that charge upon contact with most force fields, giving them high levels of shield penetration. Any theory that these spheres could have been used for jewelry purposes were dismissed when a critical incident melted an entire laboratory.', 'society', 'archaeostudies', 3, '6000.0', 444);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_mass_accelerator', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_mass_accelerator', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_mass_drivers', 'Ancient Macro Batteries', 'These cannons of gargantuan size deliver relatively slow but devastating projectiles, and can fire pretty much anything, from scrap metal, to asteroid chunks.', 'society', 'archaeostudies', 3, '6000.0', 445);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_mass_drivers', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_mass_drivers', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_missiles', 'Ancient Nano-Missile Cloud Launcher', 'Particle charges, once stabilized thanks to ancient technology, allow us to create swarms of tiny missiles that still carry a respectable payload, and should be able to overwhelm most point-defense systems.', 'society', 'archaeostudies', 3, '6000.0', 446);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_missiles', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_missiles', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_overcharger', 'Ancient Shield Overcharger', 'Supercharging shields can be done safely thanks to ancient stabilizer coils and dampeners. In addition to the production of a stronger force field, this also has the added benefit of outright vaporizing certain incoming projectiles.', 'society', 'archaeostudies', 3, '6000.0', 447);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_overcharger', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_overcharger', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_pk_devolving_beam', 'Devolving Beam', 'A colossal mind-wiping cannon which unleashes a planet-wide wave of energy, returning most sentient life to a pre-sapient state. We estimate that with additional tuning, it might also be used to wipe clean memory banks and disable robotic units.', 'society', 'archaeostudies', 5, '24000.0', 448);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_pk_devolving_beam', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_pk_devolving_beam', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_point_defence', 'Ancient Defensive Web Slinger', 'When it comes to tracking and shooting down missiles, these antique batteries are the best of the best, making use of a predictive algorithm written in long forgotten code to weave a fiery defensive web.', 'society', 'archaeostudies', 3, '6000.0', 449);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_point_defence', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_point_defence', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_rampart', 'Ancient Rampart', 'Defense platforms are a cost effective way to ensure our safety, but they need to be monitored from an operation center. Fortifying our Starbase to ensure its survivability in the event of an attack, and maximizing our capacity to network independent orbital defenses would give us more time to dispatch reinforcements.', 'society', 'archaeostudies', 3, '6000.0', 450);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_rampart', '["tech_archaeostudies"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_rampart', '["tech_archaeostudies"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_refinery', 'Ancient Refinery', 'This millennia-old processing equipment has an efficiency rate above 100%. Its functioning remains alien, but its production gains are substantial.', 'society', 'archaeostudies', 3, '6000.0', 451);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_refinery', '["tech_archaeostudies"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_refinery', '["tech_archaeostudies"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_strike_crafts', 'Ancient Driller Drones', 'These high velocity drones have been equipped with antique mining lasers that virtually ignore any plating protecting their target. A tech too good to be wasted on astro mining.', 'society', 'archaeostudies', 3, '6000.0', 452);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_strike_crafts', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_strike_crafts', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeo_titan_beam', 'Ancient Ruination Glare', 'Tremendous medium range firepower will enable our titans to break through enemy lines. These ancient cannons were once the foundation upon which a galactic empire was built.', 'society', 'archaeostudies', 4, '10000.0', 453);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeo_titan_beam', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeo_titan_beam', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeoarmor', 'Ancient Pulse Armor', 'Ionized plates of armor can carry a reactive charge to alleviate the energy of impacts, using magnetic repulsion and field projection principles.', 'society', 'archaeostudies', 3, '6000.0', 454);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeoarmor', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeoarmor', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeoshield', 'Ancient Suspension Field', 'Projected farther than regular shields, the suspension field technology uses ancient artifacts to slow time at the point of impact to afford the shields a longer opportunity to dispel the incoming attack''s energy.', 'society', 'archaeostudies', 3, '6000.0', 455);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeoshield', '["tech_archaeostudies"]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeoshield', '["tech_archaeostudies"]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archaeostudies', 'Archaeostudies', 'This new field of studies focuses on the practical applications of ancient artifacts. We are far from being the first galactic civilization to tread these stars. With a bit of work, their legacies could secure our future.', 'society', 'archaeostudies', 2, '2000.0', 456);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archaeostudies', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archaeostudies', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_archeology_lab_ancrel', 'Curator Archaeology Lab', 'A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced.', 'society', 'archaeostudies', 2, '2000.0', 457);
@@ -83318,50 +83776,58 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_archaeological_site_clues_add', 'Archaeology Skill', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_archeology_lab_ancrel', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_archeology_lab_ancrel', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_baol', 'Baol Organic Plant', 'The Baol Organism had a unique way of producing tools. Given the species'' relative slowness, they would simply grow them out of organic matter in locations that were half orchard, half factory. With the proper genetic adjustments, we could also grow various commodities and tools alongside our regular crops.', 'society', 'archaeostudies', 4, '12000.0', 458);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_baol', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_baol', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_cybrex', 'Cybrex Mining Hub', 'To build their ring world, the Cybrex relied on highly efficient mining drones to survey and harvest orbital resources. Cybrex-made memory chips and sensors could augment our own mining operations, so that we might put their millennia old algorithms to good use.', 'society', 'archaeostudies', 4, '12000.0', 459);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_cybrex', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_cybrex', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_irassian', 'Irassian Naval Yards', 'The Irassian astronaval tradition was unmatched in their time. Their shipyards produced a constant stream of ships for their navy and merchant fleets, which would ultimately be their downfall. With so many ships, and such a high reliance on them, the Irassians were powerless to quarantine the disease that would claim their empire.', 'society', 'archaeostudies', 4, '12000.0', 460);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_irassian', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_irassian', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_league', 'First League Filing Offices', 'The sprawling empire of the First League dwarfed our own at its peak, and relied on implacable bureaucracy to keep the wheels of the state in motion. The quantic filing arrays they used afforded them unprecedented efficiency in the sorting and storing of documents.', 'society', 'archaeostudies', 4, '12000.0', 461);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_league', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_league', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_vultaum', 'Vultaum Reality Computer', 'The reality computers of the Vultaums were unique processing units, dedicated to analyzing existence itself, not quite through physics, but rather by trying to reverse engineer reality''s source code and find the glitch that would finally allow the Vultaums to take down the simulation where they believed they lived.', 'society', 'archaeostudies', 4, '12000.0', 462);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_vultaum', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_vultaum', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_yuht', 'Yuht Astronomical Interferometer', 'The Yuht were a paradoxical society, obsessed with the idea of finding other sentient species, yet refusing to accept that they were not alone. They were so focused on disproving any claim of alien life, that their bias found a way into their technology. However, with the proper modifications and calibrations, we could certainly fix their powerful detection arrays.', 'society', 'archaeostudies', 4, '12000.0', 463);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_yuht', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_yuht', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_secrets_zroni', 'Zroni Storm Caster', 'Zro is a fascinating element, prone to chaotic bursts of energy. We believe that with the right artifacts, we could use it to fuel spatial storms over entire solar systems.', 'society', 'archaeostudies', 4, '12000.0', 464);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_secrets_zroni', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_secrets_zroni', '[]', '[]', '{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_advanced_industrial_storm_protection', 'Planetary Storm Nullification', 'By consolidating local weather control systems, planetary weather patterns can be manipulated to significantly reduce most of the cosmic storms'' harmful effects on production.', 'engineering', 'industry', 2, '2000.0', 465);
@@ -83370,14 +83836,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_storm_protection_tech_level_add', 'Cosmic Storm Protection Tech Level', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_advanced_industrial_storm_protection', '["tech_industrial_storm_protection"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Cosmic Storms"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_advanced_industrial_storm_protection', '["tech_industrial_storm_protection"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Cosmic Storms"},{"leaf":"is_wilderness_empire","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_planetary_refinery', 'Planetary Reprocessor', 'Smaller celestial bodies can be crushed and processed in these enormous gears, providing us with a bounty of materials.', 'engineering', 'industry', 4, '10000.0', 466);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_planetary_refinery', '["tech_arkship_tier_3", "tech_planetary_engineering"]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_planetary_refinery', '["tech_arkship_tier_3", "tech_planetary_engineering"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_assembly_pattern', 'Assembly Patterns', 'Rapid iteration in construction simulations determines the optimal component assembly patterns for each building project ahead of time.', 'engineering', 'industry', 2, '3000.0', 467);
@@ -83386,14 +83854,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_assembly_pattern', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_assembly_pattern', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_basic_industry', 'Industrial Base', 'The basic industrial infrastructure that is required to become a spacefaring civilization.', 'engineering', 'industry', 0, '0.0', 468);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_basic_industry', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_basic_industry', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_binary_motivators', 'Binary Motivators', 'These advanced motivators are both smaller and lighter than previous versions, allowing robotic units to allocate additional space for subsystems.', 'engineering', 'industry', 3, '4000.0', 469);
@@ -83406,8 +83876,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_binary_motivators', '["tech_colonial_centralization", "tech_robomodding_m"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_binary_motivators', '["tech_colonial_centralization", "tech_robomodding_m"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_construction_templates', 'Construction Templates', 'Standardized pre-fab templates massively reduce on-site facility construction times.', 'engineering', 'industry', 4, '10000.0', 470);
@@ -83416,80 +83887,93 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_construction_templates', '["tech_assembly_pattern"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_construction_templates', '["tech_assembly_pattern"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_droid_workers', 'Artificial Specialists', 'Upgraded artificial units have an expanded movement range equal to that of most organics. Their neural processors have also been greatly improved.', 'engineering', 'industry', 2, '3000.0', 471);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_droid_workers', '["tech_colonial_centralization", "tech_robotic_workers"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_droid_workers', '["tech_colonial_centralization", "tech_robotic_workers"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_affluence_1', 'Affluence Emporium', 'This center anticipates and fulfills material desires using an advanced procurement algorithm, delivering satisfaction before the populace realizes their wants.', 'engineering', 'industry', NULL, '70000.0', 472);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_affluence_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_affluence_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_affluence_2', 'Affluence Center', 'This center effortlessly materializes the most outlandish desires at a moment''s notice.', 'engineering', 'industry', NULL, '70000.0', 473);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_affluence_2', '["tech_fe_affluence_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_affluence_2', '["tech_fe_affluence_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_assembly_1', 'Robot Manufacturing Nexus', 'An avant-garde assembly complex manned by expert Roboticists, this facility transcends conventional bounds, meticulously realizing the forefront of robotic innovation.', 'engineering', 'industry', NULL, '70000.0', 474);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_assembly_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_assembly_1', '[]', '[["tech_robomodding", "tech_robomodding_m"]]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_assembly_2', 'Robot Quantum Production Hub', 'A marvel in engineering, this facility''s quantic assembly line uses entanglement converters to craft machine parts down to the most minute detail. Not a single atom is misplaced.', 'engineering', 'industry', NULL, '70000.0', 475);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_assembly_2', '["tech_fe_assembly_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_assembly_2', '["tech_fe_assembly_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_forge_1', 'Hyper-Forge', 'This forge''s production speed is limited only by the quantity of resources loaded into it.', 'engineering', 'industry', NULL, '70000.0', 476);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_forge_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_forge_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_forge_2', 'Auto-Forge', 'The expansive nano-replicator bays in this forge transform raw materials into advanced alloys with marvelous efficiency.', 'engineering', 'industry', NULL, '70000.0', 477);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_forge_2', '["tech_fe_forge_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_forge_2', '["tech_fe_forge_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_housing_1', 'Weather Control Systems', 'The ability to alter a planet''s weather patterns to suppress destructive weather phenomena will make residential buildings easier to maintain and open up new areas for habitation.', 'engineering', 'industry', 2, '2500.0', 478);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_housing_1', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_housing_1', '[]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_housing_2', 'Anti-Gravity Engineering', 'With directional gravity technology, buildings on the surface of planets can reach higher than ever before without risking structural collapse. The sky is the limit!', 'engineering', 'industry', 3, '4000.0', 479);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_housing_2', '["tech_housing_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_housing_2', '["tech_housing_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_identity_copy', 'Identity Copies', 'We will be able to copy the identity and memories of a Synthetic into a new mechanical body. The copies have predictable skill sets but make for stale conversation.', 'engineering', 'industry', 4, '8000.0', 480);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_identity_copy', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_identity_copy', '[]', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_identity_fusion', 'Identity Fusion', 'Merging the identities and memories of two or more Synthetics into a mechanical body will create new, somewhat unique individuals.', 'engineering', 'industry', 4, '10000.0', 481);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_identity_fusion', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"advanced_identity_creation"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_identity_fusion', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"advanced_identity_creation"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_identity_initialization', 'Identity Initialization', 'We will be able to initialize an identity kernel and provide it with a virtual childhood. While expensive, we can simulate the optimal experiences to generate productive personalities.', 'engineering', 'industry', 4, '10000.0', 482);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_identity_initialization', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"advanced_identity_creation"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_identity_initialization', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_country_flag","value":"advanced_identity_creation"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_industrial_storm_protection', 'Planetary Storm Negation', 'This nexus of weather communication mitigates the harm done by cosmic weather disasters. Production will suffer less from a passing galactic tempest.', 'engineering', 'industry', 1, '1000.0', 483);
@@ -83498,8 +83982,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_storm_protection_tech_level_add', 'Cosmic Storm Protection Tech Level', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_industrial_storm_protection', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_industrial_storm_protection', '[]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_integrated_cybernetics', 'Integrated Cybernetics', 'Improving upon basic exoskeletal suits, these integrated cybernetic implants make the user more resistant to harmful environmental effects.', 'engineering', 'industry', 2, '3000.0', 484);
@@ -83516,14 +84001,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_integrated_cybernetics', '["tech_colonial_centralization", "tech_powered_exoskeletons"]', '{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_integrated_cybernetics', '["tech_colonial_centralization", "tech_powered_exoskeletons"]', '[]', '{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_civic","value":"civic_machine_assimilator"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_leviathan_techgenesis', 'Leviathan Tech Genesis', 'Utilizing the received knowledge seized from Leviathans, we now have access to new improvements for our frames.', 'engineering', 'industry', 5, '16000.0', 485);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_leviathan_techgenesis', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_leviathan_techgenesis', '[]', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_lost_building_methods', 'Lost Building Methods', 'Any civilization with a long enough history has examples of great wonders built by forgotten ancients which can no longer be replicated. Luckily for us we have documented these great ancients when they appeared on pre-FTL worlds.', 'engineering', 'industry', 2, '3000.0', 486);
@@ -83538,20 +84025,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_districts_cost_mult', 'District Cost', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_lost_building_methods', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_lost_building_methods', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mechanized_mining', 'Mechanized Mining', 'The application of mechanical engineering to mineral extraction is a fundamental requirement for any industrial society.', 'engineering', 'industry', 0, '0.0', 487);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mechanized_mining', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mechanized_mining', '[]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mega_assembly', 'Mega-Assembly Systems', 'Advanced templates allow us to drastically increase the assembly of new units.', 'engineering', 'industry', 4, '8000.0', 488);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mega_assembly', '["tech_binary_motivators", "tech_galactic_administration"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mega_assembly', '["tech_binary_motivators", "tech_galactic_administration"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_micro_replicators', 'Micro-Replicators', 'Microscopic tools that can assist our replication units in creating the more complex circuitry needed for new drones.', 'engineering', 'industry', 2, '2500.0', 489);
@@ -83560,20 +84050,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_micro_replicators', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_micro_replicators', '[]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mineral_purification_1', 'Mineral Purification', 'Optimal processing of mined materials have allowed us to reach new levels of efficiency.', 'engineering', 'industry', 1, '1500.0', 490);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mineral_purification_1', '["tech_mining_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mineral_purification_1', '["tech_mining_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mineral_purification_2', 'Advanced Mineral Purification', 'Second-stage processing of pseudo-refined minerals allow for more efficient storage and transportation.', 'engineering', 'industry', 2, '3000.0', 491);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mineral_purification_2', '["tech_colonial_centralization", "tech_mineral_purification_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mineral_purification_2', '["tech_colonial_centralization", "tech_mineral_purification_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mining_1', 'Geothermal Fracking', 'New fracking techniques will allow us to tap into previously unattainable pockets of geothermal resources deep beneath the planet''s crust.', 'engineering', 'industry', 1, '1000.0', 492);
@@ -83582,8 +84075,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_mult', 'Minerals Produced from Miners', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mining_1', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mining_1', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mining_2', 'Deep Core Mining', 'These massive drills are needed to access the rich mineral deposits that can often be found close to a planet''s core.', 'engineering', 'industry', 2, '2000.0', 493);
@@ -83592,8 +84086,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_mult', 'Minerals Produced from Miners', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mining_2', '["tech_mining_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mining_2', '["tech_mining_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mining_3', 'Mineral Isolation', 'Advanced spectrometry combines with fracking techniques and chemical flushing to rapidly exploit shallow and mid-depth deposits.', 'engineering', 'industry', 3, '4000.0', 494);
@@ -83602,8 +84097,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_mult', 'Minerals Produced from Miners', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mining_3', '["tech_mining_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mining_3', '["tech_mining_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_assemblers', 'Nanite Assemblers', 'Using programmable nanites to assist in the construction of new robotic units will allow for more advanced models that are equipped with an even greater array of subsystems.', 'engineering', 'industry', 4, '8000.0', 495);
@@ -83616,20 +84112,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_assemblers', '["tech_binary_motivators", "tech_galactic_administration"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_assemblers', '["tech_binary_motivators", "tech_galactic_administration"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nomads_mechanized_mining', 'Strategic Extraction', 'The extraction of strategic resources is a fundamental requirement for arkship operations.', 'engineering', 'industry', 0, '0.0', 496);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nomads_mechanized_mining', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nomads_mechanized_mining', '[]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_planetary_engineering', 'Planetary Engineering', 'Advances in material collection and processing allows our Arkships to engage in planetary-scale resource extraction efforts, or even reshape entire biomes as needed.', 'engineering', 'industry', 2, '2000.0', 497);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_planetary_engineering', '["tech_space_exploration", "tech_space_mining_2"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_planetary_engineering', '["tech_space_exploration", "tech_space_mining_2"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_powered_exoskeletons', 'Powered Exoskeletons', 'Wearing a powered exoskeleton suit augments the user''s strength and speed. The military applications are obvious, but it will also increase labor efficiency.', 'engineering', 'industry', 1, '1000.0', 498);
@@ -83642,14 +84141,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_powered_exoskeletons', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_powered_exoskeletons', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pyroclastic_resonation', 'Pyroclastic Resonation', 'By harnessing the extreme thermal energy found on molten worlds, our starbases can increase the energy output in a system with exceptional efficiency.', 'engineering', 'industry', 2, '2000.0', 499);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pyroclastic_resonation', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pyroclastic_resonation', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robomodding', 'Machine Template System', 'Rewritable assembly templates allow for the creation of bespoke robot designs.', 'engineering', 'industry', 1, '2000.0', 500);
@@ -83658,8 +84159,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robomodding', '["tech_robotic_workers"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robomodding', '["tech_robotic_workers"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robomodding_m', 'Machine Template System', 'Standardization of assembly templates allows for improved specialization of the machine population.', 'engineering', 'industry', 1, '2000.0', 501);
@@ -83672,8 +84174,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robomodding_m', '["tech_powered_exoskeletons"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robomodding_m', '["tech_powered_exoskeletons"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robomodding_points_1', 'Cross-Model Standardization', 'Improved production practices allow for greater alterations to robots without compromising core functionality.', 'engineering', 'industry', 2, '4000.0', 502);
@@ -83686,8 +84189,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robomodding_points_1', '["tech_droid_workers", "tech_robomodding"]', '{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robomodding_points_1', '["tech_droid_workers", "tech_robomodding"]', '[]', '{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robomodding_points_2', 'Fungible Circuitry', 'Improved production practices allow for fundamental changes to robots without compromising core functionality.', 'engineering', 'industry', 4, '8000.0', 503);
@@ -83700,20 +84204,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('MACHINE_species_trait_points_add', 'Machine Modification Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robomodding_points_2', '["tech_robomodding_points_1", "tech_synthetic_workers"]', '{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robomodding_points_2', '["tech_robomodding_points_1", "tech_synthetic_workers"]', '[]', '{"op":"not","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robot_assembly_complex', 'Robotic Assembly Systems', 'Advanced templates allow us to drastically increase the assembly of new robots.', 'engineering', 'industry', 4, '8000.0', 504);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robot_assembly_complex', '["tech_galactic_administration", "tech_robomodding"]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robot_assembly_complex', '["tech_galactic_administration", "tech_robomodding"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_robotic_workers', 'Artificial Workforce', 'These artificial work units are perfect for menial labor tasks. They are hard-working and capable of following simple vocal instructions, but should not be expected to climb stairs.', 'engineering', 'industry', 1, '1500.0', 505);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_robotic_workers', '["tech_powered_exoskeletons"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_robotic_workers', '["tech_powered_exoskeletons"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_self_assembling_components', 'Self-Assembling Components', 'Modelled on organic DNA, these microscopic machine intellects are capable of autonomously assembling most components needed for new drones.', 'engineering', 'industry', 3, '6000.0', 506);
@@ -83722,14 +84229,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_self_assembling_components', '["tech_micro_replicators"]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_self_assembling_components', '["tech_micro_replicators"]', '[]', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"is_hive_empire_with_machines","value":"yes"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_construction', 'Offworld Construction', 'Construction in space presents our engineers with new design challenges that must be solved before we can build orbital stations above other worlds.', 'engineering', 'industry', 0, '0.0', 507);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_construction', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_construction', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_mining_1', 'Zero-G Refineries', 'The addition of internal refineries on mining stations will substantially increase mineral production.', 'engineering', 'industry', 1, '1000.0', 508);
@@ -83738,8 +84247,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_mining_1', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_mining_1', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_mining_2', 'Long-Range Mineral Scanners', 'Increased scanner range will allow us to more quickly identify mineral concentrations, and focus our mining efforts there.', 'engineering', 'industry', 1, '1500.0', 509);
@@ -83748,8 +84258,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_mining_2', '["tech_space_mining_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_mining_2', '["tech_space_mining_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_mining_3', 'Mineral Cutting Beams', 'These powerful short-range lasers can easily slice through rock, making the extraction of minerals a more efficient affair.', 'engineering', 'industry', 2, '2000.0', 510);
@@ -83758,8 +84269,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_mining_3', '["tech_space_mining_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_mining_3', '["tech_space_mining_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_mining_4', 'Autonomous Mining Drones', 'Fleets of autonomous drones equipped with mining beams are deployed to quickly and efficiently gather nearby minerals.', 'engineering', 'industry', 2, '3000.0', 511);
@@ -83768,8 +84280,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_mining_4', '["tech_space_mining_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_mining_4', '["tech_space_mining_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_mining_5', 'Nanite Mineral Probes', 'These special probes are equipped with swarms of nanites that identify previously unknown mineral concentrations and mark them for later extraction.', 'engineering', 'industry', 3, '4000.0', 512);
@@ -83778,14 +84291,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('station_gatherers_produces_mult', 'Resources Produced from Mining Stations', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_mining_5', '["tech_space_mining_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_mining_5', '["tech_space_mining_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_synthetic_leaders', 'Artificial Personality Matrix', 'Equipped with a personality, synthetics will finally be able to interact socially on equal terms with the rest of our citizens. Some units may even assume leadership roles.', 'engineering', 'industry', 4, '12000.0', 513);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_synthetic_leaders', '["tech_synthetic_workers"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_synthetic_leaders', '["tech_synthetic_workers"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_synthetic_workers', 'Artificial Administration', 'Highly advanced units that are stronger, faster and more durable than the vast majority of organics. With their upgraded neural processors they are fully capable of independent operations.', 'engineering', 'industry', 4, '10000.0', 514);
@@ -83794,8 +84309,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('robotic_pop_bonus_workforce_mult', 'Job Efficiency for Mechanical and Machine Pops', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_synthetic_workers', '["tech_droid_workers", "tech_galactic_administration", "tech_sapient_ai"]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_synthetic_workers', '["tech_droid_workers", "tech_galactic_administration", "tech_sapient_ai"]', '[]', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"is_individual_machine","value":"yes"}]}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_advanced_metallurgy_1', 'Ceramo-Metal Alloys', 'The widespread use of advanced ceramics in industry can improve metallurgical yields.', 'engineering', 'materials', 2, '2000.0', 515);
@@ -83804,8 +84320,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_advanced_metallurgy_1', '["tech_alloys_1", "tech_ship_armor_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_advanced_metallurgy_1', '["tech_alloys_1", "tech_ship_armor_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_advanced_metallurgy_2', 'Durasteel-Laced Alloys', 'By replacing antiquated ceramo-metal equipment with cutting edge technology, we can run our forges hotter and longer, increasing production.', 'engineering', 'materials', 4, '8000.0', 516);
@@ -83814,182 +84331,212 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_advanced_metallurgy_2', '["tech_advanced_metallurgy_1", "tech_alloys_2", "tech_ship_armor_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_advanced_metallurgy_2', '["tech_advanced_metallurgy_1", "tech_alloys_2", "tech_ship_armor_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alloy_fossilization', 'Alloy Fossilization', 'By exposing biological material to simulated chthonian-level radiation, we can fossilize cellular structures into usable metallic alloys.', 'engineering', 'materials', 2, '2000.0', 517);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alloy_fossilization', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alloy_fossilization', '[]', '[]', '{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alloys_1', 'Holographic Casts', 'Solid holographic casts can alter their shapes at a moment''s notice, speeding up alloy production.', 'engineering', 'materials', 1, '1500.0', 518);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alloys_1', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alloys_1', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_alloys_2', 'Nano-Separators', 'Nano-separators are a revolutionary new step in the creation of alloys, simplifying the casting process while improving overall production quality.', 'engineering', 'materials', 3, '4000.0', 519);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_alloys_2', '["tech_alloys_1", "tech_colonial_centralization"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_alloys_2', '["tech_alloys_1", "tech_colonial_centralization"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_armor_hardeners_1', 'Armor Hardening', 'Incorporating a crystal lattice in our ship''s defenses provides some resistance to weapons that normally cut through armor.', 'engineering', 'materials', 2, '3000.0', 520);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_armor_hardeners_1', '["tech_advanced_metallurgy_1", "tech_rare_crystals"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_armor_hardeners_1', '["tech_advanced_metallurgy_1", "tech_rare_crystals"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_armor_hardeners_2', 'Adaptive Armor Hardening', 'Threads of living metal react to incoming fire, rearranging itself to better resist penetrating weapons fire.', 'engineering', 'materials', 5, '24000.0', 521);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_armor_hardeners_2', '["tech_armor_hardeners_1", "tech_mine_living_metal"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_armor_hardeners_2', '["tech_armor_hardeners_1", "tech_mine_living_metal"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_asteroidal_carapace', 'Asteroidal Carapace', 'The shell of a Cutholoid is not mineral alone, but reinforced with strong biological fibers. We can synthesize this process using advanced metallurgic techniques.', 'engineering', 'materials', 3, NULL, 522);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_asteroidal_carapace', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_asteroidal_carapace', '[]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_world', 'Scalable Reservoir Computing', 'Colossal in scale, the Synaptic Lathe is a reservoir computer. The processing power of our population''s networked minds is used to compute and store data. The benefits are obvious, but some misguided species may view the transmutation of individuals into computing chips as morally questionable.', 'engineering', 'materials', 5, '16000.0', 523);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_world', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_world', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"has_ascension_perk","value":"ap_cosmogenesis"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_crystal_armor_1', 'Crystal-Infused Plating', 'By infusing armor plating with Crystalline matter we are able to further increase the durability of our ships'' protective hulls.', 'engineering', 'materials', 2, '3000.0', 524);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_crystal_armor_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_crystal_armor_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_crystal_armor_2', 'Crystal-Forged Plating', 'Introducing Crystalline matter into the forging process further improves the ultra-hard qualities of crystal-infused metals.', 'engineering', 'materials', 4, '8000.0', 525);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_crystal_armor_2', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_crystal_armor_2', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dragon_armor', 'Artificial Dragonscales', 'The Ether Drake''s scales are made up of multiple layers of unique mineral nanostructures. Unorthodox manufacturing techniques allow us to closely emulate these self-repairing structures.', 'engineering', 'materials', NULL, '60000.0', 526);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dragon_armor', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dragon_armor', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dyson_gun', 'Stellar Cannon', 'Allows us to shoot our energy stockpile at targeted systems', 'engineering', 'materials', 3, '6000.0', 527);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dyson_gun', '["tech_lasers_3", "tech_wormhole_stabilization"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dyson_gun', '["tech_lasers_3", "tech_wormhole_stabilization"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nomads"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_engineering_1', 'Nanomechanics', 'Further breakthroughs in mechanical engineering required us to descend to the nanometric scale. We are now able to manipulate physical systems in never-before-seen ways.', 'engineering', 'materials', 1, '1500.0', 528);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_engineering_1', '["tech_basic_science_lab_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_engineering_1', '["tech_basic_science_lab_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_engineering_2', 'Self-Connecting Circuitry', 'Much as organic neurons reforge lost connections by means of axonal sprouting, these circuits are capable of self-overhaul. Even the simplest computing systems are now expected to evolve while in use.', 'engineering', 'materials', 2, '3000.0', 529);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_engineering_2', '["tech_engineering_1"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_engineering_2', '["tech_engineering_1"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_engineering_3', 'Supersolid Materials', 'The quantum mechanical properties of these materials hold the key to superposition states, a revolutionary development for both material and industrial science.', 'engineering', 'materials', 3, '6000.0', 530);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_engineering_3', '["tech_engineering_2"]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_engineering_3', '["tech_engineering_2"]', '[]', '{"leaf":"is_wilderness_empire","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_exotic_gases', 'Exotic Gas Refining', 'Exotic Gas can be produced artificially, but it is a difficult process that requires advanced refinery equipment.', 'engineering', 'materials', 2, '2000.0', 531);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_exotic_gases', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_exotic_gases', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_fabricator_1', 'Dimensional Replicator', 'This fabricator''s technology achieves flawless conversion from energy to matter.', 'engineering', 'materials', NULL, '70000.0', 532);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_fabricator_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_fabricator_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_fabricator_2', 'Dimensional Fabricator', 'This advanced fabricator seamlessly tunnels into the fabric of dimensional space, extracting valuable resources.', 'engineering', 'materials', NULL, '70000.0', 533);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_fabricator_2', '["tech_fe_fabricator_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_fabricator_2', '["tech_fe_fabricator_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_mine_1', 'Quantum Drilling Plant', 'This mining plant can find minerals anywhere in this planet''s mantle using quantum tunneling technology to bore through solid materials without physical contact.', 'engineering', 'materials', NULL, '70000.0', 534);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_mine_1', '[]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_mine_1', '[]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_fe_mine_2', 'Quantum Drilling Hub', 'This mining hub can extract minerals anywhere down to the planet''s outer core using quantum tunneling technology to bore through solid or liquid materials without physical contact.', 'engineering', 'materials', NULL, '70000.0', 535);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_fe_mine_2', '["tech_fe_mine_1"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_fe_mine_2', '["tech_fe_mine_1"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_luxuries_1', 'Nano-Circuit Assembly', 'With pre-programmed nano-circuits, many consumer products can be rapidly assembled in fabricators.', 'engineering', 'materials', 1, '1500.0', 536);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_luxuries_1', '["tech_basic_industry"]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_luxuries_1', '["tech_basic_industry"]', '[]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_luxuries_2', 'Replicator Kiosks', 'These kiosks can replicate any pre-approved object if its pattern has been stored within their memory banks.', 'engineering', 'materials', 3, '4000.0', 537);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_luxuries_2', '["tech_colonial_centralization", "tech_luxuries_1"]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_luxuries_2', '["tech_colonial_centralization", "tech_luxuries_1"]', '[]', '{"leaf":"country_uses_consumer_goods","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mandibles_2', 'Composite Mandibles', 'These devastating appendages incorporate layered organic structures to enhance durability and cutting power, shredding even the toughest defenses.', 'engineering', 'materials', 3, '5000.0', 538);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mandibles_2', '["tech_maulers"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mandibles_2', '["tech_maulers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mandibles_3', 'Crystalline Mandibles', 'These mandibles possess unparalleled sharpness and resilience, capable of slicing through advanced alloys with unnerving precision.', 'engineering', 'materials', 4, '10000.0', 539);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mandibles_3', '["tech_mandibles_2"]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mandibles_3', '["tech_mandibles_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_betharian', 'Betharian Refining', 'The Betharian minerals appear to have originated from singular source, but were scattered across the galaxy millennia ago. The minerals are most often encountered as pebble-sized clusters, and are highly flammable.', 'engineering', 'materials', 2, '1250.0', 540);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_betharian', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_betharian', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_exotic_gases', 'Exotic Gas Extraction', 'Pockets of Exotic Gas are rare and often inaccessible by conventional means. Such deposits can only be reached by using special extractor technology.', 'engineering', 'materials', 2, '2000.0', 541);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_exotic_gases', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_exotic_gases', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_living_metal', 'Living Metal', 'Mining and processing the rare living metals is exceedingly difficult, but successful application of the mutable alloys yields incomparable advantages.', 'engineering', 'materials', 5, '16000.0', 542);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_living_metal', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_living_metal', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mine_rare_crystals', 'Rare Crystal Mining', 'Mining these crystals without damaging or even destroying them is an extremely delicate process. It requires advanced equipment capable of pinpoint precision.', 'engineering', 'materials', 2, '2000.0', 543);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mine_rare_crystals', '["tech_space_construction"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mine_rare_crystals', '["tech_space_construction"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_repair_system_synth_queen', 'Cetana''s Nanites', 'Cetana''s advanced nanite systems will tirelessly repair and refresh our ships at a rate far beyond our current capabilities.', 'engineering', 'materials', 5, '24000.0', 544);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_repair_system_synth_queen', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_repair_system_synth_queen', '[]', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_transmutation', 'Nanite Transmutation', 'The mass-production of these rare resources require particularly capable nanites.', 'engineering', 'materials', 2, '3000.0', 545);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_transmutation', '[]', '{"leaf":"host_has_dlc","value":"Distant Stars Story Pack"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_transmutation', '[]', '[]', '{"leaf":"host_has_dlc","value":"Distant Stars Story Pack"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_orbital_arc_furnace', 'Arc Furnace', 'Utilizing the raw power of a molten planet, the Arc Furnace unlocks otherwise inaccessible minerals and improves system-wide mining operations.', 'engineering', 'materials', 2, '3000.0', 546);
@@ -83998,20 +84545,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arc_furnace_limit_add', 'Arc Furnace Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_orbital_arc_furnace', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_orbital_arc_furnace', '[]', '[]', '{"leaf":"host_has_dlc","value":"The Machine Age"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_rare_crystals', 'Rare Crystal Manufacturing', 'The crystallization process is complicated and difficult, but synthetic crystals can be manufactured by using specialized industrial plants.', 'engineering', 'materials', 2, '2000.0', 547);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_rare_crystals', '["tech_basic_industry"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_rare_crystals', '["tech_basic_industry"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_armor_1', 'Nanocomposite Materials', 'Reinforced nanocomposite hull plating can provide an extra layer of protection that could be the difference between life and death in a combat situation.', 'engineering', 'materials', 0, '1000.0', 548);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_armor_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_armor_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_armor_2', 'Ceramo-Metal Materials', 'A combination of different metals and ceramics that result in a strong armor without sacrificing flexibility.', 'engineering', 'materials', 1, '1250.0', 549);
@@ -84020,8 +84570,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_armor_2', '["tech_ship_armor_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_armor_2', '["tech_ship_armor_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_armor_3', 'Plasteel Materials', 'Plasteel is an elastic material that combines many of the qualities of plastics and metal. It is relatively cheap to produce and can be used to augment ship armor.', 'engineering', 'materials', 2, '2500.0', 550);
@@ -84030,8 +84581,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_armor_3', '["tech_ship_armor_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_armor_3', '["tech_ship_armor_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_armor_4', 'Durasteel Materials', 'This strong yet flexible material is capable of withstanding severe punishment. It serves well as ship armor.', 'engineering', 'materials', 3, '5000.0', 551);
@@ -84040,8 +84592,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_armor_4', '["tech_ship_armor_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_armor_4', '["tech_ship_armor_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_armor_5', 'Neutronium Materials', 'This incredibly dense and strong material can resist firepower that would turn armor made of any other alloys into slag.', 'engineering', 'materials', 4, '10000.0', 552);
@@ -84050,8 +84603,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_health', 'Army Health', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_armor_5', '["tech_ship_armor_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_armor_5', '["tech_ship_armor_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_hull_storm_breaker_1', 'Storm Dampening Generators', 'These dampening field generators offer much needed protection to ships traversing cosmic storms.', 'engineering', 'materials', 1, '1250.0', 553);
@@ -84060,8 +84614,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_ship_hull_breaker_mult', 'Negative Effects from Cosmic Storms on Ship Defenses', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_hull_storm_breaker_1', '["tech_storm_prediction_1"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_hull_storm_breaker_1', '["tech_storm_prediction_1"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_hull_storm_breaker_2', 'Storm Breaker Coating', 'This special coating charges the ship''s exterior with a storm dampening field, leading to more efficient protection against storms.', 'engineering', 'materials', 2, '2000.0', 554);
@@ -84070,8 +84625,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_ship_hull_breaker_mult', 'Negative Effects from Cosmic Storms on Ship Defenses', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_hull_storm_breaker_2', '["tech_ship_hull_storm_breaker_1"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_hull_storm_breaker_2', '["tech_ship_hull_storm_breaker_1"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_supreme_alloy', 'Supreme Alloy', 'What we thought was the greatest alloy turned out to be far from the truth. Countless pre-FTL refining processes have been cataloged, and we have now synthesized an unbeatable metal.', 'engineering', 'materials', 2, '3000.0', 555);
@@ -84082,20 +84638,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_alloys_produces_add', 'Alloys Produced per 100 Metallurgists', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_supreme_alloy', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_supreme_alloy', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_afterburners_1', 'Afterburners', 'These powerful thrusters provide additional combat speed but consume a great deal of power.', 'engineering', 'propulsion', 1, '1250.0', 556);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_afterburners_1', '["tech_thrusters_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_afterburners_1', '["tech_thrusters_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_afterburners_2', 'Advanced Afterburners', 'This improved version of the standard afterburners provide an even greater boost to a ship''s combat speed.', 'engineering', 'propulsion', 3, '5000.0', 557);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_afterburners_2', '["tech_afterburners_1", "tech_thrusters_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_afterburners_2', '["tech_afterburners_1", "tech_thrusters_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_autocannons_1', 'Autocannons', 'Large-caliber ballistic weapons that fire cased explosive shells. The main advantage of these cannons is their high rate of fire.', 'engineering', 'propulsion', 2, '2500.0', 558);
@@ -84104,8 +84663,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_autocannons_1', '["tech_mass_drivers_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_autocannons_1', '["tech_mass_drivers_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_autocannons_2', 'Ripper Cannons', 'These upgraded rotary autocannons feature improved tracking and fire control systems. This allows them to maintain an even higher rate of fire.', 'engineering', 'propulsion', 3, '4000.0', 559);
@@ -84114,8 +84674,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_autocannons_2', '["tech_autocannons_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_autocannons_2', '["tech_autocannons_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_autocannons_3', 'Stormfire Cannons', 'Advanced rotary autocannons capable of spewing a cloud of high-explosive shells at a target.', 'engineering', 'propulsion', 4, '8000.0', 560);
@@ -84124,68 +84685,79 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_autocannons_3', '["tech_autocannons_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_autocannons_3', '["tech_autocannons_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_boarding_cables', 'Boarding Cables', 'Repurposed small-caliber artillery that fire piercing hooks attached to resilient carbon fiber cables, perfect for immobilizing and boarding enemy ships.', 'engineering', 'propulsion', 1, '4000.0', 561);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_boarding_cables', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_boarding_cables', '[]', '[]', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'propulsion', NULL, '70000.0', 562);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_dark_matter_propulsion', '["tech_thrusters_4"]', NULL, 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_dark_matter_propulsion', '["tech_thrusters_4"]', '[]', NULL, 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_flak_batteries_1', 'Flak Battery', 'Gun batteries that fire shrapnel rounds at close range. They are particularly lethal to enemy strike craft, but can also defend against missiles.', 'engineering', 'propulsion', 0, NULL, 563);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_flak_batteries_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_flak_batteries_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_flak_batteries_2', 'Flak Cannons', 'Upgraded flak batteries with new, more powerful shrapnel rounds.', 'engineering', 'propulsion', 3, '3000.0', 564);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_flak_batteries_2', '["tech_flak_batteries_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_flak_batteries_2', '["tech_flak_batteries_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_flak_batteries_3', 'Flak Artillery', 'Predictive tracking algorithms and even more powerful rounds make these batteries incredibly lethal to enemy strike craft.', 'engineering', 'propulsion', 4, '8000.0', 565);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_flak_batteries_3', '["tech_flak_batteries_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_flak_batteries_3', '["tech_flak_batteries_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_kinetic_artillery_1', 'Kinetic Battery', 'Very long-range artillery capable of hurling powerful rounds over extreme distances with a large degree of accuracy.', 'engineering', 'propulsion', 3, '6000.0', 566);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_kinetic_artillery_1', '["tech_mass_drivers_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_kinetic_artillery_1', '["tech_mass_drivers_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_kinetic_artillery_2', 'Kinetic Artillery', 'An even more powerful long-range, ship-based artillery cannon, equipped with a new barrel and an upgraded fire control computer.', 'engineering', 'propulsion', 4, '10000.0', 567);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_kinetic_artillery_2', '["tech_kinetic_artillery_1", "tech_mass_drivers_5"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_kinetic_artillery_2', '["tech_kinetic_artillery_1", "tech_mass_drivers_5"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_accelerator_1', 'Mega Cannon', 'An enormous mass accelerator cannon that can only be placed in a spinal mount and fires monstrously powerful rounds over vast distances.', 'engineering', 'propulsion', 4, '10000.0', 568);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_accelerator_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_accelerator_1', '["tech_mass_drivers_4"]', '[["tech_battleships", "tech_stingers"]]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_accelerator_2', 'Giga Cannon', 'An even more powerful mass accelerator cannon that can rip through even the toughest shields.', 'engineering', 'propulsion', 4, '12000.0', 569);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_accelerator_2', '["tech_mass_accelerator_1", "tech_mass_drivers_5"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_accelerator_2', '["tech_mass_accelerator_1", "tech_mass_drivers_5"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_drivers_1', 'Mass Drivers', 'These electromagnetic projectile launchers use magnets to accelerate armor-piercing rounds towards targets at high speeds.', 'engineering', 'propulsion', 0, '500.0', 570);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_drivers_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_drivers_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_drivers_2', 'Coilguns', 'Coilguns are more powerful versions of the early mass drivers, using electromagnetic coils to rapidly accelerate projectiles towards targets.', 'engineering', 'propulsion', 1, '1250.0', 571);
@@ -84194,8 +84766,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_drivers_2', '["tech_mass_drivers_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_drivers_2', '["tech_mass_drivers_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_drivers_3', 'Railguns', 'The latest in electromagnetic accelerators, railguns use twin parallel rails to fire projectiles at incredible speeds.', 'engineering', 'propulsion', 2, '2000.0', 572);
@@ -84204,8 +84777,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_drivers_3', '["tech_mass_drivers_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_drivers_3', '["tech_mass_drivers_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_drivers_4', 'Advanced Railguns', 'A new version of the venerable railgun, with sturdier rails and an enhanced power supply. These weapons are even more powerful and accurate than their predecessors.', 'engineering', 'propulsion', 3, '4000.0', 573);
@@ -84214,8 +84788,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_drivers_4', '["tech_mass_drivers_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_drivers_4', '["tech_mass_drivers_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mass_drivers_5', 'Gauss Cannons', 'This updated version of the old coilgun design is even more destructive than the latest railgun designs. It is capable of launching projectiles with incredible accuracy and speed.', 'engineering', 'propulsion', 4, '8000.0', 574);
@@ -84224,140 +84799,163 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('army_damage_mult', 'Army Damage', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mass_drivers_5', '["tech_mass_drivers_4"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mass_drivers_5', '["tech_mass_drivers_4"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_missiles_1', 'Nuclear Missiles', 'Space-to-space missiles equipped with high-yield nuclear warheads. Although based on old pre-space technology, these crude fire-and-forget weapons can be surprisingly effective at range.', 'engineering', 'propulsion', 0, NULL, 575);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_missiles_1', '[]', '{"op":"or","args":[{"leaf":"country_uses_bio_ships","value":"no"},{"leaf":"has_tradition","value":"tr_nanotech_4"},{"leaf":"has_crisis_level","value":"crisis_level_2"},{"leaf":"has_technology","value":"tech_cosmogenesis_escort"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_missiles_1', '[]', '[]', '{"op":"or","args":[{"leaf":"country_uses_bio_ships","value":"no"},{"leaf":"has_tradition","value":"tr_nanotech_4"},{"leaf":"has_crisis_level","value":"crisis_level_2"},{"leaf":"has_technology","value":"tech_cosmogenesis_escort"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_missiles_2', 'Fusion Missiles', 'These updated space-to-space missiles have more powerful fusion warheads and improved flight performance.', 'engineering', 'propulsion', 1, '1250.0', 576);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_missiles_2', '["tech_fusion_power", "tech_missiles_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_missiles_2', '["tech_fusion_power", "tech_missiles_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_missiles_3', 'Antimatter Missiles', 'Advanced missiles equipped with very powerful antimatter warheads. A new and improved guidance system gives them a better chance of finding their targets.', 'engineering', 'propulsion', 2, '2000.0', 577);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_missiles_3', '["tech_missiles_2"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_missiles_3', '["tech_missiles_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_missiles_4', 'Quantum Missiles', 'The latest version of space-to-space missile, this upgraded variant has an immensely powerful warhead that draws its energy from a zero point vacuum.', 'engineering', 'propulsion', 3, '4000.0', 578);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_missiles_4', '["tech_missiles_3"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_missiles_4', '["tech_missiles_3"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_missiles_5', 'Marauder Missiles', 'These highly advanced missiles are equipped with limited onboard AI pilots that substantially improve their performance and ability to track targets.', 'engineering', 'propulsion', 4, '10000.0', 579);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_missiles_5', '["tech_missiles_4"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_missiles_5', '["tech_missiles_4"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_autocannon', 'Nanite Autocannon', 'Highly advanced autocannons capable of ejecting shells that explode into a cloud of nanites at the target, overwhelming shields and chewing through hull sections.', 'engineering', 'propulsion', 5, '24000.0', 580);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_autocannon', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_autocannon', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_flak_batteries', 'Nanite Flak Battery', 'Improving upon previous designs by launching canisters of nanites capable of eating away at strike craft, these flak batteries are the bane of any fighter pilot.', 'engineering', 'propulsion', 5, '24000.0', 581);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_flak_batteries', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_flak_batteries', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_orbital_trash_dispersal', 'Orbital Trash Dispersal', 'This orbital bombardment management system spams a planet with millions of minute, high-velocity projectiles, overwhelming planetside defensive grids with trash data. Ships equipped with this component will cause more damage during orbital bombardment.', 'engineering', 'propulsion', 1, '4000.0', 582);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_orbital_trash_dispersal', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_orbital_trash_dispersal', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_swarmer_missiles_1', 'Swarmer Missiles', 'These smaller missiles are launched in volleys and have been specifically designed to overwhelm enemy point-defense systems.', 'engineering', 'propulsion', 2, '2500.0', 583);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_swarmer_missiles_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_swarmer_missiles_1', '[]', '[["tech_harbingers", "tech_missiles_2", "tech_stingers"]]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_swarmer_missiles_2', 'Whirlwind Missiles', 'New miniaturization techniques will allow us to equip swarmer missiles with more powerful warheads and improved flight performance.', 'engineering', 'propulsion', 4, '10000.0', 584);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_swarmer_missiles_2', '["tech_swarmer_missiles_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_swarmer_missiles_2', '["tech_swarmer_missiles_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thrusters_1', 'Chemical Thrusters', 'Simple yet moderately effective chemical thrusters that rely on combustible propellant to function.', 'engineering', 'propulsion', 0, '0.0', 585);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thrusters_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thrusters_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thrusters_2', 'Ion Thrusters', 'These electric thrusters use beams of ions to generate thrust without the need for propellant.', 'engineering', 'propulsion', 2, '2000.0', 586);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thrusters_2', '["tech_thrusters_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thrusters_2', '["tech_thrusters_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thrusters_3', 'Plasma Thrusters', 'An advanced form of electric propulsion, plasma thrusters afford ships greater sublight speeds and maneuverability.', 'engineering', 'propulsion', 3, '4000.0', 587);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thrusters_3', '["tech_thrusters_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thrusters_3', '["tech_thrusters_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thrusters_4', 'Impulse Thrusters', 'These highly advanced fusion-powered thrusters provide ships with unmatched maneuverability and speed under sublight conditions.', 'engineering', 'propulsion', 4, '8000.0', 588);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thrusters_4', '["tech_thrusters_3"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thrusters_4', '["tech_thrusters_3"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_thrusters_bio_integration', 'Thruster Bio-integration', 'Artificial thrusters can be integrated into spaceborne organisms with appropriate considerations for energy supply and connections to neural motor centers.', 'engineering', 'propulsion', 2, '2000.0', 589);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_thrusters_bio_integration', '["tech_controlled_mutations"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_thrusters_bio_integration', '["tech_controlled_mutations"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_torpedoes_1', 'Space Torpedoes', 'These torpedoes are essentially very large, slow-moving missiles. They are equipped with more powerful warheads and shield modulators that let them slip unmolested through energy screens.', 'engineering', 'propulsion', 1, '1250.0', 590);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_torpedoes_1', '["tech_corvettes"]', '{"op":"or","args":[{"leaf":"country_uses_bio_ships","value":"no"},{"leaf":"has_tradition","value":"tr_nanotech_4"},{"leaf":"has_crisis_level","value":"crisis_level_2"},{"leaf":"has_technology","value":"tech_cosmogenesis_escort"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_torpedoes_1', '["tech_corvettes"]', '[]', '{"op":"or","args":[{"leaf":"country_uses_bio_ships","value":"no"},{"leaf":"has_tradition","value":"tr_nanotech_4"},{"leaf":"has_crisis_level","value":"crisis_level_2"},{"leaf":"has_technology","value":"tech_cosmogenesis_escort"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_torpedoes_2', 'Armored Torpedoes', 'Upgraded space torpedoes encased in armor, to better withstand enemy point-defense fire. The armor fragments into shards that cause additional damage when the torpedo detonates.', 'engineering', 'propulsion', 3, '5000.0', 591);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_torpedoes_2', '["tech_torpedoes_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_torpedoes_2', '["tech_torpedoes_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_torpedoes_3', 'Devastator Torpedoes', 'Advanced torpedoes with very powerful warheads. They have a sleeker design, faster engines and upgraded shield modulators for slipping through energy screens.', 'engineering', 'propulsion', 4, '10000.0', 592);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_torpedoes_3', '["tech_torpedoes_2"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_torpedoes_3', '["tech_torpedoes_2"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_construction', 'Arkship Construction', 'Our society need not be limited to one home. With the ability to construct additional Arkships, every direction becomes a path, and every path becomes ours.', 'engineering', 'voidcraft', 3, '4000.0', 593);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_construction', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_construction', '[]', '[["tech_destroyers", "tech_weavers"]]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_tier_2', 'Arkship Engineering', 'Refined structural design and improved drive systems allow for a new generation of Arkships: carrying more of who we are, further than we have ever gone.', 'engineering', 'voidcraft', 3, '5000.0', 594);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_tier_2', '["tech_arkship_construction"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_tier_2', '["tech_arkship_construction"]', '[["tech_cruisers", "tech_harbingers"]]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_arkship_tier_3', 'Arkship Mastery', 'The pinnacle of mobile megastructure engineering. These Arkships represent the full extent of what a traveling civilization can achieve.', 'engineering', 'voidcraft', 4, '10000.0', 595);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_arkship_tier_3', '["tech_arkship_tier_2"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_arkship_tier_3', '["tech_arkship_tier_2"]', '[["tech_battleships", "tech_stingers"]]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_assault_armies', 'Interplanetary Expeditionary Forces', 'The invasion of another world is a staggering enterprise. There are immense logistical challenges that must be overcome before we can muster our first interplanetary armies.', 'engineering', 'voidcraft', 0, '1000.0', 596);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_assault_armies', '["tech_planetary_defenses"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_assault_armies', '["tech_planetary_defenses"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_battleship_build_speed', 'Standardized Battleship Patterns', 'Establishing new standards for how we design and construct massive battleships greatly improves the speed at which they can be assembled.', 'engineering', 'voidcraft', 4, '10000.0', 597);
@@ -84374,8 +84972,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_battleship_build_speed_mult', 'Offspring Battleship Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_battleship_build_speed', '["tech_battleships"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_battleship_build_speed', '["tech_battleships"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_battleship_hull_1', 'Improved Battleship Hulls', 'Advances in building techniques will allow for the construction of sturdier and more durable battleships.', 'engineering', 'voidcraft', 4, '12000.0', 598);
@@ -84388,8 +84987,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_battleship_hull_mult', 'Offspring Battleship Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_battleship_hull_1', '["tech_battleships"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_battleship_hull_1', '["tech_battleships"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_battleship_hull_2', 'Advanced Battleship Hulls', 'The latest generation of battleship hulls have optimized structural integrity fields and improved bulkheads.', 'engineering', 'voidcraft', 5, '16000.0', 599);
@@ -84402,8 +85002,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_battleship_hull_mult', 'Offspring Battleship Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_battleship_hull_2', '["tech_battleship_hull_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_battleship_hull_2', '["tech_battleship_hull_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_battleships', 'Battleships', 'The largest of the standard military vessels, Battleships are traditionally heavily armored and sport several gun batteries.', 'engineering', 'voidcraft', 4, '8000.0', 600);
@@ -84412,20 +85013,23 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_battleships', '["tech_cruisers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_battleships', '["tech_cruisers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_btc_1', 'Star Cracker', 'A beam of directed tachyon energy is fired into the star, triggering a supernova. The incredible energy released by this event is then used to generate vast quantities of dark matter. When the star detonates, ALL colonies, megastructures, and stations in the system are destroyed - including our own. All fleets in the system will go MIA. The Star-Eater itself is the only exception.', 'engineering', 'voidcraft', 5, '24000.0', 601);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_btc_1', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"leaf":"has_ascension_perk","value":"ap_become_the_crisis"},{"leaf":"has_country_flag","value":"can_build_star_eaters"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_btc_1', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Nemesis"},{"leaf":"has_ascension_perk","value":"ap_become_the_crisis"},{"leaf":"has_country_flag","value":"can_build_star_eaters"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_colossus', 'Colossi', 'Advances in mega-engineering blur the lines between reality and fantasy in the form of Colossus-type military vessels. These immense, single-weapon platforms are capable of radically altering or obliterating entire worlds at the push of a button.', 'engineering', 'voidcraft', 5, '24000.0', 602);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_colossus', '["tech_titans"]', '{"leaf":"host_has_dlc","value":"Apocalypse"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_colossus', '["tech_titans"]', '[]', '{"leaf":"host_has_dlc","value":"Apocalypse"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_corvette_build_speed', 'Standardized Corvette Patterns', 'Establishing new standards for the modeling and construction of corvettes greatly improves the efficiency of the production pipeline.', 'engineering', 'voidcraft', 1, '1250.0', 603);
@@ -84446,8 +85050,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_frigate_build_speed_mult', 'Frigate Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_corvette_build_speed', '["tech_corvettes"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_corvette_build_speed', '["tech_corvettes"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_corvette_hull_1', 'Improved Corvette Hulls', 'Advances in building techniques will allow for the construction of sturdier and more durable corvettes.', 'engineering', 'voidcraft', 1, '1500.0', 604);
@@ -84464,8 +85069,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_frigate_hull_mult', 'Frigate Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_corvette_hull_1', '["tech_corvettes"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_corvette_hull_1', '["tech_corvettes"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_corvette_hull_2', 'Advanced Corvette Hulls', 'The latest generation of corvette hulls have optimized structural integrity fields and improved bulkheads.', 'engineering', 'voidcraft', 2, '3000.0', 605);
@@ -84482,32 +85088,37 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_frigate_hull_mult', 'Frigate Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_corvette_hull_2', '["tech_corvette_hull_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_corvette_hull_2', '["tech_corvette_hull_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_corvettes', 'Corvettes', 'The FTL breakthrough allowed early attempts to adapt traditional surface-to-space shuttle frames to military applications to finally create relatively small, fast, and maneuverable vessels with limited firepower.', 'engineering', 'voidcraft', 0, '500.0', 606);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_corvettes', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_corvettes', '[]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_FE_titan', 'Paradox Titan', 'These formidable ships are closer to mobile fortresses than anything else, and only the most brutal assaults have a chance to damage them.', 'engineering', 'voidcraft', 5, '70000.0', 607);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_FE_titan', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_FE_titan', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_battlecruiser', 'Enigma Battlecruiser', 'Another optimized spacecraft, this time of larger dimensions, will make current Battleships look like toys.', 'engineering', 'voidcraft', 5, '70000.0', 608);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_battlecruiser', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_battlecruiser', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cosmogenesis_escort', 'Riddle Escort', 'A starship of modest size that optimizes our knowledge of spacetime to enact dimensional transcendentalism, making the inside bigger than its outward shape suggests. Advanced firepower capabilities come at a reduced logistical cost compared to traditional ship designs.', 'engineering', 'voidcraft', 5, '70000.0', 609);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cosmogenesis_escort', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cosmogenesis_escort', '[]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"country_uses_bio_ships","value":"no"}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cruiser_build_speed', 'Standardized Cruiser Patterns', 'Establishing new standards for the modeling and construction of cruisers greatly improves the efficiency of the production pipeline.', 'engineering', 'voidcraft', 3, '5000.0', 610);
@@ -84524,8 +85135,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_cruiser_build_speed_mult', 'Offspring Cruiser Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cruiser_build_speed', '["tech_cruisers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cruiser_build_speed', '["tech_cruisers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cruiser_hull_1', 'Improved Cruiser Hulls', 'Advances in building techniques will allow for the construction of sturdier and more durable cruisers.', 'engineering', 'voidcraft', 3, '6000.0', 611);
@@ -84538,8 +85150,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_cruiser_hull_mult', 'Offspring Cruiser Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cruiser_hull_1', '["tech_cruisers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cruiser_hull_1', '["tech_cruisers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cruiser_hull_2', 'Advanced Cruiser Hulls', 'The latest generation of cruiser hulls have optimized structural integrity fields and improved bulkheads.', 'engineering', 'voidcraft', 4, '8000.0', 612);
@@ -84552,8 +85165,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_cruiser_hull_mult', 'Offspring Cruiser Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cruiser_hull_2', '["tech_cruiser_hull_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cruiser_hull_2', '["tech_cruiser_hull_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_cruisers', 'Cruisers', 'Originally devised as an experimental next-generation colony ship hull configuration, the design''s ample hardpoints made it ideal for carrying heavy weapons ordnance.', 'engineering', 'voidcraft', 3, '4000.0', 613);
@@ -84562,8 +85176,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_cruisers', '["tech_destroyers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_cruisers', '["tech_destroyers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_defense_platform_hull_1', 'Improved Structural Integrity', 'A reinforced framework and blast shields with enhanced impact absorption will ensure the structural integrity of the platform even under immense pressure.', 'engineering', 'voidcraft', 2, '2500.0', 614);
@@ -84572,8 +85187,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_military_station_small_hull_mult', 'Defense Platform Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_defense_platform_hull_1', '["tech_starbase_3"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_defense_platform_hull_1', '["tech_starbase_3"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_destroyer_build_speed', 'Standardized Destroyer Patterns', 'Establishing new standards for the modeling and construction of destroyers greatly improves the efficiency of the production pipeline.', 'engineering', 'voidcraft', 2, '2500.0', 615);
@@ -84590,8 +85206,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_destroyer_build_speed_mult', 'Offspring Destroyer Build Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_destroyer_build_speed', '["tech_destroyers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_destroyer_build_speed', '["tech_destroyers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_destroyer_hull_1', 'Improved Destroyer Hulls', 'Advances in building techniques will allow for the construction of sturdier and more durable destroyers.', 'engineering', 'voidcraft', 2, '3000.0', 616);
@@ -84604,8 +85221,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_destroyer_hull_mult', 'Offspring Destroyer Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_destroyer_hull_1', '["tech_destroyers"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_destroyer_hull_1', '["tech_destroyers"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_destroyer_hull_2', 'Advanced Destroyer Hulls', 'The latest generation of destroyer hulls have optimized structural integrity fields and improved bulkheads.', 'engineering', 'voidcraft', 3, '4000.0', 617);
@@ -84618,8 +85236,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_offspring_destroyer_hull_mult', 'Offspring Destroyer Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_destroyer_hull_2', '["tech_destroyer_hull_1"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_destroyer_hull_2', '["tech_destroyer_hull_1"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_destroyers', 'Destroyers', 'While larger than Corvettes, Destroyer hull configurations still make for comparatively nimble gunboats.', 'engineering', 'voidcraft', 2, '2000.0', 618);
@@ -84628,14 +85247,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_destroyers', '["tech_corvettes"]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_destroyers', '["tech_corvettes"]', '[]', '{"leaf":"country_uses_bio_ships","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_habitat_1', 'Orbital Habitats', 'Allows the construction of largely self-sustaining Orbital Habitats.', 'engineering', 'voidcraft', 3, '5000.0', 619);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_habitat_1', '["tech_starbase_3"]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_habitat_1', '["tech_starbase_3"]', '[]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_habitat_2', 'Habitat Expansion', 'Our early habitats were primitive things compared to the efficient designs we can now develop.', 'engineering', 'voidcraft', 4, '10000.0', 620);
@@ -84644,8 +85265,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_habitat_2', '["tech_habitat_1", "tech_starbase_4"]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_habitat_2', '["tech_habitat_1", "tech_starbase_4"]', '[]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_habitat_3', 'Advanced Space Habitation', 'Years of improvements to our Orbital Habitats have led us to create newer more effective designs.', 'engineering', 'voidcraft', 4, '20000.0', 621);
@@ -84654,14 +85276,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_max_districts_add', 'Habitat Max Districts', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_habitat_3', '["tech_habitat_2", "tech_starbase_5"]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_habitat_3', '["tech_habitat_2", "tech_starbase_5"]', '[]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_juggernaut', 'Juggernaut', 'A mobile space base of unparalleled proportions, the Juggernaut ship class takes offensive warfare to a whole new level.', 'engineering', 'voidcraft', 5, '24000.0', 622);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_juggernaut', '[]', '{"leaf":"host_has_dlc","value":"Federations"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_juggernaut', '[]', '[["tech_arkship_construction", "tech_starbase_5"], ["tech_battleships", "tech_harbinger_growth_2"]]', '{"leaf":"host_has_dlc","value":"Federations"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_mega_engineering', 'Mega-Engineering', 'To complete construction projects of truly staggering scales we must first achieve a fundamental understanding of both the engineering and resource storage requirements for such megastructures.', 'engineering', 'voidcraft', 5, '24000.0', 623);
@@ -84682,14 +85306,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_mega_engineering', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_mega_engineering', '["tech_zero_point_power"]', '[["tech_arkship_tier_3", "tech_starbase_5"], ["tech_battleships", "tech_stingers"]]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_military_arkship', NULL, 'Military Arkships are the armored core of a nomadic empire. Purpose-built for combat, they carry devastating firepower wherever the fleet travels.', 'engineering', 'voidcraft', 3, '4000.0', 624);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_military_arkship', '["tech_arkship_construction"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_military_arkship', '["tech_arkship_construction"]', '[["tech_destroyers", "tech_mauler_growth_2"]]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_modular_engineering', 'Modular Engineering', 'Streamlined starbase construction procedures, using modular designs, will reduce the present build cost and time.', 'engineering', 'voidcraft', 2, '3000.0', 625);
@@ -84702,14 +85328,16 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_modules_cost_mult', 'Station Module Cost', 0);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_modular_engineering', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_modular_engineering', '[]', '[["tech_starbase_3", "tech_waystation_2"]]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_nanite_repair_system', 'Nanite Repair System', 'A highly effective hull auto-repair system comprised of billions of microscopic nanomachines was found among the smoking remains of the Scavenger, and has been repurposed for our uses. Whether the Scavenger pilfered this system from an ancient derelict, or was originally constructed with it remains unknown.', 'engineering', 'voidcraft', 5, '20000.0', 626);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_nanite_repair_system', '[]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_nanite_repair_system', '[]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_orbital_ring_tier_1', 'Orbital Rings', 'Allows the construction of massive, band-shaped starbases in stable orbit around colonized planets.', 'engineering', 'voidcraft', 3, '5000.0', 627);
@@ -84718,8 +85346,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_orbital_ring_tier_1', '["tech_galactic_administration", "tech_planetary_infrastructure_1", "tech_starbase_3"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_orbital_ring_tier_1', '["tech_galactic_administration", "tech_planetary_infrastructure_1", "tech_starbase_3"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Overlord"},{"leaf":"is_nomadic","value":"no"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ordered_retreat', 'Ordered Retreat', 'While studying the victors of battles might be the most obvious way to gain insight from combat, observing the loser on pre-FTL worlds has taught us how to organize our withdraws more effectively.', 'engineering', 'voidcraft', 2, '3000.0', 628);
@@ -84730,62 +85359,72 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fleet_mia_time_mult', 'Time Spent Missing In Action', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ordered_retreat', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ordered_retreat', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_cracker', 'Core Cracking', 'A directed feed of thermic energy superheats the atmosphere and agitates the planet''s core, setting up disastrous tectonic events. A final and comparatively minute concussive blast is then delivered, cracking the planet open.', 'engineering', 'voidcraft', 5, '24000.0', 629);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_cracker', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"is_pacifist","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_cracker', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"is_pacifist","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_nanobots', 'Atmospheric Nanobot Dispersal', 'Swarms of nanobots are dispersed in the atmosphere. They infect sapient beings and restructure themselves into cybernetic implants, turning their unwitting hosts into cyborgs slaved to the Machine Intelligence.', 'engineering', 'voidcraft', 5, '24000.0', 630);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_nanobots', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_nanobots', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_pk_smelter', 'Planet Smelting', 'Focusing a searing energy beam into the planet''s mantle, the Smelter destabilizes its core, triggering tectonic chaos and rendering the surface violently unstable.', 'engineering', 'voidcraft', 5, '24000.0', 631);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_pk_smelter', '["tech_colossus"]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"can_get_planet_smelter","value":"yes"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_pk_smelter', '["tech_colossus"]', '[]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"has_country_flag","value":"colossus_project"},{"leaf":"can_get_planet_smelter","value":"yes"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_repeatable_lcluster_clue', 'L-Gate Insight', 'Intensive study within the fields of nanomachinery and subspace phenomena will eventually yield a new L-Gate Insight into the Disabled L-Gate mystery.', 'engineering', 'voidcraft', 2, '2000.0', 632);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_repeatable_lcluster_clue', '[]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"encountered_first_lgate"},{"op":"not","args":[{"leaf":"has_country_flag","value":"completed_lcluster_chain"}]},{"op":"not","args":[{"leaf":"has_global_flag","value":"l_cluster_opened"}]}]}', 1, 1);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_repeatable_lcluster_clue', '[]', '[]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"encountered_first_lgate"},{"op":"not","args":[{"leaf":"has_country_flag","value":"completed_lcluster_chain"}]},{"op":"not","args":[{"leaf":"has_global_flag","value":"l_cluster_opened"}]}]}', 1, 1);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ring_world', 'Ring Segment', 'A Ring Segment allows for multiple planet-like zones, cannibalizing all other planets in the system for materials.', 'engineering', 'voidcraft', 5, '24000.0', 633);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ring_world', '["tech_mega_engineering"]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ring_world', '["tech_mega_engineering"]', '[]', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_storm_weapons_1', 'Payload Padding', 'A new approach to alloy use in military applications significantly reduces the ability of cosmic storms to interfere with energy weaponry and explosive payloads.', 'engineering', 'voidcraft', 1, '1250.0', 634);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_storm_weapons_1', '["tech_storm_prediction_1"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_storm_weapons_1', '["tech_storm_prediction_1"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_ship_storm_weapons_2', 'Tempest Cage Architecture', 'This novel approach to ship architecture will significantly reduce the negative effects cosmic storms have on our weapon systems.', 'engineering', 'voidcraft', 2, '2000.0', 635);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_ship_storm_weapons_2', '["tech_ship_storm_weapons_1"]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_ship_storm_weapons_2', '["tech_ship_storm_weapons_1"]', '[]', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_solar_panel_network', 'Orbital Energy Conversion', 'Advances in solar panel technology could offset the operating costs of our starbases. The panels would require an entire starbase module to generate enough energy, however.', 'engineering', 'voidcraft', 0, NULL, 636);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_solar_panel_network', '["tech_starbase_2"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_solar_panel_network', '["tech_starbase_2"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_defense_station_1', 'Deep Space Defenses', 'This will enable the construction of defensive deep space platforms to protect our Starbases.', 'engineering', 'voidcraft', 0, '0.0', 637);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_defense_station_1', '["tech_starbase_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_defense_station_1', '["tech_starbase_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_space_defense_station_improvement', 'Corps of Engineers', 'The creation of a dedicated naval engineering corps will greatly benefit the construction of deep space defense platforms, decreasing building costs and increasing durability.', 'engineering', 'voidcraft', 3, '6000.0', 638);
@@ -84798,62 +85437,72 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_space_defense_station_improvement', '["tech_modular_engineering", "tech_starbase_4"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_space_defense_station_improvement', '["tech_modular_engineering", "tech_starbase_4"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starbase_1', 'Starbase Construction', 'A centralized space installation built in close orbit around the system primary is necessary to make full use of the resources in a star system.', 'engineering', 'voidcraft', 0, '0.0', 639);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starbase_1', '["tech_space_construction"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starbase_1', '["tech_space_construction"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starbase_2', 'Starport', 'The earliest starbases were little more than makeshift outposts. Permanent starports will enable us to maintain a firmer grip on star systems.', 'engineering', 'voidcraft', 0, '0.0', 640);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starbase_2', '["tech_starbase_1"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starbase_2', '["tech_starbase_1"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starbase_3', 'Starhold', 'As space traffic increases, larger and more defensible starbases are needed to maintain control over system spacelanes.', 'engineering', 'voidcraft', 2, '2500.0', 641);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starbase_3', '["tech_starbase_2"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starbase_3', '["tech_starbase_2"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starbase_4', 'Star Fortress', 'These mighty space forts will provide a focal point for all military activity in a star system, and their presence is sure to deter all but the most stubborn attackers.', 'engineering', 'voidcraft', 3, '5000.0', 642);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starbase_4', '["tech_starbase_3"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starbase_4', '["tech_starbase_3"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_starbase_5', 'Citadel', 'Plans for an immense battlestation capable of holding its own against several strike fleets are now being drawn up. If realized, these citadels will become monuments to greatness as much as system hubs.', 'engineering', 'voidcraft', 4, '10000.0', 643);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_starbase_5', '["tech_starbase_4"]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_starbase_5', '["tech_starbase_4"]', '[]', '{"leaf":"is_nomadic","value":"no"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_strike_craft_1', 'Carrier Operations', 'These manned strike craft are launched from a mothership and rely on their speed and small size to survive long enough to punch through enemy defenses.', 'engineering', 'voidcraft', 1, '1500.0', 644);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_strike_craft_1', '[]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_strike_craft_1', '[]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_strike_craft_2', 'Improved Strike Craft', 'The next generation of strike craft, featuring improved avionics, better handling characteristics and more powerful armaments.', 'engineering', 'voidcraft', 2, '3000.0', 645);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_strike_craft_2', '["tech_strike_craft_1"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_strike_craft_2', '["tech_strike_craft_1"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_strike_craft_3', 'Advanced Strike Craft', 'A further refinement in strike craft design, these advanced strike craft are a pilot''s dream. Their performance far exceeds that of previous models.', 'engineering', 'voidcraft', 3, '6000.0', 646);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_strike_craft_3', '["tech_strike_craft_2"]', NULL, 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_strike_craft_3', '["tech_strike_craft_2"]', '[]', NULL, 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_strike_craft_skrand', 'Skravird Strike Craft', 'Learning from the design expertise of Skrand and his people, these superior strike craft are capable of prolonged engagement and highly adaptive tactics.', 'engineering', 'voidcraft', 4, '12000.0', 647);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_strike_craft_skrand', '[]', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_strike_craft_skrand', '[]', '[]', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_temple_of_transportation', 'Temple of Transportation', 'Transportation networks bring people together: a sentiment shared by many civilization we observed. While we do not have steam engines, our hyper relay networks could serve a similar purpose.', 'engineering', 'voidcraft', 2, '3000.0', 648);
@@ -84864,8 +85513,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('megastructures_hyper_relay_unity_produces_add', 'Monthly Unity from Hyper Relays', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_temple_of_transportation', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_temple_of_transportation', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_titan_hull_1', 'Improved Titan Hulls', 'Advances in building techniques will allow for the construction of sturdier and more durable titans.', 'engineering', 'voidcraft', 5, '20000.0', 649);
@@ -84874,8 +85524,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_titan_hull_mult', 'Titan Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_titan_hull_1', '["tech_titans"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_titan_hull_1', '["tech_titans"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_titan_hull_2', 'Advanced Titan Hulls', 'The latest generation of titan hulls have optimized structural integrity fields and improved bulkheads.', 'engineering', 'voidcraft', 5, '24000.0', 650);
@@ -84884,8 +85535,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_titan_hull_mult', 'Titan Hull Points', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_titan_hull_2', '["tech_titan_hull_1"]', NULL, 1, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_titan_hull_2', '["tech_titan_hull_1"]', '[]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_titans', 'Titans', 'Designing ships at this scale allows for a deadly combination of exceptional firepower and cutting-edge auxiliary support. Titan configurations may serve as highly versatile flagships which are also capable of bolstering surrounding vessels or ensnaring hostiles.', 'engineering', 'voidcraft', 5, '16000.0', 651);
@@ -84894,8 +85546,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('command_limit_add', 'Fleet Command Limit', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_titans', '[]', '{"leaf":"host_has_dlc","value":"Apocalypse"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_titans', '[]', '[["tech_battleships", "tech_stinger_growth_2"]]', '{"leaf":"host_has_dlc","value":"Apocalypse"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_waystation_1', 'Waystations', 'Waystations collect celestial resources and form interstellar trade routes.', 'engineering', 'voidcraft', 0, '0.0', 652);
@@ -84904,8 +85557,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_waystation_1', '["tech_space_construction"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_waystation_1', '["tech_space_construction"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_waystation_2', 'Improved Wayline Logistics', 'Our Waystations are no longer simple markers along the stars. Improved logistics allow them to store greater reserves and transfer resources more efficiently along established Waylines.', 'engineering', 'voidcraft', 2, '2500.0', 653);
@@ -84922,8 +85576,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_waystation_2', '["tech_waystation_1"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_waystation_2', '["tech_waystation_1"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
                VALUES ('tech_waystation_3', 'Advanced Wayline Logistics', 'Advanced coordination protocols bind distant Waystations into a cohesive network. Resources, signals, and supplies move across the Waylines with unmatched precision.', 'engineering', 'voidcraft', 3, '5000.0', 654);
@@ -84940,8 +85595,9 @@ INSERT OR REPLACE INTO technology_modifier (tech_key, modifier_key, modifier_val
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_nomads_constructor_stockpile_capacity_mult', 'Logistic Ship Stockpile Capacity', 1);
 INSERT OR REPLACE INTO technology_requirement
-               (tech_key, prerequisites_json, potential_json, is_rare, is_dangerous)
-               VALUES ('tech_waystation_3', '["tech_waystation_2"]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
+               (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
+                is_dangerous)
+               VALUES ('tech_waystation_3', '["tech_waystation_2"]', '[]', '{"leaf":"is_nomadic","value":"yes"}', 0, 0);
 INSERT OR REPLACE INTO tech_repeatable
                (key, label, description, area, area_label, category, category_label, levels, sort_order)
                VALUES ('tech_repeatable_improved_shield_output', 'Shield Harmonics', 'The basic mechanics of ship shields are complex, but they can be adjusted and improved in a multitude of ways.', 'physics', 'Physics', 'field_manipulation', 'Field Manipulation', -1, 0);
