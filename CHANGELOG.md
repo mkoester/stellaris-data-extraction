@@ -4,7 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.6] - 2026-10-31
+
+`sql/stellaris.sql` regenerated from the public game (4.5.2, build 9776) with this code — v0.1.5
+shipped it from older code: `system_entry_event` (73 events on 4.5.2), `ethic_attraction.op` /
+`per_*`, `leader_trait_modifier`'s triggered and delegate modifiers (1083 → 2104 rows), 174 static
+modifier values, 1239 ship and army names, and the five new defines are in it now. No table lost
+rows.
 
 ### Added
 
