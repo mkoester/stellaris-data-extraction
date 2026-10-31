@@ -11,6 +11,11 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 
 ### Added
 
+- `system_entry_event`: the popups entering a system fires (`on_entering_system_first_time`,
+  `on_entering_system`, `on_entering_system_fleet`) and the star flags each tests on that system —
+  title, description, the flags needed (all of, and one of where the trigger has an `OR`) and
+  forbidden, and the country flag that makes it show once per empire. 73 of 4.5.3's 163; the
+  hidden ones and those testing no star flag are left out.
 - `ethic_attraction.op`: how a `country_attraction` rule applies — `factor` (× it, 4.5.2) or
   `add` (+ it, 4.5.3, onto a base of 1), in `sort_order`. 4.5.3's `add` rules had no number.
 - The define `TECH_COST_DIFFICULTY_SCALE_MULT` (0.025): how much the difficulty raises tech costs,

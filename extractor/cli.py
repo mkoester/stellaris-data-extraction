@@ -28,6 +28,7 @@ from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
 from .rights import extract_species_rights
 from .situations import extract_situations
+from .system_events import extract_system_entry_events
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
@@ -473,6 +474,8 @@ Examples:
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress)
+    print(f"\n[system entry events] {install_dir / 'common' / 'on_actions'}", file=progress)
+    extract_system_entry_events(install_dir, loc, w, progress)
     print(f"\n[action timers] decisions, artifact and astral actions, relics, diplomatic actions, federation laws, enclave deals", file=progress)
     extract_action_timers(install_dir, loc, scripted_vars, script_loader(inline_scripts_dir), w, progress)
     print(f"\n[federations] {install_dir / 'common' / 'federation_types'}", file=progress)

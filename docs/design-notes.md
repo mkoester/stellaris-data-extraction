@@ -507,6 +507,24 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## System entry events (system_events.py)
+
+`system_entry_event`: the popups entering a system fires — the events of
+`on_entering_system_first_time` (a country's first ship there), `on_entering_system` and
+`on_entering_system_fleet` (every entry; their events guard themselves). 163 in 4.5.3, 73 kept:
+those with a window that test star flags on the system (`FROM = { has_star_flag = … }`). Per
+event (`from_star_flags`): `star_flags_json` the flags it needs all of (directly in FROM, or in an
+`AND`), `any_star_flags_json` those of which one (an `OR`; enclave.100's two tunnel flags),
+`not_star_flags_json` those it must not have (`NOT`/`NOR`); a flag on another scope (the owner's
+capital, a planet) is not the system's and is skipped. `once_flag` (`once_flag()`): a country flag
+the trigger wants the owner not to have and the event sets itself — such a popup shows once per
+empire (apoc.1 `encountered_first_gateway`: only the first abandoned gateway; 26 of the 73). Other
+conditions (a megastructure in the system, global flags) are not kept, so the dashboard calls a
+match likely. Only the event files that define one of the ids are parsed. Titles and the first
+plain `desc` are loc; their `$key.with.dots$` refs are expanded first (`expand_dotted` —
+`_clean_loc`'s `$KEY$` takes no dots), a scope's `[….GetName]` becomes "…". For the empire
+dashboard's map and events tab.
+
 ## Action timers (cooldowns.py)
 
 `action_timer`: for each decision, artifact action and astral action (`potential`, `allow`,

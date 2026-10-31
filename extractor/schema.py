@@ -1154,6 +1154,22 @@ CREATE TABLE astral_action_cooldown (
     name  TEXT,
     days  INTEGER NOT NULL
 );
+-- The events entering a system fires (on_entering_system_first_time, on_entering_system,
+-- on_entering_system_fleet), by the star flags they test on that system (system_events.py).
+DROP TABLE IF EXISTS system_entry_event;
+CREATE TABLE system_entry_event (
+    event_id            TEXT PRIMARY KEY,      -- e.g. "leviathans.3202"
+    on_action           TEXT NOT NULL,         -- on_entering_system_first_time | _system | _system_fleet
+    title               TEXT,                  -- e.g. "Crystalline Asteroids"
+    description         TEXT,                  -- the first desc; a scope's name as "…"
+    star_flags_json     TEXT NOT NULL,         -- the system has all of them, e.g. ["guardians_hive_system"]
+    any_star_flags_json TEXT,                  -- and one of these (an OR), e.g. enclave.100's tunnels
+    not_star_flags_json TEXT,                  -- and none of these, e.g. ["hivers_defeated"]
+    once_flag           TEXT,                  -- a country flag that makes it fire once per empire:
+                                               -- the trigger wants it unset, the event sets it
+                                               -- (apoc.1: encountered_first_gateway)
+    sort_order          INTEGER NOT NULL       -- its place in the on_action's list
+);
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
 DROP TABLE IF EXISTS situation_stage;
