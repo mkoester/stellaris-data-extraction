@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `meta.steam_branch`: the Steam branch the extracted install is on (`public`, `stellaris_test`).
+- The extractor refuses to write the release's dump (`sql/stellaris.sql`) or its DB
+  (`sqlite/stellaris.sqlite`) from a beta of the game, or when the branch cannot be told.
+- `scripts/release-check`: fails when the dump is older than the code's schema or not from the
+  public game. v0.1.5's dump fails it: 4.5.2's, but from before `system_entry_event` and v0.1.5's
+  `ethic_attraction` and `leader_trait_modifier` columns.
+
 ## [0.1.5] - 2026-10-31
 
 Reads Stellaris 4.5.3 (open beta, build 7793) as well as 4.5.2, which wrote some of it in a new

@@ -29,6 +29,7 @@ from .precursors import _default_overclocks, extract_deposits, extract_precursor
 from .rights import extract_species_rights
 from .situations import extract_situations
 from .system_events import extract_system_entry_events
+from .steam import release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech import extract_fallen_empire_techs, extract_repeatable_techs, extract_techs
 from .traditions import extract_edicts_agendas, extract_traditions
@@ -126,6 +127,12 @@ Examples:
     sqlite_path = args.sqlite
     stdout_mode = not sql_path and not sqlite_path
 
+    branch = steam_branch(install_dir)
+    refusal = release_output_refusal((sql_path, sqlite_path), branch)
+    if refusal:
+        print(f"ERROR: {refusal}", file=sys.stderr)
+        sys.exit(1)
+
     # In stdout mode progress goes to stderr so SQL output stays clean
     progress = sys.stderr if stdout_mode else sys.stdout
 
@@ -149,6 +156,10 @@ Examples:
             print(f"  Game version: {ls.get('version')}", file=progress)
         except Exception as e:
             print(f"  WARNING: failed to read launcher-settings.json: {e}", file=sys.stderr)
+    if branch:
+        w.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", ('steam_branch', branch))
+        w.commit()
+        print(f"  Steam branch: {branch}", file=progress)
 
     # --- DLC metadata ---
     print(f"\n[0/5] DLC metadata", file=progress)

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Refuse a regular release whose dump is stale or from a beta of the game (RELEASE.md, step 1).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+python3 -m extractor.dump_check
