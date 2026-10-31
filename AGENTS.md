@@ -68,6 +68,11 @@ The game's script format has quirks that produce silently wrong trees rather tha
   **That also loses the order between different keys**, which effect scripts depend on (a zone
   added before the building put into it). Read effects with `parse_ordered()` in `game_start.py`,
   which keeps file order and parses only `limit` blocks as dicts.
+- **A block mixing bare entries with `key = value` loses the bare ones**, and a repeated key
+  whose values are lists merges them into one list: `{ OR = { a b } c OR = { d e } }` parses as
+  `{'OR': ['a', 'b', ['d', 'e']]}` — `c` is gone, and so is the grouping. Mega-Engineering and six
+  other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
+  `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys
