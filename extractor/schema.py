@@ -237,6 +237,9 @@ CREATE TABLE ethic_attraction (
                                            -- applied in sort_order onto a base of 1
     factor       REAL,                     -- 'country': the number, when one
     factor_text  TEXT,                     -- 'country': the script value otherwise
+    per_json     TEXT,                     -- 'country': what it counts (a trigger leaf: the ruler and
+                                           -- councilors with the ethic); the number is factor + per_value each
+    per_value    REAL,
     trigger_json TEXT,                     -- the condition, normalised; NULL = always
     PRIMARY KEY (ethic_key, sort_order)
 );

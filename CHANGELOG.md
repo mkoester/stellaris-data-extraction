@@ -13,6 +13,9 @@ form; the extraction ran without an error on 4.5.3 but lost these silently.
 
 - `ethic_attraction.op`: how a `country_attraction` rule applies — `factor` (× it, 4.5.2) or
   `add` (+ it, 4.5.3, onto a base of 1), in `sort_order`. 4.5.3's `add` rules had no number.
+- `ethic_attraction.per_json` / `per_value`: "From Council" read from its script value
+  (`count_councilors_with_ethic`: + 0.1 per ruler or councilor with the ethic), so a save can
+  answer it — the rule's number is `factor` + `per_value` for each leader the leaf counts.
 
 ### Fixed
 

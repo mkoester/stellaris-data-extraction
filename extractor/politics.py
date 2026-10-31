@@ -4,10 +4,10 @@ pops to each ethic."""
 from pathlib import Path
 import re
 import sys
-from .clausewitz import Parser, tokenize
+from .clausewitz import Parser, parse_file, tokenize
 from .traditions import _Ctx, _load, dumps
 from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
-from .values import _as_blocks, _to_list
+from .values import _as_blocks, _resolve_var, _to_list
 from .writer import Writer
 
 
@@ -104,24 +104,85 @@ def attraction_structured(dlc: dict, variables: dict):
     return hook
 
 
-def attraction_rules(data: dict) -> list[dict]:
+def council_value(block, variables: dict[str, float]) -> tuple[float, float] | None:
+    """A script value that counts the ruler and councilors with an ethic — `base`, plus
+    `mult` per leader (`complex_trigger_modifier { trigger = count_owned_leader parameters = {
+    limit = { OR = { is_ruler is_councilor } has_ethic = ethic_$ETHIC$ } } mult = … mode = add }`,
+    4.5.3's `count_councilors_with_ethic`) → (base, per leader); None for any other shape."""
+    if not isinstance(block, dict):
+        return None
+    ctm = block.get('complex_trigger_modifier')
+    if not isinstance(ctm, dict) or ctm.get('trigger') != 'count_owned_leader' or ctm.get('mode') != 'add':
+        return None
+    params = ctm.get('parameters')
+    limit = params.get('limit') if isinstance(params, dict) else None
+    roles = limit.get('OR') if isinstance(limit, dict) else None
+    if not (isinstance(roles, dict) and set(limit) == {'OR', 'has_ethic'}
+            and str(limit['has_ethic']).startswith('ethic_')
+            and set(roles) == {'is_ruler', 'is_councilor'}):
+        return None
+    per = _resolve_var(ctm.get('mult'), variables)
+    base = _number(block.get('base', 0))
+    return (base, per) if per is not None and base is not None else None
+
+
+_VALUE_REF = re.compile(r'value:(\w+)\|ETHIC\|(\w+)\|$')
+
+
+def _guards_only(trigger, ref: str) -> bool:
+    """Whether a rule's condition is only `check_variable_arithmetic = { which = <ref> value != 0 }`
+    — it skips adding 0, so it changes nothing."""
+    if not isinstance(trigger, dict) or set(trigger) != {'check_variable_arithmetic'}:
+        return False
+    c = trigger['check_variable_arithmetic']
+    v = c.get('value') if isinstance(c, dict) else None
+    return (isinstance(c, dict) and c.get('which') == ref and set(c) == {'which', 'value'}
+            and getattr(v, 'op', None) == '!=' and str(getattr(v, 'value', '')) == '0')
+
+
+def attraction_rules(data: dict, council: dict[str, tuple[float, float]] | None = None) -> list[dict]:
     """An ethic's attraction rules in file order (common/ethics/00_ethics.txt): each
     `pop_attraction_tag` (a reason the game's tooltip names, `desc` + `trigger`) and each
     `country_attraction` modifier (empire-wide, applied in file order onto `base = 1`: `op` 'factor'
     multiplies — `factor` or `mult`, 4.5.2's form —, 'add' adds — `add`, 4.5.3's; a number or a
-    script value, `desc`, the rest its condition)."""
+    script value, `desc`, the rest its condition). A script value in `council` (name →
+    (base, per leader), `council_value`) becomes `factor` = its base plus `per_value` for each
+    leader `per` counts (a `council_leader_ethic` leaf), its `value != 0` guard dropped."""
     out = []
     for tag in _as_blocks(data.get('pop_attraction_tag')):
         out.append({'kind': 'tag', 'desc': _unquote(tag.get('desc')), 'op': None, 'factor': None,
-                    'factor_text': None, 'trigger': tag.get('trigger')})
+                    'factor_text': None, 'per': None, 'per_value': None, 'trigger': tag.get('trigger')})
     ca = data.get('country_attraction')
     for m in _as_blocks(ca.get('modifier') if isinstance(ca, dict) else None):
         op = 'add' if 'add' in m else 'factor'
         raw = m.get('add') if op == 'add' else m.get('factor', m.get('mult'))
-        out.append({'kind': 'country', 'desc': _unquote(m.get('desc')), 'op': op,
-                    'factor': _number(raw),
-                    'factor_text': None if raw is None or _number(raw) is not None else _unquote(str(raw)),
-                    'trigger': {k: v for k, v in m.items() if k not in _FACTOR_KEYS} or None})
+        text = None if raw is None or _number(raw) is not None else _unquote(str(raw))
+        rule = {'kind': 'country', 'desc': _unquote(m.get('desc')), 'op': op,
+                'factor': _number(raw), 'factor_text': text, 'per': None, 'per_value': None,
+                'trigger': {k: v for k, v in m.items() if k not in _FACTOR_KEYS} or None}
+        ref = _VALUE_REF.match(text or '')
+        if ref and ref.group(1) in (council or {}):
+            base, per = council[ref.group(1)]
+            rule.update(factor=base, factor_text=None, per_value=per,
+                        per={'leaf': 'council_leader_ethic', 'value': f'ethic_{ref.group(2)}'})
+            if _guards_only(rule['trigger'], text):
+                rule['trigger'] = None
+        out.append(rule)
+    return out
+
+
+def council_values(install_dir: Path, variables: dict[str, float]) -> dict[str, tuple[float, float]]:
+    """Every script value in common/script_values that `council_value` reads."""
+    out: dict[str, tuple[float, float]] = {}
+    for f in sorted((install_dir / 'common' / 'script_values').glob('*.txt')):
+        try:
+            data = parse_file(f)
+        except Exception as e:
+            print(f"  WARNING: failed to parse {f.name}: {e}", file=sys.stderr)
+            continue
+        for name, block in data.items():
+            if (v := council_value(block, variables)) is not None:
+                out[name] = v
     return out
 
 
@@ -204,16 +265,18 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
             n_demands += 1
 
     n_rules = 0
+    council = council_values(install_dir, scripted_vars)
     for key, (data, evars, _) in _load(common / 'ethics', scripted_vars).items():
         if attraction_base(data) not in (None, 1.0):
             print(f"  WARNING: {key}: country_attraction base {attraction_base(data)}, "
                   f"ethic_attraction assumes 1", file=sys.stderr)
-        for order, r in enumerate(attraction_rules(data)):
+        for order, r in enumerate(attraction_rules(data, council)):
             w.execute(
                 """INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
-                   factor_text, trigger_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                   factor_text, per_json, per_value, trigger_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (key, order, r['kind'], ctx.text(r['desc'], False, evars) or r['desc'], r['op'],
-                 r['factor'], r['factor_text'],
+                 r['factor'], r['factor_text'], dumps(r['per']), r['per_value'],
                  dumps(ctx.trig(r['trigger'], evars, attraction_structured(ctx.dlc, evars)))))
             n_rules += 1
 
