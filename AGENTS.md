@@ -37,11 +37,10 @@ elsewhere (`--out $TMPDIR/beta.sql`). `scripts/release-check` fails on a dump wh
 from `extractor/schema.py` or whose branch is not `public`. `python3 -m extractor.steam <game dir>`
 prints the installed branch.
 
-**The dump released with v0.1.5 (2026-10-31) is stale**: 4.5.2's from `a46f4f6`, without v0.1.5's
-`system_entry_event`, `ethic_attraction.op|per_*`, `leader_trait_modifier`'s new key and
-`potential_json`, and the fixed static modifiers and name lists — the Linux machine had the 4.5.3
-beta. The planner reads none of those tables. Regenerate from the public game (switch Steam's
-branch, or the Mac's install).
+**v0.1.5 shipped a stale dump** (4.5.2's, from older code — the Linux machine had the 4.5.3 beta);
+v0.1.6 fixed it. **Compare a regenerated dump table by table with the last one** (rows only in one,
+columns turning NULL — the "After a game update" section's method): v0.1.6's was the first run of
+v0.1.5's code on 4.5.2 files, and that comparison is what showed nothing was lost.
 
 **All code is English** — names, comments and output — even when the session is in German.
 
