@@ -30,6 +30,12 @@ first, or the run stops at "directory does not exist".
 on the server). Regenerating only the gitignored SQLite works locally and then 500s in production
 on missing columns. Check: `git status` lists `sql/stellaris.sql` as modified.
 
+**The dump released with v0.1.5 (2026-10-31) is stale on purpose**: it is 4.5.2's from `a46f4f6`,
+without v0.1.5's changes (`system_entry_event`, `ethic_attraction.op|per_*`,
+`leader_trait_modifier`'s new key and `potential_json`, the fixed static modifiers and name
+lists), because the Linux machine runs the 4.5.3 beta. The planner reads none of those tables.
+Regenerate it from the live game once 4.5.3 is released, or from the Mac's 4.5.2 install before.
+
 **All code is English** — names, comments and output — even when the session is in German.
 
 ## ⚠ Determinism
