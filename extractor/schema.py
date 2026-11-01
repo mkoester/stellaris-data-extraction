@@ -534,6 +534,11 @@ CREATE TABLE building (
     category    TEXT,               -- manufacturing | research | resource | amenity | …
     description TEXT,
     owner_type  TEXT,               -- 'corporate' (branch office) | 'subject_holding' | NULL
+    -- an owned building's (owner_type set) build requirements, normalised trigger trees / JSON:
+    owner_trigger_json TEXT,        -- what the owner needs (`branch_office_owner = {…}`)
+    host_trigger_json  TEXT,        -- what the host colony needs (the rest of `potential`)
+    allow_json         TEXT,        -- `allow` (pop_amount >= 2500, an upgraded capital)
+    prerequisites_json TEXT,        -- the techs it needs, sorted
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE building_resource (

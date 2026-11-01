@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.buildings import (_building_modifiers, _building_resources, _write_build_time,
-                                 building_unlocks, conditional_modifiers)
+                                 building_unlocks, conditional_modifiers, owned_requirements)
 
 TRIGGERS = {'is_toxic_baths_empire': {'OR': {'has_valid_civic': ['civic_toxic_baths',
                                                                  'civic_hive_toxic_baths']}}}
@@ -145,6 +145,28 @@ class TestConditionalModifiers(unittest.TestCase):
         b = {'country_modifier': {'all_technology_research_speed': '0.03'}}
         self.assertEqual(conditional_modifiers(b, {}),
                          [('country', 'all_technology_research_speed', 0.03, None, None)])
+
+
+
+class TestOwnedRequirements(unittest.TestCase):
+    def test_owner_host_allow_and_techs_apart(self):
+        # shaped like 4.5.2 building_corporate_embassy, with building_private_mining_consortium's
+        # host conditions
+        b = {'prerequisites': ['"tech_xeno_diplomacy"'],
+             'potential': {'has_branch_office': 'yes',
+                           'branch_office_owner': {'is_legit_or_legal_criminal': 'yes'},
+                           'is_artificial': 'no'},
+             'allow': {'has_major_upgraded_capital': 'yes'}}
+        self.assertEqual(owned_requirements(b, {}, {}), (
+            '{"leaf":"is_legit_or_legal_criminal","value":"yes"}',
+            '{"leaf":"is_artificial","value":"no"}',
+            '{"leaf":"has_major_upgraded_capital","value":"yes"}',
+            '["tech_xeno_diplomacy"]'))
+
+    def test_nothing_required(self):
+        b = {'potential': {'has_branch_office': 'yes'}, 'allow': {'always': 'yes'},
+             'prerequisites': []}
+        self.assertEqual(owned_requirements(b, {}, {}), (None, None, None, None))
 
 
 if __name__ == '__main__':
