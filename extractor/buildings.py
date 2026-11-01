@@ -1,6 +1,7 @@
 """Extraction: building reference data and building effect helpers."""
 
 from pathlib import Path
+import json
 import re
 import sys
 from .clausewitz import parse_file
@@ -10,8 +11,9 @@ from .localisation import _clean_loc
 from .modifiers import _write_modifier_label
 from .politics import expand_inline
 from .situations import outcomes_json
-from .triggers import _scripted_trigger_index
-from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var
+from .traditions import dumps
+from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
+from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var, _to_list
 from .writer import Writer
 
 
@@ -28,6 +30,7 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
         print(f"  WARNING: {bdir} not found", file=sys.stderr)
         return
     triggers = _scripted_trigger_index(install_dir)
+    dlc = dlc_trigger_map(triggers)
     order = 0
     for f in sorted(bdir.glob('*.txt')):
         try:
@@ -54,9 +57,10 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
             category = category if isinstance(category, str) else None
             owner_type = bdef.get('owner_type')
             owner_type = owner_type if owner_type in OWNER_TYPES else None
+            req = owned_requirements(bdef, dlc, variables) if owner_type else (None,) * 4
             w.execute(
-                "INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-                (key, name, category, desc, owner_type, order))
+                "INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (key, name, category, desc, owner_type, *req, order))
             order += 1
             for r_order, (kind, resource, amt) in enumerate(
                     _building_resources(bdef, variables, script_loader(inline_scripts_dir))):
@@ -237,6 +241,24 @@ def conditional_modifiers(bdef: dict, variables: dict[str, float]
                 if val is not None:
                     rows.append((scope, key, val, civic, cond))
     return rows
+
+
+def owned_requirements(bdef: dict, dlc: dict[str, str], variables: dict[str, float]
+                       ) -> tuple[str | None, str | None, str | None, str | None]:
+    """An owned building's build requirements as JSON: (owner trigger, host trigger, allow,
+    prerequisites). The owner's are the `branch_office_owner = {…}` blocks of `potential` (4.5.2:
+    `is_legit_or_legal_criminal`, a civic, an origin …, kept as leaves); the host colony's are the
+    rest of it but `has_branch_office`. NULL where there is none."""
+    pot = bdef.get('potential') if isinstance(bdef.get('potential'), dict) else {}
+    owner = [b for b in _as_blocks(pot.get('branch_office_owner'))]
+    host = {k: v for k, v in pot.items() if k not in ('branch_office_owner', 'has_branch_office')}
+    allow = bdef.get('allow') if isinstance(bdef.get('allow'), dict) else {}
+    if allow == {'always': 'yes'}:
+        allow = {}
+    techs = sorted({t.strip('"') for t in _to_list(bdef.get('prerequisites')) if isinstance(t, str)})
+    trig = lambda b: normalize_trigger(b, dlc, variables) if b else None
+    return (dumps(trig({'AND': owner} if len(owner) > 1 else owner[0]) if owner else None),
+            dumps(trig(host)), dumps(trig(allow)), json.dumps(techs) if techs else None)
 
 
 def _owner_gate(potential) -> tuple[str | None, str | None]:

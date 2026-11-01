@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2026-11-01
+
+### Added
+
+- `building`: an owned building's build requirements — `owner_trigger_json` (what the owner
+  needs: `is_legit_or_legal_criminal`, `is_illegal_criminal`, a civic, an origin …),
+  `host_trigger_json` (the host colony's), `allow_json` and `prerequisites_json` (techs). NULL
+  for the other buildings.
+
 ## [0.1.8] - 2026-11-01
 
 ### Added
