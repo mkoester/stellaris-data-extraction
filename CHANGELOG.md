@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2026-11-01
+
+### Added
+
+- `building.owner_type`: `corporate` for a MegaCorp's branch office buildings (35 on 4.5.2),
+  `subject_holding` for an overlord's holdings (30), else NULL.
+- `building_conditional_modifier`: those buildings' modifier blocks one by one with their gate —
+  the owner's civic a bonus needs (`owner_civic`), any other condition as text — and whether it
+  goes to the host colony (`planet`) or the owner (`country`: a branch office's owner capital).
+  `building_modifier` sums them regardless of the gate and is unchanged.
+
 ## [0.1.7] - 2026-10-31
 
 ### Fixed

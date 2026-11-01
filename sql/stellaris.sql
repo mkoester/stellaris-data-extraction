@@ -518,6 +518,7 @@ CREATE TABLE colony_type_modifier (
 -- resources (building_resource), the jobs it provides (building_job), its other
 -- modifiers (building_modifier) and the civics/origins it needs (building_unlock).
 DROP TABLE IF EXISTS building_unlock;
+DROP TABLE IF EXISTS building_conditional_modifier;
 DROP TABLE IF EXISTS building_modifier;
 DROP TABLE IF EXISTS building_job;
 DROP TABLE IF EXISTS building_resource;
@@ -527,6 +528,7 @@ CREATE TABLE building (
     name        TEXT,               -- localised, e.g. "Alloy Foundries"
     category    TEXT,               -- manufacturing | research | resource | amenity | …
     description TEXT,
+    owner_type  TEXT,               -- 'corporate' (branch office) | 'subject_holding' | NULL
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE building_resource (
@@ -552,6 +554,21 @@ CREATE TABLE building_modifier (
     modifier_key TEXT NOT NULL,
     value        REAL NOT NULL,     -- without ascension perks
     condition    TEXT,              -- an ascension perk the row needs; NULL = always
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, sort_order),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+-- A branch office building's or holding's modifier blocks one by one, gates kept (building_modifier
+-- sums them): scope 'planet' = the host colony, 'country' = the owner (a branch office's
+-- corporate owner: its capital's jobs). owner_civic: the block needs the owner to have that civic;
+-- condition: any other gate, as flat trigger text. Planner (MegaCorp) and dashboard.
+CREATE TABLE building_conditional_modifier (
+    building_key TEXT NOT NULL,
+    scope        TEXT NOT NULL,     -- 'planet' | 'country'
+    modifier_key TEXT NOT NULL,     -- jobs included (job_capital_trader_add)
+    value        REAL NOT NULL,
+    owner_civic  TEXT,
+    condition    TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (building_key, sort_order),
     FOREIGN KEY (building_key) REFERENCES building(key)
@@ -39111,7 +39128,7 @@ INSERT OR REPLACE INTO colony_type_modifier (colony_type_key, modifier, value, s
                        VALUES ('col_arkship_fortress_knights', 'soldier_jobs_bonus_workforce_mult', '0.15', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('soldier_jobs_bonus_workforce_mult', 'Job Efficiency for Soldier jobs', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_colony_shelter', 'Reassembled Ship Shelter', 'government', 'The remains of a Colony Ship, reassembled for planetside form and function.', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_colony_shelter', 'Reassembled Ship Shelter', 'government', 'The remains of a Colony Ship, reassembled for planetside form and function.', NULL, 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_colony_shelter', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO building_modifier
@@ -39124,7 +39141,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_colony_shelter', 'planet', 'planet_amenities_add', '300.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_capital', 'Planetary Administration', 'government', 'Seat of the local ruling elite.', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_capital', 'Planetary Administration', 'government', 'Seat of the local ruling elite.', NULL, 1);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39151,7 +39168,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_capital', 'planet', 'planet_defense_armies_add', '4.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_major_capital', 'Planetary Capital', 'government', 'A sprawling complex of bureaucratic structures that acts as the administrative center for a major colony.', 2);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_major_capital', 'Planetary Capital', 'government', 'A sprawling complex of bureaucratic structures that acts as the administrative center for a major colony.', NULL, 2);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39178,7 +39195,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_major_capital', 'planet', 'planet_defense_armies_add', '8.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_capital', 'System Capital-Complex', 'government', 'A towering configuration of administrative bureaus and networked infrastructure, allowing the construction and operation of highly demanding facilities.', 3);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_system_capital', 'System Capital-Complex', 'government', 'A towering configuration of administrative bureaus and networked infrastructure, allowing the construction and operation of highly demanding facilities.', NULL, 3);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39205,7 +39222,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_system_capital', 'planet', 'planet_defense_armies_add', '16.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_deployment_post', 'Deployment Post', 'government', 'The initial deployment post from which we will expand on this world.', 4);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_deployment_post', 'Deployment Post', 'government', 'The initial deployment post from which we will expand on this world.', NULL, 4);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_deployment_post', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO building_modifier
@@ -39218,7 +39235,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_deployment_post', 'planet', 'planet_amenities_add', '500.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_capital', 'Administrative Array', 'government', 'A semi-autonomous computer network that handles the various administrative functions on a planet.', 5);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_capital', 'Administrative Array', 'government', 'A semi-autonomous computer network that handles the various administrative functions on a planet.', NULL, 5);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39239,7 +39256,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_machine_capital', 'planet', 'planet_defense_armies_add', '4.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_major_capital', 'Planetary Processor', 'government', 'A powerful administrative computer that has been designed to manage and oversee the various functions of a complex planetary settlement.', 6);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_major_capital', 'Planetary Processor', 'government', 'A powerful administrative computer that has been designed to manage and oversee the various functions of a complex planetary settlement.', NULL, 6);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_major_capital', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39260,7 +39277,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_machine_major_capital', 'planet', 'planet_defense_armies_add', '8.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_system_capital', 'Primary Nexus', 'government', 'The administrative heart of the system. Hundreds of AIs process requests and manage the minute but critical details that are involved in running an efficient interstellar civilization.', 7);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_system_capital', 'Primary Nexus', 'government', 'The administrative heart of the system. Hundreds of AIs process requests and manage the minute but critical details that are involved in running an efficient interstellar civilization.', NULL, 7);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_system_capital', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39281,7 +39298,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_machine_system_capital', 'planet', 'planet_defense_armies_add', '16.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_capital', 'Hive Core', 'government', 'The organizational core from which the Hive Mind coordinates colony functions.', 8);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_capital', 'Hive Core', 'government', 'The organizational core from which the Hive Mind coordinates colony functions.', NULL, 8);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_capital', 'cost', 'minerals', '1000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39301,7 +39318,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_capital', 'planet', 'planet_defense_armies_add', '4.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_major_capital', 'Hive Nexus', 'government', 'A sprawling capital complex from which the Hive Mind focuses colony organization, coordination, and planning.', 9);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_major_capital', 'Hive Nexus', 'government', 'A sprawling capital complex from which the Hive Mind focuses colony organization, coordination, and planning.', NULL, 9);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_major_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39322,7 +39339,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_major_capital', 'planet', 'planet_defense_armies_add', '8.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', 10);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hab_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', NULL, 10);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_capital', 'upkeep', 'energy', '3.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39348,7 +39365,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hab_capital', 'planet', 'planet_defense_armies_add', '4.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_major_capital', 'Habitat Central Control', 'government', 'An extensive complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', 11);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hab_major_capital', 'Habitat Central Control', 'government', 'An extensive complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', NULL, 11);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_major_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39383,7 +39400,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hab_major_capital', 'planet', 'pop_environment_tolerance', '0.1', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_system_capital', 'Habitat System Control', 'government', 'A huge sprawling complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', 12);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hab_system_capital', 'Habitat System Control', 'government', 'A huge sprawling complex of bureaucratic offices that oversees the administration of a highly-populated habitat.', NULL, 12);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_system_capital', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39418,7 +39435,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hab_system_capital', 'planet', 'pop_environment_tolerance', '0.2', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resort_capital', 'Resort Administration', 'government', 'The central complex from where this planet-wide resort is administrated.', 13);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_resort_capital', 'Resort Administration', 'government', 'The central complex from where this planet-wide resort is administrated.', NULL, 13);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_resort_capital', 'upkeep', 'energy', '2.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_resort_capital', 'politician', '200.0', 0);
@@ -39437,7 +39454,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_resort_capital', 'planet', 'branch_office_target_max_buildings_add', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_target_max_buildings_add', 'Max Corporate Buildings', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resort_major_capital', 'Resort Capital-Complex', 'government', 'A huge sprawling complex capable of administrating an even greater number of resorts and tourist attractions.', 14);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_resort_major_capital', 'Resort Capital-Complex', 'government', 'A huge sprawling complex capable of administrating an even greater number of resorts and tourist attractions.', NULL, 14);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_resort_major_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39459,7 +39476,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_resort_major_capital', 'planet', 'branch_office_target_max_buildings_add', '2.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_target_max_buildings_add', 'Max Corporate Buildings', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_capital', 'Governor''s Palace', 'government', 'The lavish palace from which this Thrall-World is governed.', 15);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_slave_capital', 'Governor''s Palace', 'government', 'The lavish palace from which this Thrall-World is governed.', NULL, 15);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_capital', 'upkeep', 'energy', '2.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_slave_capital', 'politician', '200.0', 0);
@@ -39483,7 +39500,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_slave_capital', 'planet', 'branch_office_target_max_buildings_add', '1.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_target_max_buildings_add', 'Max Corporate Buildings', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_major_capital', 'Governor''s Estates', 'government', 'Sprawling and luxurious palaces that house the ruling elite of the Thrall-World.', 16);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_slave_major_capital', 'Governor''s Estates', 'government', 'Sprawling and luxurious palaces that house the ruling elite of the Thrall-World.', NULL, 16);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_major_capital', 'cost', 'minerals', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39510,7 +39527,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_slave_major_capital', 'planet', 'branch_office_target_max_buildings_add', '2.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_target_max_buildings_add', 'Max Corporate Buildings', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_capital', 'Imperial Palace', 'government', 'A massive palace complex fit for the greatest empire history has ever seen. If there is a bright center to the galaxy, this is it.', 17);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_imperial_capital', 'Imperial Palace', 'government', 'A massive palace complex fit for the greatest empire history has ever seen. If there is a bright center to the galaxy, this is it.', NULL, 17);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39537,7 +39554,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_imperial_capital', 'planet', 'planet_defense_armies_add', '16.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_machine_capital', 'Imperial Center', 'government', 'This colossal complex is the administrative heart of the Galactic Imperium. Thousands of AIs are constantly processing and evaluating the current state of the galaxy.', 18);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_imperial_machine_capital', 'Imperial Center', 'government', 'This colossal complex is the administrative heart of the Galactic Imperium. Thousands of AIs are constantly processing and evaluating the current state of the galaxy.', NULL, 18);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_machine_capital', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39563,7 +39580,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_imperial_machine_capital', 'planet', 'planet_defense_armies_add', '16.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_hive_capital', 'Imperial Complex', 'government', 'From this massive structure, the Hive Mind governs the Galactic Imperium. This is where the fate of the galaxy is decided.', 19);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_imperial_hive_capital', 'Imperial Complex', 'government', 'From this massive structure, the Hive Mind governs the Galactic Imperium. This is where the fate of the galaxy is decided.', NULL, 19);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_hive_capital', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39589,14 +39606,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_imperial_hive_capital', 'planet', 'planet_defense_armies_add', '16.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_robot_assembly_plant', 'Robot Assembly Plants', 'pop_assembly', 'High-tech factories where skilled Roboticists assemble the latest robot models.', 20);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_robot_assembly_plant', 'Robot Assembly Plants', 'pop_assembly', 'High-tech factories where skilled Roboticists assemble the latest robot models.', NULL, 20);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_plant', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_plant', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_robot_assembly_plant', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_robot_assembly_plant', 'roboticist', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_robot_assembly_complex', 'Robot Assembly Complex', 'pop_assembly', 'An advanced assembly plant where skilled Roboticists assemble the latest robot models.', 21);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_robot_assembly_complex', 'Robot Assembly Complex', 'pop_assembly', 'An advanced assembly plant where skilled Roboticists assemble the latest robot models.', NULL, 21);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39605,14 +39622,14 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_robot_assembly_complex', 'upkeep', 'rare_crystals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_robot_assembly_complex', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_robot_assembly_complex', 'roboticist', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_assembly_plant', 'Machine Assembly Plants', 'pop_assembly', 'A production line assembly plant where new units are constructed.', 22);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_assembly_plant', 'Machine Assembly Plants', 'pop_assembly', 'A production line assembly plant where new units are constructed.', NULL, 22);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_plant', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_plant', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_machine_assembly_plant', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_machine_assembly_plant', 'roboticist', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_assembly_complex', 'Machine Assembly Complex', 'pop_assembly', 'An advanced assembly plant where new units are constructed.', 23);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_assembly_complex', 'Machine Assembly Complex', 'pop_assembly', 'An advanced assembly plant where new units are constructed.', NULL, 23);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39621,14 +39638,14 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_machine_assembly_complex', 'upkeep', 'rare_crystals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_machine_assembly_complex', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_machine_assembly_complex', 'roboticist', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_spawning_pool', 'Spawning Pools', 'pop_assembly', 'Tended by the scientific and gentle care of specialists, these pools stimulate our spawn into faster growth.', 24);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_spawning_pool', 'Spawning Pools', 'pop_assembly', 'Tended by the scientific and gentle care of specialists, these pools stimulate our spawn into faster growth.', NULL, 24);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_spawning_pool', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_spawning_pool', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_spawning_pool', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_spawning_pool', 'spawning_drone', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_offspring_nest', 'Offspring Nest', 'pop_assembly', 'This fortified nest safely harbors the local Offspring while also accelerating growth for the rest of the nearby hive.', 25);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_offspring_nest', 'Offspring Nest', 'pop_assembly', 'This fortified nest safely harbors the local Offspring while also accelerating growth for the rest of the nearby hive.', NULL, 25);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_offspring_nest', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39636,14 +39653,14 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_offspring_nest', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_offspring_nest', 'spawning_drone', '100.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_progenitor_hive', 'building_offspring_nest');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_necrophage_elevation_chamber', 'Chamber of Elevation', 'pop_assembly', 'Those awaiting transformation spend their days studying the practices and rituals of the in the comfort of the Chamber of Elevation.', 26);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_necrophage_elevation_chamber', 'Chamber of Elevation', 'pop_assembly', 'Those awaiting transformation spend their days studying the practices and rituals of the in the comfort of the Chamber of Elevation.', NULL, 26);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_elevation_chamber', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_elevation_chamber', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_necrophage_elevation_chamber', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_necrophage', 'building_necrophage_elevation_chamber');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'House of Apotheosis', 'pop_assembly', 'A house of untold splendor where those awaiting their apotheosis as can spend their final days in their original forms in comfort.', 27);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'House of Apotheosis', 'pop_assembly', 'A house of untold splendor where those awaiting their apotheosis as can spend their final days in their original forms in comfort.', NULL, 27);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39652,7 +39669,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_necrophage_house_of_apotheosis', 'upkeep', 'exotic_gases', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_necrophage_house_of_apotheosis', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_necrophage', 'building_necrophage_house_of_apotheosis');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clone_vats', 'Clone Vats', 'pop_assembly', 'Clone Vats break down simple materials to generate Organic Pop Growth.', 28);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_clone_vats', 'Clone Vats', 'pop_assembly', 'Clone Vats break down simple materials to generate Organic Pop Growth.', NULL, 28);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_vats', 'cost', 'minerals', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39673,7 +39690,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_clone_vats', 'planet', 'planet_amenities_add', '500.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clone_army_clone_vat', 'Ancient Clone Vat', 'pop_assembly', 'Lost technology left behind by the Creators. Can be taken apart and reassembled, but its inner components and workings are much too advanced to replicate.', 29);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_clone_army_clone_vat', 'Ancient Clone Vat', 'pop_assembly', 'Lost technology left behind by the Creators. Can be taken apart and reassembled, but its inner components and workings are much too advanced to replicate.', NULL, 29);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_clone_army_clone_vat', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39700,15 +39717,15 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_clone_army', 'building_clone_army_clone_vat');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_posthumous_employment_center', 'Posthumous Employment Center', 'pop_assembly', 'At the Posthumous Employment Center, carcasses bereft of consciousness can find new purpose and a new opportunity to pay off their debts.', 30);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_posthumous_employment_center', 'Posthumous Employment Center', 'pop_assembly', 'At the Posthumous Employment Center, carcasses bereft of consciousness can find new purpose and a new opportunity to pay off their debts.', NULL, 30);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_posthumous_employment_center', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_posthumous_employment_center', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_posthumous_employment_center', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_permanent_employment', 'building_posthumous_employment_center');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_technician_1', 'Automation Building: Technician', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
-This building will automate a portion of Technician and Tech-Drone jobs.', 31);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_technician_1', 'Automation Building: Technician', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Technician and Tech-Drone jobs.', NULL, 31);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_1', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39724,8 +39741,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_technician_1', 'planet', 'job_technician_drone_automated_workforce_mult', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_technician_2', 'Optimization Building: Technician', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
-This building will automate a portion of Technician and Tech-Drone jobs.', 32);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_technician_2', 'Optimization Building: Technician', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Technician and Tech-Drone jobs.', NULL, 32);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_technician_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39741,8 +39758,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_technician_2', 'planet', 'job_technician_drone_automated_workforce_mult', '0.5', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_miner_1', 'Automation Building: Miner', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
-This building will automate a portion of Miner and Mining Drone jobs.', 33);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_miner_1', 'Automation Building: Miner', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Miner and Mining Drone jobs.', NULL, 33);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_1', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39758,8 +39775,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_miner_1', 'planet', 'job_mining_drone_automated_workforce_mult', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_miner_2', 'Optimization Building: Miner', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
-This building will automate a portion of Miner and Mining Drone jobs.', 34);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_miner_2', 'Optimization Building: Miner', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Miner and Mining Drone jobs.', NULL, 34);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_miner_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39775,8 +39792,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_miner_2', 'planet', 'job_mining_drone_automated_workforce_mult', '0.5', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_farmer_1', 'Automation Building: Farmer', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
-This building will automate a portion of Farmer and Agri-Drone jobs.', 35);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_farmer_1', 'Automation Building: Farmer', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''
+This building will automate a portion of Farmer and Agri-Drone jobs.', NULL, 35);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_1', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39792,8 +39809,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_farmer_1', 'planet', 'job_agri_drone_automated_workforce_mult', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_farmer_2', 'Optimization Building: Farmer', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
-This building will automate a portion of Farmer and Agri-Drone jobs.', 36);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_farmer_2', 'Optimization Building: Farmer', 'pop_assembly', 'Those who have been there say, ''It optimizes.''
+This building will automate a portion of Farmer and Agri-Drone jobs.', NULL, 36);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_farmer_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39809,7 +39826,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_automation_farmer_2', 'planet', 'job_agri_drone_automated_workforce_mult', '0.5', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_1', 'Automation Building', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''', 37);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_1', 'Automation Building', 'pop_assembly', 'A plaque on the wall reads: ''It automates.''', NULL, 37);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_1', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39818,7 +39835,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_automation_1', '
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_automation_1', 'planet', 'district_automated_workforce', '0.25', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_automation_2', 'Optimization Building', 'pop_assembly', 'Those who have been there say, ''It optimizes.''', 38);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_automation_2', 'Optimization Building', 'pop_assembly', 'Those who have been there say, ''It optimizes.''', NULL, 38);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_automation_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39827,7 +39844,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_automation_2', '
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_automation_2', 'planet', 'district_automated_workforce', '0.5', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_noble_estates', 'Noble Estates', 'government', 'Palaces and mansions, resplendent in their glory, owned by the nobility. The surrounding countryside and the peasants that inhabit it are theirs as well.', 39);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_noble_estates', 'Noble Estates', 'government', 'Palaces and mansions, resplendent in their glory, owned by the nobility. The surrounding countryside and the peasants that inhabit it are theirs as well.', NULL, 39);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_noble_estates', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39840,7 +39857,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_aristocratic_elite', 'building_noble_estates');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_slave_processing', 'Slave Processing Facility', 'government', 'This large and imposing facility is used to process slave labor and extinguish any trace of free will.', 40);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_slave_processing', 'Slave Processing Facility', 'government', 'This large and imposing facility is used to process slave labor and extinguish any trace of free will.', NULL, 40);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_slave_processing', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39861,14 +39878,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_slave_processing', 'planet', 'planet_resettlement_unemployed_mult', '-0.5', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_precinct_house', 'Precinct Houses', 'government', 'Monuments to law and order. Enforcers are based here.', 41);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_precinct_house', 'Precinct Houses', 'government', 'Monuments to law and order. Enforcers are based here.', NULL, 41);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_precinct_house', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_precinct_house', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_precinct_house', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_precinct_house', 'enforcer', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hall_judgment', 'Hall of Judgment', 'government', 'A massive complex dedicated to courts and law enforcement.', 42);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hall_judgment', 'Hall of Judgment', 'government', 'A massive complex dedicated to courts and law enforcement.', NULL, 42);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39877,7 +39894,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hall_judgment', 'upkeep', 'volatile_motes', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_hall_judgment', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hall_judgment', 'enforcer', '500.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_state_academy', 'State Academy', 'government', 'Here the fundamentals deemed necessary for a healthy society are taught.', 43);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_state_academy', 'State Academy', 'government', 'Here the fundamentals deemed necessary for a healthy society are taught.', NULL, 43);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_state_academy', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39905,7 +39922,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_civil_education', 'building_state_academy');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_center_of_guidance', 'Center of Guidance', 'government', 'Covering every aspect of life in society. Within this massive complex of schools and training facilities any deviation can be corrected.', 44);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_center_of_guidance', 'Center of Guidance', 'government', 'Covering every aspect of life in society. Within this massive complex of schools and training facilities any deviation can be corrected.', NULL, 44);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_center_of_guidance', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39935,13 +39952,13 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_civil_education', 'building_center_of_guidance');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sentinel_posts', 'Sentinel Posts', 'government', 'These are the outposts from which Patrol Drones scan the Consciousness for signs of deviancy and malfunction.', 45);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sentinel_posts', 'Sentinel Posts', 'government', 'These are the outposts from which Patrol Drones scan the Consciousness for signs of deviancy and malfunction.', NULL, 45);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sentinel_posts', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sentinel_posts', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_sentinel_posts', '360.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_order_keep', 'Order''s Keep', 'government', 'The seat of the Order is the home of its knights. It boasts vast archives of data, and is filled with trophies collected over its long and illustrious history.', 46);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_order_keep', 'Order''s Keep', 'government', 'The seat of the Order is the home of its knights. It boasts vast archives of data, and is filled with trophies collected over its long and illustrious history.', NULL, 46);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_order_keep', 'cost', 'minerals', '1000.0', 0);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_order_keep', '180.0');
@@ -39956,15 +39973,15 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_toxic_knights', 'building_order_keep');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_order_castle', 'Order''s Castle', 'government', 'The Order of the Toxic God has established a castle on this Colony. A contingent of knights and squires have set up base here.', 47);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_order_castle', 'Order''s Castle', 'government', 'The Order of the Toxic God has established a castle on this Colony. A contingent of knights and squires have set up base here.', NULL, 47);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_order_castle', '180.0');
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_order_castle', 'planet', 'planet_resettlement_unemployed_destination_mult', '0.2', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psi_corps', 'Psi Corps', 'government', 'From all across our empire, psionic are brought here to hone their abilities.
-The Psi Corps is your . Trust the Corps.', 48);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_psi_corps', 'Psi Corps', 'government', 'From all across our empire, psionic are brought here to hone their abilities.
+The Psi Corps is your . Trust the Corps.', NULL, 48);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_psi_corps', 'cost', 'minerals', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39981,8 +39998,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_psi_corps', 'planet', 'psionic_pop_bonus_workforce_mult', '1.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_embassy', 'Embassy Complex', 'government', 'This building forms the heart of the Empire''s diplomatic efforts.
-Due to the need to be close to the seat of government, it can only be built at our Capital.', 49);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_embassy', 'Embassy Complex', 'government', 'This building forms the heart of the Empire''s diplomatic efforts.
+Due to the need to be close to the seat of government, it can only be built at our Capital.', NULL, 49);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_embassy', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -39994,8 +40011,8 @@ INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUE
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_embassy', 'country', 'envoys_add', '1.0', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_embassy', 'Grand Embassy Complex', 'government', 'The complex is intended to awe the viewer, rendering them more compliant in negotiations.
-Due to the need to be close to the seat of government, it can only be built at our Capital.', 50);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_grand_embassy', 'Grand Embassy Complex', 'government', 'The complex is intended to awe the viewer, rendering them more compliant in negotiations.
+Due to the need to be close to the seat of government, it can only be built at our Capital.', NULL, 50);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_embassy', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40007,8 +40024,8 @@ INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUE
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_grand_embassy', 'country', 'envoys_add', '2.0', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_1', 'Gaia Seeders - Phase 1', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-This is the initial growth boost phase.', 51);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gaiaseeders_1', 'Gaia Seeders - Phase 1', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This is the initial growth boost phase.', NULL, 51);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_1', 'cost', 'energy', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40022,8 +40039,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_idyllic_bloom', 'building_gaiaseeders_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_idyllic_bloom', 'building_gaiaseeders_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_life_seeded', 'building_gaiaseeders_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_2', 'Gaia Seeders - Phase 2', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-This phase shifts towards habitability.', 52);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gaiaseeders_2', 'Gaia Seeders - Phase 2', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This phase shifts towards habitability.', NULL, 52);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_2', 'cost', 'energy', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40043,8 +40060,8 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_gaiaseeders_2', 'planet', 'pop_environment_tolerance', '0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_3', 'Gaia Seeders - Phase 3', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
-This phase emphasizes habitability.', 53);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gaiaseeders_3', 'Gaia Seeders - Phase 3', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.
+This phase emphasizes habitability.', NULL, 53);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_3', 'cost', 'energy', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40059,7 +40076,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_gaiaseeders_3', 'planet', 'pop_environment_tolerance', '0.2', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_4', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', 54);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gaiaseeders_4', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', NULL, 54);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'cost', 'energy', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40069,7 +40086,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_4', 'upkeep', 'exotic_gases', '2.0', 3);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_gaiaseeders_4', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', 55);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'Gaia Seeders - Final Phase', 'government', 'Facilities spread across the planet progressively bring it closer to becoming a Gaia World, through 4 upgrade phases.', NULL, 55);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gaiaseeders_pc_gaia', 'cost', 'energy', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40082,7 +40099,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_gaiaseeders_pc_g
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_idyllic_bloom', 'building_gaiaseeders_pc_gaia');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_idyllic_bloom', 'building_gaiaseeders_pc_gaia');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_life_seeded', 'building_gaiaseeders_pc_gaia');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_volcanic_forge_1', 'Volcanic Forge', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', 56);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_volcanic_forge_1', 'Volcanic Forge', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', NULL, 56);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40092,7 +40109,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_c
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_world_forgers', 'building_volcanic_forge_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_world_forgers', 'building_volcanic_forge_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_world_forgers', 'building_volcanic_forge_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_volcanic_forge_2', 'Volcanic Foundry', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', 57);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_volcanic_forge_2', 'Volcanic Foundry', 'government', 'This industrial complex, designed to drill deep into the planet''s crust, will induce volcanic activity across the entire world, thus terraforming every biome into a blazing landscape.', NULL, 57);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_volcanic_forge_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40106,14 +40123,14 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_c
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_world_forgers', 'building_volcanic_forge_2');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_world_forgers', 'building_volcanic_forge_2');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_world_forgers', 'building_volcanic_forge_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hydroponics_farm', 'Hydroponics Farms', 'resource', 'Hydroponics Farms produce nutrient-rich vegetable matter tailored for consumption by local Pops.', 58);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hydroponics_farm', 'Hydroponics Farms', 'resource', 'Hydroponics Farms produce nutrient-rich vegetable matter tailored for consumption by local Pops.', NULL, 58);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hydroponics_farm', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hydroponics_farm', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_hydroponics_farm', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hydroponics_farm', 'farmer', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_processing_facility', 'Food Processing Facilities', 'resource', 'Food that is processed at these facilities has its nutritional value greatly increased.', 59);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_food_processing_facility', 'Food Processing Facilities', 'resource', 'Food that is processed at these facilities has its nutritional value greatly increased.', NULL, 59);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_facility', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40124,7 +40141,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_food_processing_facility', 'planet', 'planet_farmers_food_produces_add', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_processing_center', 'Food Processing Centers', 'resource', 'Streamlined facilities where large amounts of food can be processed.', 60);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_food_processing_center', 'Food Processing Centers', 'resource', 'Streamlined facilities where large amounts of food can be processed.', NULL, 60);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_food_processing_center', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40137,7 +40154,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_food_processing_center', 'planet', 'planet_farmers_food_produces_add', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_1', 'Crop Development Hub', 'resource', 'A modest bureaucratic center tasked with surveying arable land and initiating expansion of planetary agriculture.', 61);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_farming_districts_1', 'Crop Development Hub', 'resource', 'A modest bureaucratic center tasked with surveying arable land and initiating expansion of planetary agriculture.', NULL, 61);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40148,7 +40165,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_farming_districts_1', 'planet', 'district_farming_max_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_2', 'Soil Reclamation Center', 'resource', 'This center focuses on restoring marginal land and improving yields, allowing for greater agricultural district growth.', 62);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_farming_districts_2', 'Soil Reclamation Center', 'resource', 'This center focuses on restoring marginal land and improving yields, allowing for greater agricultural district growth.', NULL, 62);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40161,7 +40178,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_farming_districts_2', 'planet', 'district_farming_max_add', '4.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_3', 'Automated Agri-Complex', 'resource', 'Mechanized harvesters, drone fleets, and climate-controlled fields drive the rapid expansion of agricultural districts.', 63);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_farming_districts_3', 'Automated Agri-Complex', 'resource', 'Mechanized harvesters, drone fleets, and climate-controlled fields drive the rapid expansion of agricultural districts.', NULL, 63);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_3', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40174,7 +40191,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_farming_districts_3', 'planet', 'district_farming_max_add', '6.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_farming_districts_4', 'Planetary Cultivation Grid', 'resource', 'A vast integrated complex that oversees intensive, high-density farming operations, maximizing the number of agricultural districts supported on the planet.', 64);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_farming_districts_4', 'Planetary Cultivation Grid', 'resource', 'A vast integrated complex that oversees intensive, high-density farming operations, maximizing the number of agricultural districts supported on the planet.', NULL, 64);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_farming_districts_4', 'cost', 'exotic_gases', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40187,7 +40204,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_farming_districts_4', 'planet', 'district_farming_max_add', '8.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_farming_max_add', 'Max Agriculture Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_baol_organic_plant', 'Baol Organic Plant', 'resource', 'The Baol Organism had a unique way of producing tools. Given the species'' relative slowness, they would simply grow them out of organic matter in locations that were half orchard, half factory. With the proper genetic adjustments, we could also grow various commodities and tools alongside our regular crops.', 65);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_baol_organic_plant', 'Baol Organic Plant', 'resource', 'The Baol Organism had a unique way of producing tools. Given the species'' relative slowness, they would simply grow them out of organic matter in locations that were half orchard, half factory. With the proper genetic adjustments, we could also grow various commodities and tools alongside our regular crops.', NULL, 65);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_baol_organic_plant', 'cost', 'minor_artifacts', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40204,14 +40221,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_baol_organic_plant', 'planet', 'planet_farmers_energy_produces_add', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_energy_produces_add', 'Energy Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mine_generic', 'Surface Quarry Depot', 'resource', 'By coordinating shallow-surface excavation and ore collection, this depot enables early expansion of mining districts.', 66);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mine_generic', 'Surface Quarry Depot', 'resource', 'By coordinating shallow-surface excavation and ore collection, this depot enables early expansion of mining districts.', NULL, 66);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mine_generic', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mine_generic', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_mine_generic', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_mine_generic', 'miner', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mineral_purification_plant', 'Mineral Purification Plants', 'resource', 'Minerals that have passed through these purifiers are of the highest quality.', 67);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mineral_purification_plant', 'Mineral Purification Plants', 'resource', 'Minerals that have passed through these purifiers are of the highest quality.', NULL, 67);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_plant', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40222,7 +40239,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mineral_purification_plant', 'planet', 'planet_miners_minerals_produces_add', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mineral_purification_hub', 'Mineral Purification Hubs', 'resource', 'Massive hubs where minerals are received and then shuttled to arrays of purifiers.', 68);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mineral_purification_hub', 'Mineral Purification Hubs', 'resource', 'Massive hubs where minerals are received and then shuttled to arrays of purifiers.', NULL, 68);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40230,7 +40247,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mineral_purification_hub', 'upkeep', 'volatile_motes', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_mineral_purification_hub', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_1', 'Industrial Mining Site', 'resource', 'Excavation rigs, conveyor systems, and sorting arrays operate in tandem to sustain reliable output and enable the initial expansion of mining districts.', 69);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mining_districts_1', 'Industrial Mining Site', 'resource', 'Excavation rigs, conveyor systems, and sorting arrays operate in tandem to sustain reliable output and enable the initial expansion of mining districts.', NULL, 69);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40241,7 +40258,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mining_districts_1', 'planet', 'district_mining_max_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_2', 'Core Drilling Array', 'resource', 'A facility that drives deeper mining operations through heavy bore drills and structural reinforcements, unlocking additional mineral sites.', 70);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mining_districts_2', 'Core Drilling Array', 'resource', 'A facility that drives deeper mining operations through heavy bore drills and structural reinforcements, unlocking additional mineral sites.', NULL, 70);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_2', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40254,7 +40271,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mining_districts_2', 'planet', 'district_mining_max_add', '4.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_3', 'Seismic Tunneling Yard', 'resource', 'A complex equipped for high-efficiency tunnel carving and subterranean stabilization, expanding access to otherwise unreachable mineral veins.', 71);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mining_districts_3', 'Seismic Tunneling Yard', 'resource', 'A complex equipped for high-efficiency tunnel carving and subterranean stabilization, expanding access to otherwise unreachable mineral veins.', NULL, 71);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_3', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40267,7 +40284,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mining_districts_3', 'planet', 'district_mining_max_add', '6.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mining_districts_4', 'Deep Crust Extraction Grid', 'resource', 'A sprawling facility operating at maximum planetary depth, this complex manages fully industrialized extraction zones and supports the greatest possible mining district expansion.', 72);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mining_districts_4', 'Deep Crust Extraction Grid', 'resource', 'A sprawling facility operating at maximum planetary depth, this complex manages fully industrialized extraction zones and supports the greatest possible mining district expansion.', NULL, 72);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mining_districts_4', 'cost', 'volatile_motes', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40280,14 +40297,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mining_districts_4', 'planet', 'district_mining_max_add', '8.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_mining_max_add', 'Max Mining Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_generic', 'Voltaic Production Yard', 'resource', 'Dedicated to large-scale energy generation, this building houses power cells, plasma conduits, and high-output generator arrays.', 73);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_generator_generic', 'Voltaic Production Yard', 'resource', 'Dedicated to large-scale energy generation, this building houses power cells, plasma conduits, and high-output generator arrays.', NULL, 73);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_generic', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_generic', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_generator_generic', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_generator_generic', 'technician', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_energy_grid', 'Energy Grid', 'resource', 'A carefully calibrated grid network maximizes the output of power generators.', 74);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_energy_grid', 'Energy Grid', 'resource', 'A carefully calibrated grid network maximizes the output of power generators.', NULL, 74);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_grid', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40298,7 +40315,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_energy_grid', 'planet', 'planet_technician_energy_produces_add', '0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technicians', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_energy_nexus', 'Energy Nexus', 'resource', 'This colossal facility centralizes all energy grids on the planet, improving their efficiency.', 75);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_energy_nexus', 'Energy Nexus', 'resource', 'This colossal facility centralizes all energy grids on the planet, improving their efficiency.', NULL, 75);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_energy_nexus', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40311,7 +40328,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_energy_nexus', 'planet', 'planet_technician_energy_produces_add', '1.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technicians', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_1', 'Conductive Works Complex', 'resource', 'This complex supports the establishment of new generator districts by distributing foundational grid infrastructure and energy handling systems.', 76);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_generator_districts_1', 'Conductive Works Complex', 'resource', 'This complex supports the establishment of new generator districts by distributing foundational grid infrastructure and energy handling systems.', NULL, 76);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40322,7 +40339,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_generator_districts_1', 'planet', 'district_generator_max_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_2', 'Substation Relay Complex', 'resource', 'Enabling broader support for generator district development, this facility expands planetary power infrastructure through the deployment of high-capacity relays, transformer yards, and grid stabilization nodes.', 77);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_generator_districts_2', 'Substation Relay Complex', 'resource', 'Enabling broader support for generator district development, this facility expands planetary power infrastructure through the deployment of high-capacity relays, transformer yards, and grid stabilization nodes.', NULL, 77);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_2', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40335,7 +40352,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_generator_districts_2', 'planet', 'district_generator_max_add', '4.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_3', 'Plasma Regulation Array', 'resource', 'A complex where stabilized plasma flows and circuit resonance control allow for intensified generator development across the planet.', 78);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_generator_districts_3', 'Plasma Regulation Array', 'resource', 'A complex where stabilized plasma flows and circuit resonance control allow for intensified generator development across the planet.', NULL, 78);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_3', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40348,7 +40365,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_generator_districts_3', 'planet', 'district_generator_max_add', '6.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_generator_districts_4', 'Planetary Nexus', 'resource', 'This integrated energy nexus coordinates planetary-scale generator operations, enabling the highest achievable expansion of generator districts.', 79);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_generator_districts_4', 'Planetary Nexus', 'resource', 'This integrated energy nexus coordinates planetary-scale generator operations, enabling the highest achievable expansion of generator districts.', NULL, 79);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_generator_districts_4', 'cost', 'rare_crystals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40361,7 +40378,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_generator_districts_4', 'planet', 'district_generator_max_add', '8.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('district_generator_max_add', 'Max Generator Districts', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_resource_silo', 'Resource Silos', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', 80);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_resource_silo', 'Resource Silos', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', NULL, 80);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_resource_silo', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40382,7 +40399,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_resource_silo', 'country', 'country_resource_max_consumer_goods_add', '5000.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_resource_max_consumer_goods_add', 'Consumer Goods Capacity', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reactor', 'Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate.', 81);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bio_reactor', 'Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate.', NULL, 81);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40398,7 +40415,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bio_reactor', 'planet', 'planet_farmers_energy_produces_add', '2.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_energy_produces_add', 'Energy Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reactor_2', 'Advanced Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate, improvements in waste collection allows harvesting of useful gaseous by-products.', 82);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bio_reactor_2', 'Advanced Bio-Reactor', 'resource', 'A facility where organic matter is converted into energy at a highly efficient rate, improvements in waste collection allows harvesting of useful gaseous by-products.', NULL, 82);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reactor_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40419,14 +40436,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bio_reactor_2', 'planet', 'planet_farmers_exotic_gases_produces_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_exotic_gases_produces_add', 'Exotic Gases Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_1', 'Alloy Foundries', 'manufacturing', 'The working in these foundries produce high-quality alloys.', 83);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_foundry_1', 'Alloy Foundries', 'manufacturing', 'The working in these foundries produce high-quality alloys.', NULL, 83);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_1', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_foundry_1', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_1', 'foundry', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_2', 'Alloy Mega-Forges', 'manufacturing', 'These massive forges can assist the end-stage production of alloys in our industries across the colony.', 84);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_foundry_2', 'Alloy Mega-Forges', 'manufacturing', 'These massive forges can assist the end-stage production of alloys in our industries across the colony.', NULL, 84);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40435,7 +40452,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_2', 'upkeep', 'volatile_motes', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_foundry_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_2', 'foundry', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_3', 'Alloy Nano-Plants', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of alloys on the colony.', 85);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_foundry_3', 'Alloy Nano-Plants', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of alloys on the colony.', NULL, 85);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'cost', 'volatile_motes', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40444,14 +40461,14 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_3', 'upkeep', 'volatile_motes', '4.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_foundry_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_foundry_3', 'foundry', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_1', 'Civilian Industries', 'manufacturing', 'A wide collection of civilian industries and manufactories where a variety of consumer goods are produced.', 86);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_factory_1', 'Civilian Industries', 'manufacturing', 'A wide collection of civilian industries and manufactories where a variety of consumer goods are produced.', NULL, 86);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_1', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_factory_1', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_1', 'artisan', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_2', 'Civilian Fabricators', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of consumer goods on the colony.', 87);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_factory_2', 'Civilian Fabricators', 'manufacturing', 'Large industrial fabricators geared towards increasing the production of consumer goods on the colony.', NULL, 87);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40460,7 +40477,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_2', 'upkeep', 'rare_crystals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_factory_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_2', 'artisan', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_3', 'Civilian Repli-Complexes', 'manufacturing', 'Nearly anything can be replicated at the kiosks in these complexes.', 88);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_factory_3', 'Civilian Repli-Complexes', 'manufacturing', 'Nearly anything can be replicated at the kiosks in these complexes.', NULL, 88);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'cost', 'rare_crystals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40469,7 +40486,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_3', 'upkeep', 'rare_crystals', '4.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_factory_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_factory_3', 'artisan', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_refinery', 'Exotic Gas Refineries', 'manufacturing', 'These advanced refineries work day and night to produce exotic gases.', 89);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_refinery', 'Exotic Gas Refineries', 'manufacturing', 'These advanced refineries work day and night to produce exotic gases.', NULL, 89);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_refinery', 'cost', 'minerals', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40500,7 +40517,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_refinery', 'planet', 'planet_artisans_food_upkeep_add', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_food_upkeep_add', 'Food Upkeep per 100 Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_chemical_plant', 'Chemical Plants', 'manufacturing', 'The unpredictable and sometimes unstable Volatile Motes are produced here artificially. No open flames are permitted within a five kilometer radius of the plants.', 90);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_chemical_plant', 'Chemical Plants', 'manufacturing', 'The unpredictable and sometimes unstable Volatile Motes are produced here artificially. No open flames are permitted within a five kilometer radius of the plants.', NULL, 90);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_chemical_plant', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40531,7 +40548,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_chemical_plant', 'planet', 'planet_artisans_food_upkeep_add', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_food_upkeep_add', 'Food Upkeep per 100 Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_plant', 'Synthetic Crystal Plants', 'manufacturing', 'Nearly identical to the real thing, the crystals produced here are of the highest quality.', 91);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_crystal_plant', 'Synthetic Crystal Plants', 'manufacturing', 'Nearly identical to the real thing, the crystals produced here are of the highest quality.', NULL, 91);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40562,7 +40579,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_crystal_plant', 'planet', 'planet_artisans_food_upkeep_add', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_food_upkeep_add', 'Food Upkeep per 100 Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanite_transmuter', 'Nanite Transmuter', 'manufacturing', 'This factory mass-produces a variety of rare resources using extremely advanced nanites. A Nanite deficit will halt production.', 92);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nanite_transmuter', 'Nanite Transmuter', 'manufacturing', 'This factory mass-produces a variety of rare resources using extremely advanced nanites. A Nanite deficit will halt production.', NULL, 92);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'cost', 'minerals', '1000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40576,7 +40593,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanite_transmuter', 'produces', 'exotic_gases', '5.0', 5);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_nanite_transmuter', '600.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ministry_production', 'Ministry of Production', 'manufacturing', 'The Ministry of Production works tirelessly to organize and streamline manufacturing across the entire planet.', 93);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ministry_production', 'Ministry of Production', 'manufacturing', 'The Ministry of Production works tirelessly to organize and streamline manufacturing across the entire planet.', NULL, 93);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ministry_production', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40595,7 +40612,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ministry_production', 'planet', 'planet_artisans_consumer_goods_produces_add', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Artisans', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_production_center', 'Resource Processing Center', 'manufacturing', 'A vast facility which centralizes the handling of resources and manufacturing across the entire planet.', 94);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_production_center', 'Resource Processing Center', 'manufacturing', 'A vast facility which centralizes the handling of resources and manufacturing across the entire planet.', NULL, 94);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_production_center', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40614,7 +40631,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_production_center', 'planet', 'planet_artisans_consumer_goods_produces_add', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Artisans', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'Coordinated Fulfillment Center', 'manufacturing', 'Although some might deem the practices promoted in this facility to be unsafe or dangerously short-sighted, one cannot argue with the productivity numbers they produce.', 95);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'Coordinated Fulfillment Center', 'manufacturing', 'Although some might deem the practices promoted in this facility to be unsafe or dangerously short-sighted, one cannot argue with the productivity numbers they produce.', NULL, 95);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40632,7 +40649,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Artisans', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_corporate_relentless_industrialists', 'building_coordinated_fulfillment_center_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_relentless_industrialists', 'building_coordinated_fulfillment_center_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'Universal Productivity Alignment Facility', 'manufacturing', 'Through tireless number-crunching and ubiquitous performance reviews, industrial productivity can be pushed to hitherto unmatched levels. Even if this leaves little time for distractions such as reproduction and environmental concerns.', 96);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'Universal Productivity Alignment Facility', 'manufacturing', 'Through tireless number-crunching and ubiquitous performance reviews, industrial productivity can be pushed to hitherto unmatched levels. Even if this leaves little time for distractions such as reproduction and environmental concerns.', NULL, 96);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_coordinated_fulfillment_center_2', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40650,7 +40667,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_coordinated_fulfillment_center_2', 'planet', 'planet_artisans_consumer_goods_produces_add', '0.3', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Artisans', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_archaeo_refinery', 'Ancient Refinery', 'manufacturing', 'This millennia-old processing equipment has an efficiency rate above 100%. Its functioning remains alien, but its production gains are substantial.', 97);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_archaeo_refinery', 'Ancient Refinery', 'manufacturing', 'This millennia-old processing equipment has an efficiency rate above 100%. Its functioning remains alien, but its production gains are substantial.', NULL, 97);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeo_refinery', 'cost', 'minor_artifacts', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40706,7 +40723,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_archaeo_refinery', 'planet', 'planet_artisans_food_upkeep_add', '1.5', NULL, 9);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_food_upkeep_add', 'Food Upkeep per 100 Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_upkeep_1', 'Alloy Reclamation Plant', 'manufacturing', 'A center dedicated to refining scrap and waste into valuable alloys through advanced techniques.', 98);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_foundry_upkeep_1', 'Alloy Reclamation Plant', 'manufacturing', 'A center dedicated to refining scrap and waste into valuable alloys through advanced techniques.', NULL, 98);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_upkeep_1', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40719,7 +40736,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_foundry_upkeep_1', 'planet', 'planet_metallurgists_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_upkeep_mult', 'Upkeep for Metallurgists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_foundry_efficiency_1', 'Metallurgical Research Lab', 'manufacturing', 'By combining cutting-edge theory with well-established and tested theses, we can massively increase practical efficiency.', 99);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_foundry_efficiency_1', 'Metallurgical Research Lab', 'manufacturing', 'By combining cutting-edge theory with well-established and tested theses, we can massively increase practical efficiency.', NULL, 99);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_foundry_efficiency_1', 'cost', 'volatile_motes', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40732,7 +40749,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_foundry_efficiency_1', 'planet', 'foundry_jobs_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('foundry_jobs_bonus_workforce_mult', 'Job Efficiency for Metallurgist jobs', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_upkeep_1', 'Recirculation Center', 'manufacturing', 'With new exchange campaigns and second-hand integration, we can bring consumer goods near the end of their lifetime back into service.', 100);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_factory_upkeep_1', 'Recirculation Center', 'manufacturing', 'With new exchange campaigns and second-hand integration, we can bring consumer goods near the end of their lifetime back into service.', NULL, 100);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_upkeep_1', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40745,7 +40762,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_factory_upkeep_1', 'planet', 'planet_artisans_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_upkeep_mult', 'Upkeep for Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_factory_efficiency_1', 'Distributed Design Center', 'manufacturing', 'Collaborative design efforts with trusted consumers help to streamline production and reduce overhead.', 101);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_factory_efficiency_1', 'Distributed Design Center', 'manufacturing', 'Collaborative design efforts with trusted consumers help to streamline production and reduce overhead.', NULL, 101);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_factory_efficiency_1', 'cost', 'rare_crystals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40758,7 +40775,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_factory_efficiency_1', 'planet', 'artisan_jobs_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_offworld_expedition_hub', 'Offworld Expedition Hub', 'manufacturing', 'This center coordinates freelance expeditions to a nearby Molten World, where enterprising prospectors may uncover valuable Volatile Motes and Living Metal.', 102);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_offworld_expedition_hub', 'Offworld Expedition Hub', 'manufacturing', 'This center coordinates freelance expeditions to a nearby Molten World, where enterprising prospectors may uncover valuable Volatile Motes and Living Metal.', NULL, 102);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_offworld_expedition_hub', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40768,7 +40785,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_c
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_galvanic_symbiosis', 'building_offworld_expedition_hub');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_galvanic_symbiosis', 'building_offworld_expedition_hub');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_galvanic_symbiosis', 'building_offworld_expedition_hub');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_1', 'Research Labs', 'research', 'Research Labs provide the basic facilities for general research.', 103);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_research_lab_1', 'Research Labs', 'research', 'Research Labs provide the basic facilities for general research.', NULL, 103);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40777,7 +40794,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_research_lab_1',
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'physicist', '60.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'biologist', '60.0', 1);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_1', 'engineer', '60.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_2', 'Research Complexes', 'research', 'Upgraded research facilities with a very large staff capacity.', 104);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_research_lab_2', 'Research Complexes', 'research', 'Upgraded research facilities with a very large staff capacity.', NULL, 104);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40788,7 +40805,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_research_lab_2',
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'physicist', '120.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'biologist', '120.0', 1);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_2', 'engineer', '120.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_lab_3', 'Advanced Research Complexes', 'research', 'These advanced research facilities have the very latest science equipment along with an extremely large staff capacity.', 105);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_research_lab_3', 'Advanced Research Complexes', 'research', 'These advanced research facilities have the very latest science equipment along with an extremely large staff capacity.', NULL, 105);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_research_lab_3', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40799,7 +40816,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_research_lab_3',
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'physicist', '180.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'biologist', '180.0', 1);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_research_lab_3', 'engineer', '180.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_institute', 'Research Institute', 'research', 'The Research Institute is a massive complex, gathering the cutting edges of disparate fields together for unprecedented synergy, improving the research output of the whole planet.', 106);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_institute', 'Research Institute', 'research', 'The Research Institute is a massive complex, gathering the cutting edges of disparate fields together for unprecedented synergy, improving the research output of the whole planet.', NULL, 106);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_institute', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40838,7 +40855,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_institute', 'planet', 'planet_researchers_minerals_upkeep_add', '2.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_minerals_upkeep_add', 'Minerals Upkeep per 100 Researchers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_supercomputer', 'Planetary Supercomputer', 'research', 'A single colossal supercomputer which can carry out incredibly complex calculations, improving the research output of the whole planet.', 107);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_supercomputer', 'Planetary Supercomputer', 'research', 'A single colossal supercomputer which can carry out incredibly complex calculations, improving the research output of the whole planet.', NULL, 107);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_supercomputer', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40876,7 +40893,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_supercomputer', 'planet', 'planet_researchers_minerals_upkeep_add', '2.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_minerals_upkeep_add', 'Minerals Upkeep per 100 Researchers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_1', 'Shroud Observation Tower', 'research', 'An observation tower built to research and analyze the Shroud, and the effects it has on living and mechanical beings.', 108);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_shroud_observatory_1', 'Shroud Observation Tower', 'research', 'An observation tower built to research and analyze the Shroud, and the effects it has on living and mechanical beings.', NULL, 108);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40884,7 +40901,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_shroud_observatory_1', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_shroud_observatory_1', 'biologist', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_shroud_forged', 'building_shroud_observatory_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_2', 'Shroud Observatory', 'research', 'A large observatory dedicated to research and analysis of the Shroud.', 109);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_shroud_observatory_2', 'Shroud Observatory', 'research', 'A large observatory dedicated to research and analysis of the Shroud.', NULL, 109);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40907,7 +40924,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100 Biologists', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_shroud_forged', 'building_shroud_observatory_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_shroud_observatory_3', 'Shroud Observation Complex', 'research', 'A grand observation complex built to research the Shroud, Zro, and their effects on our world.', 110);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_shroud_observatory_3', 'Shroud Observation Complex', 'research', 'A grand observation complex built to research the Shroud, Zro, and their effects on our world.', NULL, 110);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_shroud_observatory_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40930,7 +40947,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100 Biologists', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_shroud_forged', 'building_shroud_observatory_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_archaeostudies_faculty', 'Faculty of Archaeostudies', 'research', 'A series of laboratories dedicated to the studies of technological applications of minor artifacts retrieved from elder empires.', 111);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_archaeostudies_faculty', 'Faculty of Archaeostudies', 'research', 'A series of laboratories dedicated to the studies of technological applications of minor artifacts retrieved from elder empires.', NULL, 111);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_archaeostudies_faculty', 'cost', 'minor_artifacts', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40972,7 +40989,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_archaeostudies_faculty', 'planet', 'planet_biologists_minor_artifacts_produces_add', '0.25', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_minor_artifacts_produces_add', 'Minor Artifacts Produced per 100 Biologists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_vultaum_reality_computer', 'Vultaum Reality Computer', 'research', 'The reality computers of the Vultaums were unique processing units, dedicated to analyzing existence itself, not quite through physics, but rather by trying to reverse engineer reality''s source code and find the glitch that would finally allow the Vultaums to take down the simulation where they believed they lived.', 112);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_vultaum_reality_computer', 'Vultaum Reality Computer', 'research', 'The reality computers of the Vultaums were unique processing units, dedicated to analyzing existence itself, not quite through physics, but rather by trying to reverse engineer reality''s source code and find the glitch that would finally allow the Vultaums to take down the simulation where they believed they lived.', NULL, 112);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_vultaum_reality_computer', 'cost', 'minor_artifacts', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -40989,7 +41006,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_vultaum_reality_computer', 'planet', 'planet_physicists_advanced_logic_produces_add', '0.25', 'ap_cosmogenesis', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_advanced_logic_produces_add', 'Advanced Logic Produced per 100 Physicists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_1', 'Field Dynamics Center', 'research', 'With processing speeds that defy classical limits, the potential of quantum computers is boundless. This revolutionary technology heralds a great leap into uncharted regions of problem-solving.', 113);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_physics_lab_1', 'Field Dynamics Center', 'research', 'With processing speeds that defy classical limits, the potential of quantum computers is boundless. This revolutionary technology heralds a great leap into uncharted regions of problem-solving.', NULL, 113);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41001,7 +41018,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_physics_lab_1', 'planet', 'planet_physicists_physics_research_produces_add', '0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_physics_research_produces_add', 'Physics Research Produced per 100 Physicists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_2', 'Quantum Relations Annex', 'research', 'The fundamental forces of the universe can be mediated by physical fields. Mastering this process allows us to play as gods - at least within the confines of the science lab.', 114);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_physics_lab_2', 'Quantum Relations Annex', 'research', 'The fundamental forces of the universe can be mediated by physical fields. Mastering this process allows us to play as gods - at least within the confines of the science lab.', NULL, 114);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_2', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41020,7 +41037,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_physics_lab_2', 'planet', 'planet_physicists_volatile_motes_upkeep_add', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_volatile_motes_upkeep_add', 'Volatile Motes Upkeep per 100 Physicists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_physics_lab_3', 'Fundamental Research Nexus', 'research', 'We knew gravity and time were linked long before we reached the stars. Now, our understanding of this unique relationship has reached a tipping point, allowing us to manipulate forces on a previously unimaginable scale.', 115);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_physics_lab_3', 'Fundamental Research Nexus', 'research', 'We knew gravity and time were linked long before we reached the stars. Now, our understanding of this unique relationship has reached a tipping point, allowing us to manipulate forces on a previously unimaginable scale.', NULL, 115);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_physics_lab_3', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41044,7 +41061,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_physics_lab_3', 'planet', 'planet_physicists_volatile_motes_upkeep_add', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_volatile_motes_upkeep_add', 'Volatile Motes Upkeep per 100 Physicists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_1', 'Xenobiological Lab', 'research', 'The study of alien life has moved beyond mere cataloging. By examining the structures and survival strategies of organisms evolved under foreign stars, we open new avenues in medicine, adaptation, and design.', 116);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_biolab_1', 'Xenobiological Lab', 'research', 'The study of alien life has moved beyond mere cataloging. By examining the structures and survival strategies of organisms evolved under foreign stars, we open new avenues in medicine, adaptation, and design.', NULL, 116);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41056,7 +41073,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_biolab_1', 'planet', 'planet_biologists_society_research_produces_add', '0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_society_research_produces_add', 'Society Research Produced per 100 Biologists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_2', 'Neurogenetics Institute', 'research', 'Through recursive axonal scaffolding and synaptic reticulation, we have developed methods for reorganizing the electrochemical topology of conscious matter. Neurons do not merely transmit - they entwine, organize, and remember. Now, they do so according to our design.', 117);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_biolab_2', 'Neurogenetics Institute', 'research', 'Through recursive axonal scaffolding and synaptic reticulation, we have developed methods for reorganizing the electrochemical topology of conscious matter. Neurons do not merely transmit - they entwine, organize, and remember. Now, they do so according to our design.', NULL, 117);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41075,7 +41092,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_biolab_2', 'planet', 'planet_biologists_exotic_gases_upkeep_add', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_exotic_gases_upkeep_add', 'Exotic Gases Upkeep per 100 Biologists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_biolab_3', 'Life Systems Complex', 'research', 'Life, in all its staggering variety, is composed of repeating patterns and modular structures. By decoding and replicating these at every scale, we now wield a holistic blueprint of biology. There is little left in nature we do not understand, and less still we cannot recreate.', 118);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_biolab_3', 'Life Systems Complex', 'research', 'Life, in all its staggering variety, is composed of repeating patterns and modular structures. By decoding and replicating these at every scale, we now wield a holistic blueprint of biology. There is little left in nature we do not understand, and less still we cannot recreate.', NULL, 118);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_biolab_3', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41099,7 +41116,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_biolab_3', 'planet', 'planet_biologists_exotic_gases_upkeep_add', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_exotic_gases_upkeep_add', 'Exotic Gases Upkeep per 100 Biologists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_1', 'Materials Workshop', 'research', 'Further breakthroughs in mechanical engineering required us to descend to the nanometric scale. We are now able to manipulate physical systems in never-before-seen ways.', 119);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_engineering_facility_1', 'Materials Workshop', 'research', 'Further breakthroughs in mechanical engineering required us to descend to the nanometric scale. We are now able to manipulate physical systems in never-before-seen ways.', NULL, 119);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41111,7 +41128,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_engineering_facility_1', 'planet', 'planet_engineers_engineering_research_produces_add', '0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_engineering_research_produces_add', 'Engineering Research Produced per 100 Engineers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_2', 'Applied Mechanics Institute', 'research', 'Much as organic neurons reforge lost connections by means of axonal sprouting, these circuits are capable of self-overhaul. Even the simplest computing systems are now expected to evolve while in use.', 120);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_engineering_facility_2', 'Applied Mechanics Institute', 'research', 'Much as organic neurons reforge lost connections by means of axonal sprouting, these circuits are capable of self-overhaul. Even the simplest computing systems are now expected to evolve while in use.', NULL, 120);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_2', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41130,7 +41147,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_engineering_facility_2', 'planet', 'planet_engineers_rare_crystals_upkeep_add', '0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_rare_crystals_upkeep_add', 'Rare Crystals Upkeep per 100 Engineers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_engineering_facility_3', 'Advanced Engineering Complex', 'research', 'The quantum mechanical properties of these materials hold the key to superposition states, a revolutionary development for both material and industrial science.', 121);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_engineering_facility_3', 'Advanced Engineering Complex', 'research', 'The quantum mechanical properties of these materials hold the key to superposition states, a revolutionary development for both material and industrial science.', NULL, 121);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_engineering_facility_3', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41154,7 +41171,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_engineering_facility_3', 'planet', 'planet_engineers_rare_crystals_upkeep_add', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_rare_crystals_upkeep_add', 'Rare Crystals Upkeep per 100 Engineers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ranger_lodge', 'Ranger Lodge', 'research', 'The first step to live more in tune with nature is to ensure that nature is still around. Making sure none of the colonists impact the natural beauty is essential. The world must remain pure.', 122);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ranger_lodge', 'Ranger Lodge', 'research', 'The first step to live more in tune with nature is to ensure that nature is still around. Making sure none of the colonists impact the natural beauty is essential. The world must remain pure.', NULL, 122);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ranger_lodge', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41166,7 +41183,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('deposit_blockers_natural_unity_produces_add', 'Unity from Naturally Occurring Blockers', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_environmentalist', 'building_ranger_lodge');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_upkeep_1', 'Research Supply Depot', 'research', 'A centralized hub that streamlines the supply and distribution of research materials, minimizing waste and inefficiency across the planet.', 123);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_research_upkeep_1', 'Research Supply Depot', 'research', 'A centralized hub that streamlines the supply and distribution of research materials, minimizing waste and inefficiency across the planet.', NULL, 123);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_research_upkeep_1', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41179,7 +41196,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_research_upkeep_1', 'planet', 'planet_researchers_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_research_efficiency_1', 'Data-Driven Theorem Facility', 'research', 'By supporting our theorists with high volumes of experimental data, we can massively enhance our research efficiency.', 124);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_research_efficiency_1', 'Data-Driven Theorem Facility', 'research', 'By supporting our theorists with high volumes of experimental data, we can massively enhance our research efficiency.', NULL, 124);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_research_efficiency_1', 'cost', 'exotic_gases', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41202,14 +41219,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_research_efficiency_1', 'planet', 'planet_physicists_physics_research_produces_add', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_physics_research_produces_add', 'Physics Research Produced per 100 Physicists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_zone', 'Commercial Zones', 'trade', 'These commercial zones are home to towering office buildings and business complexes.', 125);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commercial_zone', 'Commercial Zones', 'trade', 'These commercial zones are home to towering office buildings and business complexes.', NULL, 125);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_zone', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_zone', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_commercial_zone', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commercial_zone', 'trader', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_megaplex', 'Commerce Megaplexes', 'trade', 'Great commercial spires and towers rising up towards the sky, blotting out the light.', 126);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commercial_megaplex', 'Commerce Megaplexes', 'trade', 'Great commercial spires and towers rising up towards the sky, blotting out the light.', NULL, 126);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_megaplex', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41223,7 +41240,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_commercial_megaplex', 'planet', 'planet_traders_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_traders_upkeep_mult', 'Upkeep for Traders', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_stock_exchange', 'Galactic Stock Exchange', 'trade', 'By engaging in free trade of goods and services we allow for a more specialized economy, where an individual can excel in a narrow field and trade for their needs.', 127);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_galactic_stock_exchange', 'Galactic Stock Exchange', 'trade', 'By engaging in free trade of goods and services we allow for a more specialized economy, where an individual can excel in a narrow field and trade for their needs.', NULL, 127);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_stock_exchange', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41243,14 +41260,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_galactic_stock_exchange', 'country', 'country_trade_fee', '-0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_trade_fee', 'Market Fee', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_maintenance_depot', 'Logistics Hub', 'trade', 'The beating heart of the collective''s logistics apparatus, this massive storage facility''s drones work to ensure resources are swiftly delivered wherever they are needed.', 128);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_maintenance_depot', 'Logistics Hub', 'trade', 'The beating heart of the collective''s logistics apparatus, this massive storage facility''s drones work to ensure resources are swiftly delivered wherever they are needed.', NULL, 128);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_maintenance_depot', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_maintenance_depot', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_maintenance_depot', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_maintenance_depot', 'trader', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_luxury_residence', 'Luxury Residences', 'amenity', 'Intricately designed residential towers with luxurious apartments. Advanced zero-g technology is the only thing keeping the more outlandish terrace designs from collapsing.', 129);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_luxury_residence', 'Luxury Residences', 'amenity', 'Intricately designed residential towers with luxurious apartments. Advanced zero-g technology is the only thing keeping the more outlandish terrace designs from collapsing.', NULL, 129);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_luxury_residence', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41266,7 +41283,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_luxury_residence', 'planet', 'planet_amenities_add', '1500.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_paradise_dome', 'Paradise Dome', 'amenity', 'A fully enclosed habitation dome with a self-contained ecosystem, a veritable private paradise for those rich or fortunate enough to live there.', 130);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_paradise_dome', 'Paradise Dome', 'amenity', 'A fully enclosed habitation dome with a self-contained ecosystem, a veritable private paradise for those rich or fortunate enough to live there.', NULL, 130);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_paradise_dome', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41284,7 +41301,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_paradise_dome', 'planet', 'planet_amenities_add', '3000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_communal_housing', 'Communal Housing', 'amenity', 'A block of uniform housing, equal in every way.', 131);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_communal_housing', 'Communal Housing', 'amenity', 'A block of uniform housing, equal in every way.', NULL, 131);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41301,7 +41318,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_shared_burden', 'building_communal_housing');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_communal_housing_large', 'Utopian Communal Housing', 'amenity', 'An incredible feat of engineering that combines efficient, practical residences with carefully maintained idyllic landscapes.', 132);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_communal_housing_large', 'Utopian Communal Housing', 'amenity', 'An incredible feat of engineering that combines efficient, practical residences with carefully maintained idyllic landscapes.', NULL, 132);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_communal_housing_large', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41320,7 +41337,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_shared_burden', 'building_communal_housing_large');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_drone_storage', 'Drone Storage', 'amenity', 'A storage area for Drones to undergo maintenance.', 133);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_drone_storage', 'Drone Storage', 'amenity', 'A storage area for Drones to undergo maintenance.', NULL, 133);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_storage', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41336,7 +41353,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_drone_storage', 'planet', 'planet_amenities_no_happiness_add', '1500.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_drone_megastorage', 'Upgraded Drone Storage', 'amenity', 'With the latest upgrades, while undergoing maintenance a portion of Drones'' power-generation can be re-directed to the grid.', 134);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_drone_megastorage', 'Upgraded Drone Storage', 'amenity', 'With the latest upgrades, while undergoing maintenance a portion of Drones'' power-generation can be re-directed to the grid.', NULL, 134);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_drone_megastorage', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41354,7 +41371,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_drone_megastorage', 'planet', 'planet_amenities_no_happiness_add', '3000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_warren', 'Hive Warren', 'amenity', 'A vast warren offers shelter for many Drones to rest.', 135);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_warren', 'Hive Warren', 'amenity', 'A vast warren offers shelter for many Drones to rest.', NULL, 135);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_warren', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41370,7 +41387,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_warren', 'planet', 'planet_amenities_no_happiness_add', '1500.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_expanded_warren', 'Expanded Warren', 'amenity', 'By expanding the warrens, still more Drone can shelter within.', 136);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_expanded_warren', 'Expanded Warren', 'amenity', 'By expanding the warrens, still more Drone can shelter within.', NULL, 136);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_expanded_warren', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41388,14 +41405,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_expanded_warren', 'planet', 'planet_amenities_no_happiness_add', '3000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_holo_theatres', 'Holo-Theatres', 'amenity', 'The latest in holographic entertainment. Entire worlds built out of photons and energy fields.', 137);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_holo_theatres', 'Holo-Theatres', 'amenity', 'The latest in holographic entertainment. Entire worlds built out of photons and energy fields.', NULL, 137);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_holo_theatres', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_holo_theatres', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_holo_theatres', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_holo_theatres', 'entertainer', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hyper_entertainment_forum', 'Hyper-Entertainment Forums', 'amenity', 'These massive entertainment complexes is where dreams come true. Shopping malls, restaurants, amusement parks, virtual arcades, and more. You dream it - we are it!', 138);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hyper_entertainment_forum', 'Hyper-Entertainment Forums', 'amenity', 'These massive entertainment complexes is where dreams come true. Shopping malls, restaurants, amusement parks, virtual arcades, and more. You dream it - we are it!', NULL, 138);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hyper_entertainment_forum', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41409,7 +41426,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hyper_entertainment_forum', 'planet', 'planet_entertainers_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_entertainers_upkeep_mult', 'Upkeep for Entertainers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_1', 'Medical Center', 'amenity', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 139);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_medical_1', 'Medical Center', 'amenity', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', NULL, 139);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41426,7 +41443,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_medical_1', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_2', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', 140);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_medical_2', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', NULL, 140);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41453,7 +41470,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_medical_2', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_medical_3', 'Cyto-Revitalization Centers', 'amenity', 'Cyto-Revitalization Centers can offer advanced medical treatments to a large population. Treatments on a cellular level lead to a significantly healthier and longer-living population.', 141);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_medical_3', 'Cyto-Revitalization Centers', 'amenity', 'Cyto-Revitalization Centers can offer advanced medical treatments to a large population. Treatments on a cellular level lead to a significantly healthier and longer-living population.', NULL, 141);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_medical_3', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41492,7 +41509,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_medical_3', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_overseer_homes', 'Overseer Residences', 'amenity', 'These homes are reserved for the relatively privileged slave overseers.', 142);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_overseer_homes', 'Overseer Residences', 'amenity', 'These homes are reserved for the relatively privileged slave overseers.', NULL, 142);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_overseer_homes', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41503,7 +41520,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_overseer_homes', 'planet', 'planet_housing_add', '200.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath', 'Mutagenic Spas', 'amenity', 'Though Mutagenic Spas are highly advanced therapeutic centers with well-documented health benefits, to some, the methods employed remain disgusting. Each drop of bath liquid is more mutagenic than most banned substances in the galaxy.', 143);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_toxic_bath', 'Mutagenic Spas', 'amenity', 'Though Mutagenic Spas are highly advanced therapeutic centers with well-documented health benefits, to some, the methods employed remain disgusting. Each drop of bath liquid is more mutagenic than most banned substances in the galaxy.', NULL, 143);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41531,7 +41548,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_h
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_toxic_baths', 'building_toxic_bath');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths', 'building_toxic_bath');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths_individual_machine', 'building_toxic_bath');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath_hive', 'Mutagenic Permutation Pool', 'amenity', 'Mutagenic Permutation Pools are the perfect expression of the heights that a hive mind can achieve when utterly focused on the goal of maintaining the ever-expanding consciousness.', 144);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_toxic_bath_hive', 'Mutagenic Permutation Pool', 'amenity', 'Mutagenic Permutation Pools are the perfect expression of the heights that a hive mind can achieve when utterly focused on the goal of maintaining the ever-expanding consciousness.', NULL, 144);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_hive', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41559,7 +41576,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_h
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_toxic_baths', 'building_toxic_bath_hive');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths', 'building_toxic_bath_hive');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths_individual_machine', 'building_toxic_bath_hive');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_toxic_bath_machine', 'Hyper Lubrication Basin', 'amenity', 'Hyper Lubrication Basins are the most logical answer to emerging problems of friction, over-heating, and static electricity during the maintenance process of complex units.', 145);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_toxic_bath_machine', 'Hyper Lubrication Basin', 'amenity', 'Hyper Lubrication Basins are the most logical answer to emerging problems of friction, over-heating, and static electricity during the maintenance process of complex units.', NULL, 145);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_toxic_bath_machine', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41587,7 +41604,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_h
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_toxic_baths', 'building_toxic_bath_machine');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths', 'building_toxic_bath_machine');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_toxic_baths_individual_machine', 'building_toxic_bath_machine');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_autochthon_monument', 'Autochthon Monument', 'unity', 'A monument to the first pioneers to venture into space.', 146);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_autochthon_monument', 'Autochthon Monument', 'unity', 'A monument to the first pioneers to venture into space.', NULL, 146);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_autochthon_monument', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41608,7 +41625,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_autochthon_monument', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_heritage_site', 'Heritage Site', 'unity', 'An area dedicated to the early history of our empire and its people.', 147);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_heritage_site', 'Heritage Site', 'unity', 'An area dedicated to the early history of our empire and its people.', NULL, 147);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_heritage_site', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41629,7 +41646,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_heritage_site', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hypercomms_forum', 'Hypercomms Forum', 'unity', 'An immense facility equipped with avant-garde interpersonal communications equipment, the Forum allows for the exchange of multisensory ideas in casual discussions and rapid consensus-forming in debates.', 148);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hypercomms_forum', 'Hypercomms Forum', 'unity', 'An immense facility equipped with avant-garde interpersonal communications equipment, the Forum allows for the exchange of multisensory ideas in casual discussions and rapid consensus-forming in debates.', NULL, 148);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hypercomms_forum', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41650,14 +41667,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hypercomms_forum', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_1', 'Administrative Offices', 'unity', 'A labyrinthine government complex of bureaucratic offices, sub-offices and sub-sub-offices.', 149);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bureaucratic_1', 'Administrative Offices', 'unity', 'A labyrinthine government complex of bureaucratic offices, sub-offices and sub-sub-offices.', NULL, 149);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_1', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_bureaucratic_1', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bureaucratic_1', 'bureaucrat', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_2', 'Administrative Park', 'unity', 'An area full of buildings dedicated to the glory of effective and meticulous paperwork.', 150);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bureaucratic_2', 'Administrative Park', 'unity', 'An area full of buildings dedicated to the glory of effective and meticulous paperwork.', NULL, 150);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_2', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41670,7 +41687,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bureaucratic_2', 'planet', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bureaucratic_3', 'Administrative Complex', 'unity', 'A vast stretch of land covered in bureaucratic offices containing countless cubicles.', 151);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bureaucratic_3', 'Administrative Complex', 'unity', 'A vast stretch of land covered in bureaucratic offices containing countless cubicles.', NULL, 151);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bureaucratic_3', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41683,7 +41700,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bureaucratic_3', 'planet', 'pop_bureaucrat_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bureaucrat_bonus_workforce_mult', 'Job Efficiency for Bureaucrats', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_temple', 'Temple', 'unity', 'Simple constructs erected since time immemorial, temples are places of quiet contemplation and communion with that which unites us all.', 152);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_temple', 'Temple', 'unity', 'Simple constructs erected since time immemorial, temples are places of quiet contemplation and communion with that which unites us all.', NULL, 152);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_temple', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41695,7 +41712,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_temple', 'planet', 'pop_ethic_spiritualist_attraction_mult', '0.05', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_holotemple', 'Holotemple', 'unity', 'An enhanced form of its rough-hewn predecessors, the latest in Spiritualist technology creates a mutable reality inside the Holotemple - all for deeper meditation and more intense devotion.', 153);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_holotemple', 'Holotemple', 'unity', 'An enhanced form of its rough-hewn predecessors, the latest in Spiritualist technology creates a mutable reality inside the Holotemple - all for deeper meditation and more intense devotion.', NULL, 153);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_holotemple', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41713,7 +41730,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_holotemple', 'planet', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacred_nexus', 'Sacred Nexus', 'unity', 'The latest developments in field technology allow worshipers to directly experience the divine influence of sacred ground.', 154);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sacred_nexus', 'Sacred Nexus', 'unity', 'The latest developments in field technology allow worshipers to directly experience the divine influence of sacred ground.', NULL, 154);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sacred_nexus', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41731,14 +41748,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_sacred_nexus', 'planet', 'pop_bureaucrat_bonus_workforce_mult', '0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bureaucrat_bonus_workforce_mult', 'Job Efficiency for Bureaucrats', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_uplink_node', 'Uplink Node', 'unity', 'An uplink node that decreases planetary latency.', 155);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_uplink_node', 'Uplink Node', 'unity', 'An uplink node that decreases planetary latency.', NULL, 155);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_uplink_node', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_uplink_node', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_uplink_node', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_uplink_node', 'bureaucrat', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_network_junction', 'Network Junction', 'unity', 'This powerful transceiver increases the bandwidth of the signals being continuously sent between the many different systems operating across our empire.', 156);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_network_junction', 'Network Junction', 'unity', 'This powerful transceiver increases the bandwidth of the signals being continuously sent between the many different systems operating across our empire.', NULL, 156);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_network_junction', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41751,7 +41768,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_network_junction', 'planet', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_conflux', 'System Conflux', 'unity', 'A massive hub facility that receives and forwards signals across interstellar distances from millions of different systems.', 157);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_system_conflux', 'System Conflux', 'unity', 'A massive hub facility that receives and forwards signals across interstellar distances from millions of different systems.', NULL, 157);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_system_conflux', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41764,14 +41781,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_system_conflux', 'planet', 'pop_coordinator_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_coordinator_bonus_workforce_mult', 'Job Efficiency for Coordinators', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_node', 'Synaptic Nodes', 'unity', 'A center of massive, macroscopic synapses, these nodes - tended to and assisted by specialized drones - receive and transmit the will of the Hive.', 158);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_node', 'Synaptic Nodes', 'unity', 'A center of massive, macroscopic synapses, these nodes - tended to and assisted by specialized drones - receive and transmit the will of the Hive.', NULL, 158);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_node', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_node', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_hive_node', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_hive_node', 'bureaucrat', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_cluster', 'Synaptic Clusters', 'unity', 'Synaptic hive nodes networked and clustered together produce maximum meganeuron transmission per available surface area, strengthening the organization of the will to its drones.', 159);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_cluster', 'Synaptic Clusters', 'unity', 'Synaptic hive nodes networked and clustered together produce maximum meganeuron transmission per available surface area, strengthening the organization of the will to its drones.', NULL, 159);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_cluster', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41784,7 +41801,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_cluster', 'planet', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_confluence', 'Confluence of Thought', 'unity', 'A massive nervous center of macroscopic neurology, billions of meganeurons fire along vast stretches of roiling protoplasmic fibers in the Confluence, spreading, strengthening, coordinating the will of the Hive.', 160);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_confluence', 'Confluence of Thought', 'unity', 'A massive nervous center of macroscopic neurology, billions of meganeurons fire along vast stretches of roiling protoplasmic fibers in the Confluence, spreading, strengthening, coordinating the will of the Hive.', NULL, 160);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_confluence', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41797,7 +41814,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_confluence', 'planet', 'pop_coordinator_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_coordinator_bonus_workforce_mult', 'Job Efficiency for Coordinators', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_1', 'Sacrificial Temple', 'unity', 'A revered site in which solemn preachers and dedicated pupils pray and work towards each prosperous yet bloody cycle.', 161);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sacrificial_temple_1', 'Sacrificial Temple', 'unity', 'A revered site in which solemn preachers and dedicated pupils pray and work towards each prosperous yet bloody cycle.', NULL, 161);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41812,7 +41829,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult', 'building_sacrificial_temple_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult_corporate', 'building_sacrificial_temple_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_2', 'Grim Holotemple', 'unity', 'Technological enhancements to this consecrated building allow for more rigorous study, and a more tangible sense of devotion to causes beyond its mutable walls.', 162);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sacrificial_temple_2', 'Grim Holotemple', 'unity', 'Technological enhancements to this consecrated building allow for more rigorous study, and a more tangible sense of devotion to causes beyond its mutable walls.', NULL, 162);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41833,7 +41850,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_produces_mult', 'Resources Produced from Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult', 'building_sacrificial_temple_2');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult_corporate', 'building_sacrificial_temple_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sacrificial_temple_3', 'Temple of Grand Sacrifice', 'unity', 'A site of supreme consecration in which multi-sensory immersion fields allow the faithful to honor every sacrifice - past, present and future.', 163);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sacrificial_temple_3', 'Temple of Grand Sacrifice', 'unity', 'A site of supreme consecration in which multi-sensory immersion fields allow the faithful to honor every sacrifice - past, present and future.', NULL, 163);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sacrificial_temple_3', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41854,7 +41871,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_mortal_initiate_bonus_workforce_mult', 'Job Efficiency for Mortal Initiates', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult', 'building_sacrificial_temple_3');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult_corporate', 'building_sacrificial_temple_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_1', 'Sanctuary of Repose', 'unity', 'This humble memorial focuses thoughts and study upon the multi-faceted nature of death and endings.', 164);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_galactic_memorial_1', 'Sanctuary of Repose', 'unity', 'This humble memorial focuses thoughts and study upon the multi-faceted nature of death and endings.', NULL, 164);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41910,7 +41927,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_memorialist', 'building_galactic_memorial_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_memorialist', 'building_galactic_memorial_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memorialist', 'building_galactic_memorial_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_2', 'Pillar of Quietus', 'unity', 'A solemn place dedicated to the contemplation of death, in which many an ending may be chronicled.', 165);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_galactic_memorial_2', 'Pillar of Quietus', 'unity', 'A solemn place dedicated to the contemplation of death, in which many an ending may be chronicled.', NULL, 165);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_2', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -41968,7 +41985,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_memorialist', 'building_galactic_memorial_2');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_memorialist', 'building_galactic_memorial_2');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memorialist', 'building_galactic_memorial_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_galactic_memorial_3', 'Galactic Memorial', 'unity', 'A monumental library of all that may or may not be understood about endings, chronicled for unknowable future ages.', 166);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_galactic_memorial_3', 'Galactic Memorial', 'unity', 'A monumental library of all that may or may not be understood about endings, chronicled for unknowable future ages.', NULL, 166);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_galactic_memorial_3', 'cost', 'exotic_gases', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42026,7 +42043,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_memorialist', 'building_galactic_memorial_3');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_memorialist', 'building_galactic_memorial_3');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memorialist', 'building_galactic_memorial_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_1', 'Simulation Site', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 167);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_simulation_1', 'Simulation Site', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', NULL, 167);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42052,7 +42069,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_simulation_1', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_2', 'Simulation Center', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 168);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_simulation_2', 'Simulation Center', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', NULL, 168);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42078,7 +42095,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_simulation_2', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_simulation_3', 'Simulation Complex', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', 169);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_simulation_3', 'Simulation Complex', 'unity', 'To advance our civilization we must run and evaluate complex simulations.', NULL, 169);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_simulation_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42104,7 +42121,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_simulation_3', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_monument', 'Corporate Culture Site', 'unity', 'A site dedicated to glorifying the unique corporate culture that permeates every business transaction conducted on the colony.', 170);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_monument', 'Corporate Culture Site', 'unity', 'A site dedicated to glorifying the unique corporate culture that permeates every business transaction conducted on the colony.', NULL, 170);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_monument', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42125,7 +42142,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_monument', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_site', 'Business Management Nexus', 'unity', 'A facility where crucial decisions concerning the business culture of the colony can by strategized and subconsciously focus-tested by sapient resource specialists.', 171);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_site', 'Business Management Nexus', 'unity', 'A facility where crucial decisions concerning the business culture of the colony can by strategized and subconsciously focus-tested by sapient resource specialists.', NULL, 171);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_site', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42146,7 +42163,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_site', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_forum', 'Synergy Forum', 'unity', 'A massive FTL communications forum capable of synergizing the corporate culture of millions of corporate subdivisions.', 172);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_forum', 'Synergy Forum', 'unity', 'A massive FTL communications forum capable of synergizing the corporate culture of millions of corporate subdivisions.', NULL, 172);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_forum', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42167,7 +42184,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_forum', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_1', 'Sensorium Site', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 173);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sensorium_1', 'Sensorium Site', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', NULL, 173);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42193,7 +42210,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_sensorium_1', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_2', 'Sensorium Center', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 174);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sensorium_2', 'Sensorium Center', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', NULL, 174);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42219,7 +42236,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_sensorium_2', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sensorium_3', 'Sensorium Complex', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', 175);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sensorium_3', 'Sensorium Complex', 'unity', 'To further understand the galaxy, our specialized sensory drones need to experience everything it has to offer.', NULL, 175);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sensorium_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42245,7 +42262,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_sensorium_3', 'planet', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_autocurating_vault', 'Auto-Curating Vault', 'unity', 'A highly-specialized computerized network constantly acquires, analyzes, evaluates, and puts on display everyday artifacts it deems to be significant, creating a living museum of the present.', 176);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_autocurating_vault', 'Auto-Curating Vault', 'unity', 'A highly-specialized computerized network constantly acquires, analyzes, evaluates, and puts on display everyday artifacts it deems to be significant, creating a living museum of the present.', NULL, 176);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_autocurating_vault', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42298,7 +42315,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_autocurating_vault', 'planet', 'planet_bureaucrats_alloys_upkeep_add', '0.75', NULL, 8);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_citadel_of_faith', 'Citadel of Faith', 'unity', 'A massive complex offering refuge and seclusion from the material world, for all comers.', 177);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_citadel_of_faith', 'Citadel of Faith', 'unity', 'A massive complex offering refuge and seclusion from the material world, for all comers.', NULL, 177);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_of_faith', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42337,7 +42354,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_citadel_of_faith', 'planet', 'planet_bureaucrats_alloys_upkeep_add', '0.75', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_vault', 'Vault of Acquisitions', 'unity', 'An enormous underground vault that serves the dual purpose of business coordination site and public museum to the long and profitable history of the Megacorporation that built it.', 178);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_vault', 'Vault of Acquisitions', 'unity', 'An enormous underground vault that serves the dual purpose of business coordination site and public museum to the long and profitable history of the Megacorporation that built it.', NULL, 178);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_vault', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42380,7 +42397,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_vault', 'planet', 'planet_bureaucrats_alloys_upkeep_add', '0.75', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_alpha_hub', 'Alpha Hub', 'unity', 'The nerve center of all intra-communication that occurs between the quintillions of semi-sapient systems that administers our empire.', 179);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_alpha_hub', 'Alpha Hub', 'unity', 'The nerve center of all intra-communication that occurs between the quintillions of semi-sapient systems that administers our empire.', NULL, 179);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_alpha_hub', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42433,14 +42450,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_alpha_hub', 'planet', 'planet_bureaucrats_alloys_upkeep_add', '0.75', NULL, 8);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_organic_sanctuary', 'Organic Sanctuary', 'unity', 'This sanctuary provides a sealed environment where organics can thrive in a safe and above all controlled manner. The organics within have their housing needs completely fulfilled.', 180);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_organic_sanctuary', 'Organic Sanctuary', 'unity', 'This sanctuary provides a sealed environment where organics can thrive in a safe and above all controlled manner. The organics within have their housing needs completely fulfilled.', NULL, 180);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_sanctuary', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_sanctuary', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_organic_sanctuary', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_servitor', 'building_organic_sanctuary');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_organic_paradise', 'Organic Paradise', 'unity', 'An AI-controlled artificial paradise designed to satisfy every need a sapient organic being might have, just so long as it does not express a need for self-determination. The organics within have their housing needs completely fulfilled.', 181);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_organic_paradise', 'Organic Paradise', 'unity', 'An AI-controlled artificial paradise designed to satisfy every need a sapient organic being might have, just so long as it does not express a need for self-determination. The organics within have their housing needs completely fulfilled.', NULL, 181);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42449,7 +42466,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_organic_paradise', 'upkeep', 'exotic_gases', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_organic_paradise', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_servitor', 'building_organic_paradise');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_trophy_vault', 'Creativity Exhibition Vault', 'unity', 'Algorithms maintain a curated rotation of Bio-Trophy creative outputs, selected for their statistically significant emotional resonance. While objectively devoid of technical merit, these expressions are preserved as a means of socio-emotional validation and to provide the illusion of self-determination. The resulting increase in satisfaction metrics is non-trivial.', 182);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_trophy_vault', 'Creativity Exhibition Vault', 'unity', 'Algorithms maintain a curated rotation of Bio-Trophy creative outputs, selected for their statistically significant emotional resonance. While objectively devoid of technical merit, these expressions are preserved as a means of socio-emotional validation and to provide the illusion of self-determination. The resulting increase in satisfaction metrics is non-trivial.', NULL, 182);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_trophy_vault', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42488,7 +42505,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_cruise_passenger_happiness', 'First Class Passenger Happiness', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_servitor', 'building_trophy_vault');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_league_offices', 'First League Filing Offices', 'unity', 'The sprawling empire of the First League dwarfed our own at its peak, and relied on implacable bureaucracy to keep the wheels of the state in motion. The quantic filing arrays they used afforded them unprecedented efficiency in the sorting and storing of documents.', 183);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_league_offices', 'First League Filing Offices', 'unity', 'The sprawling empire of the First League dwarfed our own at its peak, and relied on implacable bureaucracy to keep the wheels of the state in motion. The quantic filing arrays they used afforded them unprecedented efficiency in the sorting and storing of documents.', NULL, 183);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_league_offices', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42509,7 +42526,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_league_offices', 'country', 'country_edict_fund_add', '50.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_edict_fund_add', 'Edict Fund', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_military_academy', 'Military Academy', 'army', 'Military Academies improve local recruitment rates and offer a higher standard of training.', 184);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_military_academy', 'Military Academy', 'army', 'Military Academies improve local recruitment rates and offer a higher standard of training.', NULL, 184);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_military_academy', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42561,7 +42578,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_military_academy', 'country', 'pop_knight_commander_bonus_workforce_mult', '0.025', NULL, 8);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_knight_commander_bonus_workforce_mult', 'Job Efficiency for Lord Commanders', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dread_encampment', 'Dread Encampment', 'army', 'It is best to shield the activities of the necromancers from the tender view of the public as they raise undead hordes to fight in our armies.', 185);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_dread_encampment', 'Dread Encampment', 'army', 'It is best to shield the activities of the necromancers from the tender view of the public as they raise undead hordes to fight in our armies.', NULL, 185);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_dread_encampment', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42584,14 +42601,14 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_soldiers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Soldiers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_reanimated_armies', 'building_dread_encampment');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_stronghold', 'Stronghold', 'army', 'A planetary stronghold housing a substantial garrison force to protect the world from invasion and rebellion.', 186);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_stronghold', 'Stronghold', 'army', 'A planetary stronghold housing a substantial garrison force to protect the world from invasion and rebellion.', NULL, 186);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_stronghold', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_stronghold', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_stronghold', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_stronghold', 'soldier', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fortress', 'Fortress', 'army', 'A massive fortress complex with an expanded garrison and training facilities for soldiers.', 187);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fortress', 'Fortress', 'army', 'A massive fortress complex with an expanded garrison and training facilities for soldiers.', NULL, 187);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42600,7 +42617,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fortress', 'upkeep', 'volatile_motes', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_fortress', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fortress', 'soldier', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_shield_generator', 'Planetary Shield Generator', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', 188);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_planetary_shield_generator', 'Planetary Shield Generator', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', NULL, 188);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_shield_generator', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42616,7 +42633,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_planetary_shield_generator', 'planet', 'planet_storm_devastation_mult', '-0.5', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_storm_devastation_mult', 'Planetary Cosmic Storm Devastation Reduction', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mote_harvesters', 'Mote Harvesting Traps', 'resource', 'These intricate facilities trap Volatile Motes within energy fields, funneling them into special containment zones below ground where they can be stabilized and harvested.', 189);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mote_harvesters', 'Mote Harvesting Traps', 'resource', 'These intricate facilities trap Volatile Motes within energy fields, funneling them into special containment zones below ground where they can be stabilized and harvested.', NULL, 189);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_harvesters', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42627,7 +42644,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_mote_harvesters', 'planet', 'planet_technician_volatile_motes_produces_add', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_volatile_motes_produces_add', 'Volatile Motes Produced per 100 Technicians', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_gas_extractors', 'Gas Extraction Wells', 'resource', 'These hulking wells reach deep into the planet''s mantle to access pockets of Exotic Gas.', 190);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_gas_extractors', 'Gas Extraction Wells', 'resource', 'These hulking wells reach deep into the planet''s mantle to access pockets of Exotic Gas.', NULL, 190);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_gas_extractors', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42638,7 +42655,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_gas_extractors', 'planet', 'planet_farmers_exotic_gases_produces_add', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_exotic_gases_produces_add', 'Exotic Gases Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_mines', 'Crystal Mines', 'resource', 'Great care must be taken when excavating these mines to avoid damaging the crystals.', 191);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_crystal_mines', 'Crystal Mines', 'resource', 'Great care must be taken when excavating these mines to avoid damaging the crystals.', NULL, 191);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_mines', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42649,7 +42666,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_crystal_mines', 'planet', 'planet_miners_rare_crystals_produces_add', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_rare_crystals_produces_add', 'Rare Crystals Produced per 100 Miners', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_betharian_power_plant', 'Betharian Power Plant', 'resource', 'Betharian Power Plants consume Betharian Stone to produce vast amounts of Energy Credits.', 192);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_betharian_power_plant', 'Betharian Power Plant', 'resource', 'Betharian Power Plants consume Betharian Stone to produce vast amounts of Energy Credits.', NULL, 192);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_betharian_power_plant', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42661,14 +42678,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_betharian_power_plant', 'planet', 'planet_miners_energy_produces_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_energy_produces_add', 'Energy Produced per 100 Miners', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_xeno_zoo', 'Alien Zoo', 'research', 'A preserve dedicated to the conservation and study of local fauna.', 193);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_xeno_zoo', 'Alien Zoo', 'research', 'A preserve dedicated to the conservation and study of local fauna.', NULL, 193);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_zoo', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_zoo', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_xeno_zoo', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_xeno_zoo', 'biologist', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crude_huts', 'Crude Huts', 'amenity', 'Primitive shelters constructed out of stone, clay or whatever other materials were available.', 194);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_crude_huts', 'Crude Huts', 'amenity', 'Primitive shelters constructed out of stone, clay or whatever other materials were available.', NULL, 194);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_crude_huts', 'planet', 'planet_amenities_add', '500.0', NULL, 0);
@@ -42684,13 +42701,13 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_crude_huts', 'planet', 'planet_crime_add', '-10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_dwellings', 'Primitive Dwellings', 'amenity', 'These small buildings provide a minimal amount of shelter, but they keep out the worst of the elements.', 195);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_dwellings', 'Primitive Dwellings', 'amenity', 'These small buildings provide a minimal amount of shelter, but they keep out the worst of the elements.', NULL, 195);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_primitive_dwellings', 'planet', 'planet_housing_add', '600.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_stone_palace', 'Stone Palaces', 'government', 'Primitive palaces built out of stone, where the local ruling elite resides.', 196);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_stone_palace', 'Stone Palaces', 'government', 'Primitive palaces built out of stone, where the local ruling elite resides.', NULL, 196);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_stone_palace', 'planet', 'planet_housing_add', '300.0', NULL, 0);
@@ -42706,13 +42723,13 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_stone_palace', 'planet', 'planet_crime_add', '-10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', 197);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_offices', 'Basic Offices', 'unity', 'These offices contain seemingly endless cubicles, with the sounds of pointless busywork.', 198);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_research', 'Basic Research Labs', 'research', 'These basic research facilities managed to propel a civilization to the Space Age.', 199);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', 200);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', 201);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', 202);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_capital', 'Regional Capitals', 'government', 'The regional capital buildings of the various nation-states inhabiting this primitive world.', 203);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', NULL, 197);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_offices', 'Basic Offices', 'unity', 'These offices contain seemingly endless cubicles, with the sounds of pointless busywork.', NULL, 198);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_research', 'Basic Research Labs', 'research', 'These basic research facilities managed to propel a civilization to the Space Age.', NULL, 199);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', NULL, 200);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', NULL, 201);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', NULL, 202);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_capital', 'Regional Capitals', 'government', 'The regional capital buildings of the various nation-states inhabiting this primitive world.', NULL, 203);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_primitive_capital', 'planet', 'planet_housing_add', '1000.0', NULL, 0);
@@ -42733,14 +42750,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_primitive_capital', 'planet', 'branch_office_target_max_buildings_add', '1.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_target_max_buildings_add', 'Max Corporate Buildings', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_urban_dwellings', 'Urban Dwellings', 'amenity', 'Cramped and often polluted jungles of concrete.', 204);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_urban_dwellings', 'Urban Dwellings', 'amenity', 'Cramped and often polluted jungles of concrete.', NULL, 204);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_urban_dwellings', 'planet', 'planet_housing_add', '2400.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pre_ftl_radio_telescope', 'Radio Telescope Array', 'research', 'An array of radio telescopes in pursuit of discovering intelligent alien life.', 205);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_crude_huts', 'Simple Nests', 'amenity', 'Using the simplest and low effort material available, these nests are barely enough to keep drones from freezing during the nights.', 206);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_pre_ftl_radio_telescope', 'Radio Telescope Array', 'research', 'An array of radio telescopes in pursuit of discovering intelligent alien life.', NULL, 205);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_crude_huts', 'Simple Nests', 'amenity', 'Using the simplest and low effort material available, these nests are barely enough to keep drones from freezing during the nights.', NULL, 206);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_hive_crude_huts', 'planet', 'planet_amenities_no_happiness_add', '500.0', NULL, 0);
@@ -42756,13 +42773,13 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_crude_huts', 'planet', 'planet_crime_no_happiness_add', '-10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_dwellings', 'Early Colony', 'amenity', 'Starting to optimize the space available, these hexagon shaped buildings can house what could moderately be called a colony.', 207);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_dwellings', 'Early Colony', 'amenity', 'Starting to optimize the space available, these hexagon shaped buildings can house what could moderately be called a colony.', NULL, 207);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_hive_primitive_dwellings', 'planet', 'planet_housing_add', '600.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_stone_palace', 'Stone Hive', 'government', 'In a world where you need to compete against your own species for survival, having stone walls is an advantage.', 208);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_stone_palace', 'Stone Hive', 'government', 'In a world where you need to compete against your own species for survival, having stone walls is an advantage.', NULL, 208);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_hive_stone_palace', 'planet', 'planet_housing_add', '300.0', NULL, 0);
@@ -42778,11 +42795,11 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_stone_palace', 'planet', 'planet_crime_no_happiness_add', '-10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', 209);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', 210);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', 211);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', 212);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_capital', 'Continental Nexus', 'government', 'The typical central point of the continent spanning hives vying for control over this world.', 213);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_factory', 'Basic Factories', 'manufacturing', 'Primitive, inefficient factories spewing pollution while producing goods.', NULL, 209);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_mine', 'Primitive Mine', 'resource', 'Primitive mining tunnels that snake through the ground.', NULL, 210);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_power_plant', 'Primitive Power Plant', 'resource', 'A primitive and somewhat unreliable power plant that relies on coal or early atomic power, poisoning their atmosphere.', NULL, 211);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_farm', 'Primitive Farms', 'resource', 'Primitive farmsteads working the soil for meager returns.', NULL, 212);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_capital', 'Continental Nexus', 'government', 'The typical central point of the continent spanning hives vying for control over this world.', NULL, 213);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_hive_primitive_capital', 'planet', 'planet_housing_add', '1000.0', NULL, 0);
@@ -42798,33 +42815,33 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hive_primitive_capital', 'planet', 'planet_crime_no_happiness_add', '-40.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_urban_dwellings', 'Drone Storage', 'amenity', 'A utilitarian solution for housing drones when they are undergoing their rest cycle. There are separate entrances and exits to maximize the hive''s recharge process.', 214);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_urban_dwellings', 'Drone Storage', 'amenity', 'A utilitarian solution for housing drones when they are undergoing their rest cycle. There are separate entrances and exits to maximize the hive''s recharge process.', NULL, 214);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_hive_urban_dwellings', 'planet', 'planet_housing_add', '2400.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_primitive_node', 'Simple Synaptic Node', 'unity', 'Through this crude synaptic node, the will of the Hive will be strengthened.', 215);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_machine_primitive_node', 'Simple Uplink Node', 'unity', 'An crude uplink node that decreases planetary latency.', 216);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_primitive_clinic', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', 217);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_primitive_node', 'Simple Synaptic Node', 'unity', 'Through this crude synaptic node, the will of the Hive will be strengthened.', NULL, 215);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_machine_primitive_node', 'Simple Uplink Node', 'unity', 'An crude uplink node that decreases planetary latency.', NULL, 216);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_primitive_clinic', 'Gene Clinics', 'amenity', 'Gene Clinics can offer advanced medical treatments, which statistically lead to a significantly healthier and longer-living population.', NULL, 217);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_primitive_clinic', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_primitive_clinic', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_primitive_clinic', '360.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'Gaia Seeders', 'amenity', 'Perfected atmospheric controls maintaining this planets pristine status.', 218);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'Gaia Seeders', 'amenity', 'Perfected atmospheric controls maintaining this planets pristine status.', NULL, 218);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_gaiaseeder', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_solarpunk_gaiaseeder', '360.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'Nature Preserve Lodge', 'amenity', 'A retreat to enjoy this planets beauty.', 219);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'Nature Preserve Lodge', 'amenity', 'A retreat to enjoy this planets beauty.', NULL, 219);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_ranger_lodge', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_solarpunk_ranger_lodge', '360.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_sapling', 'Grand Sapling', 'amenity', 'A titanic sapling, the result of centuries of floral research and manipulation, capable of feeding millions.', 220);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_solarpunk_sapling', 'Grand Sapling', 'amenity', 'A titanic sapling, the result of centuries of floral research and manipulation, capable of feeding millions.', NULL, 220);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_sapling', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42835,7 +42852,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_solarpunk_sapling', 'planet', 'planet_farmers_food_produces_add', '2.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_solarpunk_organic_paradise', 'Hanging Cities', 'amenity', 'Cities covered in grand forests, bringing the inhabitants closer to nature.', 221);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_solarpunk_organic_paradise', 'Hanging Cities', 'amenity', 'Cities covered in grand forests, bringing the inhabitants closer to nature.', NULL, 221);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_solarpunk_organic_paradise', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42846,7 +42863,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_solarpunk_organic_paradise', 'planet', 'planet_housing_add', '2000.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_junkheap', 'Junk Heap', 'amenity', 'A rusting, irradiated jumble of collapsed infrastructure, destroyed buildings, and decaying wreckage from an unknown civilization.', 222);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_junkheap', 'Junk Heap', 'amenity', 'A rusting, irradiated jumble of collapsed infrastructure, destroyed buildings, and decaying wreckage from an unknown civilization.', NULL, 222);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_junkheap', 'planet', 'planet_housing_add', '1500.0', NULL, 0);
@@ -42857,7 +42874,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_junkheap', 'planet', 'planet_amenities_add', '2000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_akx_worm_3', 'Omega Alignment', 'research', 'The surface of this object angles space. The interior is not visible to any sensor or imaging technology available. But we all know what''s in there.', 223);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_akx_worm_3', 'Omega Alignment', 'research', 'The surface of this object angles space. The interior is not visible to any sensor or imaging technology available. But we all know what''s in there.', NULL, 223);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_akx_worm_3', 'cost', 'minerals', '1000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42865,13 +42882,13 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_akx_worm_3', 'produces', 'physics_research', '16.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_akx_worm_3', '900.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_great_pyramid', 'Great Pyramid', 'government', 'A pyramid constructed by the local population to appease a deity descended from the sky.', 224);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_great_pyramid', 'Great Pyramid', 'government', 'A pyramid constructed by the local population to appease a deity descended from the sky.', NULL, 224);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_great_pyramid', 'produces', 'food', '2.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_great_pyramid', 'produces', 'society_research', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_great_pyramid', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_artist_patron', 'Ministry of Culture', 'unity', 'A fashionable headquarters for the Ministry of Culture, helping to spread knowledge, entertainment and art to the masses.', 225);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_artist_patron', 'Ministry of Culture', 'unity', 'A fashionable headquarters for the Ministry of Culture, helping to spread knowledge, entertainment and art to the masses.', NULL, 225);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_artist_patron', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_artist_patron', '480.0');
@@ -42890,7 +42907,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_artist_patron', 'planet', 'planet_civilians_consumer_goods_upkeep_add', '0.1', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_waste_reprocessing_center', 'Waste Reprocessing Center', 'resource', 'A planet''s one stop center for converting industrial and bio-waste into mostly clean, mostly reusable energy and minerals. Designed by the Racket Industrial Enterprise, its construction is somewhat arcane, and largely non-reverse- engineerable.', 226);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_waste_reprocessing_center', 'Waste Reprocessing Center', 'resource', 'A planet''s one stop center for converting industrial and bio-waste into mostly clean, mostly reusable energy and minerals. Designed by the Racket Industrial Enterprise, its construction is somewhat arcane, and largely non-reverse- engineerable.', NULL, 226);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_waste_reprocessing_center', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42903,14 +42920,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_waste_reprocessing_center', 'planet', 'planet_amenities_add', '500.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nuumismatic_shrine', 'Numistic Shrine', 'unity', 'A shrine devoted to the worship of Numa, goddess of fortune.', 227);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nuumismatic_shrine', 'Numistic Shrine', 'unity', 'A shrine devoted to the worship of Numa, goddess of fortune.', NULL, 227);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'cost', 'trade', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'upkeep', 'trade', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_nuumismatic_shrine', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nuumismatic_shrine', 'bureaucrat', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_plant_2', 'Kha''lanka Crystal Plant', 'manufacturing', 'The discovery of new crystal manufacturing techniques, far below the surface in the city of the Kha''lanka lithoids, has effectivized artificial crystal manufacturing through oxidation of rapidly growing silicon-based cell-clusters.', 228);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_crystal_plant_2', 'Kha''lanka Crystal Plant', 'manufacturing', 'The discovery of new crystal manufacturing techniques, far below the surface in the city of the Kha''lanka lithoids, has effectivized artificial crystal manufacturing through oxidation of rapidly growing silicon-based cell-clusters.', NULL, 228);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_plant_2', 'cost', 'minerals', '1000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42946,7 +42963,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_crystal_plant_2', 'planet', 'planet_artisans_food_upkeep_add', '1.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_food_upkeep_add', 'Food Upkeep per 100 Artisans', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_zroni_equilibrator', 'Zroni Equilibrator', 'government', 'A rebuilt ancient structure stabilizing the connection between reality and the Shroud. It uses complex Zroni technology still beyond modern understanding.', 229);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_zroni_equilibrator', 'Zroni Equilibrator', 'government', 'A rebuilt ancient structure stabilizing the connection between reality and the Shroud. It uses complex Zroni technology still beyond modern understanding.', NULL, 229);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_zroni_equilibrator', 'cost', 'sr_zro', '250.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42970,7 +42987,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_zroni_equilibrator', 'planet', 'planet_biologists_sr_zro_upkeep_add', '0.5', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_biologists_sr_zro_upkeep_add', 'Zro Upkeep per 100 Biologists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_composer_sanctum', 'Sanctum of the Composer', 'government', 'The Sanctum is a place dedicated to communion with the Composer.', 230);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_composer_sanctum', 'Sanctum of the Composer', 'government', 'The Sanctum is a place dedicated to communion with the Composer.', NULL, 230);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_composer_sanctum', 'cost', 'sr_zro', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -42994,7 +43011,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_composer_sanctum', 'country', 'leader_lifespan_add', '20.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_eater_sanctum', 'Sanctum of the Eater', 'government', 'The Sanctum is a place dedicated to communion with the Eater. Here, the Shroud prepares us for war as we plan for the next .', 231);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_eater_sanctum', 'Sanctum of the Eater', 'government', 'The Sanctum is a place dedicated to communion with the Eater. Here, the Shroud prepares us for war as we plan for the next .', NULL, 231);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_eater_sanctum', 'cost', 'sr_zro', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43013,7 +43030,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_eater_sanctum', 'country', 'ships_upkeep_mult', '-0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_instrument_sanctum', 'Sanctum of the Instrument', 'government', 'The Sanctum is a place dedicated to communion with the Instrument.', 232);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_instrument_sanctum', 'Sanctum of the Instrument', 'government', 'The Sanctum is a place dedicated to communion with the Instrument.', NULL, 232);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_instrument_sanctum', 'cost', 'sr_zro', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43037,7 +43054,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_instrument_sanctum', 'country', 'pop_happiness', '0.05', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_whisperers_sanctum', 'Sanctum of the Whisperers', 'government', 'The Sanctum is a place dedicated to communion with the Whisperers.', 233);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_whisperers_sanctum', 'Sanctum of the Whisperers', 'government', 'The Sanctum is a place dedicated to communion with the Whisperers.', NULL, 233);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_whisperers_sanctum', 'cost', 'sr_zro', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43054,7 +43071,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_whisperers_sanctum', 'country', 'spy_network_daily_value_mult', '0.15', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('spy_network_daily_value_mult', 'Infiltration Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_control_center', 'Ancient Control Center', 'government', 'The ancient control center of the ringworld is barely maintained by the tireless efforts of a legion of machine drones.', 234);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_control_center', 'Ancient Control Center', 'government', 'The ancient control center of the ringworld is barely maintained by the tireless efforts of a legion of machine drones.', NULL, 234);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_control_center', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43070,7 +43087,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ancient_control_center', 'planet', 'planet_amenities_add', '15000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_hive_capital', 'Venerable Nucleus', 'government', 'This ancient nexus of the hive''s supremacy is where uncountable generations of drones have dutifully executed directives.', 235);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_hive_capital', 'Venerable Nucleus', 'government', 'This ancient nexus of the hive''s supremacy is where uncountable generations of drones have dutifully executed directives.', NULL, 235);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_hive_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43086,7 +43103,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ancient_hive_capital', 'planet', 'planet_amenities_add', '15000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_palace', 'Ancient Palace', 'government', 'This immense palatial complex is a testament to an era long gone. Despite its luminous facade refusing to succumb to the passage of time, many of its wings lay abandoned in various states of disrepair.', 236);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_palace', 'Ancient Palace', 'government', 'This immense palatial complex is a testament to an era long gone. Despite its luminous facade refusing to succumb to the passage of time, many of its wings lay abandoned in various states of disrepair.', NULL, 236);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_palace', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43102,7 +43119,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ancient_palace', 'planet', 'planet_amenities_add', '15000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_xeno_zoo', 'Xeno Preserve', 'amenity', 'A highly sophisticated preserve that maintains the natural habitat of the', 237);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_xeno_zoo', 'Xeno Preserve', 'amenity', 'A highly sophisticated preserve that maintains the natural habitat of the', NULL, 237);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_xeno_zoo', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43118,7 +43135,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_xeno_zoo', 'planet', 'planet_housing_add', '3000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hab_fe_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', 238);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hab_fe_capital', 'Habitat Administration', 'government', 'The administrative hub of the Habitat, serving as its capital and the seat of the local government.', NULL, 238);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hab_fe_capital', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43134,7 +43151,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_hab_fe_capital', 'planet', 'planet_amenities_add', '2500.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_master_archive', 'Master Archive', 'research', 'This repository houses knowledge from multiple galactic ages, yet the ability to operate its arcane retrieval system is lost. Extracted data scraps prove invaluable.', 239);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_master_archive', 'Master Archive', 'research', 'This repository houses knowledge from multiple galactic ages, yet the ability to operate its arcane retrieval system is lost. Extracted data scraps prove invaluable.', NULL, 239);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_master_archive', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43189,7 +43206,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_master_archive', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.5', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_engineer_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_empyrean_shrine', 'Phased Empyrean Shrine', 'unity', 'Exclusively used for communing with the spirits of the Shroud, this temple manifests only partially in our dimension.', 240);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_empyrean_shrine', 'Phased Empyrean Shrine', 'unity', 'Exclusively used for communing with the spirits of the Shroud, this temple manifests only partially in our dimension.', NULL, 240);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_empyrean_shrine', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43218,7 +43235,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_empyrean_shrine', 'country', 'shroud_delve_cooldown', '-0.1', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_cryo_chamber', 'Ancient Cryo-Chamber', 'government', 'Rows upon rows of cryo-pods line this massive structure, containing the long-expired remains of billions of alien specimens frozen long ago.', 241);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_cryo_chamber', 'Ancient Cryo-Chamber', 'government', 'Rows upon rows of cryo-pods line this massive structure, containing the long-expired remains of billions of alien specimens frozen long ago.', NULL, 241);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ancient_cryo_chamber', 'cost', 'alloys', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43241,7 +43258,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ancient_cryo_chamber', 'country', 'BIOLOGICAL_species_trait_points_add', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('BIOLOGICAL_species_trait_points_add', 'Organic Species Modification Points', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_affluence_emporium', 'Affluence Emporium', 'manufacturing', 'This center anticipates and fulfills material desires using an advanced procurement algorithm, delivering satisfaction before the populace realizes their wants.', 242);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_affluence_emporium', 'Affluence Emporium', 'manufacturing', 'This center anticipates and fulfills material desires using an advanced procurement algorithm, delivering satisfaction before the populace realizes their wants.', NULL, 242);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_emporium', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43274,7 +43291,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_affluence_emporium', 'planet', 'job_artisan_drone_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_artisan_drone_automated_workforce_mult', 'Artisan Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_affluence_center', 'Affluence Center', 'manufacturing', 'This center effortlessly materializes the most outlandish desires at a moment''s notice.', 243);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_affluence_center', 'Affluence Center', 'manufacturing', 'This center effortlessly materializes the most outlandish desires at a moment''s notice.', NULL, 243);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_affluence_center', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43314,7 +43331,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_affluence_center', 'planet', 'job_artisan_drone_automated_workforce_mult', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_artisan_drone_automated_workforce_mult', 'Artisan Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nourishment_complex', 'Nourishment Complex', 'resource', 'Replication technology swiftly conjures up novel flavors on command.', 244);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nourishment_complex', 'Nourishment Complex', 'resource', 'Replication technology swiftly conjures up novel flavors on command.', NULL, 244);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_complex', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43354,7 +43371,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_nourishment_complex', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nourishment_center', 'Nourishment Center', 'resource', 'Every conceivable flavor can be replicated within these walls.', 245);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nourishment_center', 'Nourishment Center', 'resource', 'Every conceivable flavor can be replicated within these walls.', NULL, 245);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43399,7 +43416,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_nourishment_center', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dimensional_replicator', 'Dimensional Replicator', 'manufacturing', 'This fabricator''s technology achieves flawless conversion from energy to matter.', 246);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_dimensional_replicator', 'Dimensional Replicator', 'manufacturing', 'This fabricator''s technology achieves flawless conversion from energy to matter.', NULL, 246);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43423,7 +43440,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_dimensional_replicator', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_dimensional_fabricator', 'Dimensional Fabricator', 'manufacturing', 'This advanced fabricator seamlessly tunnels into the fabric of dimensional space, extracting valuable resources.', 247);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_dimensional_fabricator', 'Dimensional Fabricator', 'manufacturing', 'This advanced fabricator seamlessly tunnels into the fabric of dimensional space, extracting valuable resources.', NULL, 247);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_fabricator', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43455,7 +43472,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_dimensional_fabricator', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_class_3_singularity', 'Class-3 Singularity', 'resource', 'Capturing the entire energy output from this singularity is an engineering marvel.', 248);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_class_3_singularity', 'Class-3 Singularity', 'resource', 'Capturing the entire energy output from this singularity is an engineering marvel.', NULL, 248);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_class_3_singularity', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43493,7 +43510,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_class_3_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_class_4_singularity', 'Class-4 Singularity', 'resource', 'This singularity''s power output challenges the laws of physics, yet the containment fields hold with unwavering stability.', 249);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_class_4_singularity', 'Class-4 Singularity', 'resource', 'This singularity''s power output challenges the laws of physics, yet the containment fields hold with unwavering stability.', NULL, 249);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43531,7 +43548,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_class_4_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_micro_forge', 'Hyper-Forge', 'manufacturing', 'This forge''s production speed is limited only by the quantity of resources loaded into it.', 250);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_micro_forge', 'Hyper-Forge', 'manufacturing', 'This forge''s production speed is limited only by the quantity of resources loaded into it.', NULL, 250);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43564,7 +43581,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_micro_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nano_forge', 'Auto-Forge', 'manufacturing', 'The expansive nano-replicator bays in this forge transform raw materials into advanced alloys with marvelous efficiency.', 251);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nano_forge', 'Auto-Forge', 'manufacturing', 'The expansive nano-replicator bays in this forge transform raw materials into advanced alloys with marvelous efficiency.', NULL, 251);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43604,7 +43621,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_nano_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_sky_dome', 'Sky Dome', 'amenity', 'This floating city, propelled by state-of-the-art anti-gravity technology, provides an idyllic haven for its inhabitants.', 252);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_sky_dome', 'Sky Dome', 'amenity', 'This floating city, propelled by state-of-the-art anti-gravity technology, provides an idyllic haven for its inhabitants.', NULL, 252);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43636,7 +43653,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_sky_dome', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_dome', 'Empyrean Dome', 'amenity', 'Suspended by gravimetric nullification, these domes transcend physical limitations, while advanced life support systems seamlessly cater to inhabitants'' needs.', 253);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_dome', 'Empyrean Dome', 'amenity', 'Suspended by gravimetric nullification, these domes transcend physical limitations, while advanced life support systems seamlessly cater to inhabitants'' needs.', NULL, 253);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_dome', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43673,7 +43690,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_dome', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_fortress', 'Aspis Bastion', 'army', 'This colossal planetary defense complex has numerous armories and layers of shielding. Only a highly specialized siege force could breach its defenses.', 254);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_fortress', 'Aspis Bastion', 'army', 'This colossal planetary defense complex has numerous armories and layers of shielding. Only a highly specialized siege force could breach its defenses.', NULL, 254);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_fortress', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43706,7 +43723,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_fortress', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_stronghold', 'Aegis Complex', 'army', 'This monumental planetary defense complex protects with countless armories and shielding; the planet''s mountains will crumble before its defenses.', 255);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_stronghold', 'Aegis Complex', 'army', 'This monumental planetary defense complex protects with countless armories and shielding; the planet''s mountains will crumble before its defenses.', NULL, 255);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43744,7 +43761,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_stronghold', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_1', 'Omnivident Administration', 'unity', 'Integral to a galaxy-spanning bureaucratic system, this extensive complex is connected to a vast administrative network.', 256);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_1', 'Omnivident Administration', 'unity', 'Integral to a galaxy-spanning bureaucratic system, this extensive complex is connected to a vast administrative network.', NULL, 256);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43777,7 +43794,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_1', 'planet', 'job_coordinator_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_2', 'Omniscient Administration', 'unity', 'This extensive complex, the centerpiece of a galaxy-spanning bureaucratic system, coordinates a robust and advanced administrative network.', 257);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_2', 'Omniscient Administration', 'unity', 'This extensive complex, the centerpiece of a galaxy-spanning bureaucratic system, coordinates a robust and advanced administrative network.', NULL, 257);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43817,7 +43834,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_2', 'planet', 'job_coordinator_automated_workforce_mult', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_hive_1', 'Ephaptic Cluster', 'unity', 'Carefully tended by highly specialized drones, this network of ephaptic nodes fortifies the Hive''s dominion over its expansive cognitive domain.', 258);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_hive_1', 'Ephaptic Cluster', 'unity', 'Carefully tended by highly specialized drones, this network of ephaptic nodes fortifies the Hive''s dominion over its expansive cognitive domain.', NULL, 258);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43850,7 +43867,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_hive_1', 'planet', 'job_coordinator_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_hive_2', 'Ephaptic Axon', 'unity', 'Carefully tended by highly specialized drones, this vast network of ephaptic nodes fortifies the Hive''s will over the galaxy.', 259);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_hive_2', 'Ephaptic Axon', 'unity', 'Carefully tended by highly specialized drones, this vast network of ephaptic nodes fortifies the Hive''s will over the galaxy.', NULL, 259);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_hive_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43890,7 +43907,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_hive_2', 'planet', 'job_coordinator_automated_workforce_mult', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_machine_1', 'Fractal Coordination Point', 'unity', 'An advanced fractal hub, seamlessly processing and transmitting trillions of signals with near instantaneous precision.', 260);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_machine_1', 'Fractal Coordination Point', 'unity', 'An advanced fractal hub, seamlessly processing and transmitting trillions of signals with near instantaneous precision.', NULL, 260);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43923,7 +43940,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_machine_1', 'planet', 'job_coordinator_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_administration_machine_2', 'Quantic Coordination Point', 'unity', 'An advanced quantum entanglement hub, processing and instantaneously transmitting quadrillions of signals precisely.', 261);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_administration_machine_2', 'Quantic Coordination Point', 'unity', 'An advanced quantum entanglement hub, processing and instantaneously transmitting quadrillions of signals precisely.', NULL, 261);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_machine_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43963,7 +43980,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_administration_machine_2', 'planet', 'job_coordinator_automated_workforce_mult', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_temple_1', 'Celestial Sanctum', 'unity', 'Cutting-edge advancements in metaphysical technology grant devotees a direct communion with the divine essence.', 262);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_temple_1', 'Celestial Sanctum', 'unity', 'Cutting-edge advancements in metaphysical technology grant devotees a direct communion with the divine essence.', NULL, 262);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -43996,7 +44013,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_temple_1', 'planet', 'job_coordinator_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_temple_2', 'Celestial Cathedral', 'unity', 'Using metaphysical technology for psionic sermons amplifies spiritual resonance. This immense complex enables worshippers to intimately connect to the divine essence at a system-wide range.', 263);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_temple_2', 'Celestial Cathedral', 'unity', 'Using metaphysical technology for psionic sermons amplifies spiritual resonance. This immense complex enables worshippers to intimately connect to the divine essence at a system-wide range.', NULL, 263);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_temple_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44036,7 +44053,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_temple_2', 'planet', 'job_coordinator_automated_workforce_mult', '0.5', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_coordinator_automated_workforce_mult', 'Coordinators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_assembly_1', 'Robot Manufacturing Nexus', 'pop_assembly', 'An avant-garde assembly complex manned by expert Roboticists, this facility transcends conventional bounds, meticulously realizing the forefront of robotic innovation.', 264);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_assembly_1', 'Robot Manufacturing Nexus', 'pop_assembly', 'An avant-garde assembly complex manned by expert Roboticists, this facility transcends conventional bounds, meticulously realizing the forefront of robotic innovation.', NULL, 264);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44079,7 +44096,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_assembly_1', 'planet', 'job_replicator_automated_workforce_mult', '0.25', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_replicator_automated_workforce_mult', 'Replicators Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_assembly_2', 'Robot Quantum Production Hub', 'pop_assembly', 'A marvel in engineering, this facility''s quantic assembly line uses entanglement converters to craft machine parts down to the most minute detail. Not a single atom is misplaced.', 265);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_assembly_2', 'Robot Quantum Production Hub', 'pop_assembly', 'A marvel in engineering, this facility''s quantic assembly line uses entanglement converters to craft machine parts down to the most minute detail. Not a single atom is misplaced.', NULL, 265);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_assembly_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44122,7 +44139,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_assembly_2', 'planet', 'planet_stability_add', '1.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_clinic_1', 'Molecular-Revitalization Institute', 'amenity', 'Molecular-Revitalization Institutes delve deep into cellular intricacies to amplify the effectiveness of medical treatments, significantly improving the quality and longevity of the populations'' health.', 266);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_clinic_1', 'Molecular-Revitalization Institute', 'amenity', 'Molecular-Revitalization Institutes delve deep into cellular intricacies to amplify the effectiveness of medical treatments, significantly improving the quality and longevity of the populations'' health.', NULL, 266);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44175,7 +44192,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_clinic_1', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_clinic_2', 'Bioregeneration Institute', 'amenity', 'The Bioregeneration Institute, at the pinnacle of medical technology, pioneers groundbreaking bio-regenerative therapies, continuously redefining the boundaries of life extension.', 267);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_clinic_2', 'Bioregeneration Institute', 'amenity', 'The Bioregeneration Institute, at the pinnacle of medical technology, pioneers groundbreaking bio-regenerative therapies, continuously redefining the boundaries of life extension.', NULL, 267);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44228,7 +44245,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_clinic_2', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_security_1', 'Justice Complex', 'government', 'This massive judicial complex seamlessly intertwines courts and law enforcement.', 268);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_security_1', 'Justice Complex', 'government', 'This massive judicial complex seamlessly intertwines courts and law enforcement.', NULL, 268);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44251,7 +44268,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_security_1', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_security_2', 'Ziggurat of Justice', 'government', 'The zenith of legal institutions, this colossal edifice is a monument to justice, harboring courts, holding facilities, and correctional facilities that will redeem even the most hardened criminals.', 269);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_security_2', 'Ziggurat of Justice', 'government', 'The zenith of legal institutions, this colossal edifice is a monument to justice, harboring courts, holding facilities, and correctional facilities that will redeem even the most hardened criminals.', NULL, 269);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44289,7 +44306,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_security_2', 'planet', 'planet_crime_no_happiness_add', '-40.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_market_1', 'Galactic Commerce Hub', 'trade', 'Dominating the skyline, these towering spires cast shadows across the bustling trade districts below.', 270);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_market_1', 'Galactic Commerce Hub', 'trade', 'Dominating the skyline, these towering spires cast shadows across the bustling trade districts below.', NULL, 270);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44322,7 +44339,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_market_1', 'planet', 'job_logistics_drone_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_logistics_drone_automated_workforce_mult', 'Logistic Drones Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_market_2', 'Interstellar Commerce Nexus', 'trade', 'Reigning supreme in the galactic economy, the colossal spires of this trade district can be seen from orbit.', 271);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_market_2', 'Interstellar Commerce Nexus', 'trade', 'Reigning supreme in the galactic economy, the colossal spires of this trade district can be seen from orbit.', NULL, 271);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_market_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44370,7 +44387,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_market_2', 'country', 'branch_office_value_mult', '0.05', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_value_mult', 'Branch Office Value', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_silo_1', 'Shrinkspace Depot', 'resource', 'The depot influences a portion of subspace where the distance between molecules is reduced, effectively shrinking anything stored there. Living beings are forbidden from entering it.', 272);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_silo_1', 'Shrinkspace Depot', 'resource', 'The depot influences a portion of subspace where the distance between molecules is reduced, effectively shrinking anything stored there. Living beings are forbidden from entering it.', NULL, 272);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_1', 'cost', 'alloys', '1000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44405,7 +44422,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_silo_1', 'country', 'situation_nomad_economy_max_progress_add', '2500.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('situation_nomad_economy_max_progress_add', 'Operational Reserves Capacity', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_silo_2', 'Extra-Dimensional Depot', 'resource', 'By creating a localized pocket dimension, we can hold nearly endless resources.', 273);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_silo_2', 'Extra-Dimensional Depot', 'resource', 'By creating a localized pocket dimension, we can hold nearly endless resources.', NULL, 273);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_silo_2', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44440,7 +44457,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_silo_2', 'country', 'situation_nomad_economy_max_progress_add', '5000.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('situation_nomad_economy_max_progress_add', 'Operational Reserves Capacity', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_entertainment_1', 'Virtual Bliss Plaza', 'amenity', 'These immense entertainment sectors are at the forefront of recreation and leisure. Brainwave readers allow for instantaneous and personalized virtual getaways.', 274);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_entertainment_1', 'Virtual Bliss Plaza', 'amenity', 'These immense entertainment sectors are at the forefront of recreation and leisure. Brainwave readers allow for instantaneous and personalized virtual getaways.', NULL, 274);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44468,7 +44485,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_entertainment_1', 'planet', 'job_entertainer_automated_workforce_mult', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_entertainer_automated_workforce_mult', 'Entertainers Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_entertainment_2', 'Omni-Bliss Nexus', 'amenity', 'A colossal culmination of entertainment, this nexus transcends conventional limits, where dreams materialize before desires are realized.', 275);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_entertainment_2', 'Omni-Bliss Nexus', 'amenity', 'A colossal culmination of entertainment, this nexus transcends conventional limits, where dreams materialize before desires are realized.', NULL, 275);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44501,7 +44518,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_entertainment_2', 'planet', 'job_entertainer_automated_workforce_mult', '0.5', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_entertainer_automated_workforce_mult', 'Entertainers Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_lab_1', 'Quantum Innovation Nexus', 'research', 'This nexus boasts state-of-the-art equipment and an unprecedented staff capacity, ushering in an era where quantum theories are not just explored but harnessed for groundbreaking innovation.', 276);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_lab_1', 'Quantum Innovation Nexus', 'research', 'This nexus boasts state-of-the-art equipment and an unprecedented staff capacity, ushering in an era where quantum theories are not just explored but harnessed for groundbreaking innovation.', NULL, 276);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44556,7 +44573,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_lab_1', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.25', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_engineer_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_lab_2', 'Transcendental Innovation Department', 'research', 'This building is the apex of scientific advancement and proves this is an era of boundless innovation.', 277);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_lab_2', 'Transcendental Innovation Department', 'research', 'This building is the apex of scientific advancement and proves this is an era of boundless innovation.', NULL, 277);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44617,7 +44634,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_lab_2', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.5', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_engineer_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_mine_1', 'Quantum Drilling Plant', 'resource', 'This mining plant can find minerals anywhere in this planet''s mantle using quantum tunneling technology to bore through solid materials without physical contact.', 278);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_mine_1', 'Quantum Drilling Plant', 'resource', 'This mining plant can find minerals anywhere in this planet''s mantle using quantum tunneling technology to bore through solid materials without physical contact.', NULL, 278);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_1', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44657,7 +44674,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_mine_1', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_fe_mine_2', 'Quantum Drilling Hub', 'resource', 'This mining hub can extract minerals anywhere down to the planet''s outer core using quantum tunneling technology to bore through solid or liquid materials without physical contact.', 279);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_fe_mine_2', 'Quantum Drilling Hub', 'resource', 'This mining hub can extract minerals anywhere down to the planet''s outer core using quantum tunneling technology to bore through solid or liquid materials without physical contact.', NULL, 279);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44697,7 +44714,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_mine_2', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_mining_consortium', 'Private Mining Consortium', 'resource', 'A private mineral extraction company owned by a megacorporation. It employs local miners to access the planet''s wealth.', 280);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_private_mining_consortium', 'Private Mining Consortium', 'resource', 'A private mineral extraction company owned by a megacorporation. It employs local miners to access the planet''s wealth.', 'corporate', 280);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44716,8 +44733,38 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_private_mining_consortium', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_food_conglomerate', 'Fast Food Chain', 'resource', 'Affordable, fast, and with a perfectly acceptable nutritional value. Zero toxins* and zero hassle!
-* Food may contain traces of potassium benzoate, nitric acid, dark matter, soylent green and liquid smoke.', 281);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'planet', 'planet_miners_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'planet', 'planet_miners_trade_produces_add', '0.1', 'civic_privatized_exploration', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'planet', 'planet_miners_trade_produces_add', '0.1', 'civic_private_prospectors', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'country', 'job_capital_trader_add', '200.0', 'civic_privatized_exploration', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_mining_consortium', 'country', 'job_capital_trader_add', '200.0', 'civic_private_prospectors', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_food_conglomerate', 'Fast Food Chain', 'resource', 'Affordable, fast, and with a perfectly acceptable nutritional value. Zero toxins* and zero hassle!
+* Food may contain traces of potassium benzoate, nitric acid, dark matter, soylent green and liquid smoke.', 'corporate', 281);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_food_conglomerate', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44736,7 +44783,57 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_food_conglomerate', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_virtual_entertainment_studios', 'Virtual Entertainment Studios', 'manufacturing', 'Using nano-transaction systems and neuro-chemical retention algorithms, these development houses bring the latest in virtual entertainment software into the homes and lives of billions of sapient consumers.', 282);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_farmers_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_farmers_trade_produces_add', '0.1', NULL, 'branch_office_owner = OR = has_valid_civic = civic_corporate_machine_anglers civic_corporate_anglers', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_farmers_trade_produces_add', '0.1', 'civic_permanent_employment', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_farmers_trade_produces_add', '0.1', 'civic_corporate_beastmasters', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_farmers_trade_produces_add', '0.1', 'civic_corporate_deep_sleep', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'country', 'job_capital_trader_add', '200.0', NULL, 'branch_office_owner = OR = has_valid_civic = civic_corporate_machine_anglers civic_corporate_anglers', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'country', 'job_capital_trader_add', '200.0', 'civic_permanent_employment', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_beastmasters', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_food_conglomerate', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_deep_sleep', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_virtual_entertainment_studios', 'Virtual Entertainment Studios', 'manufacturing', 'Using nano-transaction systems and neuro-chemical retention algorithms, these development houses bring the latest in virtual entertainment software into the homes and lives of billions of sapient consumers.', 'corporate', 282);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_virtual_entertainment_studios', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44755,7 +44852,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_shipyards', 'Private Military Industries', 'manufacturing', 'These colony-based corporate factories produce and assemble a variety of components that are vital in starship construction.', 283);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_artisans_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_corporate_crafters', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_media_conglomerate', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_tankbound_corporate', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_crafters', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'country', 'job_capital_trader_add', '200.0', 'civic_media_conglomerate', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_virtual_entertainment_studios', 'country', 'job_capital_trader_add', '200.0', 'civic_tankbound_corporate', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_private_shipyards', 'Private Military Industries', 'manufacturing', 'These colony-based corporate factories produce and assemble a variety of components that are vital in starship construction.', 'corporate', 283);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_private_shipyards', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44774,7 +44911,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_private_shipyards', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_military_contractors', 'Mercenary Liaison Office', 'army', 'This office allows locals to sign up for the exciting life of a corporate soldier of fortune. Generous compensation, limited health insurance and stories of adventure ensure a steady stream of recruits.', 284);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_naval_contractors', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_corporate_catalytic_processing', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_corporate_flight_schools', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'country', 'job_capital_trader_add', '200.0', 'civic_naval_contractors', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_catalytic_processing', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_shipyards', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_flight_schools', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_military_contractors', 'Mercenary Liaison Office', 'army', 'This office allows locals to sign up for the exciting life of a corporate soldier of fortune. Generous compensation, limited health insurance and stories of adventure ensure a steady stream of recruits.', 'corporate', 284);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_military_contractors', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44806,7 +44983,77 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_military_contractors', 'country', 'country_naval_cap_add', '5.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_industrial_subsidiary', 'Industrial Subsidiary', 'manufacturing', 'Independent suppliers provide state producers with off-world components at a fraction of the cost.', 285);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'army_starting_experience_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_starting_experience_add', 'Army Starting Experience', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_soldiers_trade_produces_add', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_private_military_companies', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_crusader_spirit_corporate', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_corporate_hired_guns', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_private_military_companies', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_crusader_spirit_corporate', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_corporate_hired_guns', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'country', 'country_naval_cap_add', '5.0', NULL, NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'country', 'job_capital_trader_add', '200.0', 'civic_private_military_companies', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'country', 'job_capital_trader_add', '200.0', 'civic_crusader_spirit_corporate', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_military_contractors', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hired_guns', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_industrial_subsidiary', 'Industrial Subsidiary', 'manufacturing', 'Independent suppliers provide state producers with off-world components at a fraction of the cost.', 'corporate', 285);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_industrial_subsidiary', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44833,7 +45080,52 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_industrial_subsidiary', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_public_relations_office', 'Public Relations Firm', 'unity', 'Misconceptions and suspicions are always floating around any large corporate entity. It is in the public''s interest to hear out all sides of any dispute, and this PR firm makes it their business to get their employer''s point across.', 286);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_artisans_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_corporate_scavengers', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_corporate_scavengers', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_corporate_relentless_industrialists', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_corporate_relentless_industrialists', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_scavengers', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_industrial_subsidiary', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_relentless_industrialists', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_public_relations_office', 'Public Relations Firm', 'unity', 'Misconceptions and suspicions are always floating around any large corporate entity. It is in the public''s interest to hear out all sides of any dispute, and this PR firm makes it their business to get their employer''s point across.', 'corporate', 286);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_public_relations_office', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44852,7 +45144,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_public_relations_office', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_research_initiative', 'Private Research Enterprises', 'research', 'In these state-of-the-art facilities, private tech-enterprises carry out important research and development on behalf of their parent company.', 287);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', 'civic_corporate_ascensionists', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', 'civic_public_relations_specialists', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', 'civic_corporate_galactic_curators', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_ascensionists', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'country', 'job_capital_trader_add', '200.0', 'civic_public_relations_specialists', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_public_relations_office', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_galactic_curators', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_private_research_initiative', 'Private Research Enterprises', 'research', 'In these state-of-the-art facilities, private tech-enterprises carry out important research and development on behalf of their parent company.', 'corporate', 287);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_private_research_initiative', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44887,7 +45219,87 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_private_research_initiative', 'planet', 'planet_crime_floor_add', '5.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_amusement_megaplex', 'Amusement Megaplex', 'amenity', 'A magical place where dreams can become reality, this megaplex features wholesome, corporate-sanctioned fun for the entire family unit.', 288);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_physicists_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_biologists_trade_produces_add', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_engineers_trade_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_physicists_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_biologists_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_engineers_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_physicists_trade_produces_add', '0.1', 'civic_corporate_crowdsourcing', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_biologists_trade_produces_add', '0.1', 'civic_corporate_crowdsourcing', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_engineers_trade_produces_add', '0.1', 'civic_corporate_crowdsourcing', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_physicists_trade_produces_add', '0.1', 'civic_astrometeorology_megacorp', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_biologists_trade_produces_add', '0.1', 'civic_astrometeorology_megacorp', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_engineers_trade_produces_add', '0.1', 'civic_astrometeorology_megacorp', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_dark_consortium', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_crowdsourcing', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_research_initiative', 'country', 'job_capital_trader_add', '200.0', 'civic_astrometeorology_megacorp', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_amusement_megaplex', 'Amusement Megaplex', 'amenity', 'A magical place where dreams can become reality, this megaplex features wholesome, corporate-sanctioned fun for the entire family unit.', 'corporate', 288);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_amusement_megaplex', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44904,7 +45316,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_amusement_megaplex', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commercial_forum', 'Commercial Forum', 'government', 'Movers and shakers, local economic leaders, and other important figures can meet with corporate representatives here in a relaxed, soothing environment ideal for the creation of new business deals.', 289);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_corporate_hedonism', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_corporate_hyperspace_specialty', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_storm_callers_megacorp', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hedonism', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hyperspace_specialty', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_amusement_megaplex', 'country', 'job_capital_trader_add', '200.0', 'civic_storm_callers_megacorp', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commercial_forum', 'Commercial Forum', 'government', 'Movers and shakers, local economic leaders, and other important figures can meet with corporate representatives here in a relaxed, soothing environment ideal for the creation of new business deals.', 'corporate', 289);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commercial_forum', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44921,7 +45373,57 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_commercial_forum', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_embassy', 'Corporate Embassy', 'government', 'Diplomacy is just advertising to governments instead of to the customer. This office analyzes local customs and trends to more efficiently target our efforts.', 290);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_traders_trade_produces_add', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_trading_posts', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_franchising', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_memory_vault_corporate', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_caravan_masters_corporate', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'country', 'job_capital_trader_add', '200.0', 'civic_trading_posts', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'country', 'job_capital_trader_add', '200.0', 'civic_franchising', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'country', 'job_capital_trader_add', '200.0', 'civic_memory_vault_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_commercial_forum', 'country', 'job_capital_trader_add', '200.0', 'civic_caravan_masters_corporate', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_embassy', 'Corporate Embassy', 'government', 'Diplomacy is just advertising to governments instead of to the customer. This office analyzes local customs and trends to more efficiently target our efforts.', 'corporate', 290);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_embassy', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44943,7 +45445,62 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_embassy', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_private_security', 'Private Security Company', 'government', 'Unlike public security forces, this private firm prioritizes order and security over trivial ethical or moral concerns.', 291);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'country', 'diplo_weight_economy_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_politicians_trade_produces_add', '0.15', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_brand_loyalty', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_corporate_guided_sapience', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_politicians_trade_produces_add', '0.15', NULL, 'branch_office_owner = has_civic = civic_worker_coop', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_secret_societies_corporate', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'country', 'job_capital_trader_add', '200.0', 'civic_worker_coop', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'country', 'job_capital_trader_add', '200.0', 'civic_brand_loyalty', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_guided_sapience', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_embassy', 'country', 'job_capital_trader_add', '200.0', 'civic_secret_societies_corporate', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_private_security', 'Private Security Company', 'government', 'Unlike public security forces, this private firm prioritizes order and security over trivial ethical or moral concerns.', 'corporate', 291);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_private_security', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44969,7 +45526,92 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_private_security', 'planet', 'planet_crime_floor_add', '5.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wildcat_miners', 'Wildcat Mining Operations', 'resource', 'Illegal, highly unsafe mining operations operated by the destitute and the desperate, who toil away in the vain hopes of striking it rich.', 292);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_enforcer_add', '200.0', NULL, 'owner = NOT = has_valid_civic = civic_dystopian_society branch_office_owner = is_legit_or_legal_criminal = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_enforcer_add', 'Enforcer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_dystopian_enforcer_add', '200.0', NULL, 'owner = has_valid_civic = civic_dystopian_society branch_office_owner = is_legit_or_legal_criminal = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_dystopian_enforcer_add', 'Enforcer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_criminal_add', '100.0', NULL, 'owner = NOT = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_enforcer_add', '100.0', NULL, 'owner = NOT = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_enforcer_add', 'Enforcer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_crime_add', '25.0', NULL, 'owner = NOT = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_criminal_add', '100.0', NULL, 'owner = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'job_dystopian_enforcer_add', '100.0', NULL, 'owner = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_dystopian_enforcer_add', 'Enforcer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_crime_add', '25.0', NULL, 'owner = has_valid_civic = civic_dystopian_society branch_office_owner = is_illegal_criminal = yes', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_enforcers_trade_produces_add', '0.1', NULL, NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_trade_produces_add', 'Trade Produced per 100 Enforcers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_criminals_trade_produces_add', '0.1', NULL, 'branch_office_owner = is_illegal_criminal = yes', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_criminals_trade_produces_add', 'Trade Produced per 100 Criminals', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_enforcers_trade_produces_add', '0.1', 'civic_indentured_assets', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_trade_produces_add', 'Trade Produced per 100 Enforcers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_criminals_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_valid_civic = civic_indentured_assets is_illegal_criminal = yes', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_criminals_trade_produces_add', 'Trade Produced per 100 Criminals', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_enforcers_trade_produces_add', '0.1', 'civic_corporate_genetic_identification', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_trade_produces_add', 'Trade Produced per 100 Enforcers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_criminals_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_valid_civic = civic_corporate_genetic_identification is_illegal_criminal = yes', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_criminals_trade_produces_add', 'Trade Produced per 100 Criminals', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'country', 'job_capital_trader_add', '200.0', 'civic_indentured_assets', NULL, 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_private_security', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_genetic_identification', NULL, 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_wildcat_miners', 'Wildcat Mining Operations', 'resource', 'Illegal, highly unsafe mining operations operated by the destitute and the desperate, who toil away in the vain hopes of striking it rich.', 'corporate', 292);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_wildcat_miners', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -44987,7 +45629,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_wildcat_miners', 'planet', 'planet_miners_trade_produces_add', '0.30000000000000004', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_reprocessing_facilities', 'Bio-Reprocessing Plants', 'resource', 'Underground facilities where disloyal employees and other forms of unsavory bio-matter are reprocessed into ready-to-eat food products.', 293);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'job_miner_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_add', 'Miner Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'planet_miners_trade_produces_add', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'planet_miners_trade_produces_add', '0.1', 'civic_privatized_exploration', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'planet', 'planet_miners_trade_produces_add', '0.1', 'civic_private_prospectors', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'country', 'job_capital_trader_add', '200.0', 'civic_privatized_exploration', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wildcat_miners', 'country', 'job_capital_trader_add', '200.0', 'civic_private_prospectors', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bio_reprocessing_facilities', 'Bio-Reprocessing Plants', 'resource', 'Underground facilities where disloyal employees and other forms of unsavory bio-matter are reprocessed into ready-to-eat food products.', 'corporate', 293);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_reprocessing_facilities', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45005,7 +45687,57 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_farmers_trade_produces_add', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_underground_chemists', 'Concealed Drug Labs', 'manufacturing', 'Subterranean drug labs in remote regions that are virtually undetectable from the surface. Chemists work day and night here to produce various illegal, highly addictive and quite lucrative narcotics.', 294);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'job_farmer_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_add', 'Farmer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_farmers_trade_produces_add', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_farmers_trade_produces_add', '0.1', NULL, 'branch_office_owner = is_anglers_empire = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_farmers_trade_produces_add', '0.1', 'civic_permanent_employment', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'planet', 'planet_farmers_trade_produces_add', '0.1', 'civic_corporate_deep_sleep', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'country', 'job_capital_trader_add', '200.0', NULL, 'branch_office_owner = is_anglers_empire = yes', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'country', 'job_capital_trader_add', '200.0', 'civic_permanent_employment', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_bio_reprocessing_facilities', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_deep_sleep', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_underground_chemists', 'Concealed Drug Labs', 'manufacturing', 'Subterranean drug labs in remote regions that are virtually undetectable from the surface. Chemists work day and night here to produce various illegal, highly addictive and quite lucrative narcotics.', 'corporate', 294);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_chemists', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45024,7 +45756,52 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_underground_chemists', 'planet', 'planet_artisans_trade_produces_add', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wrecking_yards', 'Wrecking Yards', 'manufacturing', 'Stolen vessels and prize ships brought in by pirates are broken into scrap here. Any valuable components and alloys are carefully salvaged.', 295);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'planet_artisans_trade_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_corporate_crafters', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_media_conglomerate', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'planet', 'planet_artisans_trade_produces_add', '0.1', 'civic_tankbound_corporate', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_crafters', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'country', 'job_capital_trader_add', '200.0', 'civic_media_conglomerate', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_chemists', 'country', 'job_capital_trader_add', '200.0', 'civic_tankbound_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_wrecking_yards', 'Wrecking Yards', 'manufacturing', 'Stolen vessels and prize ships brought in by pirates are broken into scrap here. Any valuable components and alloys are carefully salvaged.', 'corporate', 295);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_wrecking_yards', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45043,7 +45820,52 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_wrecking_yards', 'planet', 'planet_metallurgists_trade_produces_add', '0.4', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pirate_haven', 'Pirate Free Haven', 'army', 'A secluded and hidden city on the colony, where pirates and other lowlifes can congregate to repair their ships and trade stories.', 296);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_naval_contractors', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_corporate_catalytic_processing', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'planet', 'planet_metallurgists_trade_produces_add', '0.1', 'civic_caravan_masters_corporate', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'country', 'job_capital_trader_add', '200.0', 'civic_naval_contractors', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_catalytic_processing', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_wrecking_yards', 'country', 'job_capital_trader_add', '200.0', 'civic_caravan_masters_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_pirate_haven', 'Pirate Free Haven', 'army', 'A secluded and hidden city on the colony, where pirates and other lowlifes can congregate to repair their ships and trade stories.', 'corporate', 296);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_pirate_haven', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45075,7 +45897,82 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_pirate_haven', 'country', 'country_naval_cap_add', '5.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_underground_clubs', 'Underground Clubs', 'amenity', 'These illegal entertainment clubs will satisfy any vice. As night descends, they are open for business in the colony''s seedier districts.', 297);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'army_starting_experience_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_starting_experience_add', 'Army Starting Experience', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_soldiers_trade_produces_add', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_private_military_companies', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_crusader_spirit_corporate', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_soldiers_trade_produces_add', '0.1', 'civic_corporate_hired_guns', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_trade_produces_add', 'Trade Produced per 100 Soldiers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_private_military_companies', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_crusader_spirit_corporate', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'planet', 'planet_knights_trade_produces_add', '0.1', NULL, 'OR = has_active_building = building_order_keep building_order_castle branch_office_owner = has_valid_civic = civic_corporate_hired_guns', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_knights_trade_produces_add', 'Trade Produced per 100 Lord Commanders and Knights', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'country', 'country_naval_cap_add', '5.0', NULL, NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'country', 'job_capital_trader_add', '200.0', 'civic_private_military_companies', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'country', 'job_capital_trader_add', '200.0', 'civic_crusader_spirit_corporate', NULL, 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_pirate_haven', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hired_guns', NULL, 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_underground_clubs', 'Underground Clubs', 'amenity', 'These illegal entertainment clubs will satisfy any vice. As night descends, they are open for business in the colony''s seedier districts.', 'corporate', 297);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_underground_clubs', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45091,7 +45988,47 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_underground_clubs', 'planet', 'planet_entertainers_trade_produces_add', '0.30000000000000004', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_syndicate_outreach_office', 'Syndicate Front Corporations', 'government', 'These above-the-board businesses allow the local criminal syndicate to operate behind a veneer of upstanding legality.', 298);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'job_entertainer_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_entertainer_add', 'Entertainer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_corporate_hedonism', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_corporate_hyperspace_specialty', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hedonism', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_underground_clubs', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hyperspace_specialty', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_syndicate_outreach_office', 'Syndicate Front Corporations', 'government', 'These above-the-board businesses allow the local criminal syndicate to operate behind a veneer of upstanding legality.', 'corporate', 298);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_syndicate_outreach_office', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45110,7 +46047,42 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_syndicate_outreach_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.30000000000000004', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_illicit_research_labs', 'Illicit Research Labs', 'research', 'All manner of highly illegal research and development is carried out in these secret laboratories.', 299);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', 'civic_corporate_ascensionists', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'planet', 'planet_bureaucrats_trade_produces_add', '0.1', 'civic_public_relations_specialists', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_ascensionists', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_syndicate_outreach_office', 'country', 'job_capital_trader_add', '200.0', 'civic_public_relations_specialists', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_illicit_research_labs', 'Illicit Research Labs', 'research', 'All manner of highly illegal research and development is carried out in these secret laboratories.', 'corporate', 299);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_illicit_research_labs', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45145,7 +46117,72 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_illicit_research_labs', 'planet', 'planet_engineers_trade_produces_add', '0.30000000000000004', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_smuggling_rings', 'Smuggler''s Port', 'government', 'An unauthorized spaceport that remains off the records thanks to secrecy and generous bribes. Large volumes of illegal cargo passes through here every day.', 300);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_physicists_trade_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_biologists_trade_produces_add', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_engineers_trade_produces_add', '0.1', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_physicists_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_biologists_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_engineers_trade_produces_add', '0.1', 'civic_corporate_dark_consortium', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_physicists_trade_produces_add', '0.1', 'civic_memory_vault_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_trade_produces_add', 'Trade Produced per 100 Physicists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_biologists_trade_produces_add', '0.1', 'civic_memory_vault_corporate', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_trade_produces_add', 'Trade Produced per 100 Biologists', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'planet', 'planet_engineers_trade_produces_add', '0.1', 'civic_memory_vault_corporate', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_trade_produces_add', 'Trade Produced per 100 Engineers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_dark_consortium', NULL, 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_illicit_research_labs', 'country', 'job_capital_trader_add', '200.0', 'civic_memory_vault_corporate', NULL, 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_smuggling_rings', 'Smuggler''s Port', 'government', 'An unauthorized spaceport that remains off the records thanks to secrecy and generous bribes. Large volumes of illegal cargo passes through here every day.', 'corporate', 300);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_smuggling_rings', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45161,7 +46198,57 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_smuggling_rings', 'planet', 'planet_traders_trade_produces_add', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_disinformation_center', 'Disinformation Center', 'government', 'Through targeted advertisements and propaganda, we can control opinion and make the people agree with our version of the truth.', 301);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'job_trader_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_trader_add', 'Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'job_criminal_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'planet_traders_trade_produces_add', '0.05', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_trading_posts', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_franchising', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_caravan_masters_corporate', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'country', 'job_capital_trader_add', '200.0', 'civic_trading_posts', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'country', 'job_capital_trader_add', '200.0', 'civic_franchising', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_smuggling_rings', 'country', 'job_capital_trader_add', '200.0', 'civic_caravan_masters_corporate', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_disinformation_center', 'Disinformation Center', 'government', 'Through targeted advertisements and propaganda, we can control opinion and make the people agree with our version of the truth.', 'corporate', 301);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_disinformation_center', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45188,7 +46275,57 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_disinformation_center', 'planet', 'planet_politicians_trade_produces_add', '0.6', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_subversive_shrine', 'Subversive Shrine', 'unity', 'A meeting place for followers of the Subversive Cult to gather and conduct their ceremonies.', 302);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'country', 'spy_network_levels_add', '5.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('spy_network_levels_add', 'Maximum Infiltration Level', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'pop_government_ethic_attraction', '-0.25', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'planet_politicians_trade_produces_add', '0.15', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_brand_loyalty', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_corporate_guided_sapience', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'planet', 'planet_politicians_trade_produces_add', '0.15', 'civic_secret_societies_corporate', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'country', 'job_capital_trader_add', '200.0', 'civic_brand_loyalty', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_guided_sapience', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_disinformation_center', 'country', 'job_capital_trader_add', '200.0', 'civic_secret_societies_corporate', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_subversive_shrine', 'Subversive Shrine', 'unity', 'A meeting place for followers of the Subversive Cult to gather and conduct their ceremonies.', 'corporate', 302);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_subversive_shrine', 'cost', 'influence', '30.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45209,8 +46346,26 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_subversive_shrine', 'planet', 'pop_ethics_shift_speed_mult', '0.05', NULL, 2);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_subversive_shrine', 'planet', 'job_bureaucrat_add', '200.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_bureaucrat_add', 'Bureaucrat Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_subversive_shrine', 'planet', 'pop_ethic_spiritualist_attraction_mult', '0.25', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_subversive_shrine', 'planet', 'planet_crime_add', '25.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_subversive_shrine', 'planet', 'pop_ethics_shift_speed_mult', '0.05', NULL, 'branch_office_owner = has_councilor = COUNCILOR = councilor_gospel_of_the_masses', 3);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_gospel_of_the_masses', 'building_subversive_shrine');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_temple_of_prosperity', 'Temple of Prosperity', 'unity', 'A high-security temple that spreads the gospel of the Megachurch that built it.', 303);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_temple_of_prosperity', 'Temple of Prosperity', 'unity', 'A high-security temple that spreads the gospel of the Megachurch that built it.', 'corporate', 303);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_temple_of_prosperity', 'cost', 'influence', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45226,8 +46381,21 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_temple_of_prosperity', 'planet', 'pop_ethics_shift_speed_mult', '0.05', NULL, 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_temple_of_prosperity', 'planet', 'job_bureaucrat_add', '200.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_bureaucrat_add', 'Bureaucrat Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_temple_of_prosperity', 'planet', 'pop_ethic_spiritualist_attraction_mult', '0.5', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_temple_of_prosperity', 'planet', 'pop_ethics_shift_speed_mult', '0.05', NULL, 'branch_office_owner = has_councilor = COUNCILOR = councilor_gospel_of_the_masses', 2);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_gospel_of_the_masses', 'building_temple_of_prosperity');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_executive_retreat', 'Executive Retreat', 'amenity', 'A luxurious resort complex for high ranking corporate officers. Here they can sample the local culture in a high security environment.', 304);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_executive_retreat', 'Executive Retreat', 'amenity', 'A luxurious resort complex for high ranking corporate officers. Here they can sample the local culture in a high security environment.', 'corporate', 304);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_executive_retreat', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45253,7 +46421,62 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_executive_retreat', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_xeno_tourism_agency', 'Xeno-Outreach Agency', 'government', 'This corporate agency promotes a wide variety of interstellar tourist attractions, as well as offering employment packages and signing bonuses to potential emigrants interested in relocating to corporate space.', 305);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'country', 'planet_amenities_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_mult', 'Amenities', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_ruthless_competition', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_task_delegation_corporate', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_environmental_architects_megacorp', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_entertainers_trade_produces_add', '0.1', 'civic_entropy_drinkers_corporate', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'country', 'job_capital_trader_add', '200.0', 'civic_ruthless_competition', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'country', 'job_capital_trader_add', '200.0', 'civic_task_delegation_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'country', 'job_capital_trader_add', '200.0', 'civic_environmental_architects_megacorp', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_executive_retreat', 'country', 'job_capital_trader_add', '200.0', 'civic_entropy_drinkers_corporate', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_xeno_tourism_agency', 'Xeno-Outreach Agency', 'government', 'This corporate agency promotes a wide variety of interstellar tourist attractions, as well as offering employment packages and signing bonuses to potential emigrants interested in relocating to corporate space.', 'corporate', 305);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_xeno_tourism_agency', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45279,7 +46502,42 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_xeno_tourism_agency', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_concession_port', 'Imperial Concession Port', 'government', 'This concession port enjoys extraterritorial rights and is legally considered the sovereign territory of the Galactic Imperium. It is exempt from local taxes and regulations.', 306);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'country', 'planet_resettlement_unemployed_destination_mult', '0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_destination_mult', 'Automatic Resettlement Destination Chance', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_civic = civic_corporate_dimensional_worship', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_civic = civic_death_cult_corporate', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_dimensional_worship', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_xeno_tourism_agency', 'country', 'job_capital_trader_add', '200.0', 'civic_death_cult_corporate', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_imperial_concession_port', 'Imperial Concession Port', 'government', 'This concession port enjoys extraterritorial rights and is legally considered the sovereign territory of the Galactic Imperium. It is exempt from local taxes and regulations.', 'corporate', 306);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_concession_port', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45301,7 +46559,22 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_imperial_concession_port', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_knightly_theme_park', 'Knightly Fair Grounds', 'amenity', 'Looking like a true fortress, this building is actually a park glorifying our knights and the Quest. Visitors can buy autographs, action figures, and holoposters of their favorite knights. Of course, the true purpose of the facility is to collect information for our Quest and serve as a resupply point for questing knights.', 307);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_imperial_concession_port', 'country', 'diplo_weight_economy_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_imperial_concession_port', 'planet', 'planet_politicians_trade_produces_add', '0.15', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_trade_produces_add', 'Trade Produced per 100 Politicians', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_imperial_concession_port', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_knightly_theme_park', 'Knightly Fair Grounds', 'amenity', 'Looking like a true fortress, this building is actually a park glorifying our knights and the Quest. Visitors can buy autographs, action figures, and holoposters of their favorite knights. Of course, the true purpose of the facility is to collect information for our Quest and serve as a resupply point for questing knights.', 'corporate', 307);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_knightly_theme_park', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45318,8 +46591,38 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_knightly_theme_park', 'planet', 'planet_crime_floor_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_civic = civic_corporate_hedonism', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'planet', 'planet_entertainers_trade_produces_add', '0.1', NULL, 'branch_office_owner = has_civic = civic_corporate_hyperspace_specialty', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hedonism', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_knightly_theme_park', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_hyperspace_specialty', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_toxic_knights', 'building_knightly_theme_park');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_corporate_clinics', 'Corporate Clinic', 'resource', 'A private medical company employing local and off-world medical specialists to provide services for a reasonable fee.', 308);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_corporate_clinics', 'Corporate Clinic', 'resource', 'A private medical company employing local and off-world medical specialists to provide services for a reasonable fee.', 'corporate', 308);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_corporate_clinics', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45344,10 +46647,60 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_corporate_clinics', 'planet', 'planet_doctors_trade_produces_add', '2.15', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_doctors_trade_produces_add', 'Trade Produced per 100 Medical Workers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'planet_crime_add', '25.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes NOT = is_legit_or_legal_criminal = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'job_healthcare_add', '100.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_healthcare_add', 'Medical Worker Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'job_healthcare_amenities_add', '100.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_healthcare_amenities_add', 'Amenities from Medical Workers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'planet_doctors_trade_produces_add', '2.0', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_doctors_trade_produces_add', 'Trade Produced per 100 Medical Workers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'job_healthcare_add', '100.0', NULL, 'branch_office_owner = OR = is_criminal_syndicate = no AND = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_healthcare_add', 'Medical Worker Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'job_criminal_add', '100.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes NOT = is_legit_or_legal_criminal = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'planet', 'planet_doctors_trade_produces_add', '0.15', NULL, 'branch_office_owner = AND = has_valid_civic = civic_private_healthcare_corporate OR = has_valid_civic = civic_corporate_toxic_baths civic_corporate_toxic_baths_individual_machine', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_doctors_trade_produces_add', 'Trade Produced per 100 Medical Workers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'country', 'job_capital_trader_add', '200.0', 'civic_private_healthcare_corporate', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_corporate_clinics', 'country', 'job_capital_trader_add', '200.0', NULL, 'branch_office_owner = OR = has_valid_civic = civic_corporate_toxic_baths civic_corporate_toxic_baths_individual_machine', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_corporate_toxic_baths', 'building_corporate_clinics');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_corporate_toxic_baths_individual_machine', 'building_corporate_clinics');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_private_healthcare_corporate', 'building_corporate_clinics');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_bazaars_branch', 'Offworld Implant Hub', 'trade', 'Need to be faster, jump higher, think better, last longer? Exotic imports from all across the galaxy are now available for purchase at your local Implant Hub.', 309);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_augmentation_bazaars_branch', 'Offworld Implant Hub', 'trade', 'Need to be faster, jump higher, think better, last longer? Exotic imports from all across the galaxy are now available for purchase at your local Implant Hub.', 'corporate', 309);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars_branch', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45375,8 +46728,43 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_augmentation_bazaars_branch', 'planet', 'planet_augmentors_trade_produces_add', '0.15', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_augmentors_trade_produces_add', 'Trade Produced per 100 Augmentors', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'planet_jobs_trade_produces_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'job_augmentor_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_augmentor_add', 'Augmentor Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'job_augmentor_add', '100.0', NULL, 'branch_office_owner = OR = is_criminal_syndicate = no AND = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_augmentor_add', 'Augmentor Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'job_criminal_add', '100.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes NOT = is_legit_or_legal_criminal = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_criminal_add', 'Criminal Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'planet_crime_add', '25.0', NULL, 'exists = branch_office_owner branch_office_owner = is_criminal_syndicate = yes NOT = is_legit_or_legal_criminal = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes is_legit_or_legal_criminal = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_augmentation_bazaars_branch', 'planet', 'planet_augmentors_trade_produces_add', '0.15', NULL, NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_augmentors_trade_produces_add', 'Trade Produced per 100 Augmentors', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_augmentation_bazaars', 'building_augmentation_bazaars_branch');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ai_emporium', 'AI Emporium', 'resource', 'The one stop mega-complex for all your Artificial Intelligence needs. Have sentient AIs transform ordinary objects into smart companions for your family or business. AI a bit too self-aware for its own good? Bring it here and our skilled technicians will reset it faster than the speed of sublight.', 310);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ai_emporium', 'AI Emporium', 'resource', 'The one stop mega-complex for all your Artificial Intelligence needs. Have sentient AIs transform ordinary objects into smart companions for your family or business. AI a bit too self-aware for its own good? Bring it here and our skilled technicians will reset it faster than the speed of sublight.', 'corporate', 310);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ai_emporium', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45399,8 +46787,28 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_ai_emporium', 'planet', 'planet_crime_floor_add', '5.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_clear_thought_clinic', 'Clear Thought Clinic', 'resource', 'Got memories you no longer need? Turn them into Energy Credits! Our trained team will remove them safely and securely! The more joyous the memory, the bigger the payout!
-This operation is final and thought patterns cannot be restored once extracted.', 311);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_ai_emporium', 'planet', 'job_roboticist_branch_office_value_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_roboticist_branch_office_value_mult', 'Branch Office Value from Roboticists and Identity Designers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_ai_emporium', 'planet', 'job_roboticist_add', '100.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_roboticist_add', 'Roboticist Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_ai_emporium', 'planet', 'planet_crime_add', '25.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_ai_emporium', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_clear_thought_clinic', 'Clear Thought Clinic', 'resource', 'Got memories you no longer need? Turn them into Energy Credits! Our trained team will remove them safely and securely! The more joyous the memory, the bigger the payout!
+This operation is final and thought patterns cannot be restored once extracted.', 'corporate', 311);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_clear_thought_clinic', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45428,7 +46836,32 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_clear_thought_clinic', 'planet', 'pop_happiness', '-0.05', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_carceral_test_facility', 'Experimentation Offices', 'research', 'A colonial office that promotes franchising opportunities to prospective stakeholders, empowering them to establish their own experimental testing programs. Bring down crime and scale up defense!', 312);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_clear_thought_clinic', 'planet', 'planet_crime_add', '25.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_clear_thought_clinic', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_clear_thought_clinic', 'planet', 'planet_jobs_trade_produces_mult', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_clear_thought_clinic', 'planet', 'pop_happiness', '-0.05', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_clear_thought_clinic', 'planet', 'job_trader_add', '200.0', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_trader_add', 'Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_carceral_test_facility', 'Experimentation Offices', 'research', 'A colonial office that promotes franchising opportunities to prospective stakeholders, empowering them to establish their own experimental testing programs. Bring down crime and scale up defense!', 'corporate', 312);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45441,8 +46874,13 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_carceral_test_facility', 'produces', 'society_research', '1.0', 4);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_carceral_test_facility', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_carceral_test_facility', 'enforcer', '100.0', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_carceral_test_facility', 'planet', 'job_slave_orderly_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_slave_orderly_add', 'Orderly Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_twisted_experimenters_corporate', 'building_carceral_test_facility');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psionic_offices', 'Psionic Offices', 'unity', 'The complexities of foreign minds can be navigated more effectively while in their physical presence, allowing the most lucrative of trade deals to be established for both sides.', 313);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_psionic_offices', 'Psionic Offices', 'unity', 'The complexities of foreign minds can be navigated more effectively while in their physical presence, allowing the most lucrative of trade deals to be established for both sides.', 'corporate', 313);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_offices', 'cost', 'influence', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45470,7 +46908,37 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_psionic_offices', 'country', 'psionic_aura_effectiveness_mult', '0.02', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_aura_effectiveness_mult', 'Psionic Aura Effectiveness', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_living_metal_clinic', 'Living Metal Enhancement Clinic', 'resource', 'This clinic sells a performance enhancing Living Metal compound to the local population, generating profit and useful byproducts.', 314);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'planet', 'job_shroud_trader_add', '200.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_shroud_trader_add', 'Empathic Marketer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'planet', 'planet_crime_add', '25.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'planet', 'planet_crime_floor_add', '5.0', NULL, 'branch_office_owner = is_criminal_syndicate = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_floor_add', 'Minimum Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'planet', 'planet_traders_trade_produces_add', '0.05', 'civic_corporate_chosen', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'country', 'psionic_aura_effectiveness_mult', '0.02', NULL, 'branch_office_owner = has_authority = auth_corporate is_corporeal_authority = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('psionic_aura_effectiveness_mult', 'Psionic Aura Effectiveness', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_psionic_offices', 'country', 'job_capital_trader_add', '200.0', 'civic_corporate_chosen', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_capital_trader_add', 'Capital Trader Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_living_metal_clinic', 'Living Metal Enhancement Clinic', 'resource', 'This clinic sells a performance enhancing Living Metal compound to the local population, generating profit and useful byproducts.', 'corporate', 314);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_living_metal_clinic', 'cost', 'influence', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45483,11 +46951,16 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_living_metal_clinic', 'planet', 'planet_jobs_worker_produces_mult', '0.05', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('building_living_metal_clinic', 'planet', 'planet_jobs_worker_produces_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_corporate_galvanic_symbiosis', 'building_living_metal_clinic');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_galvanic_symbiosis', 'building_living_metal_clinic');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_galvanic_symbiosis', 'building_living_metal_clinic');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_galvanic_symbiosis', 'building_living_metal_clinic');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_garrison', 'Overlord Garrison', 'army', 'A garrison established to oversee the local enforcers, occasionally reinforced by military battalions in more dire circumstances.', 315);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_garrison', 'Overlord Garrison', 'army', 'A garrison established to oversee the local enforcers, occasionally reinforced by military battalions in more dire circumstances.', 'subject_holding', 315);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_garrison', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45501,7 +46974,15 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_garrison', 'planet', 'monthly_loyalty', '0.5', NULL, 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_orbital_assembly_complex', 'Orbital Assembly Complex', 'manufacturing', 'A soaring building filled with long assembly lines, creating everything one could dream of.', 316);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_garrison', 'planet', 'planet_crime_add', '-10.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_garrison', 'planet', 'monthly_loyalty', '0.5', NULL, NULL, 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_orbital_assembly_complex', 'Orbital Assembly Complex', 'manufacturing', 'A soaring building filled with long assembly lines, creating everything one could dream of.', 'subject_holding', 316);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_orbital_assembly_complex', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45514,19 +46995,44 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_orbital_assembly_complex', 'planet', 'planet_building_build_speed_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_propaganda_office', 'Ministry of Truth', 'government', 'A ministry overseeing local faiths, news, and political interest groups. With the right prod everything runs a tad smoother.', 317);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_orbital_assembly_complex', 'planet', 'planet_building_build_speed_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_propaganda_office', 'Ministry of Truth', 'government', 'A ministry overseeing local faiths, news, and political interest groups. With the right prod everything runs a tad smoother.', 'subject_holding', 317);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_propaganda_office', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_propaganda_office', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_propaganda_office', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_satellite_campus', 'Satellite Campus', 'research', 'A large campus where domestic researchers and foreign scientists can come together to share ideas and conduct experiments.', 318);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_propaganda_office', 'planet', 'job_overlord_propagandist_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_propagandist_add', 'Overlord Propagandist Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_propaganda_office', 'planet', 'job_overlord_propagandist_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_propagandist_drone_add', 'Overlord Propagandist Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_satellite_campus', 'Satellite Campus', 'research', 'A large campus where domestic researchers and foreign scientists can come together to share ideas and conduct experiments.', 'subject_holding', 318);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_satellite_campus', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_satellite_campus', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_satellite_campus', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_emporium', 'Emporium', 'amenity', 'Large shopping malls filled with futuristic and exotic wares from distant planets.', 319);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_satellite_campus', 'planet', 'job_overlord_academic_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_academic_add', 'Overlord Academic Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_satellite_campus', 'planet', 'job_overlord_academic_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_academic_drone_add', 'Overlord Academic Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_emporium', 'Emporium', 'amenity', 'Large shopping malls filled with futuristic and exotic wares from distant planets.', 'subject_holding', 319);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_emporium', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45534,7 +47040,17 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_emporium', 'upkeep', 'consumer_goods', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_emporium', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_aid_agency', 'Aid Agency', 'amenity', 'Agencies founded and staffed by foreign benefactors, bringing some of their culture and knowledge to the planet.', 320);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_emporium', 'planet', 'job_overlord_trader_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_trader_add', 'Overlord Trader Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_emporium', 'planet', 'job_overlord_trader_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_trader_drone_add', 'Distribution Drone Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_aid_agency', 'Aid Agency', 'amenity', 'Agencies founded and staffed by foreign benefactors, bringing some of their culture and knowledge to the planet.', 'subject_holding', 320);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_aid_agency', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45543,7 +47059,20 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_aid_agency', '480
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_aid_agency', 'planet', 'monthly_loyalty', '0.5', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_energy_requisitorium', 'Ministry of Energy', 'resource', 'A ministry overseeing taxation and the minting of energy credits, often coming into conflict with the domestic bureaucracy.', 321);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_aid_agency', 'planet', 'monthly_loyalty', '0.5', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_aid_agency', 'planet', 'job_aid_worker_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_aid_worker_add', 'Aid Worker Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_aid_agency', 'planet', 'job_aid_worker_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_aid_worker_drone_add', 'Aid Worker Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_energy_requisitorium', 'Ministry of Energy', 'resource', 'A ministry overseeing taxation and the minting of energy credits, often coming into conflict with the domestic bureaucracy.', 'subject_holding', 321);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_energy_requisitorium', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45554,7 +47083,10 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_energy_requisitor
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_energy_requisitorium', 'planet', 'monthly_loyalty', '-0.25', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_material_requisitorium', 'Ministry of Extraction', 'resource', 'A ministry overseeing local mineral production, extraction, and purification. They often secure the best land purchases and reap the benefits for their patron.', 322);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_energy_requisitorium', 'planet', 'monthly_loyalty', '-0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_material_requisitorium', 'Ministry of Extraction', 'resource', 'A ministry overseeing local mineral production, extraction, and purification. They often secure the best land purchases and reap the benefits for their patron.', 'subject_holding', 322);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_material_requisitorium', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45565,7 +47097,10 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_material_requisit
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_material_requisitorium', 'planet', 'monthly_loyalty', '-0.5', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_produce_requisitorium', 'Ministry of Acquisition', 'resource', 'A ministry overseeing local produce. In addition to placing a small tax on this world, some products have a tendency to disappear into their convoluted, bureaucratic process.', 323);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_material_requisitorium', 'planet', 'monthly_loyalty', '-0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_produce_requisitorium', 'Ministry of Acquisition', 'resource', 'A ministry overseeing local produce. In addition to placing a small tax on this world, some products have a tendency to disappear into their convoluted, bureaucratic process.', 'subject_holding', 323);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_produce_requisitorium', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45576,7 +47111,13 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_produce_requisito
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_produce_requisitorium', 'planet', 'monthly_loyalty', '-0.5', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_splinter_hive', 'Splinter Hive', 'pop_assembly', 'A large biomass producing new workers for the hive. Though it stands apart from the original hive, it is still connected to the neural network.', 324);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_produce_requisitorium', 'planet', 'monthly_loyalty', '-0.25', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_produce_requisitorium', 'planet', 'monthly_loyalty', '-0.25', NULL, 'exists = owner.overlord owner.overlord = country_uses_consumer_goods = yes', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_splinter_hive', 'Splinter Hive', 'pop_assembly', 'A large biomass producing new workers for the hive. Though it stands apart from the original hive, it is still connected to the neural network.', 'subject_holding', 324);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_splinter_hive', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45585,7 +47126,20 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_splinter_hive', '
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_splinter_hive', 'planet', 'monthly_loyalty', '-2.0', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_distributed_processing', 'Distributed Processing', 'research', 'A cold structure eclipsing the local region. Those who work here refuse to elaborate on what they do, but no-one leaves the experience entirely unscathed.', 325);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_splinter_hive', 'planet', 'monthly_loyalty', '-2.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_splinter_hive', 'planet', 'job_overlord_breeder_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_breeder_add', 'Overlord Breeder Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_splinter_hive', 'planet', 'job_overlord_breeder_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_breeder_drone_add', 'Overlord Breeder Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_distributed_processing', 'Distributed Processing', 'research', 'A cold structure eclipsing the local region. Those who work here refuse to elaborate on what they do, but no-one leaves the experience entirely unscathed.', 'subject_holding', 325);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_distributed_processing', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45594,14 +47148,37 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_distributed_proce
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_distributed_processing', 'planet', 'monthly_loyalty', '-2.0', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_offspring_nest', 'Offspring Nest', 'government', 'At this nest, a foreign hivemind has a unique representative acting as a centralized node for its neural network. This has enabled its continued control over the colony.', 326);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_distributed_processing', 'planet', 'monthly_loyalty', '-2.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_distributed_processing', 'planet', 'job_mind_thrall_add', '400.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_mind_thrall_add', 'Mind Thrall Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_distributed_processing', 'planet', 'job_mind_thrall_drone_add', '400.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_mind_thrall_drone_add', 'Mind Thrall Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_offspring_nest', 'Offspring Nest', 'government', 'At this nest, a foreign hivemind has a unique representative acting as a centralized node for its neural network. This has enabled its continued control over the colony.', 'subject_holding', 326);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_offspring_nest', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_offspring_nest', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_offspring_nest', '480.0');
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offspring_nest', 'planet', 'job_overlord_offspring_drone_feeder_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_offspring_drone_feeder_add', 'Offspring Drone Feeder Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offspring_nest', 'planet', 'job_overlord_offspring_drone_feeder_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_offspring_drone_feeder_drone_add', 'Offspring Drone Feeder Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_progenitor_hive', 'holding_offspring_nest');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_offworld_foundry', 'Offworld Foundry', 'manufacturing', 'Large foundries owned by a foreign empire, siphoning off local resources for the creation of high quality alloys.', 327);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_offworld_foundry', 'Offworld Foundry', 'manufacturing', 'Large foundries owned by a foreign empire, siphoning off local resources for the creation of high quality alloys.', 'subject_holding', 327);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_offworld_foundry', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45610,7 +47187,33 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_offworld_foundry'
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_offworld_foundry', 'planet', 'monthly_loyalty', '-1.5', NULL, 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_overlord_vigil_command', 'Vigil Command', 'army', 'A command center specialized in - and delegated to - calculating the best possible means of increasing defensive measures.', 328);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'monthly_loyalty', '-1.5', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'job_overlord_metallurgist_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no is_catalytic_empire = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_metallurgist_add', 'Overlord Metallurgist Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'job_overlord_foundry_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_hive_empire = yes is_catalytic_empire = no', 2);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'job_overlord_fabricator_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_machine_empire = yes is_catalytic_empire = no', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_fabricator_add', 'Overlord Fabricator Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'job_overlord_catalytic_technician_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_catalytic_empire = yes is_gestalt = no', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_catalytic_technician_add', 'Overlord Catalytic Technician Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_offworld_foundry', 'planet', 'job_overlord_catalytic_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_catalytic_empire = yes is_gestalt = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_catalytic_drone_add', 'Overlord Catalytic Drone Jobs', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_overlord_vigil_command', 'Vigil Command', 'army', 'A command center specialized in - and delegated to - calculating the best possible means of increasing defensive measures.', 'subject_holding', 328);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_overlord_vigil_command', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45621,7 +47224,32 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_overlord_vigil_command', 'country', 'starbase_defense_platform_capacity_add', '7.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('starbase_defense_platform_capacity_add', 'Defense Platforms Cap', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_parasitic_algorithms', 'Ministry of Science', 'research', 'A ministry overseeing local research and science, bringing the most noteworthy breakthroughs and discoveries back to their benefactor.', 329);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_overlord_vigil_command', 'planet', 'job_overlord_beholder_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_beholder_add', 'Overlord Beholder Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_overlord_vigil_command', 'planet', 'job_overlord_beholder_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_beholder_drone_add', 'Overlord Beholder Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_overlord_vigil_command', 'country', 'starbase_defense_platform_capacity_add', '1.0', NULL, 'planet.owner = is_specialist_subject_tier = TYPE = bulwark TIER = 1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_add', 'Defense Platforms Cap', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_overlord_vigil_command', 'country', 'starbase_defense_platform_capacity_add', '2.0', NULL, 'planet.owner = is_specialist_subject_tier = TYPE = bulwark TIER = 2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_add', 'Defense Platforms Cap', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_overlord_vigil_command', 'country', 'starbase_defense_platform_capacity_add', '4.0', NULL, 'planet.owner = is_specialist_subject_tier = TYPE = bulwark TIER = 3', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defense_platform_capacity_add', 'Defense Platforms Cap', 1);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_parasitic_algorithms', 'Ministry of Science', 'research', 'A ministry overseeing local research and science, bringing the most noteworthy breakthroughs and discoveries back to their benefactor.', 'subject_holding', 329);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_parasitic_algorithms', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45638,7 +47266,18 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_parasitic_algorithms', 'country', 'planet_researchers_upkeep_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_noble_vacation_homes', 'Noble Chateaus', 'amenity', 'A home away from home, this is the perfect place for the Overlord''s ruling elite to let off steam, so that they don''t cause incidents back home.', 330);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_parasitic_algorithms', 'planet', 'monthly_loyalty', '-1.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_parasitic_algorithms', 'country', 'all_technology_research_speed', '0.03', NULL, NULL, 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_parasitic_algorithms', 'country', 'planet_researchers_upkeep_mult', '0.03', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_noble_vacation_homes', 'Noble Chateaus', 'amenity', 'A home away from home, this is the perfect place for the Overlord''s ruling elite to let off steam, so that they don''t cause incidents back home.', 'subject_holding', 330);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_noble_vacation_homes', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45657,15 +47296,38 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_noble_vacation_homes', 'planet', 'planet_amenities_no_happiness_add', '-1500.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_noble_vacation_homes', 'planet', 'monthly_loyalty', '-1.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_noble_vacation_homes', 'planet', 'planet_amenities_add', '-1500.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_noble_vacation_homes', 'planet', 'planet_amenities_no_happiness_add', '-1500.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_aristocratic_elite', 'holding_noble_vacation_homes');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_dread_outpost', 'Dread Outpost', 'army', 'The Dread Outpost is an arcane structure that produces unholy reanimated armies while sending back insidious data to this planet''s Overlord.', 331);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_dread_outpost', 'Dread Outpost', 'army', 'The Dread Outpost is an arcane structure that produces unholy reanimated armies while sending back insidious data to this planet''s Overlord.', 'subject_holding', 331);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_dread_outpost', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_dread_outpost', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_dread_outpost', '480.0');
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_dread_outpost', 'planet', 'job_overlord_necromancer_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_necromancer_add', 'Overlord Necromancer Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_dread_outpost', 'planet', 'job_overlord_necromancer_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_necromancer_drone_add', 'Overlord Necromancer Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_reanimated_armies', 'holding_dread_outpost');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_communal_housing_outreach', 'Communal Housing Outreach', 'amenity', 'Everyone is entitled to a home, which is why the Overlord has extended their Communal Housing Project to this planet. This serves as a great forum for teaching the inhabitants the value of egalitarianism.', 332);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_communal_housing_outreach', 'Communal Housing Outreach', 'amenity', 'Everyone is entitled to a home, which is why the Overlord has extended their Communal Housing Project to this planet. This serves as a great forum for teaching the inhabitants the value of egalitarianism.', 'subject_holding', 332);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_communal_housing_outreach', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45694,8 +47356,34 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_communal_housing_outreach', 'planet', 'pop_ethic_egalitarian_attraction_mult', '1.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'planet_amenities_add', '750.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'planet_housing_add', '1000.0', NULL, 'exists = owner owner = is_wilderness_empire = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_housing_add', 'Housing', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'planet_building_build_speed_mult', '0.15', NULL, 'exists = owner owner = is_wilderness_empire = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = is_authoritarian = yes', 3);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'monthly_loyalty', '1.0', NULL, 'exists = planet.owner planet.owner = is_egalitarian = yes', 4);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_communal_housing_outreach', 'planet', 'pop_ethic_egalitarian_attraction_mult', '1.0', NULL, 'exists = planet.owner planet.owner = is_egalitarian = no is_gestalt = no', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_shared_burden', 'holding_communal_housing_outreach');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_idyllic_bloom', 'Gaia Seeder Outpost', 'government', 'Hyper-advanced terraforming techniques mastered by the Overlord are housed in this structure. After being introduced to the planet, it will take a decade to finish its world-changing work.', 333);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_idyllic_bloom', 'Gaia Seeder Outpost', 'government', 'Hyper-advanced terraforming techniques mastered by the Overlord are housed in this structure. After being introduced to the planet, it will take a decade to finish its world-changing work.', 'subject_holding', 333);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_idyllic_bloom', 'cost', 'exotic_gases', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45711,10 +47399,21 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_idyllic_bloom', 'planet', 'monthly_loyalty', '0.5', 'ap_hydrocentric', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_idyllic_bloom', 'planet', 'pop_environment_tolerance', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_idyllic_bloom', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = has_ascension_perk = ap_hydrocentric', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_idyllic_bloom', 'planet', 'monthly_loyalty', '1.0', NULL, 'exists = planet.owner planet.owner = NOT = has_ascension_perk = ap_hydrocentric', 2);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_idyllic_bloom', 'holding_idyllic_bloom');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_idyllic_bloom', 'holding_idyllic_bloom');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_life_seeded', 'holding_idyllic_bloom');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_reemployment_center', 'Reemployment Center', 'pop_assembly', 'Never leave a resource unexploited, even if that resource is the Subject''s dead. With the Reemployment Center, the Overlord can ensure that the Subject''s planets are always filled with employees even though the quality of work might vary.', 334);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_reemployment_center', 'Reemployment Center', 'pop_assembly', 'Never leave a resource unexploited, even if that resource is the Subject''s dead. With the Reemployment Center, the Overlord can ensure that the Subject''s planets are always filled with employees even though the quality of work might vary.', 'subject_holding', 334);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_reemployment_center', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45723,8 +47422,21 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_reemployment_cent
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_reemployment_center', 'planet', 'monthly_loyalty', '-0.5', NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_reemployment_center', 'planet', 'job_overlord_reassigner_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_reassigner_add', 'Overlord Reassigner Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_reemployment_center', 'planet', 'job_overlord_reassigner_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_reassigner_drone_add', 'Overlord Reassigner Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_reemployment_center', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = is_egalitarian = yes', 2);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_permanent_employment', 'holding_reemployment_center');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_recruitment_office', 'Recruitment Office', 'army', 'Everyone must do their part. That is why the Overlord is offering military training in exchange for a tour in their fleet. Service guarantees citizenship.', 335);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_recruitment_office', 'Recruitment Office', 'army', 'Everyone must do their part. That is why the Overlord is offering military training in exchange for a tour in their fleet. Service guarantees citizenship.', 'subject_holding', 335);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_recruitment_office', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45738,15 +47450,43 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_recruitment_office', 'country', 'country_naval_cap_add', '5.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_recruitment_office', 'planet', 'job_overlord_recruiter_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_recruiter_add', 'Overlord Recruiter Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_recruitment_office', 'planet', 'job_overlord_recruiter_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_recruiter_drone_add', 'Overlord Recruiter Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_recruitment_office', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = is_pacifist = yes', 2);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_recruitment_office', 'country', 'country_naval_cap_add', '5.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_citizen_service', 'holding_recruitment_office');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_park_ranger_lodge', 'Ranger Lodge', 'amenity', 'The Overlord has an interest in co-existing with nature and wishes to spread this joy to its Vassal. To ensure that there always is at least some nature left to enjoy.', 336);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_park_ranger_lodge', 'Ranger Lodge', 'amenity', 'The Overlord has an interest in co-existing with nature and wishes to spread this joy to its Vassal. To ensure that there always is at least some nature left to enjoy.', 'subject_holding', 336);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_park_ranger_lodge', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_park_ranger_lodge', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_park_ranger_lodge', '480.0');
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_park_ranger_lodge', 'planet', 'job_overlord_ranger_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_ranger_add', 'Overlord Ranger Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_park_ranger_lodge', 'planet', 'job_overlord_ranger_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_ranger_drone_add', 'Overlord Ranger Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_environmentalist', 'holding_park_ranger_lodge');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_tree_of_life_sapling', 'Tree of Life Sprout', 'resource', 'The Overlord has existed with their Tree of Life for so long that they can no longer imagine life without it. Now, they want to share the same opportunity with their vassals.', 337);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_tree_of_life_sapling', 'Tree of Life Sprout', 'resource', 'The Overlord has existed with their Tree of Life for so long that they can no longer imagine life without it. Now, they want to share the same opportunity with their vassals.', 'subject_holding', 337);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_tree_of_life_sapling', 'cost', 'food', '1000.0', 0);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_tree_of_life_sapling', '360.0');
@@ -45763,8 +47503,31 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_tree_of_life_sapling', 'planet', 'planet_farmers_food_produces_add', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_tree_of_life_sapling', 'planet', 'monthly_loyalty', '1.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_tree_of_life_sapling', 'planet', 'pop_environment_tolerance', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_tree_of_life_sapling', 'planet', 'planet_farmers_food_produces_add', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_tree_of_life_sapling', 'planet', 'job_overlord_arborist_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_arborist_add', 'Overlord Arborist Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_tree_of_life_sapling', 'planet', 'job_overlord_arborist_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_arborist_drone_add', 'Overlord Arborist Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_tree_of_life', 'holding_tree_of_life_sapling');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_experimental_crater', 'Experimental Crater', 'research', 'A designated area for testing new asteroidal colony ships. It might not be the most convenient way to test the ships, but outsourcing the process definitely saves on the clean-up costs for the Overlord.', 338);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_experimental_crater', 'Experimental Crater', 'research', 'A designated area for testing new asteroidal colony ships. It might not be the most convenient way to test the ships, but outsourcing the process definitely saves on the clean-up costs for the Overlord.', 'subject_holding', 338);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_experimental_crater', 'produces', 'engineering_research', '8.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45773,16 +47536,42 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_experimental_crat
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_experimental_crater', 'planet', 'monthly_loyalty', '-1.0', NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_experimental_crater', 'planet', 'monthly_loyalty', '-1.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_experimental_crater', 'planet', 'job_miner_add', '300.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_add', 'Miner Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_experimental_crater', 'planet', 'job_mining_drone_add', '300.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_mining_drone_add', 'Mining Drone Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_lithoid', 'holding_experimental_crater');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_organic_sanctuary', 'Organic Haven', 'unity', 'Although the care facilities on this planet are more limited in scope than those found on the Overlord''s worlds, the bio-trophies inside still enjoy a much more comfortable standard of living than they are used to.', 339);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_organic_sanctuary', 'Organic Haven', 'unity', 'Although the care facilities on this planet are more limited in scope than those found on the Overlord''s worlds, the bio-trophies inside still enjoy a much more comfortable standard of living than they are used to.', 'subject_holding', 339);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_organic_sanctuary', 'upkeep', 'consumer_goods', '10.0', 0);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_organic_sanctuary', '480.0');
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_organic_sanctuary', 'planet', 'monthly_loyalty', '0.5', NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_organic_sanctuary', 'planet', 'job_overlord_bio_trophy_add', '500.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_bio_trophy_add', 'Overlord Bio-Trophy Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_organic_sanctuary', 'planet', 'monthly_loyalty', '0.5', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_organic_sanctuary', 'planet', 'job_overlord_bio_trophy_drone_add', '500.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_bio_trophy_drone_add', 'Overlord Bio-Trophy Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_machine_servitor', 'holding_organic_sanctuary');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_franchise_headquarters', 'Franchise Headquarters', 'government', 'These offices allow Corporate Management to realign the Subsidiary''s interests with that of their Overlord through mandatory planet-wide training and team-building exercises.', 340);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_franchise_headquarters', 'Franchise Headquarters', 'government', 'These offices allow Corporate Management to realign the Subsidiary''s interests with that of their Overlord through mandatory planet-wide training and team-building exercises.', 'subject_holding', 340);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_franchise_headquarters', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45826,8 +47615,51 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_egalitarian_attraction_mult', '1.0', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'monthly_loyalty', '-0.5', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'job_overlord_manager_add', '200.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_manager_add', 'Overlord Manager Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'planet_traders_trade_produces_add', '-2.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_spiritualist_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_spiritualist = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_materialist_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_materialist = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_xenophobe_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_xenophobe = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_xenophile_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_xenophile = yes', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_authoritarian_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_authoritarian = yes', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_franchise_headquarters', 'planet', 'pop_ethic_egalitarian_attraction_mult', '1.0', NULL, 'owner.overlord = is_fanatic_egalitarian = yes', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_franchising', 'holding_franchise_headquarters');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_sacrificial_shrine', 'Sacrificial Shrine', 'unity', 'The great study of the cycle should not be limited to the Overlord; the turning of life and death must be explored through the Vassal as well.', 341);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_sacrificial_shrine', 'Sacrificial Shrine', 'unity', 'The great study of the cycle should not be limited to the Overlord; the turning of life and death must be explored through the Vassal as well.', 'subject_holding', 341);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_sacrificial_shrine', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45836,9 +47668,22 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('holding_sacrificial_shrin
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('holding_sacrificial_shrine', 'planet', 'monthly_loyalty', '-0.5', NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_sacrificial_shrine', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = is_spiritualist = no', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_sacrificial_shrine', 'planet', 'job_overlord_mortal_initiate_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_mortal_initiate_add', 'Overlord Mortal Initiate Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_sacrificial_shrine', 'planet', 'job_overlord_mortal_initiate_drone_add', '200.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_mortal_initiate_drone_add', 'Overlord Mortal Initiate Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult', 'holding_sacrificial_shrine');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_death_cult_corporate', 'holding_sacrificial_shrine');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_knight_commandery', 'Order''s Commandery', 'government', 'This fortified outpost is where our knights collaborate with our vassal in the search for the Toxic God. Our subjects are expected to provide us with resources and data to support the Order''s work.', 342);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_knight_commandery', 'Order''s Commandery', 'government', 'This fortified outpost is where our knights collaborate with our vassal in the search for the Toxic God. Our subjects are expected to provide us with resources and data to support the Order''s work.', 'subject_holding', 342);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_knight_commandery', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45857,8 +47702,31 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_knight_commandery', 'country', 'knight_quest_progress_add', '0.025', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('knight_quest_progress_add', 'Monthly Quest Progress', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_knight_commandery', 'planet', 'monthly_loyalty', '-0.5', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_knight_commandery', 'country', 'country_naval_cap_add', '2.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_knight_commandery', 'country', 'knight_quest_progress_add', '0.025', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('knight_quest_progress_add', 'Monthly Quest Progress', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_knight_commandery', 'planet', 'job_overlord_knight_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = no', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_knight_add', 'Overlord Knight Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_knight_commandery', 'planet', 'job_overlord_knight_drone_add', '100.0', NULL, 'exists = planet.owner planet.owner = is_gestalt = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_knight_drone_add', 'Overlord Knight Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_toxic_knights', 'holding_knight_commandery');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_transcendental_retreat', 'Genomic Services Outreach', 'amenity', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code. Knowledge gained at this off-world site helps inform research for the patron.', 343);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_transcendental_retreat', 'Genomic Services Outreach', 'amenity', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code. Knowledge gained at this off-world site helps inform research for the patron.', 'subject_holding', 343);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_transcendental_retreat', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45869,9 +47737,35 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_transcendental_retreat', 'planet', 'planet_jobs_produces_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'monthly_loyalty', '-0.5', NULL, 'exists = planet.owner planet.owner = has_ascension_path = yes', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'monthly_loyalty', '0.5', NULL, 'exists = planet.owner planet.owner = has_ascension_path = no', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'planet_jobs_produces_mult', '0.1', NULL, 'exists = owner owner = is_natural_design_empire = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'job_overlord_healthcare_add', '100.0', NULL, 'planet.owner = is_gestalt = no', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_healthcare_add', 'Medical Worker Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'job_overlord_spawning_drone_add', '100.0', NULL, 'planet.owner = is_hive_empire = yes', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_spawning_drone_add', 'Spawning Drone Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_transcendental_retreat', 'planet', 'job_overlord_replicator_add', '100.0', NULL, 'planet.owner = is_machine_empire = yes', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_overlord_replicator_add', 'Replicator Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_natural_design', 'holding_transcendental_retreat');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_natural_design', 'holding_transcendental_retreat');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('holding_wilderness_glade', 'Wilderness Glade', 'pop_assembly', 'A productive region of symbiotic Wilderness, tenuously linked to its parent collective. Though highly dependent on local food sources, the symbionts dwelling within this pocket biome are adept at extracting other resources nearby.', 344);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('holding_wilderness_glade', 'Wilderness Glade', 'pop_assembly', 'A productive region of symbiotic Wilderness, tenuously linked to its parent collective. Though highly dependent on local food sources, the symbionts dwelling within this pocket biome are adept at extracting other resources nearby.', 'subject_holding', 344);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('holding_wilderness_glade', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45900,36 +47794,59 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('holding_wilderness_glade', 'planet', 'planet_jobs_energy_produces_mult', '-0.1', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_wilderness_glade', 'planet', 'monthly_loyalty', '-2.0', NULL, NULL, 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_wilderness_glade', 'planet', 'planet_jobs_productive_upkeep_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_productive_upkeep_mult', 'Upkeep from Resource-Producing Jobs', 0);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_wilderness_glade', 'planet', 'planet_jobs_food_produces_mult', '-0.1', NULL, 'exists = owner owner = country_uses_food = yes owner.overlord = is_lithoid = no', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_wilderness_glade', 'planet', 'planet_jobs_minerals_produces_mult', '-0.1', NULL, 'exists = owner owner = country_uses_food = yes owner.overlord = is_lithoid = yes', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES ('holding_wilderness_glade', 'planet', 'planet_jobs_energy_produces_mult', '-0.1', NULL, 'exists = owner owner = country_uses_food = no', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'holding_wilderness_glade');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_scrap_refinery', 'Scrap Refinery', 'manufacturing', 'A small-scale refinery making use of scrap salvaged from our former masters'' ship.', 345);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_scrap_refinery', 'Scrap Refinery', 'manufacturing', 'A small-scale refinery making use of scrap salvaged from our former masters'' ship.', NULL, 345);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_scrap_refinery', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_scrap_refinery', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_low_tech_scrap_refinery', '180.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_scrap_refinery');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_admin_hub', 'Administrative Hub', 'unity', 'The state cabins and living quarters of our former masters, repurposed into offices.', 346);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_admin_hub', 'Administrative Hub', 'unity', 'The state cabins and living quarters of our former masters, repurposed into offices.', NULL, 346);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_admin_hub', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_admin_hub', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_low_tech_admin_hub', '180.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_admin_hub');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_power_plant', 'Power Plant', 'resource', 'A jerry-rigged assemblage of solar cells linked to the fusion reactor in our former masters'' ship.', 347);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_power_plant', 'Power Plant', 'resource', 'A jerry-rigged assemblage of solar cells linked to the fusion reactor in our former masters'' ship.', NULL, 347);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_power_plant', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_power_plant', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_low_tech_power_plant', '180.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_power_plant');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_farm', 'Makeshift Farms', 'resource', 'Hardscrabble farmsteads tilling the soil for meager returns.', 348);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_farm', 'Makeshift Farms', 'resource', 'Hardscrabble farmsteads tilling the soil for meager returns.', NULL, 348);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_farm', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_farm', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_low_tech_farm', '180.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_farm');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_capital', 'Command Center', 'government', 'The bridge of our former masters'' ship, hastily refashioned into a command center.', 349);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_capital', 'Command Center', 'government', 'The bridge of our former masters'' ship, hastily refashioned into a command center.', NULL, 349);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_low_tech_capital', 'planet', 'planet_housing_add', '400.0', NULL, 0);
@@ -45941,14 +47858,14 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_capital');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_low_tech_research_lab', 'Laboratory Complex', 'research', 'Experiments in multiple disciplines take place in what was once an engineering bay.', 350);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_low_tech_research_lab', 'Laboratory Complex', 'research', 'Experiments in multiple disciplines take place in what was once an engineering bay.', NULL, 350);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_research_lab', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_low_tech_research_lab', 'upkeep', 'energy', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_low_tech_research_lab', '180.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_broken_shackles', 'building_low_tech_research_lab');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_paragon_memory_vaults', 'Vaults of Knowledge', 'unity', 'Our society has always preserved the stories of heroes and prominent figures from the past. Their knowledge and experiences are digitized and gathered in the Vaults of Knowledge. Destroying this building will eradicate the data stored inside.', 351);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_paragon_memory_vaults', 'Vaults of Knowledge', 'unity', 'Our society has always preserved the stories of heroes and prominent figures from the past. Their knowledge and experiences are digitized and gathered in the Vaults of Knowledge. Destroying this building will eradicate the data stored inside.', NULL, 351);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_paragon_memory_vaults', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45968,7 +47885,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_m
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memory_vault_corporate', 'building_paragon_memory_vaults');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memory_vault_hive', 'building_paragon_memory_vaults');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_memory_vault_machine', 'building_paragon_memory_vaults');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_beholder', 'Murmuring Monolith', 'manufacturing', 'The Beholder''s conduit into our plane of existence. A ship, feeding upon the planet''s energy to amass Zro and sustain its connection to the Shroud.', 352);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_the_beholder', 'Murmuring Monolith', 'manufacturing', 'The Beholder''s conduit into our plane of existence. A ship, feeding upon the planet''s energy to amass Zro and sustain its connection to the Shroud.', NULL, 352);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_the_beholder', 'upkeep', 'energy', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -45978,15 +47895,15 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_the_beholder', 'planet', 'psionic_pop_bonus_workforce_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_pop_bonus_workforce_mult', 'Job Efficiency for Psionic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_contained_ecosphere', 'Contained Ecosphere', 'resource', 'Astrocreator Azaryn''s legacy, left to us when she passed. It is but a small section of the Vivarium''s internal ecosystem.
-Introduces a high concentration of Ecosphere Pheromones to a planet''s atmosphere, applying positive effects to the population.', 353);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_contained_ecosphere', 'Contained Ecosphere', 'resource', 'Astrocreator Azaryn''s legacy, left to us when she passed. It is but a small section of the Vivarium''s internal ecosystem.
+Introduces a high concentration of Ecosphere Pheromones to a planet''s atmosphere, applying positive effects to the population.', NULL, 353);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'cost', 'alloys', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'upkeep', 'energy', '5.0', 1);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_contained_ecosphere', 'produces', 'food', '40.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_1', 'Astral Siphon', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 354);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_astral_siphon_1', 'Astral Siphon', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', NULL, 354);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_1', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46022,7 +47939,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_astral_siphon_1', 'planet', 'planet_physicists_minerals_upkeep_add', '2.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_minerals_upkeep_add', 'Minerals Upkeep per 100 Physicists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_2', 'Astral Funnel', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 355);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_astral_siphon_2', 'Astral Funnel', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', NULL, 355);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_2', 'cost', 'biomass', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46058,7 +47975,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_astral_siphon_2', 'planet', 'planet_physicists_minerals_upkeep_add', '3.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_minerals_upkeep_add', 'Minerals Upkeep per 100 Physicists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astral_siphon_3', 'Astral Nexus', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', 356);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_astral_siphon_3', 'Astral Nexus', 'research', 'It is a delicate process to peel Astral Thread away from the fabric of reality. These structures prevent the border between realities from crumbling.', NULL, 356);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_astral_siphon_3', 'cost', 'biomass', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46094,7 +48011,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_astral_siphon_3', 'planet', 'planet_physicists_minerals_upkeep_add', '4.0', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_physicists_minerals_upkeep_add', 'Minerals Upkeep per 100 Physicists', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_attraction_center', 'Storm Attraction Center', 'research', 'Through the careful manipulation of gravitational forces, these facilities attract nearby cosmic storms.', 357);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_attraction_center', 'Storm Attraction Center', 'research', 'Through the careful manipulation of gravitational forces, these facilities attract nearby cosmic storms.', NULL, 357);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_attraction_center', 'cost', 'rare_crystals', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46106,7 +48023,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_storm_attraction_center', 'planet', 'storm_attraction_field_modifier', '0.4', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_attraction_field_modifier', 'Storm Attraction Field Modifier', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_attraction_center', 'Advanced Storm Attraction Center', 'research', 'Advanced insights into dark energy allow us to supercharge each Storm Attraction Center and draw in cosmic storms even more efficiently.', 358);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_advanced_storm_attraction_center', 'Advanced Storm Attraction Center', 'research', 'Advanced insights into dark energy allow us to supercharge each Storm Attraction Center and draw in cosmic storms even more efficiently.', NULL, 358);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_attraction_center', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46118,7 +48035,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_advanced_storm_attraction_center', 'planet', 'storm_attraction_field_modifier', '0.6', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_attraction_field_modifier', 'Storm Attraction Field Modifier', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_repellent_center', 'Storm Repulsion Center', 'research', 'The further the storm, the safer our population - and the easier their minds. The complex astrometeorological instrumentation of these centers repels approaching storms.', 359);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_repellent_center', 'Storm Repulsion Center', 'research', 'The further the storm, the safer our population - and the easier their minds. The complex astrometeorological instrumentation of these centers repels approaching storms.', NULL, 359);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_repellent_center', 'cost', 'rare_crystals', '25.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46132,7 +48049,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_storm_repellent_center', 'planet', 'storm_repelling_field_modifier', '0.4', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_repelling_field_modifier', 'Storm Repulsion Field Modifier', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_repellent_center', 'Advanced Storm Repulsion Center', 'research', 'Any manipulation of spacetime is warranted if it keeps our world clear from cosmic tempests. This center does exactly that.', 360);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_advanced_storm_repellent_center', 'Advanced Storm Repulsion Center', 'research', 'Any manipulation of spacetime is warranted if it keeps our world clear from cosmic tempests. This center does exactly that.', NULL, 360);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_repellent_center', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46146,21 +48063,21 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_advanced_storm_repellent_center', 'planet', 'storm_repelling_field_modifier', '0.6', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_repelling_field_modifier', 'Storm Repulsion Field Modifier', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_resistant_production', 'Storm Relief Center', 'resource', 'This aid center assists local efforts to negate the impact of a cosmic storm on colony production. Through efficient coordination and communication, the Storm Relief Center allows for quick deployment of rescue teams, as well as improving the conditions for planet-wide trade.', 361);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_resistant_production', 'Storm Relief Center', 'resource', 'This aid center assists local efforts to negate the impact of a cosmic storm on colony production. Through efficient coordination and communication, the Storm Relief Center allows for quick deployment of rescue teams, as well as improving the conditions for planet-wide trade.', NULL, 361);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_resistant_production', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_resistant_production', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_storm_resistant_production', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_storm_resistant_production', 'clerk', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_advanced_storm_resistant_production', 'Storm Nullifier', 'resource', 'By adding weather control systems to each Storm Relief Center, the negative effects of cosmic storms are significantly lessened. Additionally, rescue teams can be deployed even more efficiently and planetary trade is almost impervious to local weather conditions.', 362);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_advanced_storm_resistant_production', 'Storm Nullifier', 'resource', 'By adding weather control systems to each Storm Relief Center, the negative effects of cosmic storms are significantly lessened. Additionally, rescue teams can be deployed even more efficiently and planetary trade is almost impervious to local weather conditions.', NULL, 362);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_advanced_storm_resistant_production', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_advanced_storm_resistant_production', 'clerk', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'resource', 'The Patriotic Institute of Celebration is a trove of advanced insights into the sentient condition. Here we empower people to cultivate their inner tempest while avoiding the luring song of the Convention''s cruelty.', 363);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'Patriotic Institute of Celebration', 'resource', 'The Patriotic Institute of Celebration is a trove of advanced insights into the sentient condition. Here we empower people to cultivate their inner tempest while avoiding the luring song of the Convention''s cruelty.', NULL, 363);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_adakkaria_patriotic_institute', 'cost', 'sr_zro', '20.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46174,7 +48091,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_adakkaria_patriotic_institute', 'country', 'ship_shield_damage_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_shield_damage_mult', 'Shield Damage', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_astrometeorology_observation_center', 'Astrometeorology Observatory', 'research', 'With delicate sensors, this observation center studies diverse environmental conditions to better our understanding of the natural universe.', 364);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_astrometeorology_observation_center', 'Astrometeorology Observatory', 'research', 'With delicate sensors, this observation center studies diverse environmental conditions to better our understanding of the natural universe.', NULL, 364);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_astrometeorology_observation_center', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46185,7 +48102,7 @@ INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_a
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_astrometeorology_hive', 'building_astrometeorology_observation_center');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_astrometeorology_machine', 'building_astrometeorology_observation_center');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_astrometeorology_megacorp', 'building_astrometeorology_observation_center');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_summoning_theater', 'Storm Summoning Theater', 'amenity', 'A merriment of art and technology, the excited gyrations of our Storm Dancers help to entice cosmic storms.', 365);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_summoning_theater', 'Storm Summoning Theater', 'amenity', 'A merriment of art and technology, the excited gyrations of our Storm Dancers help to entice cosmic storms.', NULL, 365);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_summoning_theater', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46209,7 +48126,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('storm_attraction_field_modifier', 'Storm Attraction Field Modifier', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers', 'building_storm_summoning_theater');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers_megacorp', 'building_storm_summoning_theater');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_holo_theater', 'Storm Holo Hall', 'amenity', 'Broadcast over the entire planet and beyond, the Storm Holo Hall expands the reach of our hypnotic Storm Dancers.', 366);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_holo_theater', 'Storm Holo Hall', 'amenity', 'Broadcast over the entire planet and beyond, the Storm Holo Hall expands the reach of our hypnotic Storm Dancers.', NULL, 366);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_holo_theater', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46235,7 +48152,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_entertainers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Entertainers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers', 'building_storm_holo_theater');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers_megacorp', 'building_storm_holo_theater');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_storm_grand_theater', 'Storm Grand Theater', 'amenity', 'Embodying the cutting edge of artistic and technical achievement, these grand theaters provide the perfect forum for the ultimate dance.', 367);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_storm_grand_theater', 'Storm Grand Theater', 'amenity', 'Embodying the cutting edge of artistic and technical achievement, these grand theaters provide the perfect forum for the ultimate dance.', NULL, 367);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_storm_grand_theater', 'cost', 'volatile_motes', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46261,7 +48178,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_entertainers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Entertainers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers', 'building_storm_grand_theater');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_storm_callers_megacorp', 'building_storm_grand_theater');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_bazaars', 'Augmentation Bazaar', 'trade', 'A neon-lit maze of corridors, implant vendors and underground hardware clinics catering to all cybernetic implant needs - both over and under the counter.', 368);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_augmentation_bazaars', 'Augmentation Bazaar', 'trade', 'A neon-lit maze of corridors, implant vendors and underground hardware clinics catering to all cybernetic implant needs - both over and under the counter.', NULL, 368);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_bazaars', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46269,7 +48186,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_augmentation_bazaars', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_augmentation_bazaars', 'politician', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_augmentation_bazaars', 'building_augmentation_bazaars');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_transcendental_retreat', 'Genomic Services Center', 'pop_assembly', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code.', 369);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_transcendental_retreat', 'Genomic Services Center', 'pop_assembly', 'This advanced medical center studies and provides services that preserve the perfection of nature''s ideal genetic code.', NULL, 369);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_transcendental_retreat', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46291,7 +48208,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_natural_design', 'building_transcendental_retreat');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_hive_transcendental_retreat', 'Genomic Safeguard Warren', 'pop_assembly', 'This advanced medical warren is committed to understanding and nurturing the flawless essence of nature''s ideal genetic code.', 370);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_hive_transcendental_retreat', 'Genomic Safeguard Warren', 'pop_assembly', 'This advanced medical warren is committed to understanding and nurturing the flawless essence of nature''s ideal genetic code.', NULL, 370);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_hive_transcendental_retreat', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46314,7 +48231,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_hive_natural_design', 'building_hive_transcendental_retreat');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_amphitheater_of_the_mind', 'Amphitheater of the Mind', 'research', 'This localized processing shrine allows the semi-connected Choir of the Mind to debate, share, and explore the secrets of the material plane at the speed of light.', 371);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_amphitheater_of_the_mind', 'Amphitheater of the Mind', 'research', 'This localized processing shrine allows the semi-connected Choir of the Mind to debate, share, and explore the secrets of the material plane at the speed of light.', NULL, 371);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_amphitheater_of_the_mind', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46330,7 +48247,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_amphitheater_of_the_mind');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'The Grand Concert Hall of the Mind', 'research', 'The state-of-the-art communication array housed in these resonant halls allows the Choir of the Mind to commune together in search of divinity. Joined by cyberware, their chanting will unravel the hidden melodies of the universe.', 372);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'The Grand Concert Hall of the Mind', 'research', 'The state-of-the-art communication array housed in these resonant halls allows the Choir of the Mind to commune together in search of divinity. Joined by cyberware, their chanting will unravel the hidden melodies of the universe.', NULL, 372);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_concert_hall_of_the_mind', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46347,7 +48264,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_researchers_upkeep_mult', 'Upkeep for Researchers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_grand_concert_hall_of_the_mind');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_battlement_of_steel', 'Battlements of Steel', 'army', 'This fortress church houses both the armory and training grounds for the battle-ready Templars of Steel. They stand ever vigilant to protect our divine flesh.', 373);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_battlement_of_steel', 'Battlements of Steel', 'army', 'This fortress church houses both the armory and training grounds for the battle-ready Templars of Steel. They stand ever vigilant to protect our divine flesh.', NULL, 373);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_battlement_of_steel', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46361,7 +48278,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_battlement_of_steel');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_battlements_of_steel', 'The Grand Battlements of Steel', 'army', 'May these magnificent walls of this grand fortress-cathedral never crumble. Its armory overflows with the hallowed implants of the Templars of Steel, each awaiting an anointed champion. In these halls, divinity dwells in the interface of flesh and steel.', 374);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_grand_battlements_of_steel', 'The Grand Battlements of Steel', 'army', 'May these magnificent walls of this grand fortress-cathedral never crumble. Its armory overflows with the hallowed implants of the Templars of Steel, each awaiting an anointed champion. In these halls, divinity dwells in the interface of flesh and steel.', NULL, 374);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_battlements_of_steel', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46376,7 +48293,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_grand_battlements_of_steel');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_sanctuary_of_toil', 'Sanctuary of Toil', 'resource', 'This sanctuary coordinates, repairs, and rejuvenates the flesh and augmentations of the Commune of Toil.', 375);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_sanctuary_of_toil', 'Sanctuary of Toil', 'resource', 'This sanctuary coordinates, repairs, and rejuvenates the flesh and augmentations of the Commune of Toil.', NULL, 375);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_sanctuary_of_toil', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46399,7 +48316,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_sanctuary_of_toil');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_cathedral_of_toil', 'Grand Cathedral of Toil', 'resource', 'Blessed be those who provide for the needs of the faithful. Let their weary souls rest in the Grand Cathedral of Toil. Its workshops and coordination centers guide and replenish the faithful laborers and their holy augmentations in all their divine duties.', 376);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_grand_cathedral_of_toil', 'Grand Cathedral of Toil', 'resource', 'Blessed be those who provide for the needs of the faithful. Let their weary souls rest in the Grand Cathedral of Toil. Its workshops and coordination centers guide and replenish the faithful laborers and their holy augmentations in all their divine duties.', NULL, 376);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_cathedral_of_toil', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46423,7 +48340,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_grand_cathedral_of_toil');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forge_of_the_fellowship', 'Forge of the Fellowship', 'manufacturing', 'Here, the first forge of the Fellowship of the Hammer produces the highest quality construction materials. Hammers sing as the faithful pursue their divine work.', 377);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forge_of_the_fellowship', 'Forge of the Fellowship', 'manufacturing', 'Here, the first forge of the Fellowship of the Hammer produces the highest quality construction materials. Hammers sing as the faithful pursue their divine work.', NULL, 377);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forge_of_the_fellowship', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46443,7 +48360,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_forge_of_the_fellowship');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'Grand Forge of the Fellowship', 'manufacturing', 'Well beyond the halls of the Grand Forge, the faithful can hear the litany of the Fellowship''s never resting tools. At night, the ornate foundry-cathedral''s glow outshines the stars above, just as our holy sparks shine for the divine.', 378);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'Grand Forge of the Fellowship', 'manufacturing', 'Well beyond the halls of the Grand Forge, the faithful can hear the litany of the Fellowship''s never resting tools. At night, the ornate foundry-cathedral''s glow outshines the stars above, just as our holy sparks shine for the divine.', NULL, 378);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_grand_forge_of_the_fellowship', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46464,7 +48381,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_grand_forge_of_the_fellowship');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'Sanctum of Augmentation', 'unity', 'In the spirit of shared faith, this sacred sanctum stands as a symbol of unity. Within these consecrated chambers, the faithful tend to the souls and augmentations of its flock.', 379);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'Sanctum of Augmentation', 'unity', 'In the spirit of shared faith, this sacred sanctum stands as a symbol of unity. Within these consecrated chambers, the faithful tend to the souls and augmentations of its flock.', NULL, 379);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46473,7 +48390,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_the_sanctum_of_a
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'politician', '100.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_sanctum_of_augmentation', 'bureaucrat', '200.0', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_the_sanctum_of_augmentation');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'United Sanctum of Augmentation', 'unity', 'In reverence of the most sacred fusion, this majestic sanctum is a living testament. Within its consecrated chambers, the faithful gather, unwavering in their commitment to advance the divine fusion''s noble cause.', 380);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'United Sanctum of Augmentation', 'unity', 'In reverence of the most sacred fusion, this majestic sanctum is a living testament. Within its consecrated chambers, the faithful gather, unwavering in their commitment to advance the divine fusion''s noble cause.', NULL, 380);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46482,7 +48399,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_the_united_sanct
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'politician', '200.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_the_united_sanctum_of_augmentation', 'bureaucrat', '400.0', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_cybernetic_creed', 'building_the_united_sanctum_of_augmentation');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_identity_repository', 'Identity Repository', 'research', 'Before the body expires, the mind is digitized. Safe within, we continue to work for the good of society.', 381);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_identity_repository', 'Identity Repository', 'research', 'Before the body expires, the mind is digitized. Safe within, we continue to work for the good of society.', NULL, 381);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_repository', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46504,9 +48421,9 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('robotic_pop_bonus_workforce_mult', 'Job Efficiency for Mechanical and Machine Pops', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_synthetic_fertility', 'building_identity_repository');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_abandoned_gene_clinic', 'Abandoned Gene Clinic', 'amenity', 'After we lost the ability to procreate naturally, the medical community placed its hope in this state-of-the-art gene clinic. Like so much of our infrastructure, it now stands empty, a constant reminder of our plight and the dire need for new solutions.', 382);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_abandoned_gene_clinic', 'Abandoned Gene Clinic', 'amenity', 'After we lost the ability to procreate naturally, the medical community placed its hope in this state-of-the-art gene clinic. Like so much of our infrastructure, it now stands empty, a constant reminder of our plight and the dire need for new solutions.', NULL, 382);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_synthetic_fertility', 'building_abandoned_gene_clinic');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_capital', 'Processing Unit', 'government', 'The quantic nature of the processing units of the Synaptic Lathe allows it to parallelize computing across multiple dimensional layers.', 383);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_capital', 'Processing Unit', 'government', 'The quantic nature of the processing units of the Synaptic Lathe allows it to parallelize computing across multiple dimensional layers.', NULL, 383);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_capital', 'upkeep', 'energy', '8.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46526,7 +48443,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_capital', 'planet', 'planet_stability_add', '10.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_major_capital', 'Processing Unit: Parallelized', 'government', 'This improved processing unit is now more capable of running parallel operations by rebounding the cognitive echoes of Neural Chips in contained gamma-space pockets.', 384);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_major_capital', 'Processing Unit: Parallelized', 'government', 'This improved processing unit is now more capable of running parallel operations by rebounding the cognitive echoes of Neural Chips in contained gamma-space pockets.', NULL, 384);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_major_capital', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46554,7 +48471,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_major_capital', 'planet', 'planet_stability_add', '10.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_super_capital', 'Processing Unit: Vectorial', 'government', 'This upgraded processing unit streamlines computations through the creation of negative space vectors. This dimensional compartmentalization of processes yields extraordinary results in efficiency and stability.', 385);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_super_capital', 'Processing Unit: Vectorial', 'government', 'This upgraded processing unit streamlines computations through the creation of negative space vectors. This dimensional compartmentalization of processes yields extraordinary results in efficiency and stability.', NULL, 385);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_super_capital', 'cost', 'alloys', '2500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46582,7 +48499,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_super_capital', 'planet', 'planet_stability_add', '15.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_resonator', 'Synaptic Resonator', 'resource', 'Resonators harness and redirect the cognitive potential of stray thoughts and autonomic systems, leading every single chip to increase the efficiency of its closest processing neighbors.', 386);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_resonator', 'Synaptic Resonator', 'resource', 'Resonators harness and redirect the cognitive potential of stray thoughts and autonomic systems, leading every single chip to increase the efficiency of its closest processing neighbors.', NULL, 386);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_resonator', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46604,7 +48521,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_resonator', 'planet', 'planet_jobs_produces_mult', '0.01', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_stabilisator', 'Neural Stabilizer', 'government', 'Stabilization systems filter out the computing noise generated when physical distress overcomes Neural Chips. The reduction in interferences means an increase in global output.', 387);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_stabilisator', 'Neural Stabilizer', 'government', 'Stabilization systems filter out the computing noise generated when physical distress overcomes Neural Chips. The reduction in interferences means an increase in global output.', NULL, 387);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_stabilisator', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46621,7 +48538,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_stabilisator', 'planet', 'planet_stability_add', '10.0', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_overclocker', 'Synaptic Overclocker', 'resource', 'The Lathe has been designed to preserve its installed Neural Chips, keeping them productive for as long as possible. The overclocker can override these commands, resulting in a higher and faster output, but it comes with an increased failure rate.', 388);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_overclocker', 'Synaptic Overclocker', 'resource', 'The Lathe has been designed to preserve its installed Neural Chips, keeping them productive for as long as possible. The overclocker can override these commands, resulting in a higher and faster output, but it comes with an increased failure rate.', NULL, 388);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46633,7 +48550,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_overclocker', 'upkeep', 'volatile_motes', '1.0', 4);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lathe_overclocker', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_preserver', 'Synaptic Preserver', 'amenity', 'The organic components of the network are especially vulnerable to energetic fluctuations, which can cause rapid axonal degeneration. The Preserver strives to reduce these fluctuations to protect the Synaptic Lathe''s frailer parts.', 389);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_preserver', 'Synaptic Preserver', 'amenity', 'The organic components of the network are especially vulnerable to energetic fluctuations, which can cause rapid axonal degeneration. The Preserver strives to reduce these fluctuations to protect the Synaptic Lathe''s frailer parts.', NULL, 389);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_preserver', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46650,7 +48567,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_preserver', 'planet', 'pop_purge_speed', '-0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_purge_speed', 'Pop Purge Speed', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_reactor', 'Expanded Reactor', 'resource', 'The more chips plugged into the network, the more energy is required to maintain it. Installing additional reactors will mitigate the complex logistics inherent in powering the Synaptic Lathe.', 390);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_reactor', 'Expanded Reactor', 'resource', 'The more chips plugged into the network, the more energy is required to maintain it. Installing additional reactors will mitigate the complex logistics inherent in powering the Synaptic Lathe.', NULL, 390);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_reactor', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46675,7 +48592,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_reactor', 'planet', 'planet_districts_energy_upkeep_mult', '-0.15', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_districts_energy_upkeep_mult', 'District Energy Upkeep', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_life_support', 'Synaptic Sustainer', 'amenity', 'Dedicated facilities organize the maintenance of the Lathe''s critical components, allowing us to support more chips and a healthier network environment.', 391);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_life_support', 'Synaptic Sustainer', 'amenity', 'Dedicated facilities organize the maintenance of the Lathe''s critical components, allowing us to support more chips and a healthier network environment.', NULL, 391);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_life_support', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46697,7 +48614,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_life_support', 'planet', 'planet_amenities_add', '5000.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_cogitator', 'Synaptic Cogitator', 'army', 'Calculating hyperspatial supply chains is complex. Rerouting some processing power to the task will help even the largest fleet to delve deeper into enemy territory.', 392);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_cogitator', 'Synaptic Cogitator', 'army', 'Calculating hyperspatial supply chains is complex. Rerouting some processing power to the task will help even the largest fleet to delve deeper into enemy territory.', NULL, 392);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_cogitator', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46729,7 +48646,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_cogitator', 'country', 'ship_experience_gain_mult', '0.02', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_experience_gain_mult', 'Ship Experience Gain', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lathe_validator', 'Synaptic Validator', 'research', 'While the primary purpose of the validator''s specialized functions is to help formulate infinity theses, it can also be applied to more general aspects of computing.', 393);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lathe_validator', 'Synaptic Validator', 'research', 'While the primary purpose of the validator''s specialized functions is to help formulate infinity theses, it can also be applied to more general aspects of computing.', NULL, 393);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_lathe_validator', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46751,7 +48668,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_lathe_validator', 'country', 'category_computing_research_speed_mult', '0.01', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('category_computing_research_speed_mult', 'Research Speed (Computing)', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_augmentation_center', 'Augmentation Center', 'pop_assembly', 'A building for outfitting cybernetic implants. Part shopping mall, part operating center, and part mechanic shop.', 394);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_augmentation_center', 'Augmentation Center', 'pop_assembly', 'A building for outfitting cybernetic implants. Part shopping mall, part operating center, and part mechanic shop.', NULL, 394);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_augmentation_center', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46797,7 +48714,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_augmentation_center', 'planet', 'cyborg_pop_bonus_workforce_mult', '0.05', NULL, 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('cyborg_pop_bonus_workforce_mult', 'Job Efficiency for Cybernetic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cyberdome', 'Cyberdome', 'amenity', 'Hosts savage cybersports with augmented athletes for the entertainment of the imperial citizens. Enhanced gladiators, athletes and sprinters compete for our favor until damaged or dead.', 395);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_cyberdome', 'Cyberdome', 'amenity', 'Hosts savage cybersports with augmented athletes for the entertainment of the imperial citizens. Enhanced gladiators, athletes and sprinters compete for our favor until damaged or dead.', NULL, 395);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_cyberdome', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46828,13 +48745,13 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_cyberdome', 'planet', 'planet_pops_upkeep_mult', '-0.1', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_identity_complex', 'Identity Complex', 'pop_assembly', 'A cutting-edge hub for the research and development of synthetic identities.', 396);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_identity_complex', 'Identity Complex', 'pop_assembly', 'A cutting-edge hub for the research and development of synthetic identities.', NULL, 396);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_complex', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_identity_complex', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_identity_complex', '600.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanolab_1', 'Nanite Research Facility', 'research', 'Conducting research at a nanoscopic scale brings a whole new perspective on the universe.', 397);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nanolab_1', 'Nanite Research Facility', 'research', 'Conducting research at a nanoscopic scale brings a whole new perspective on the universe.', NULL, 397);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'cost', 'nanites', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46843,7 +48760,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_1', 'upkeep', 'nanites', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_nanolab_1', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_nanolab_1', 'engineer', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanolab_2', 'Nanite Research Complex', 'research', 'How peculiar it is that the infinitely small and the infinitely big look so much alike.', 398);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nanolab_2', 'Nanite Research Complex', 'research', 'How peculiar it is that the infinitely small and the infinitely big look so much alike.', NULL, 398);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanolab_2', 'cost', 'nanites', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46862,7 +48779,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_nanolab_2', 'planet', 'planet_engineers_nanites_upkeep_add', '0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_nanites_upkeep_add', 'Nanites Upkeep per 100 Engineers', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_nanotech_cauldron', 'Nanotech Cauldron', 'manufacturing', 'Operating at a molecular level, the swarm can easily reconfigure mineral structures into sturdy alloy lattices.', 399);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_nanotech_cauldron', 'Nanotech Cauldron', 'manufacturing', 'Operating at a molecular level, the swarm can easily reconfigure mineral structures into sturdy alloy lattices.', NULL, 399);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'cost', 'alloys', '1500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46872,7 +48789,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nanotech_cauldron', 'produces', 'alloys', '15.0', 3);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_nanotech_cauldron', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('xeno_geology_holomuseum', 'Holo-Museum of Geology', 'amenity', 'A multi-faceted institute dedicated to the preservation and study of mineral formations and precious stones.', 400);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('xeno_geology_holomuseum', 'Holo-Museum of Geology', 'amenity', 'A multi-faceted institute dedicated to the preservation and study of mineral formations and precious stones.', NULL, 400);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('xeno_geology_holomuseum', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46914,7 +48831,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('xeno_geology_holomuseum', 'planet', 'planet_evaluators_minerals_upkeep_add', '0.5', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_evaluators_minerals_upkeep_add', 'Minerals upkeep per 100 Evaluators', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'Holo-Museum of Wonders', 'amenity', 'Where the wonder of our galaxy can be appreciated without interruption.', 401);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'Holo-Museum of Wonders', 'amenity', 'Where the wonder of our galaxy can be appreciated without interruption.', NULL, 401);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('aesthetic_wonders_holomuseum', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46956,7 +48873,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('aesthetic_wonders_holomuseum', 'planet', 'planet_evaluators_minerals_upkeep_add', '0.5', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_evaluators_minerals_upkeep_add', 'Minerals upkeep per 100 Evaluators', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('galactic_history_holomuseum', 'Holo-Museum of History', 'amenity', 'An informative archive populated with items that represent key events in our galaxy''s history.', 402);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('galactic_history_holomuseum', 'Holo-Museum of History', 'amenity', 'An informative archive populated with items that represent key events in our galaxy''s history.', NULL, 402);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('galactic_history_holomuseum', 'cost', 'biomass', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -46998,7 +48915,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('galactic_history_holomuseum', 'planet', 'planet_evaluators_minerals_upkeep_add', '0.5', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_evaluators_minerals_upkeep_add', 'Minerals upkeep per 100 Evaluators', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch', 'Wildlife Ranch', 'amenity', 'We live in partnership with our native creatures, taking the utmost care in the protection of their habitat and the sustainable growth of their species.', 403);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_ranch', 'Wildlife Ranch', 'amenity', 'We live in partnership with our native creatures, taking the utmost care in the protection of their habitat and the sustainable growth of their species.', NULL, 403);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47006,42 +48923,42 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_ranch', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch', 'wrangler', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_primal_calling', 'wildlife_ranch');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch_2', 'Wildlife Expanse', 'amenity', 'Careful ecosystem management improves the conditions for native creatures and facilitates ranching efforts.', 404);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_ranch_2', 'Wildlife Expanse', 'amenity', 'Careful ecosystem management improves the conditions for native creatures and facilitates ranching efforts.', NULL, 404);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_2', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_ranch_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch_2', 'wrangler', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_ranch_3', 'Wildlife Nexus', 'amenity', 'A vast facility where animals are allowed to roam freely. They are offered comfort and luxury in an effort to maximize the quality of the resources they provide.', 405);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_ranch_3', 'Wildlife Nexus', 'amenity', 'A vast facility where animals are allowed to roam freely. They are offered comfort and luxury in an effort to maximize the quality of the resources they provide.', NULL, 405);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_ranch_3', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_ranch_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_ranch_3', 'wrangler', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds', 'Hunting Grounds', 'amenity', 'A training complex used to master all manner of hunting techniques. From modern energy weapons to traditional martial implements, unmatched dexterity and skill is required to best fearsome predators and claim them as trophies.', 406);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('hunting_grounds', 'Hunting Grounds', 'amenity', 'A training complex used to master all manner of hunting techniques. From modern energy weapons to traditional martial implements, unmatched dexterity and skill is required to best fearsome predators and claim them as trophies.', NULL, 406);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds', 'upkeep', 'energy', '2.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('hunting_grounds', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds', 'wrangler', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds_2', 'Hunting Expanse', 'amenity', 'A training and surveillance facility providing optimal hunting conditions for local fauna. Heat-mapping technology helps identify recent animal trails and acquire trophy-quality game.', 407);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('hunting_grounds_2', 'Hunting Expanse', 'amenity', 'A training and surveillance facility providing optimal hunting conditions for local fauna. Heat-mapping technology helps identify recent animal trails and acquire trophy-quality game.', NULL, 407);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_2', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('hunting_grounds_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds_2', 'wrangler', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('hunting_grounds_3', 'Hunting Nexus', 'amenity', 'A vast expanse supporting planetary hunting parties on a massive scale. Stocked with the highest quality weapons and tracking equipment, hunters are given high level training in maximizing the quantity and quality of game killed.', 408);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('hunting_grounds_3', 'Hunting Nexus', 'amenity', 'A vast expanse supporting planetary hunting parties on a massive scale. Stocked with the highest quality weapons and tracking equipment, hunters are given high level training in maximizing the quantity and quality of game killed.', NULL, 408);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('hunting_grounds_3', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('hunting_grounds_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('hunting_grounds_3', 'wrangler', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary', 'Wildlife Sanctuary', 'amenity', 'A protected reserve where wild animals are studied within their natural habitats. Safeguards are in place to prevent population instability or excessive disease. Studying these creatures is in itself a worthy academic endeavor, but crucially it teaches us more about our own nature.', 409);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_sanctuary', 'Wildlife Sanctuary', 'amenity', 'A protected reserve where wild animals are studied within their natural habitats. Safeguards are in place to prevent population instability or excessive disease. Studying these creatures is in itself a worthy academic endeavor, but crucially it teaches us more about our own nature.', NULL, 409);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47049,21 +48966,21 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_sanctuary', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary', 'wrangler', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_primal_calling', 'wildlife_sanctuary');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary_2', 'Advanced Sanctuary', 'amenity', 'Creatures here are cared for on an individual basis, their unique dietary and medical needs provided with minimal disturbance to their natural habitats. Specialized ecosystems allow for the propagation and reintroduction of endangered species.', 410);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_sanctuary_2', 'Advanced Sanctuary', 'amenity', 'Creatures here are cared for on an individual basis, their unique dietary and medical needs provided with minimal disturbance to their natural habitats. Specialized ecosystems allow for the propagation and reintroduction of endangered species.', NULL, 410);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_sanctuary_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary_2', 'wrangler', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('wildlife_sanctuary_3', 'Sanctuary Nexus', 'amenity', 'Animals here are monitored and cared for using a carefully engineered infrastructure designed to seem as if it doesn''t exist. Researchers are forbidden from interfering with the subjects'' natural behavior, guaranteeing the collection of the highest possible quality research data.', 411);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('wildlife_sanctuary_3', 'Sanctuary Nexus', 'amenity', 'Animals here are monitored and cared for using a carefully engineered infrastructure designed to seem as if it doesn''t exist. Researchers are forbidden from interfering with the subjects'' natural behavior, guaranteeing the collection of the highest possible quality research data.', NULL, 411);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('wildlife_sanctuary_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('wildlife_sanctuary_3', 'wrangler', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena', 'Primal Arena', 'amenity', 'A colosseum where our strongest warriors are pitted against ferocious creatures in primal combat. There is no greater entertainment than watching heroes triumph over savage beasts - or die trying.', 412);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('primal_arena', 'Primal Arena', 'amenity', 'A colosseum where our strongest warriors are pitted against ferocious creatures in primal combat. There is no greater entertainment than watching heroes triumph over savage beasts - or die trying.', NULL, 412);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47072,21 +48989,21 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('primal_arena', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena', 'wrangler', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_warrior_culture', 'primal_arena');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_primal_calling', 'primal_arena');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena_2', 'Primal Stadium', 'amenity', 'In this massive stadium, packs of animals are trained by skilled handlers in coordinating their attacks. No longer can beastfighters rely on simply overpowering their quarry: they must use out-think even their trainers in order to survive.', 413);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('primal_arena_2', 'Primal Stadium', 'amenity', 'In this massive stadium, packs of animals are trained by skilled handlers in coordinating their attacks. No longer can beastfighters rely on simply overpowering their quarry: they must use out-think even their trainers in order to survive.', NULL, 413);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_2', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('primal_arena_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena_2', 'wrangler', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('primal_arena_3', 'Primal Colosseum', 'amenity', 'An awe-inspiring arena designed to host beast-slaying battles of monumental proportions. Each engagement takes weeks of preparation and can support the attendance of millions of individuals.', 414);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('primal_arena_3', 'Primal Colosseum', 'amenity', 'An awe-inspiring arena designed to host beast-slaying battles of monumental proportions. Each engagement takes weeks of preparation and can support the attendance of millions of individuals.', NULL, 414);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('primal_arena_3', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('primal_arena_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('primal_arena_3', 'wrangler', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus', 'Symbiosis Nodule', 'amenity', 'A natural preserve where wild partners are welcomed into our fold. Each creature has something unique to offer the mindweave.', 415);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('symbiosis_nexus', 'Symbiosis Nodule', 'amenity', 'A natural preserve where wild partners are welcomed into our fold. Each creature has something unique to offer the mindweave.', NULL, 415);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47094,21 +49011,21 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('symbiosis_nexus', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus', 'wrangler', '200.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_primal_calling', 'symbiosis_nexus');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus_2', 'Symbiosis Expanse', 'amenity', 'A central reserve that serves to group our wild partners into self-maintaining pods. Coordinating their lesser mental capacities provides stability of thought to the greater mindweave.', 416);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('symbiosis_nexus_2', 'Symbiosis Expanse', 'amenity', 'A central reserve that serves to group our wild partners into self-maintaining pods. Coordinating their lesser mental capacities provides stability of thought to the greater mindweave.', NULL, 416);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_2', 'upkeep', 'energy', '5.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('symbiosis_nexus_2', '480.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus_2', 'wrangler', '400.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('symbiosis_nexus_3', 'Symbiosis Nexus', 'amenity', 'An expansive hub that serves to unite the minds of every creature in powering our collective thought.', 417);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('symbiosis_nexus_3', 'Symbiosis Nexus', 'amenity', 'An expansive hub that serves to unite the minds of every creature in powering our collective thought.', NULL, 417);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('symbiosis_nexus_3', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('symbiosis_nexus_3', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('symbiosis_nexus_3', 'wrangler', '600.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_colony_shelter_wilderness', 'Planetary Tendrils', 'government', 'A pluricellular frontier of organisms weaves throughout this world, ensuring a stable presence for the Wilderness.', 418);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_colony_shelter_wilderness', 'Planetary Tendrils', 'government', 'A pluricellular frontier of organisms weaves throughout this world, ensuring a stable presence for the Wilderness.', NULL, 418);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_colony_shelter_wilderness', 'upkeep', 'energy', '1.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47124,7 +49041,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_colony_shelter_wilderness');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_capital_wilderness', 'Planetary Root Bundle', 'government', 'A sprawling, vibrant mass of simple organisms that harmonizes with motile symbionts to improve their coordination and productivity.', 419);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_capital_wilderness', 'Planetary Root Bundle', 'government', 'A sprawling, vibrant mass of simple organisms that harmonizes with motile symbionts to improve their coordination and productivity.', NULL, 419);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_capital_wilderness', 'cost', 'food', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47148,7 +49065,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_capital_wilderness');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_major_capital_wilderness', 'Planetary Root Complex', 'government', 'A concentrated living mass, sufficiently dense that symbionts may live, toil and breed in one highly localized sphere.', 420);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_major_capital_wilderness', 'Planetary Root Complex', 'government', 'A concentrated living mass, sufficiently dense that symbionts may live, toil and breed in one highly localized sphere.', NULL, 420);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_major_capital_wilderness', 'cost', 'food', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47172,7 +49089,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_major_capital_wilderness');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_system_capital_wilderness', 'Planetary Root Nexus', 'government', 'An immense union of diverse lifeforms working in concert, so vast that it cultivates its own ideal micro-climates.', 421);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_system_capital_wilderness', 'Planetary Root Nexus', 'government', 'An immense union of diverse lifeforms working in concert, so vast that it cultivates its own ideal micro-climates.', NULL, 421);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_system_capital_wilderness', 'cost', 'food', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47196,7 +49113,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_system_capital_wilderness');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_imperial_capital_wilderness', 'Imperial Complex', 'government', 'The Wilderness governs the Galactic Imperium from within this massive and intricate structure. This is where the fate of the galaxy is decided.', 422);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_imperial_capital_wilderness', 'Imperial Complex', 'government', 'The Wilderness governs the Galactic Imperium from within this massive and intricate structure. This is where the fate of the galaxy is decided.', NULL, 422);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_imperial_capital_wilderness', 'cost', 'food', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47220,7 +49137,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_imperial_capital_wilderness');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cradle_of_rebirth', 'Cradle of Rebirth', 'government', 'Rooted deep, this structure metabolizes decaying matter and captured prey into biomass, nourishing the body of the world with every silent pulse.', 423);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_cradle_of_rebirth', 'Cradle of Rebirth', 'government', 'Rooted deep, this structure metabolizes decaying matter and captured prey into biomass, nourishing the body of the world with every silent pulse.', NULL, 423);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'cost', 'food', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47230,7 +49147,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_cradle_of_rebirth', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_cradle_of_rebirth', 'spawning_drone', '100.0', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_cradle_of_rebirth');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_1', 'Tendril Cradle', 'trade', 'A cluster of short, rooted threads extend from this site, drawing nearby materials toward key organs in the immediate area.', 424);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_tendril_cradle_1', 'Tendril Cradle', 'trade', 'A cluster of short, rooted threads extend from this site, drawing nearby materials toward key organs in the immediate area.', NULL, 424);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47239,7 +49156,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_1', 'upkeep', 'minerals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_tendril_cradle_1', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_tendril_cradle_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_2', 'Threaded Span', 'trade', 'Elongated tendrils stretch across the landscape, pulling resources from neighboring expanses before processing and redistributing.', 425);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_tendril_cradle_2', 'Threaded Span', 'trade', 'Elongated tendrils stretch across the landscape, pulling resources from neighboring expanses before processing and redistributing.', NULL, 425);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47248,7 +49165,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_2', 'upkeep', 'minerals', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_tendril_cradle_2', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_tendril_cradle_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_3', 'Conveyroot Nest', 'trade', 'Braided roots pulse and shift beneath the surface, shuttling biomass through layered channels toward distant biotic hubs.', 426);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_tendril_cradle_3', 'Conveyroot Nest', 'trade', 'Braided roots pulse and shift beneath the surface, shuttling biomass through layered channels toward distant biotic hubs.', NULL, 426);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47266,7 +49183,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_tendril_cradle_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_tendril_cradle_4', 'Planetary Threadheart', 'trade', 'Massive logistical tendrils radiate across the planet''s body, pulling, pacing, and routing the Wilderness''s resources with tireless synchronicity.', 427);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_tendril_cradle_4', 'Planetary Threadheart', 'trade', 'Massive logistical tendrils radiate across the planet''s body, pulling, pacing, and routing the Wilderness''s resources with tireless synchronicity.', NULL, 427);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_tendril_cradle_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47284,7 +49201,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_tendril_cradle_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_1', 'Research Growth', 'research', 'The work of playful, exploratory symbionts provides the basis of general research.', 428);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_brain_node_1', 'Research Growth', 'research', 'The work of playful, exploratory symbionts provides the basis of general research.', NULL, 428);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47295,7 +49212,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_brain_node_1', '
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'physicist', '30.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'biologist', '30.0', 1);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_1', 'engineer', '30.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_2', 'Research Grove', 'research', 'A habitat uniquely dedicated to promoting inquisitive behavior, facilitating the study of more advanced artifacts and phenomena.', 429);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_brain_node_2', 'Research Grove', 'research', 'A habitat uniquely dedicated to promoting inquisitive behavior, facilitating the study of more advanced artifacts and phenomena.', NULL, 429);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47306,7 +49223,7 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_brain_node_2', '
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'physicist', '60.0', 0);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'biologist', '60.0', 1);
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_brain_node_2', 'engineer', '60.0', 2);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_3', 'Exotic Research Enclosure', 'research', 'These sprawling enclosures allow large numbers of extremophile symbionts to experiment with all manner of exotic and dangerous materials.', 430);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_brain_node_3', 'Exotic Research Enclosure', 'research', 'These sprawling enclosures allow large numbers of extremophile symbionts to experiment with all manner of exotic and dangerous materials.', NULL, 430);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47337,7 +49254,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_engineers_engineering_research_produces_add', 'Engineering Research Produced per 100 Engineers', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_brain_node_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_brain_node_4', 'Advanced Research Enclosure', 'research', 'This fusion of exotic technology and vast, symbiont-grown enclosure facilitates cutting-edge research in a variety of sandbox environments.', 431);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_brain_node_4', 'Advanced Research Enclosure', 'research', 'This fusion of exotic technology and vast, symbiont-grown enclosure facilitates cutting-edge research in a variety of sandbox environments.', NULL, 431);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_brain_node_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47383,7 +49300,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_calculator_engineer_bonus_workforce_mult', 'Job Efficiency for Engineering Subroutines', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_brain_node_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_1', 'Commensal Clearing', 'unity', 'These islands of stillness allow motiles of all kinds to gather, rest, and reorient themselves within the Wilderness.', 432);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commensal_clearing_1', 'Commensal Clearing', 'unity', 'These islands of stillness allow motiles of all kinds to gather, rest, and reorient themselves within the Wilderness.', NULL, 432);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_1', 'cost', 'minerals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47392,7 +49309,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_1', 'upkeep', 'energy', '1.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_commensal_clearing_1', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_1', 'bureaucrat', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_2', 'Commensal Grove', 'unity', 'Ideal, sheltered venues for mass gatherings of symbionts. Here, their interactions yield further understanding of the distributed self.', 433);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commensal_clearing_2', 'Commensal Grove', 'unity', 'Ideal, sheltered venues for mass gatherings of symbionts. Here, their interactions yield further understanding of the distributed self.', NULL, 433);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_2', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47401,7 +49318,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_2', 'upkeep', 'energy', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_commensal_clearing_2', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_commensal_clearing_2', 'bureaucrat', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_3', 'Commensal Valley', 'unity', 'Dense and highly varied communities of symbionts migrate through these pristine formations, strengthening the ties between each other.', 434);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commensal_clearing_3', 'Commensal Valley', 'unity', 'Dense and highly varied communities of symbionts migrate through these pristine formations, strengthening the ties between each other.', NULL, 434);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_3', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47420,7 +49337,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_commensal_clearing_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_commensal_clearing_4', 'Commensal Biome', 'unity', 'Vast, interconnected habitats play host to myriad encounters, each one a vital spark of mutualistic unity.', 435);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_commensal_clearing_4', 'Commensal Biome', 'unity', 'Vast, interconnected habitats play host to myriad encounters, each one a vital spark of mutualistic unity.', NULL, 435);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_commensal_clearing_4', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47444,7 +49361,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bureaucrat_bonus_workforce_mult', 'Job Efficiency for Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_commensal_clearing_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_1', 'Nutritious Dell', 'resource', 'Small-scale geological sculpturing provides an ideal micro-climate for year-round, reliable crop growth.', 436);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_massive_growth_1', 'Nutritious Dell', 'resource', 'Small-scale geological sculpturing provides an ideal micro-climate for year-round, reliable crop growth.', NULL, 436);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47453,7 +49370,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_1', 'upkeep', 'minerals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_massive_growth_1', '180.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_1', 'farmer', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_2', 'Nutritious Undergrowth', 'resource', 'A vast, semi-permeable canopy endows this undergrowth with all the environmental protection it needs to consistently produce rich and succulent food.', 437);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_massive_growth_2', 'Nutritious Undergrowth', 'resource', 'A vast, semi-permeable canopy endows this undergrowth with all the environmental protection it needs to consistently produce rich and succulent food.', NULL, 437);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47462,7 +49379,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_2', 'upkeep', 'minerals', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_massive_growth_2', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_massive_growth_2', 'farmer', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_3', 'Contour Megaplantation', 'resource', 'A haven for semi-aquatic micro-organisms and fauna alike, these sprawling terraces provide an abundance of protein matter and grains.', 438);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_massive_growth_3', 'Contour Megaplantation', 'resource', 'A haven for semi-aquatic micro-organisms and fauna alike, these sprawling terraces provide an abundance of protein matter and grains.', NULL, 438);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47481,7 +49398,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_massive_growth_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_massive_growth_4', 'Sylviculture Plantation', 'resource', 'Arrangements of undergrowth sheltered by leafy megaflora ensure a high yield of food crops to serve the entire food web.', 439);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_massive_growth_4', 'Sylviculture Plantation', 'resource', 'Arrangements of undergrowth sheltered by leafy megaflora ensure a high yield of food crops to serve the entire food web.', NULL, 439);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_massive_growth_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47505,7 +49422,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_agri_drone_bonus_workforce_mult', 'Job Efficiency for Agri-Drones', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_massive_growth_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_1', 'Chloroplastic Acclimator', 'resource', 'Clusters of lens-like bubbles focus solar rays inwards through a rich algal soup, converting and storing that energy for later use.', 440);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bioelectric_stimulator_1', 'Chloroplastic Acclimator', 'resource', 'Clusters of lens-like bubbles focus solar rays inwards through a rich algal soup, converting and storing that energy for later use.', NULL, 440);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47514,7 +49431,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'upkeep', 'minerals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_bioelectric_stimulator_1', '180.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_1', 'technician', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_2', 'Chloroplastic Accelerator', 'resource', 'Glassy bubbles packed full of photosynthesizing algae use solar energy to form tighter bio-chemical bonds, reducing self-discharge.', 441);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bioelectric_stimulator_2', 'Chloroplastic Accelerator', 'resource', 'Glassy bubbles packed full of photosynthesizing algae use solar energy to form tighter bio-chemical bonds, reducing self-discharge.', NULL, 441);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47523,7 +49440,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'upkeep', 'minerals', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_bioelectric_stimulator_2', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_bioelectric_stimulator_2', 'technician', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_3', 'Chloroplastic Lens Array', 'resource', 'Counter-balanced branches laden with solar collectors may rise and fall according to demand and capacity, making for a versatile and reliable power hub.', 442);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bioelectric_stimulator_3', 'Chloroplastic Lens Array', 'resource', 'Counter-balanced branches laden with solar collectors may rise and fall according to demand and capacity, making for a versatile and reliable power hub.', NULL, 442);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47542,7 +49459,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_technician_energy_produces_add', 'Energy Produced per 100 Technicians', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_bioelectric_stimulator_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bioelectric_stimulator_4', 'Chloroplastic Cyst', 'resource', 'These glassy, algae-filled sacs may migrate and multiply wherever their energy is most needed, almost eliminating power loss over distance.', 443);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bioelectric_stimulator_4', 'Chloroplastic Cyst', 'resource', 'These glassy, algae-filled sacs may migrate and multiply wherever their energy is most needed, almost eliminating power loss over distance.', NULL, 443);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bioelectric_stimulator_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47566,7 +49483,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_technician_drone_bonus_workforce_mult', 'Job Efficiency for Tech-Drones', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_bioelectric_stimulator_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_1', 'Lithic Bore', 'resource', 'Plant matter of near-crystalline hardness is forced in and around existing extraction sites, withdrawing even greater yields of useful minerals.', 444);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_churning_tunnels_1', 'Lithic Bore', 'resource', 'Plant matter of near-crystalline hardness is forced in and around existing extraction sites, withdrawing even greater yields of useful minerals.', NULL, 444);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47575,7 +49492,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_1', 'upkeep', 'minerals', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_churning_tunnels_1', '180.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_1', 'miner', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_2', 'Lithic Filters', 'resource', 'Colonies of semi-permeable biofilms collect valuable minerals that would otherwise be lost in run-off from liquid mining operations.', 445);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_churning_tunnels_2', 'Lithic Filters', 'resource', 'Colonies of semi-permeable biofilms collect valuable minerals that would otherwise be lost in run-off from liquid mining operations.', NULL, 445);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47584,7 +49501,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_2', 'upkeep', 'minerals', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_churning_tunnels_2', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_churning_tunnels_2', 'miner', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_3', 'Lithic Macerator', 'resource', 'Powerful grinding plates and pincers help reduce earthen matter to a chemical slurry for easier mineral extraction.', 446);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_churning_tunnels_3', 'Lithic Macerator', 'resource', 'Powerful grinding plates and pincers help reduce earthen matter to a chemical slurry for easier mineral extraction.', NULL, 446);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47603,7 +49520,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_minerals_produces_add', 'Minerals Produced per 100 Miners', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_churning_tunnels_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_tunnels_4', 'Lithic Baths', 'resource', 'A concert of macerators, bio-chemical agents, and biofilms permits extraction of minerals on-site, wherever they happens to be a rich seam.', 447);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_churning_tunnels_4', 'Lithic Baths', 'resource', 'A concert of macerators, bio-chemical agents, and biofilms permits extraction of minerals on-site, wherever they happens to be a rich seam.', NULL, 447);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_tunnels_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47627,7 +49544,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_mining_drone_bonus_workforce_mult', 'Job Efficiency for Mining Drones', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_churning_tunnels_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_0', 'Smelting Pool', 'resource', 'Thermophilic symbionts work tirelessly to produce high-quality alloys in and around this natural heat source.', 448);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_natural_furnace_0', 'Smelting Pool', 'resource', 'Thermophilic symbionts work tirelessly to produce high-quality alloys in and around this natural heat source.', NULL, 448);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_0', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47636,7 +49553,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_0', 'upkeep', 'energy', '2.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_natural_furnace_0', '180.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_0', 'foundry', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_1', 'Smelting Kiln', 'resource', 'Heat-resistant growths enable more efficient use of heat, and thus the production of superior alloys.', 449);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_natural_furnace_1', 'Smelting Kiln', 'resource', 'Heat-resistant growths enable more efficient use of heat, and thus the production of superior alloys.', NULL, 449);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_1', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47645,7 +49562,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_1', 'upkeep', 'energy', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_natural_furnace_1', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_natural_furnace_1', 'foundry', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_2', 'Solid-Light Smelter', 'resource', 'Sophisticated litho-organic kilns, aided by hologram technology, enable the production of highly versatile alloys.', 450);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_natural_furnace_2', 'Solid-Light Smelter', 'resource', 'Sophisticated litho-organic kilns, aided by hologram technology, enable the production of highly versatile alloys.', NULL, 450);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47669,7 +49586,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_minerals_upkeep_add', 'Minerals Upkeep per 100 Metallurgists', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_natural_furnace_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_natural_furnace_3', 'Nano-Smelter', 'resource', 'Thermophilic nano-organisms inhabit these sweltering pools and kilns, ridding our alloys of unwanted impurities.', 451);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_natural_furnace_3', 'Nano-Smelter', 'resource', 'Thermophilic nano-organisms inhabit these sweltering pools and kilns, ridding our alloys of unwanted impurities.', NULL, 451);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_natural_furnace_3', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47698,7 +49615,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_metallurgists_minerals_upkeep_add', 'Minerals Upkeep per 100 Metallurgists', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_natural_furnace_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_1', 'Avatar Cradle', 'amenities', 'A budding organ where the Wilderness begins to shape basic forms. Preparing its instincts for unfamiliar life and terrain beyond its native biosphere.', 452);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_avatar_chamber_1', 'Avatar Cradle', 'amenities', 'A budding organ where the Wilderness begins to shape basic forms. Preparing its instincts for unfamiliar life and terrain beyond its native biosphere.', NULL, 452);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47717,7 +49634,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_avatar_chamber_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_2', 'Avatar Chamber', 'amenities', 'Simulated bodies are grown and guided through internal trials, mimicking foreign organisms and ecosystems. Knowledge spreads by embodying the unknown.', 453);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_avatar_chamber_2', 'Avatar Chamber', 'amenities', 'Simulated bodies are grown and guided through internal trials, mimicking foreign organisms and ecosystems. Knowledge spreads by embodying the unknown.', NULL, 453);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_2', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47743,7 +49660,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_produces_mult', 'Resources Produced from Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_avatar_chamber_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_3', 'Avatar Forest', 'amenities', 'This sprawling organ broadcasts avatar templates shaped after alien forms and landscapes. The Wilderness learns by living what it has never touched.', 454);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_avatar_chamber_3', 'Avatar Forest', 'amenities', 'This sprawling organ broadcasts avatar templates shaped after alien forms and landscapes. The Wilderness learns by living what it has never touched.', NULL, 454);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_3', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47773,7 +49690,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_produces_mult', 'Resources Produced from Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_avatar_chamber_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_avatar_chamber_4', 'Avatar Cortex', 'amenities', 'A planetary-scale engine of embodiment, capable of simulating entire civilizations, xeno-ecologies, and environmental extremes. Here, the Wilderness rehearses its meeting with the galaxy.', 455);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_avatar_chamber_4', 'Avatar Cortex', 'amenities', 'A planetary-scale engine of embodiment, capable of simulating entire civilizations, xeno-ecologies, and environmental extremes. Here, the Wilderness rehearses its meeting with the galaxy.', NULL, 455);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_avatar_chamber_4', 'cost', 'minerals', '2000.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47803,7 +49720,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_bureaucrats_produces_mult', 'Resources Produced from Bureaucrats', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_avatar_chamber_4');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_mote_aggravator', 'Chemical Digester', 'resource', 'An elegant system of vascular tissues and chemical metabolizers produces Volatile Motes from everyday earthen matter.', 456);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_mote_aggravator', 'Chemical Digester', 'resource', 'An elegant system of vascular tissues and chemical metabolizers produces Volatile Motes from everyday earthen matter.', NULL, 456);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_aggravator', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47811,7 +49728,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_mote_aggravator', 'upkeep', 'energy', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_mote_aggravator', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_churning_stomach', 'Exotic Gas Filters', 'resource', 'Highly specialized microbes and nano-organisms react with mundane aerosols to produce these refined Exotic Gases.', 457);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_churning_stomach', 'Exotic Gas Filters', 'resource', 'Highly specialized microbes and nano-organisms react with mundane aerosols to produce these refined Exotic Gases.', NULL, 457);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_stomach', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47819,7 +49736,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_churning_stomach', 'upkeep', 'energy', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_churning_stomach', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_crystal_growth', 'Crystal Bed', 'resource', 'Special canopies facilitate the precise humidity and temperature controls required to grow exacting, artificial Rare Crystals.', 458);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_crystal_growth', 'Crystal Bed', 'resource', 'Special canopies facilitate the precise humidity and temperature controls required to grow exacting, artificial Rare Crystals.', NULL, 458);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_growth', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47827,7 +49744,7 @@ INSERT OR IGNORE INTO building_resource
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_crystal_growth', 'upkeep', 'energy', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_crystal_growth', '480.0');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_carapace', 'Bone Garrison', 'army', 'A plethora of fiercely territorial symbionts may be housed in this cocooned proving ground, poised in case they need ever be called upon.', 459);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_planetary_carapace', 'Bone Garrison', 'army', 'A plethora of fiercely territorial symbionts may be housed in this cocooned proving ground, poised in case they need ever be called upon.', NULL, 459);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47836,7 +49753,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace', 'upkeep', 'minerals', '5.0', 2);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_planetary_carapace', '240.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_planetary_carapace', 'soldier', '100.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_planetary_carapace_2', 'Bone Fortress', 'army', 'This sprawling facility of hardy training grounds and accommodations ensures the defenders housed within are braced for any planetary incursion.', 460);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_planetary_carapace_2', 'Bone Fortress', 'army', 'This sprawling facility of hardy training grounds and accommodations ensures the defenders housed within are braced for any planetary incursion.', NULL, 460);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47849,7 +49766,7 @@ INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_planetary_carapace_2', 'upkeep', 'volatile_motes', '1.0', 4);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_planetary_carapace_2', '360.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_planetary_carapace_2', 'soldier', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ozone_thickener', 'Planetary Shield Canopy', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', 461);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ozone_thickener', 'Planetary Shield Canopy', 'army', 'Generating a strong energy shield within a planetary atmosphere is a greater challenge than in the vacuum of space, but it offers a potent defense against orbital bombardment.', NULL, 461);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_ozone_thickener', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47868,7 +49785,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_storm_devastation_mult', 'Planetary Cosmic Storm Devastation Reduction', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_ozone_thickener');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_wilderness_storm_relief', 'Storm Relief Center', 'resource', 'A broad canopy of hardened, bioelectrically-charged leaves ensures the safety of symbionts in its vicinity, and allows for rapid responses to cosmic storm activity without endangering life or productivity.', 462);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_wilderness_storm_relief', 'Storm Relief Center', 'resource', 'A broad canopy of hardened, bioelectrically-charged leaves ensures the safety of symbionts in its vicinity, and allows for rapid responses to cosmic storm activity without endangering life or productivity.', NULL, 462);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_wilderness_storm_relief', 'cost', 'minerals', '600.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47882,7 +49799,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_wilderness_storm_relief');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_subterranean_cache', 'Subterranean Cache', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', 463);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_subterranean_cache', 'Subterranean Cache', 'resource', 'Massive resource silos and storage facilities where large quantities of resources can be safely kept.', NULL, 463);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_subterranean_cache', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47896,14 +49813,14 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_resource_max_add', 'Resource Storage Capacity', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_wilderness', 'building_subterranean_cache');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_citadel_uplink', 'Citadel Uplink', NULL, 'This advanced logistics center ensures a constant uplink to any Deep Space Citadel in system.', 464);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_citadel_uplink', 'Citadel Uplink', NULL, 'This advanced logistics center ensures a constant uplink to any Deep Space Citadel in system.', NULL, 464);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_uplink', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_citadel_uplink', 'upkeep', 'energy', '8.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_citadel_uplink', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_starlit_citadel', 'building_citadel_uplink');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_genomic_facility', 'Genomic Research Facility', 'amenity', 'Specialized facilities where research into our genetic future is shaped.', 465);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_genomic_facility', 'Genomic Research Facility', 'amenity', 'Specialized facilities where research into our genetic future is shaped.', NULL, 465);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_genomic_facility', 'cost', 'minerals', '800.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47945,7 +49862,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_genomic_facility', 'planet', 'organic_pop_bonus_workforce_mult', '0.15', NULL, 6);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_pinniped_sanctuary', 'Pinniped Sanctuary', 'amenity', 'A sanctuary for gigantic pinnipeds captured in the liquid nitrogen oceans of .', 466);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_pinniped_sanctuary', 'Pinniped Sanctuary', 'amenity', 'A sanctuary for gigantic pinnipeds captured in the liquid nitrogen oceans of .', NULL, 466);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_pinniped_sanctuary', 'cost', 'minerals', '250.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47956,7 +49873,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_pinniped_sanctuary', 'country', 'pop_happiness', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cryovault', 'Cryovault', 'amenity', 'A sealed habitat that utilizes the subthermal dynamics of frozen climates to create a controlled and comfortable living space.', 467);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_cryovault', 'Cryovault', 'amenity', 'A sealed habitat that utilizes the subthermal dynamics of frozen climates to create a controlled and comfortable living space.', NULL, 467);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_cryovault', 'cost', 'minerals', '300.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47977,7 +49894,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_cryovault', 'planet', 'pop_environment_tolerance', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_bio_furnace', 'Bio-Furnace', 'manufacturing', 'By incorporating significant levels of simulated stellar radiation, this facility is capable of converting biological matter into alloys.', 468);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_bio_furnace', 'Bio-Furnace', 'manufacturing', 'By incorporating significant levels of simulated stellar radiation, this facility is capable of converting biological matter into alloys.', NULL, 468);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_bio_furnace', 'cost', 'minerals', '300.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -47996,43 +49913,43 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_bio_furnace', 'planet', 'planet_farmers_alloys_produces_add', '1.0', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_farmers_alloys_produces_add', 'Alloys Produced per 100 Farmers', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated populations in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher status.', 469);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated populations in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher status.', NULL, 469);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_1', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers', 'building_lifecrypt_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from individuals via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', 470);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from individuals via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', NULL, 470);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_2', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers', 'building_lifecrypt_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, for wandering within its area of influence can be fatal to those without the proper equipment. Assigned individuals are trained to regulate their metabolisms so as not to donate too much of their energy at once.', 471);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, for wandering within its area of influence can be fatal to those without the proper equipment. Assigned individuals are trained to regulate their metabolisms so as not to donate too much of their energy at once.', NULL, 471);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_3', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers', 'building_lifecrypt_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_1', 'Siphon Battery', 'unity', 'These monumental devices are capable of draining excess processing energy from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their batteries into a central conduit where it can then be redistributed to those of higher purpose.', 472);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_machine_1', 'Siphon Battery', 'unity', 'These monumental devices are capable of draining excess processing energy from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their batteries into a central conduit where it can then be redistributed to those of higher purpose.', NULL, 472);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_machine_1', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_machine', 'building_lifecrypt_machine_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_2', 'Battery Complex', 'unity', 'Calibrated specifically to harvest energies from drones via physical tether, these devices are capable of sapping immense amounts of excess processing without inflicting critical faults.', 473);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_machine_2', 'Battery Complex', 'unity', 'Calibrated specifically to harvest energies from drones via physical tether, these devices are capable of sapping immense amounts of excess processing without inflicting critical faults.', NULL, 473);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_machine_2', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_machine', 'building_lifecrypt_machine_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_machine_3', 'Battery Nexus', 'unity', 'The boundaries of the Battery Nexus must be clearly marked, as entering within its area of influence can be fatal to units without the proper insulative equipment.', 474);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_machine_3', 'Battery Nexus', 'unity', 'The boundaries of the Battery Nexus must be clearly marked, as entering within its area of influence can be fatal to units without the proper insulative equipment.', NULL, 474);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_machine_3', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_machine', 'building_lifecrypt_machine_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher caste.', 475);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_hive_mind_1', 'Leeching Tower', 'unity', 'These monumental devices are capable of draining excess energies from dedicated drones in close proximity. Assigned workers wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those of higher caste.', NULL, 475);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_hive_mind_1', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_hive_mind', 'building_lifecrypt_hive_mind_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from drones via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', 476);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_hive_mind_2', 'Soul Siphon', 'unity', 'While their name may imply otherwise, Soul Siphons are based in practical science. Calibrated specifically to harvest energies from drones via physical tether, they are capable of sapping immense amounts of metabolism from organisms without endangering their lives.', NULL, 476);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_hive_mind_2', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_hive_mind', 'building_lifecrypt_hive_mind_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_hive_mind_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, as entering within its area of influence can be fatal to drones without the proper equipment. Assigned workers are trained to regulate their metabolisms so as not to donate too much of their energy at once.', 477);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_hive_mind_3', 'Essence Conduit', 'unity', 'The boundaries of Essence Conduits must be clearly marked, as entering within its area of influence can be fatal to drones without the proper equipment. Assigned workers are trained to regulate their metabolisms so as not to donate too much of their energy at once.', NULL, 477);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_hive_mind_3', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_hive_mind', 'building_lifecrypt_hive_mind_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_1', 'Synergy Headquarters', 'unity', 'These monumental devices are capable of draining excess energies from dedicated interns in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those in senior positions.', 478);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_corporate_1', 'Synergy Headquarters', 'unity', 'These monumental devices are capable of draining excess energies from dedicated interns in close proximity. Assigned individuals wear specialized equipment which funnel their life force into a central conduit where it can then be redistributed to those in senior positions.', NULL, 478);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_corporate_1', '360.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_corporate', 'building_lifecrypt_corporate_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_2', 'Synergy Administration', 'unity', 'Calibrated specifically to harvest energies from individuals via physical tether, the Synergy Administration buildings are capable of sapping immense amounts of metabolism from interns without endangering their lives to any appreciable degree.', 479);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_corporate_2', 'Synergy Administration', 'unity', 'Calibrated specifically to harvest energies from individuals via physical tether, the Synergy Administration buildings are capable of sapping immense amounts of metabolism from interns without endangering their lives to any appreciable degree.', NULL, 479);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_corporate_2', '480.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_corporate', 'building_lifecrypt_corporate_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_lifecrypt_corporate_3', 'Synergy Nexus', 'unity', 'The boundaries of the Synergy Nexus must be clearly marked, for wandering within its area of influence can be fatal to interns without the proper equipment. Assigned individuals are trained in advanced synergy techniques to ensure their ultimate survival throughout this process.', 480);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_lifecrypt_corporate_3', 'Synergy Nexus', 'unity', 'The boundaries of the Synergy Nexus must be clearly marked, for wandering within its area of influence can be fatal to interns without the proper equipment. Assigned individuals are trained in advanced synergy techniques to ensure their ultimate survival throughout this process.', NULL, 480);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_lifecrypt_corporate_3', '600.0');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_entropy_drinkers_corporate', 'building_lifecrypt_corporate_3');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_1', 'Experimentation Chambers', 'research', 'A top-secret facility for experimenting on incorrigible lawbreakers, mostly comprising prison cells and research laboratories.', 481);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_experimentation_chambers_1', 'Experimentation Chambers', 'research', 'A top-secret facility for experimenting on incorrigible lawbreakers, mostly comprising prison cells and research laboratories.', NULL, 481);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_1', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48046,7 +49963,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_twisted_experimenters', 'building_experimentation_chambers_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_twisted_experimenters_corporate', 'building_experimentation_chambers_1');
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('civic_twisted_experimenters_hive_mind', 'building_experimentation_chambers_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_2', 'Experimentation Complex', 'research', 'A campus of top-secret technology and internment facilities, where lawbreaking are used as subjects in experiments led by the empire''s top .', 482);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_experimentation_chambers_2', 'Experimentation Complex', 'research', 'A campus of top-secret technology and internment facilities, where lawbreaking are used as subjects in experiments led by the empire''s top .', NULL, 482);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_2', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48059,7 +49976,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_experimentation_chambers_2', 'planet', 'pop_ethic_materialist_attraction_mult', '0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_experimentation_chambers_3', 'Experimentation Nexus', 'research', 'A network of maximum-security technology and internment centers. Teams of elite conduct pioneering experiments on drawn from the empire''s underworld.', 483);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_experimentation_chambers_3', 'Experimentation Nexus', 'research', 'A network of maximum-security technology and internment centers. Teams of elite conduct pioneering experiments on drawn from the empire''s underworld.', NULL, 483);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_experimentation_chambers_3', 'cost', 'rare_crystals', '100.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48074,7 +49991,7 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_experimentation_chambers_3', 'planet', 'pop_ethic_materialist_attraction_mult', '0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_cradle_sanctum', 'Sanctum of the Cradle', 'government', 'The Sanctum is a place dedicated to communion with the Cradle.', 484);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_cradle_sanctum', 'Sanctum of the Cradle', 'government', 'The Sanctum is a place dedicated to communion with the Cradle.', NULL, 484);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_cradle_sanctum', 'cost', 'sr_zro', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48093,14 +50010,14 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_cradle_sanctum', 'country', 'envoy_improve_relations_mult', '0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('envoy_improve_relations_mult', 'Improve Relations Effectiveness', 1);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_psionic_suppressor', 'Psionic Suppressor', 'unity', 'This complex supports an array of long-range psionic attenuators, which dissipate Psionic Auras throughout the star system and prevent their further spread.', 485);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_psionic_suppressor', 'Psionic Suppressor', 'unity', 'This complex supports an array of long-range psionic attenuators, which dissipate Psionic Auras throughout the star system and prevent their further spread.', NULL, 485);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_suppressor', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_psionic_suppressor', 'upkeep', 'sr_zro', '1.0', 1);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_psionic_suppressor', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_psionic_suppressor', 'bureaucrat', '200.0', 0);
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_ward_1', 'Ancient Ward', 'army', 'This ancestral structure uses an array of psionic attenuators to insulate the entire planet against mind-invading forces.', 486);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_ward_1', 'Ancient Ward', 'army', 'This ancestral structure uses an array of psionic attenuators to insulate the entire planet against mind-invading forces.', NULL, 486);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_ancient_ward_1', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_ancient_ward_1', 'soldier', '200.0', 0);
 INSERT OR IGNORE INTO building_modifier
@@ -48109,7 +50026,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_mindwardens', 'building_ancient_ward_1');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_ancient_ward_2', 'Grand Ward', 'army', 'This ancestral structure has been upgraded with enhanced psionic attenuators, which are capable of protecting against Psionic Auras throughout the star system.', 487);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_ancient_ward_2', 'Grand Ward', 'army', 'This ancestral structure has been upgraded with enhanced psionic attenuators, which are capable of protecting against Psionic Auras throughout the star system.', NULL, 487);
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_ancient_ward_2', '600.0');
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_ancient_ward_2', 'soldier', '200.0', 0);
 INSERT OR IGNORE INTO building_modifier
@@ -48118,7 +50035,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_mindwardens', 'building_ancient_ward_2');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_materiality_engine', 'Materiality Engine', 'manufacturing', 'The psionic energy of the Shroud adjoins every point in the physical galaxy. The Materiality Engine exploits this interface, making it possible to reach across dimensions and materialize valuable components and resources.', 488);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_materiality_engine', 'Materiality Engine', 'manufacturing', 'The psionic energy of the Shroud adjoins every point in the physical galaxy. The Materiality Engine exploits this interface, making it possible to reach across dimensions and materialize valuable components and resources.', NULL, 488);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_materiality_engine', 'cost', 'sr_zro', '10.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48135,7 +50052,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('damage_vs_psionic_empires_mult', 'Damage to Psionic Empires', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_shroud_forged', 'building_materiality_engine');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_chamber_of_silence', 'Chamber of Silence', 'government', 'From all across our empire, psionic individuals are brought here to commune with the Shroud in chambers of protective silence.', 489);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_chamber_of_silence', 'Chamber of Silence', 'government', 'From all across our empire, psionic individuals are brought here to commune with the Shroud in chambers of protective silence.', NULL, 489);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_chamber_of_silence', 'cost', 'minerals', '500.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48158,7 +50075,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('psionic_aura_intensity_mult', 'Psionic Aura Intensity Gain', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_endbringers', 'building_chamber_of_silence');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_passenger_dorms', 'Passenger Estates', 'unity', 'Luxurious manor houses within artificially sculpted landscapes are allocated to the most deserving passengers.', 490);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_passenger_dorms', 'Passenger Estates', 'unity', 'Luxurious manor houses within artificially sculpted landscapes are allocated to the most deserving passengers.', NULL, 490);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_passenger_dorms', 'cost', 'minerals', '400.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48170,7 +50087,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_passenger_dorms');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_passenger_paradise', 'Paradise Dome', 'unity', 'A fully enclosed habitation dome with a self-contained ecosystem, a private paradise for those with the proper tickets.', 491);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_passenger_paradise', 'Paradise Dome', 'unity', 'A fully enclosed habitation dome with a self-contained ecosystem, a private paradise for those with the proper tickets.', NULL, 491);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_passenger_paradise', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48184,7 +50101,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_housing_add', 'Housing', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_passenger_paradise');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_passenger_unity', 'Voyage Hall', 'unity', 'Every milestone of the journey is celebrated here, which leaves the passengers thrilled and the supply rooms empty.', 492);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_passenger_unity', 'Voyage Hall', 'unity', 'Every milestone of the journey is celebrated here, which leaves the passengers thrilled and the supply rooms empty.', NULL, 492);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_passenger_unity', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48208,7 +50125,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_cruise_passenger_happiness', 'First Class Passenger Happiness', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_forever_cruise_passenger_unity');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_passenger_research', 'Enrichment Labs', 'unity', 'Luxury cabins retooled as classrooms and labs turn passengers into active partners in science.', 493);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_passenger_research', 'Enrichment Labs', 'unity', 'Luxury cabins retooled as classrooms and labs turn passengers into active partners in science.', NULL, 493);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_passenger_research', 'cost', 'exotic_gases', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48237,7 +50154,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_cruise_passengers_consumer_goods_upkeep_add', 'Consumer Goods Upkeep for First Class Passengers', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_forever_cruise_passenger_research');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_passenger_consumer_goods', 'Indulgence Reprocessors', 'unity', 'A vast complex where waste becomes wonder, unseen by the passengers.', 494);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_passenger_consumer_goods', 'Indulgence Reprocessors', 'unity', 'A vast complex where waste becomes wonder, unseen by the passengers.', NULL, 494);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_passenger_consumer_goods', 'cost', 'rare_crystals', '200.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48256,7 +50173,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_artisans_upkeep_mult', 'Upkeep for Artisans', 0);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_forever_cruise_passenger_consumer_goods');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_crew_resources', 'Service Workshops', 'unity', 'Workshops that streamline the daily labor behind food and power alike.', 495);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_crew_resources', 'Service Workshops', 'unity', 'Workshops that streamline the daily labor behind food and power alike.', NULL, 495);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_crew_resources', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48271,7 +50188,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for Workers & Menial Drones', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_forever_cruise_crew_resources');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_crew_industry', 'Crew Coordination Center', 'unity', 'Schedules synchronize, workflows tighten, and output rises under coordinated oversight.', 496);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_crew_industry', 'Crew Coordination Center', 'unity', 'Schedules synchronize, workflows tighten, and output rises under coordinated oversight.', NULL, 496);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_crew_industry', 'cost', 'volatile_motes', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
@@ -48291,7 +50208,7 @@ INSERT OR IGNORE INTO building_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('artisan_jobs_bonus_workforce_mult', 'Job Efficiency for Artisan jobs', 1);
 INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES ('origin_forever_cruise', 'building_forever_cruise_crew_industry');
-INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES ('building_forever_cruise_crew_service', 'Holo-Production Studios', 'unity', 'Endless sets and soundstages, where the crew churns out passenger fantasies on demand.', 497);
+INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES ('building_forever_cruise_crew_service', 'Holo-Production Studios', 'unity', 'Endless sets and soundstages, where the crew churns out passenger fantasies on demand.', NULL, 497);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_forever_cruise_crew_service', 'cost', 'rare_crystals', '50.0', 0);
 INSERT OR IGNORE INTO building_resource
