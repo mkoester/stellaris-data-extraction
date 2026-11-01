@@ -93,6 +93,12 @@ rewrote ethic attraction (`add` for `factor`), moved Fallen Empire automation in
 script, and nothing failed. Extract to a temp file and compare it table by table with the
 committed `sql/stellaris.sql` (load both into SQLite; per table, rows only in one); a table that
 shrinks, or a column that turns NULL, is a format change to read, not a game change.
+**Load both dumps into fresh databases** — never compare against `sqlite/stellaris.sqlite`: a run
+drops and recreates only the tables `schema.py` names, so the local file keeps tables since removed
+(2026-11-01: a `tech_tier` no dump has had, which read as a new table). **The SQL string an
+`INSERT` is written with goes into the dump as is**: a triple-quoted multi-line statement makes
+every row of that table multi-line in `sql/stellaris.sql` — keep a new statement on one line
+unless its table already uses the multi-line form.
 
 Two ways values went missing unnoticed (both fixed 2026-10-31): a value written as an `@variable`
 from `common/scripted_variables` is dropped unless the step passes `scripted_vars` (static
