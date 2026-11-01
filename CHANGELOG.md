@@ -4,6 +4,37 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.10] - 2026-11-01
+
+### Fixed
+
+- A localisation text that only refers to another (`$key$`) is resolved through chains of such
+  references; before, one level deep only, and whether a chain resolved depended on the order the
+  keys were read, an unresolved one coming out NULL. 4.5.2 gains 28 names and descriptions: the
+  Psi Corps tradition of the Shroud tree, the arkship techs, nine starbase modules, Organo-Machine
+  Interfacing's assimilator agenda, Empire Size, three origins' texts (`$concept_…$` before) and
+  more.
+
+## [0.1.9] - 2026-11-01
+
+### Added
+
+- `building`: an owned building's build requirements — `owner_trigger_json` (what the owner
+  needs: `is_legit_or_legal_criminal`, `is_illegal_criminal`, a civic, an origin …),
+  `host_trigger_json` (the host colony's), `allow_json` and `prerequisites_json` (techs). NULL
+  for the other buildings.
+
+## [0.1.8] - 2026-11-01
+
+### Added
+
+- `building.owner_type`: `corporate` for a MegaCorp's branch office buildings (35 on 4.5.2),
+  `subject_holding` for an overlord's holdings (30), else NULL.
+- `building_conditional_modifier`: those buildings' modifier blocks one by one with their gate —
+  the owner's civic a bonus needs (`owner_civic`), any other condition as text — and whether it
+  goes to the host colony (`planet`) or the owner (`country`: a branch office's owner capital).
+  `building_modifier` sums them regardless of the gate and is unchanged.
+
 ## [0.1.7] - 2026-10-31
 
 ### Fixed
