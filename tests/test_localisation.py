@@ -112,6 +112,19 @@ class TestLoadLocalisation(unittest.TestCase):
         labels = self.write_and_load('l_english:\n alias:0 "$target$"\n target:0 "Real Label"\n')
         self.assertEqual(labels['alias'], 'Real Label')
 
+    def test_ref_chain_resolved_whatever_the_order(self):
+        labels = self.write_and_load(
+            'l_english:\n a:0 "$b$"\n b:0 "$c$"\n c:0 "Real"\n z:0 "$y$"\n y:0 "$x$"\n x:0 "End"\n')
+        self.assertEqual([labels[k] for k in 'abcxyz'], ['Real', 'Real', 'Real', 'End', 'End', 'End'])
+
+    def test_ref_cycle_dropped(self):
+        labels = self.write_and_load('l_english:\n a:0 "$b$"\n b:0 "$a$"\n')
+        self.assertEqual(labels, {})
+
+    def test_empty_label_kept_a_ref_to_it_dropped(self):
+        labels = self.write_and_load('l_english:\n empty:0 ""\n alias:0 "$empty$"\n')
+        self.assertEqual(labels, {'empty': ''})
+
     def test_unresolvable_ref_dropped(self):
         labels = self.write_and_load('l_english:\n alias:0 "$missing$"\n')
         self.assertNotIn('alias', labels)
