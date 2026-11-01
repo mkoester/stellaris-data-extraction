@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- A localisation text that only refers to another (`$key$`) is resolved through chains of such
+  references; before, one level deep only, and whether a chain resolved depended on the order the
+  keys were read, an unresolved one coming out NULL. 4.5.2 gains 28 names and descriptions: the
+  Psi Corps tradition of the Shroud tree, the arkship techs, nine starbase modules, Organo-Machine
+  Interfacing's assimilator agenda, Empire Size, three origins' texts (`$concept_…$` before) and
+  more.
+
 ## [0.1.9] - 2026-11-01
 
 ### Added

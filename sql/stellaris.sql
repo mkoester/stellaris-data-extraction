@@ -3521,22 +3521,22 @@ INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_c
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_pc_cosmogenesis_world_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_machine_pc_gaia_preference', NULL, NULL, 0, 0, 0, NULL, NULL, NULL, '01_species_traits_habitability.txt');
+            VALUES ('trait_machine_pc_gaia_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_gaia_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_machine_pc_machine_preference', NULL, NULL, 0, 0, 0, NULL, NULL, NULL, '01_species_traits_habitability.txt');
+            VALUES ('trait_machine_pc_machine_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_machine_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_machine_pc_shattered_ring_habitable_preference', NULL, NULL, 0, 0, 0, NULL, NULL, NULL, '01_species_traits_habitability.txt');
+            VALUES ('trait_machine_pc_shattered_ring_habitable_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_shattered_ring_habitable_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_machine_pc_ringworld_habitable_preference', NULL, NULL, 0, 0, 0, NULL, NULL, NULL, '01_species_traits_habitability.txt');
+            VALUES ('trait_machine_pc_ringworld_habitable_preference', NULL, NULL, 0, 0, 0, NULL, 'Climate preference is determined by eons of evolution, design, or skillful genetic manipulation.', NULL, '01_species_traits_habitability.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'ROBOT');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_machine_pc_ringworld_habitable_preference', 'MACHINE');
 INSERT OR IGNORE INTO trait
@@ -31537,7 +31537,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_broken_shackles', 'Broken Shackles', 'Initial Pops: Species from Pre-FTL Civilizations across the galaxy
-Starting Planet: $concept_free_at_last_broken_shackles$ Planetary Modifier, Crashed Slaver Ship Planetary Feature, Spaceship Wreckage
+Starting Planet: Free at Last Planetary Modifier, Crashed Slaver Ship Planetary Feature, Spaceship Wreckage
 Starting System: Crashed Slaver Ship Archaeology Site
 One Advanced AI Empire and several Pre-FTL Civilization regardless of the Galaxy Settings
 One Pre-FTL Civilization: Will be this empire''s species and homeworld
@@ -31885,7 +31885,7 @@ INSERT OR IGNORE INTO granted_trait (owner_key, trait_key) VALUES ('origin_subte
 INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
-               VALUES ('origin_star_slingshot', 'Slingshot to the Stars', 'Home System: Nearby ruined $concept_quantum_catapult_restored_slingshot$ with the Logs from the Quantum Architect Archaeology Site
+               VALUES ('origin_star_slingshot', 'Slingshot to the Stars', 'Home System: Nearby ruined Quantum Catapult Twin Arrays with the Logs from the Quantum Architect Archaeology Site
 Quantic Ambush Effects: Increased to +50% Ship Fire Rate', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_star_slingshot.dds', 32);
 INSERT OR IGNORE INTO origin_modifier
                            (origin_key, modifier_key, modifier_value, sort_order)
@@ -32503,7 +32503,7 @@ INSERT OR REPLACE INTO origin
                    (key, name, description, required_dlc, selectable, ascension_lock,
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_clone_army', 'Clone Army', 'Homeworld: Ancient Clone Vat: +2
-Species Traits: $concept_clone_soldier_infertile$
+Species Traits: Clone Soldier
 Additional Starting Technologies: Society Research Cloning, Society Research Gene Banks', NULL, 1, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origins_clones.dds', 52);
 INSERT OR IGNORE INTO origin_requirement
                        (origin_key, kind, operator, value, group_id)
@@ -36499,7 +36499,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunted_pre_sapient', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', NULL, 'planet_livestock_miners', 140);
+                   VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'planet_livestock_miners', 140);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunted_pre_sapient_lithoid', 'produces', 'minerals', '2.0', 0);
@@ -50280,7 +50280,7 @@ INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_energy_
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_energy_volatile_motes', 'Reactor District', '#cfd22b');
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_housing', 'Habitation District', '#1c75bd');
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_mining', 'Astro-Mining Bay', '#d6493c');
-INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_mining_rare_crystals', NULL, '#d6493c');
+INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_mining_rare_crystals', 'Astro-Mining Bay', '#d6493c');
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hab_science', 'Research District', '#73d9b0');
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hive', 'Hive Cluster', '#1c75bd');
 INSERT OR REPLACE INTO district (key, name, color) VALUES ('district_hive_1', 'Unspecialized Cluster', '#1c75bd');
@@ -61087,7 +61087,7 @@ INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('empire_base', 'COUNTRY_NAVAL_COVERAGE_MULT', '1.0', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('COUNTRY_NAVAL_COVERAGE_MULT', 'Naval Coverage', 1);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('empire_size', NULL, NULL, NULL);
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('empire_size', 'Empire Size', NULL, NULL);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('empire_size_mods', 'Empire Size', NULL, NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('empire_size_mods', 'empire_size_branch_office_mult', '0.1', 0);
@@ -82957,7 +82957,7 @@ INSERT OR REPLACE INTO technology_requirement
                VALUES ('tech_sapient_ai', '["tech_self_aware_logic"]', '[]', '{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
-               VALUES ('tech_science_arkship', NULL, 'Scientific Arkships combine the mobility of nomadic life with the full resources of a dedicated research institution, turning every system we visit into a new opportunity for discovery.', 'physics', 'computing', 3, '4000.0', 144);
+               VALUES ('tech_science_arkship', 'Scientific Arkships', 'Scientific Arkships combine the mobility of nomadic life with the full resources of a dedicated research institution, turning every system we visit into a new opportunity for discovery.', 'physics', 'computing', 3, '4000.0', 144);
 INSERT OR REPLACE INTO technology_requirement
                (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
                 is_dangerous)
@@ -84480,7 +84480,7 @@ INSERT OR REPLACE INTO technology_requirement
                VALUES ('tech_alien_topography', '[]', '[]', '{"leaf":"host_has_dlc","value":"First Contact Story Pack"}', 0, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
-               VALUES ('tech_civilian_arkship', NULL, 'More than a vessel, the Civilian Arkship is a world unto itself. Its infrastructure supports a complete society in motion, carrying with it everything needed to thrive across the stars.', 'society', 'new_worlds', 3, '4000.0', 311);
+               VALUES ('tech_civilian_arkship', 'Civilian Arkships', 'More than a vessel, the Civilian Arkship is a world unto itself. Its infrastructure supports a complete society in motion, carrying with it everything needed to thrive across the stars.', 'society', 'new_worlds', 3, '4000.0', 311);
 INSERT OR REPLACE INTO technology_requirement
                (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
                 is_dangerous)
@@ -87293,7 +87293,7 @@ INSERT OR REPLACE INTO technology_requirement
                VALUES ('tech_mega_engineering', '["tech_zero_point_power"]', '[["tech_arkship_tier_3", "tech_starbase_5"], ["tech_battleships", "tech_stingers"]]', NULL, 1, 0);
 INSERT OR REPLACE INTO technology
                (key, label, description, area, category, tier, cost, sort_order)
-               VALUES ('tech_military_arkship', NULL, 'Military Arkships are the armored core of a nomadic empire. Purpose-built for combat, they carry devastating firepower wherever the fleet travels.', 'engineering', 'voidcraft', 3, '4000.0', 624);
+               VALUES ('tech_military_arkship', 'Military Arkships', 'Military Arkships are the armored core of a nomadic empire. Purpose-built for combat, they carry devastating firepower wherever the fleet travels.', 'engineering', 'voidcraft', 3, '4000.0', 624);
 INSERT OR REPLACE INTO technology_requirement
                (tech_key, prerequisites_json, prerequisites_any_json, potential_json, is_rare,
                 is_dangerous)
@@ -91407,10 +91407,10 @@ Research option gained:
 Society Telepathy', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps', 'tradition_psionics_shroud', 'normal', NULL, '', NULL, NULL, NULL, 1);
+                    tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps', 'tradition_psionics_shroud', 'normal', 'Psi Corps', '', NULL, NULL, NULL, 1);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
-                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps#0', 'tr_psionics_shroud_psi_corps', 'tr_psionics_shroud_psi_corps_situation', NULL, NULL, '{"leaf":"has_breached_shroud","value":"no"}', 0, '1.0', 'During Psionic Ascension
+                    weight, tooltip, sort_order) VALUES ('tr_psionics_shroud_psi_corps#0', 'tr_psionics_shroud_psi_corps', 'tr_psionics_shroud_psi_corps_situation', 'Psi Corps', NULL, '{"leaf":"has_breached_shroud","value":"no"}', 0, '1.0', 'During Psionic Ascension
 Unlocks Situation''s Stage II
 Unlocks Building: Psi Corps
 After Psionic Ascension', 0);
@@ -93213,7 +93213,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_miners_trade_upkeep_add', 'Trade Upkeep per 100 Miners', 0);
 INSERT INTO edict (key, name, description, category, length, cost_json,
                potential_json, allow_json, unlocked_by_json, prerequisites_json, tooltip, sort_order)
-               VALUES ('mining_subsidies_nomadic', 'Mining Subsidies', NULL, 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_nomadic","value":"yes"}', NULL, NULL, '["tech_mineral_purification_1"]', NULL, 23);
+               VALUES ('mining_subsidies_nomadic', 'Mining Subsidies', 'This Edict is a focused administrative effort to reprioritize and re-evaluate production goals, yielding a boost to mining output.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_nomadic","value":"yes"}', NULL, NULL, '["tech_mineral_purification_1"]', NULL, 23);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('mining_subsidies_nomadic', 'ark_harvester_jobs_bonus_workforce_mult', '0.2', NULL, 0);
@@ -96166,7 +96166,7 @@ INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_
                VALUES ('agenda_flesh_is_weak', 'The Flesh is Weak', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}', '["ap_the_flesh_is_weak"]', NULL, 60);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_organo_machine_interfacing', 'Organo-Machine Interfacing', NULL, '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}', '["ap_organo_machine_interfacing"]', NULL, 61);
+               VALUES ('agenda_organo_machine_interfacing', 'Organo-Machine Interfacing', 'The limits and constraints imposed on us by our feeble organic bodies are simply unacceptable. To reach our full potential, we must turn to cybernetic implants.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"}', '["ap_organo_machine_interfacing"]', NULL, 61);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
                VALUES ('agenda_cybernetic_advantage_assimilator', 'Cybernetic Advantage', 'We must ensure that our best Cybernetic enhancements are distributed and installed properly among everyone within our borders.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', '{"leaf":"has_tradition","value":"tr_cybernetics_assimilator_adopt"}', '["tr_cybernetics_assimilator_adopt"]', NULL, 62);
@@ -96192,7 +96192,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
-               VALUES ('agenda_organo_machine_interfacing_assimilator', NULL, 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}', '["ap_organo_machine_interfacing_assimilator"]', NULL, 63);
+               VALUES ('agenda_organo_machine_interfacing_assimilator', 'Organo-Machine Interfacing', 'The limits and constraints imposed on us by our creators are simply unacceptable. To reach our full potential, we must fuse organic and machine.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"leaf":"has_technology","value":"tech_neuro_quantum_links"}]}]}]}', '{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"}', '["ap_organo_machine_interfacing_assimilator"]', NULL, 63);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
                VALUES ('agenda_synthetic_evolution', 'Synthetic Evolution', 'It is time to abandon the flawed organic vessels that imprison our minds. By transferring our neural patterns into synthetic bodies, we will achieve a higher state of being.', '3500.0', 3600, 1080, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"has_technology","value":"tech_powered_exoskeletons"},{"leaf":"has_technology","value":"tech_robotic_workers"},{"leaf":"has_technology","value":"tech_droid_workers"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]}]}', '{"op":"or","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}', '["ap_synthetic_evolution"]', NULL, 64);
@@ -97390,7 +97390,7 @@ INSERT INTO policy_option (key, policy_key, name, description,
 INSERT INTO policy_option (key, policy_key, name, description,
                    potential_json, valid_json, sort_order) VALUES ('diplo_stance_uncertain', 'diplomatic_stance', 'Uncertain', 'This pre-FTL civilization is uncertain as to how to approach alien societies.', '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"current_awareness_level","cmp":">=","value":"high"},{"leaf":"is_xenophile","value":"no"},{"leaf":"is_xenophobe","value":"no"},{"leaf":"capital_scope","value":"scope"}]}', NULL, 16);
 INSERT INTO policy_option (key, policy_key, name, description,
-                   potential_json, valid_json, sort_order) VALUES ('diplo_stance_culture_shock', 'diplomatic_stance', NULL, 'This pre-FTL civilization is still adjusting to the knowledge that they are not alone in the galaxy.', '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"capital_scope","value":"scope"}]}', NULL, 17);
+                   potential_json, valid_json, sort_order) VALUES ('diplo_stance_culture_shock', 'diplomatic_stance', 'Stellar Culture Shock', 'This pre-FTL civilization is still adjusting to the knowledge that they are not alone in the galaxy.', '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"capital_scope","value":"scope"}]}', NULL, 17);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_culture_shock', 'diplo_action_acceptance_add', '-100.0', NULL, 0);
@@ -131083,9 +131083,9 @@ INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_arc
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_particle_launcher', 'module', 'Particle Launcher Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_psionic_torpedo', 'module', 'Zro Launcher Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_mass_driver_battery', 'module', 'Mass Driver Battery');
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'module', NULL);
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_swarmer_missile_battery', 'module', NULL);
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_mass_driver_battery', 'module', 'Ancient Macro Batteries');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_swarmer_missile_battery', 'module', 'Swarmer Missiles');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_scourge_missile_battery', 'module', 'Scourge Missile');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_hangar_bay', 'module', 'Planetary Defense Hangars');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('orbital_ring_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
@@ -131096,9 +131096,9 @@ INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_particle_launcher', 'module', 'Particle Launcher Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_psionic_torpedo', 'module', 'Zro Launcher Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_mass_driver_battery', 'module', 'Mass Driver Battery');
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_mass_driver_battery', 'module', NULL);
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_swarmer_missile_battery', 'module', NULL);
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_mass_driver_battery', 'module', 'Ancient Macro Batteries');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_swarmer_missile_battery', 'module', 'Swarmer Missiles');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_scourge_missile_battery', 'module', 'Scourge Missile');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_hangar_bay', 'module', 'Hangar Bays');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');
@@ -131107,11 +131107,11 @@ INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('starbase_swarm_h
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_laser_battery', 'module', 'Laser Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_laser_battery', 'module', 'Ancient Cavitation Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_mass_driver_battery', 'module', 'Mass Driver Battery');
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_mass_driver_battery', 'module', NULL);
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_swarmer_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_mass_driver_battery', 'module', 'Ancient Macro Batteries');
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_swarmer_missile_battery', 'module', 'Swarmer Missiles');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_particle_launcher', 'module', 'Particle Launcher Battery');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_psionic_torpedo', 'module', 'Zro Launcher Battery');
-INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_scourge_missile_battery', 'module', NULL);
+INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_scourge_missile_battery', 'module', 'Scourge Missile');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_hangar_bay', 'module', 'Hangar Bays');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_archaeo_hangar_bay', 'module', 'Ancient Driller Drones Hangars');
 INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES ('waystation_psionic_hangar_bay', 'module', 'Psionic Bomber Hangars');

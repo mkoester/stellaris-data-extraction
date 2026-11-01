@@ -246,7 +246,9 @@ def load_localisation(loc_dir: Path) -> dict[str, str]:
     Parse all .yml localisation files, returning {key: label}.
     When the same key appears multiple times, the entry with the lowest
     version number wins (e.g. :0 beats :1). Single-token $KEY$ references
-    are resolved one level deep; unresolvable references are dropped (NULL).
+    are resolved through chains of them (4.5.2 `tr_psionics_shroud_psi_corps` →
+    `$tr_psionics_psi_corps$` → `$building_psi_corps$` → "Psi Corps"); unresolvable ones — a
+    missing key, a cycle — are dropped (NULL).
     """
     best: dict[str, tuple[int, str]] = {}  # key → (version, label)
     for f in sorted(loc_dir.rglob('*.yml')):
@@ -259,17 +261,19 @@ def load_localisation(loc_dir: Path) -> dict[str, str]:
             ver = int(ver_str) if ver_str else 0
             if key not in best or ver < best[key][0]:
                 best[key] = (ver, label)
-    labels = {k: lbl for k, (_, lbl) in best.items()}
-    # Resolve single-token $KEY$ references one level deep
-    for key, lbl in list(labels.items()):
-        ref = _LOC_REF.match(lbl)
-        if ref:
-            resolved = labels.get(ref.group(1))
-            if resolved and not _LOC_REF.match(resolved):
-                labels[key] = resolved
-            else:
-                del labels[key]  # unresolvable — fall back to NULL in DB
-    return labels
+    raw = {k: lbl for k, (_, lbl) in best.items()}
+
+    def resolve(key: str) -> str | None:
+        seen: set[str] = set()
+        while (lbl := raw.get(key)) is not None and (ref := _LOC_REF.match(lbl)):
+            if key in seen:
+                return None  # a cycle
+            seen.add(key)
+            key = ref.group(1)
+        return lbl if lbl or not seen else None  # an empty label stays, a reference to one not
+
+    # from the raw labels, so the result does not depend on the order keys are visited
+    return {k: v for k in raw if (v := resolve(k)) is not None}
 
 
 def inline_refs(text: str, loc: dict[str, str]) -> str:
