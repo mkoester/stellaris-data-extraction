@@ -523,6 +523,7 @@ CREATE TABLE colony_type_modifier (
 -- resources (building_resource), the jobs it provides (building_job), its other
 -- modifiers (building_modifier) and the civics/origins it needs (building_unlock).
 DROP TABLE IF EXISTS building_unlock;
+DROP TABLE IF EXISTS building_conditional_modifier;
 DROP TABLE IF EXISTS building_modifier;
 DROP TABLE IF EXISTS building_job;
 DROP TABLE IF EXISTS building_resource;
@@ -532,6 +533,7 @@ CREATE TABLE building (
     name        TEXT,               -- localised, e.g. "Alloy Foundries"
     category    TEXT,               -- manufacturing | research | resource | amenity | …
     description TEXT,
+    owner_type  TEXT,               -- 'corporate' (branch office) | 'subject_holding' | NULL
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE building_resource (
@@ -557,6 +559,21 @@ CREATE TABLE building_modifier (
     modifier_key TEXT NOT NULL,
     value        REAL NOT NULL,     -- without ascension perks
     condition    TEXT,              -- an ascension perk the row needs; NULL = always
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (building_key, sort_order),
+    FOREIGN KEY (building_key) REFERENCES building(key)
+);
+-- A branch office building's or holding's modifier blocks one by one, gates kept (building_modifier
+-- sums them): scope 'planet' = the host colony, 'country' = the owner (a branch office's
+-- corporate owner: its capital's jobs). owner_civic: the block needs the owner to have that civic;
+-- condition: any other gate, as flat trigger text. Planner (MegaCorp) and dashboard.
+CREATE TABLE building_conditional_modifier (
+    building_key TEXT NOT NULL,
+    scope        TEXT NOT NULL,     -- 'planet' | 'country'
+    modifier_key TEXT NOT NULL,     -- jobs included (job_capital_trader_add)
+    value        REAL NOT NULL,
+    owner_civic  TEXT,
+    condition    TEXT,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (building_key, sort_order),
     FOREIGN KEY (building_key) REFERENCES building(key)

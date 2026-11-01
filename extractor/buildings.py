@@ -52,9 +52,11 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
             desc = _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None
             category = bdef.get('category')
             category = category if isinstance(category, str) else None
+            owner_type = bdef.get('owner_type')
+            owner_type = owner_type if owner_type in OWNER_TYPES else None
             w.execute(
-                "INSERT OR REPLACE INTO building (key, name, category, description, sort_order) VALUES (?, ?, ?, ?, ?)",
-                (key, name, category, desc, order))
+                "INSERT OR REPLACE INTO building (key, name, category, description, owner_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+                (key, name, category, desc, owner_type, order))
             order += 1
             for r_order, (kind, resource, amt) in enumerate(
                     _building_resources(bdef, variables, script_loader(inline_scripts_dir))):
@@ -78,6 +80,15 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                        VALUES (?, ?, ?, ?, ?, ?)""",
                     (key, scope, mk, base, cond, m_order))
                 _write_modifier_label(w, loc, mk)
+            if owner_type:
+                for c_order, (scope, mk, val, civic, cond) in enumerate(
+                        conditional_modifiers(bdef, variables)):
+                    w.execute(
+                        """INSERT OR IGNORE INTO building_conditional_modifier
+                               (building_key, scope, modifier_key, value, owner_civic, condition, sort_order)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (key, scope, mk, val, civic, cond, c_order))
+                    _write_modifier_label(w, loc, mk)
             for owner in building_unlocks(bdef, triggers):
                 w.execute("INSERT OR IGNORE INTO building_unlock (owner_key, building_key) VALUES (?, ?)",
                           (owner, key))
@@ -198,6 +209,45 @@ _BUILDING_MOD_SKIP = frozenset({'potential', 'trigger', 'multiplier', 'mult', 'c
 
 
 _AE_PERK = 'ap_archaeoengineers'
+
+# Buildings someone else owns on a colony: a MegaCorp's branch office buildings (`corporate`) and
+# an overlord's holdings on a subject (`subject_holding`). Others have no owner_type.
+OWNER_TYPES = frozenset({'corporate', 'subject_holding'})
+
+
+def conditional_modifiers(bdef: dict, variables: dict[str, float]
+                          ) -> list[tuple[str, str, float, str | None, str | None]]:
+    """Every modifier block of a branch office building or holding, each block on its own:
+    [(scope, key, value, owner_civic, condition)] in file order, jobs included. `scope` is
+    'planet' (the host colony) or 'country' — for a branch office the corporate owner's (4.5.2
+    `megacorp_civic_branch_office_building_effect`: "+200 Trader jobs to our Capital"). A block
+    gated only on the owner's civic (`branch_office_owner = { has_valid_civic = X }`) names it in
+    `owner_civic`; any other gate is `condition`, its trigger as flat text; `always = yes` or no
+    gate is neither. Unlike `_building_modifiers`, nothing is summed across gates."""
+    rows = []
+    for scope, field in (('planet', 'planet_modifier'), ('country', 'country_modifier'),
+                         ('planet', 'triggered_planet_modifier'),
+                         ('country', 'triggered_country_modifier')):
+        for block in _as_blocks(bdef.get(field)):
+            civic, cond = _owner_gate(block.get('potential'))
+            for key, raw in block.items():
+                if key in _BUILDING_MOD_SKIP:
+                    continue
+                val = _resolve_var(raw, variables)
+                if val is not None:
+                    rows.append((scope, key, val, civic, cond))
+    return rows
+
+
+def _owner_gate(potential) -> tuple[str | None, str | None]:
+    """A triggered block's gate as (owner_civic, condition): see `conditional_modifiers`."""
+    if not isinstance(potential, dict) or not potential or potential == {'always': 'yes'}:
+        return None, None
+    owner = potential.get('branch_office_owner')
+    if (len(potential) == 1 and isinstance(owner, dict) and len(owner) == 1
+            and isinstance(owner.get('has_valid_civic'), str)):
+        return owner['has_valid_civic'], None
+    return None, _flatten_text(potential)
 
 
 def building_unlocks(bdef: dict, triggers: dict[str, dict]) -> list[str]:

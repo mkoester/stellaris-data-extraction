@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.buildings import (_building_modifiers, _building_resources, _write_build_time,
-                                 building_unlocks)
+                                 building_unlocks, conditional_modifiers)
 
 TRIGGERS = {'is_toxic_baths_empire': {'OR': {'has_valid_civic': ['civic_toxic_baths',
                                                                  'civic_hive_toxic_baths']}}}
@@ -114,6 +114,37 @@ class TestBuildTime(unittest.TestCase):
         _write_build_time(w, 'building_research_lab_1', {'base_buildtime': '@b1_time'}, {'@b1_time': 360.0})
         _write_build_time(w, 'mining_station', {'class': 'shipclass_mining_station'}, {})
         self.assertEqual(w.rows, [('building_research_lab_1', 360.0)])
+
+
+
+class TestConditionalModifiers(unittest.TestCase):
+    # shaped like 4.5.2 building_private_mining_consortium
+    B = {
+        'triggered_planet_modifier': [
+            {'potential': {'always': 'yes'}, 'planet_miners_trade_produces_add': '@med'},
+            {'potential': {'branch_office_owner': {'has_valid_civic': 'civic_private_prospectors'}},
+             'planet_miners_trade_produces_add': '@med'},
+            {'potential': {'branch_office_owner': {'is_criminal_syndicate': 'yes'}},
+             'planet_crime_floor_add': '10'},
+        ],
+        'triggered_country_modifier': {
+            'potential': {'branch_office_owner': {'has_valid_civic': 'civic_private_prospectors'}},
+            'job_capital_trader_add': '200'},
+    }
+
+    def test_each_block_with_its_gate(self):
+        self.assertEqual(conditional_modifiers(self.B, {'@med': 0.5}), [
+            ('planet', 'planet_miners_trade_produces_add', 0.5, None, None),
+            ('planet', 'planet_miners_trade_produces_add', 0.5, 'civic_private_prospectors', None),
+            ('planet', 'planet_crime_floor_add', 10.0, None,
+             'branch_office_owner = is_criminal_syndicate = yes'),
+            ('country', 'job_capital_trader_add', 200.0, 'civic_private_prospectors', None),
+        ])
+
+    def test_plain_modifier_blocks_are_ungated(self):
+        b = {'country_modifier': {'all_technology_research_speed': '0.03'}}
+        self.assertEqual(conditional_modifiers(b, {}),
+                         [('country', 'all_technology_research_speed', 0.03, None, None)])
 
 
 if __name__ == '__main__':
