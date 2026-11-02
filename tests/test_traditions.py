@@ -3,7 +3,8 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.traditions import cost_amounts, pick_defines, prereqs, required_dlc, tooltip_keys, unlock_keys
+from extractor.traditions import (cost_amounts, decision_costs, decision_effects, owner_scope,
+                                  pick_defines, prereqs, required_dlc, tooltip_keys, unlock_keys)
 from extractor.triggers import normalize_trigger
 
 
@@ -67,3 +68,34 @@ class TestCostAmounts(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestDecisions(unittest.TestCase):
+    LUXURIES = '''d = {
+        owned_planets_only = yes
+        resources = { category = decisions
+            cost = { trigger = { pop_amount < 1000 } consumer_goods = 100 }
+            cost = { trigger = { pop_amount >= 10000 } consumer_goods = 1000 } }
+        potential = { owner = { is_regular_empire = yes } NOT = { is_planet_class = pc_nanotech } }
+        allow = { NOT = { has_modifier = planet_luxuries_boost } }
+        effect = { add_modifier = { modifier = "planet_luxuries_boost" days = 3600 }
+                   remove_modifier = bleak_planet
+                   if = { limit = { has_modifier = x } add_modifier = { modifier = y } } }
+    }'''
+
+    def setUp(self):
+        self.d = Parser(tokenize(self.LUXURIES)).parse()['d']
+        self.trig = lambda b: normalize_trigger(b, structured=owner_scope(normalize_trigger))
+
+    def test_cost_tiers_keep_their_trigger(self):
+        tiers = decision_costs(self.d['resources'], {}, self.trig)
+        self.assertEqual([t['cost'] for t in tiers], [{'consumer_goods': 100.0}, {'consumer_goods': 1000.0}])
+        self.assertEqual(tiers[0]['when'], {'leaf': 'pop_amount', 'cmp': '<', 'value': '1000'})
+
+    def test_effects_top_level_only(self):
+        self.assertEqual(decision_effects(self.d['effect']),
+                         ([{'modifier': 'planet_luxuries_boost', 'days': 3600}], ['bleak_planet']))
+
+    def test_owner_scope_unwrapped(self):
+        t = self.trig(self.d['potential'])
+        self.assertIn({'leaf': 'is_regular_empire', 'value': 'yes'}, t['args'])

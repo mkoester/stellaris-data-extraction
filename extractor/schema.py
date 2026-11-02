@@ -1313,6 +1313,19 @@ CREATE TABLE starbase_building_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
+-- Planet decisions (common/decisions, `owned_planets_only = yes`): cost tiers, conditions and the
+-- modifiers their effect adds or removes at its top level (empire dashboard: what-ifs).
+DROP TABLE IF EXISTS decision;
+CREATE TABLE decision (
+    key            TEXT PRIMARY KEY,       -- e.g. "decision_planet_luxuries_boost"
+    name           TEXT,
+    cost_json      TEXT,                   -- [{"when": <trigger>|null, "cost": {"consumer_goods": 100}}]
+    potential_json TEXT,                   -- planet scope; `owner = {…}` unwrapped to the country's
+    allow_json     TEXT,
+    adds_json      TEXT,                   -- [{"modifier": "planet_luxuries_boost", "days": 3600}], -1 = for good
+    removes_json   TEXT,                   -- ["bleak_planet"]
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS strategic_resource;
@@ -1326,6 +1339,8 @@ CREATE TABLE strategic_resource (
     max           REAL,                    -- base storage
     ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
     ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    deficit_trade REAL,                    -- trade a month per unit a colony is short of it
+                                           -- (`deficit_trade_conversion_mult`, sign flipped)
     sort_order    INTEGER NOT NULL DEFAULT 0
 );
 -- AI personalities: how good a deal must be for them (1.0 = equal for both sides).

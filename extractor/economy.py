@@ -26,14 +26,19 @@ def flag(value) -> int:
 
 
 def resource_row(data: dict, variables: dict[str, float]) -> tuple:
-    """(category, tradable, market_amount, market_price, max, ai_weight, ai_wants)."""
+    """(category, tradable, market_amount, market_price, max, ai_weight, ai_wants, deficit_trade).
+
+    `deficit_trade`: trade a colony's local shortfall of one unit costs a month, the resource's
+    `deficit_trade_conversion_mult` as a positive number (the file writes it negative)."""
+    deficit = _resolve_var(data.get('deficit_trade_conversion_mult'), variables)
     return (data.get('category') if isinstance(data.get('category'), str) else None,
             flag(data.get('tradable')),
             _resolve_var(data.get('market_amount'), variables),
             _resolve_var(data.get('market_price'), variables),
             _resolve_var(data.get('max'), variables),
             base_value(data.get('ai_weight'), variables),
-            base_value(data.get('ai_wants'), variables))
+            base_value(data.get('ai_wants'), variables),
+            -deficit if deficit is not None else None)
 
 
 def attitude_trades(data: dict) -> int:
@@ -65,8 +70,8 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
     for order, (key, (data, rvars, _)) in enumerate(resources.items()):
         w.execute(
             """INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, ctx.text(key), *resource_row(data, rvars), order))
 
     personalities = _load(common / 'personalities', scripted_vars)
