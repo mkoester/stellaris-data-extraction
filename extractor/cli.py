@@ -15,6 +15,7 @@ from .empires import extract_flag_assets, extract_flag_colors, extract_initializ
 from .diplomacy import extract_diplomacy
 from .federations import extract_federations
 from .shroud import extract_shroud
+from .ambitions import extract_ambitions
 from .economy import extract_economy
 from .focus import extract_focus
 from .game_start import extract_game_start
@@ -505,6 +506,8 @@ Examples:
     extract_diplomacy(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[shroud] {install_dir / 'common' / 'patrons'}", file=progress)
     extract_shroud(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[ambitions] {install_dir / 'common' / 'crisis_paths'}", file=progress)
+    extract_ambitions(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
     extract_economy(install_dir, loc, scripted_vars, w, progress)
 

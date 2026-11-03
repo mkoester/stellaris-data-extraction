@@ -79,6 +79,7 @@ extractor/
   federations.py         federation types, level perks, federation laws
   diplomacy.py           Galactic Community resolutions, subject agreement term names
   shroud.py              Shroud patrons, accords, callings and deeds
+  ambitions.py           ambitions (crisis paths, levels, objectives, menace perks)
 tests/                   unit tests (stdlib unittest) for the pure helpers
 scripts/test             test-runner wrapper (`python3 -m unittest discover`)
 build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
@@ -152,7 +153,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `building_conditional_modifier`, `starbase_part`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `crisis_path`, `crisis_path_perk`, `crisis_path_level`, `crisis_path_objective`, `crisis_level`, `crisis_level_perk`, `crisis_objective`, `menace_perk`, `menace_perk_modifier`, `building_conditional_modifier`, `starbase_part`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
 
 Drop order matters for FK integrity:
 ```sql
@@ -447,6 +448,10 @@ Unresolved `$KEY$` inline references in labels are discarded (label not stored i
 | Patron accords            | 36   |
 | Callings                  | 29   |
 | Deeds                     | 56   |
+| Ambition paths            | 5    |
+| Ambition levels           | 25   |
+| Ambition objectives       | 37   |
+| Menace perks              | 90   |
 
 ---
 
@@ -618,6 +623,21 @@ modifier of the same key (`static_modifier` / `static_modifier_modifier`, 102 re
 4.5.2). **Agreements**: names only — `agreement_term` (with `term_type` and `hidden`),
 `agreement_term_value` (`term_key`), `agreement_preset`; values of hidden terms often have no
 localisation (`yes_access`), their name is NULL.
+
+## Ambitions (`extract_ambitions`, ambitions.py)
+
+For the dashboard. The game calls them crisis paths in its keys (`common/crisis_paths`,
+`crisis_levels`, `crisis_objectives`, `menace_perks`) and Ambitions in its texts. `crisis_path`:
+the currency (a strategic resource: `menace`, `integrity` = Valor, `feral_insight`,
+`advanced_logic`, `entropy_crystals`), name from `<currency>_crisis_description_title`;
+`crisis_path_perk` from each ascension perk's `activate_crisis_progression` — on 4.5.3 only
+`ap_defender_of_the_galaxy_nomads` starts the Defender path, the plain Defender perk none.
+`crisis_level`: `required_crisis_currency`, `requirements_json` = the `custom_tooltip`s of
+`allow` (success text, `$TRIGGER_PASS$` dropped; hidden triggers skipped), `allow_json`
+normalised. `crisis_objective.reward_json`: the reward's steps in **file order** (`parse_ordered`),
+since the game applies them in order — `by` a count only the game knows (`num_galaxy_systems`,
+`count_playable_country`, `galaxy_setup:<setting>`), `var` a country variable or script value
+(Hyperthermia's `root.hyperthermia_volcanic_var`), `@variables` resolved.
 
 ## The Shroud (`extract_shroud`, shroud.py)
 
