@@ -10,7 +10,10 @@ Two things depend on a release here: the planner's deployment builds its DB from
 1. On `develop`, everything committed, `sql/stellaris.sql` regenerated if the extraction changed
    (`AGENTS.md`) — **from the public game**: the extractor refuses while a beta is installed.
    `scripts/release-check` must pass (the dump matches the schema and is `public`'s); the
-   dashboard's release workflow runs it again on the tag it bundles. In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit).
+   dashboard's release workflow runs it again on the tag it bundles. **It catches schema drift
+   only** (tables differing from `schema.py`, and the branch): a code change that alters values
+   but no table — v0.1.10's localisation fix — passes with a stale dump. So also regenerate into
+   `$TMPDIR` and `cmp` it with `sql/stellaris.sql` (identical for v0.1.10, 2026-11-01). In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit).
 2. `git checkout main && git merge --no-ff develop -m "Release vX.Y.Z (merge develop)"`, then
    `git tag vX.Y.Z`.
 3. `git checkout develop`, bump the patch of `__version__`, commit `chore: version bump (vX.Y.Z+1)`.
@@ -26,6 +29,7 @@ Work specifically for a running open beta lives on the branch **`open-beta`** (c
    keys its extracted data on `__version__`, so a beta and the later release must differ.
 2. `git tag vX.Y.Z-beta.N`, then publish (by hand): `git push origin open-beta vX.Y.Z-beta.N`.
 3. When the game patch goes live: `git checkout develop && git merge --no-ff open-beta`, set
-   `__version__` back to `X.Y.Z` (the merge brings the beta's), then the normal release above;
-   delete `open-beta` (local and remote) once released. `sql/stellaris.sql` stays the released
+   `__version__` back to `X.Y.Z` (the merge brings the beta's), then the normal release above.
+   **Keep `open-beta`** and its worktree: open betas come several times a year. For the next one,
+   bring it up to date with `git merge --ff-only develop` in its worktree. `sql/stellaris.sql` stays the released
    game's until then — regenerate it from the live patch, not the beta.
