@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.11] - 2026-11-04
+
+### Added
+
+- Ambitions: crisis paths with their levels, objectives and perks, and the menace perks with their
+  modifiers (`crisis_path*`, `crisis_level*`, `crisis_objective`, `menace_perk*`). Reward
+  formulas are kept as ordered steps.
+- Planet decisions (`decision`): cost tiers, conditions with owner scopes unwrapped, modifiers
+  added and removed.
+- What a colony deficit costs per resource: `strategic_resource.deficit_trade` (the game's
+  `deficit_trade_conversion_mult`).
+
+### Changed
+
+- The dump is Stellaris 4.5.3's (build 4e91, public).
+
 ## [0.1.10] - 2026-11-01
 
 ### Fixed
