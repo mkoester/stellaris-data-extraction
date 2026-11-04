@@ -29,6 +29,7 @@ Work specifically for a running open beta lives on the branch **`open-beta`** (c
    keys its extracted data on `__version__`, so a beta and the later release must differ.
 2. `git tag vX.Y.Z-beta.N`, then publish (by hand): `git push origin open-beta vX.Y.Z-beta.N`.
 3. When the game patch goes live: `git checkout develop && git merge --no-ff open-beta`, set
-   `__version__` back to `X.Y.Z` (the merge brings the beta's), then the normal release above;
-   delete `open-beta` (local and remote) once released. `sql/stellaris.sql` stays the released
+   `__version__` back to `X.Y.Z` (the merge brings the beta's), then the normal release above.
+   **Keep `open-beta`** and its worktree: open betas come several times a year. For the next one,
+   bring it up to date with `git merge --ff-only develop` in its worktree. `sql/stellaris.sql` stays the released
    game's until then — regenerate it from the live patch, not the beta.
