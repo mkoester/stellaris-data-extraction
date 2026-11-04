@@ -1308,6 +1308,19 @@ CREATE TABLE starbase_building_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
+-- Planet decisions (common/decisions, `owned_planets_only = yes`): cost tiers, conditions and the
+-- modifiers their effect adds or removes at its top level (empire dashboard: what-ifs).
+DROP TABLE IF EXISTS decision;
+CREATE TABLE decision (
+    key            TEXT PRIMARY KEY,       -- e.g. "decision_planet_luxuries_boost"
+    name           TEXT,
+    cost_json      TEXT,                   -- [{"when": <trigger>|null, "cost": {"consumer_goods": 100}}]
+    potential_json TEXT,                   -- planet scope; `owner = {…}` unwrapped to the country's
+    allow_json     TEXT,
+    adds_json      TEXT,                   -- [{"modifier": "planet_luxuries_boost", "days": 3600}], -1 = for good
+    removes_json   TEXT,                   -- ["bleak_planet"]
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS strategic_resource;
@@ -1321,6 +1334,8 @@ CREATE TABLE strategic_resource (
     max           REAL,                    -- base storage
     ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
     ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    deficit_trade REAL,                    -- trade a month per unit a colony is short of it
+                                           -- (`deficit_trade_conversion_mult`, sign flipped)
     sort_order    INTEGER NOT NULL DEFAULT 0
 );
 -- AI personalities: how good a deal must be for them (1.0 = equal for both sides).
@@ -1773,11 +1788,83 @@ CREATE TABLE deed (
     attunement  REAL,                      -- towards its patron (+), away for the opposite (−)
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
+-- Ambitions (the game's keys say "crisis"): the paths an ascension perk starts
+-- (`activate_crisis_progression`), their levels in order with the currency each needs, the
+-- requirements as the game words them and the menace perks granted, and the objectives that earn
+-- the currency. For the dashboard, which reads a country's path and level from saves by key.
+DROP TABLE IF EXISTS crisis_path_level;
+DROP TABLE IF EXISTS crisis_path_objective;
+DROP TABLE IF EXISTS crisis_path_perk;
+DROP TABLE IF EXISTS crisis_path;
+DROP TABLE IF EXISTS crisis_level_perk;
+DROP TABLE IF EXISTS crisis_level;
+DROP TABLE IF EXISTS crisis_objective;
+DROP TABLE IF EXISTS menace_perk_modifier;
+DROP TABLE IF EXISTS menace_perk;
+CREATE TABLE crisis_path (
+    key         TEXT PRIMARY KEY,          -- e.g. "nemesis_path"
+    currency    TEXT,                      -- the resource earned: menace, integrity, feral_insight, …
+    name        TEXT,                      -- "Galactic Nemesis"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_path_perk (
+    path_key TEXT NOT NULL,
+    perk_key TEXT NOT NULL                 -- the ascension perk that starts it, e.g. "ap_become_the_crisis"
+);
+CREATE TABLE crisis_path_level (
+    path_key   TEXT NOT NULL,
+    level_key  TEXT NOT NULL,              -- crisis_level.key
+    level      INTEGER NOT NULL,           -- 1-based, the order they unlock in
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_path_objective (
+    path_key      TEXT NOT NULL,
+    objective_key TEXT NOT NULL,           -- crisis_objective.key
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_level (
+    key               TEXT PRIMARY KEY,    -- e.g. "crisis_level_2"
+    name              TEXT,                -- "Concern"
+    required_currency REAL,                -- the path's currency needed
+    requirements_json TEXT NOT NULL,       -- ["Has completed the first … Special Project"]: the allow's tooltips
+    allow_json        TEXT,                -- `allow`, normalised; NULL = none
+    sort_order        INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_level_perk (
+    level_key  TEXT NOT NULL,
+    perk_key   TEXT NOT NULL,              -- menace_perk.key
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_objective (
+    key            TEXT PRIMARY KEY,       -- e.g. "crisobj_destroy_empires"
+    name           TEXT,
+    description    TEXT,
+    reward_json    TEXT NOT NULL,          -- steps in file order: [{"op":"base","value":700},
+                                           -- {"op":"subtract","by":"count_playable_country","mult":25},
+                                           -- {"op":"round_to","value":50},{"op":"min","value":100}]
+    recurring      INTEGER NOT NULL DEFAULT 0, -- 0/1: paid again each time (yearly, monthly)
+    potential_json TEXT,                   -- who may pursue it (country scope); NULL = everyone
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE menace_perk (
+    key         TEXT PRIMARY KEY,          -- e.g. "menp_crisis_corvette"
+    name        TEXT,
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE menace_perk_modifier (
+    perk_key       TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- country, federation
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
 
 -- Data
 
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.2 (9776)');
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.2');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.3 (4e91)');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.3');
 INSERT OR REPLACE INTO meta (key, value) VALUES ('steam_branch', 'public');
 INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
                                        host_checks)
@@ -1859,7 +1946,7 @@ INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, 
             VALUES ('Astral Planes', 'dlc031', '2534090', 1, 'expansion', '2023-11-16', 2);
 INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
                                        host_checks)
-            VALUES ('The Machine Age', 'dlc032', '2840100', 1, 'expansion', '2024-05-07', 43);
+            VALUES ('The Machine Age', 'dlc032', '2840100', 1, 'expansion', '2024-05-07', 44);
 INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
                                        host_checks)
             VALUES ('Cosmic Storms', 'dlc033', '2863060', 1, 'expansion', '2024-09-10', 1);
@@ -10316,37 +10403,52 @@ INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_scarcity_algorithms', 'cybernetic');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_dry', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Bespoke modifications like fluid recycling and radiation shielding are perfect for enduring a dry climate, but less suitable in others.', NULL, '10_species_traits_cyborg.txt');
+            VALUES ('trait_cyborg_climate_adjustment_dry', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Bespoke modifications like fluid recycling and radiation shielding are perfect for enduring a dry climate, but less suitable in others.', 'Grants Adapted Habitability on planets with a Dry Climate.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_dry', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_wet');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_cold');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_dry', 'trait_cyborg_climate_adjustment_volcanic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_dry', 'cybernetic');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_wet', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Heavy insulation and alien bioform protection suited for wet climates, but detrimental in others.', NULL, '10_species_traits_cyborg.txt');
+            VALUES ('trait_cyborg_climate_adjustment_wet', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Heavy insulation and alien bioform protection suited for wet climates, but detrimental in others.', 'Grants Adapted Habitability on planets with a Wet Climate.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_wet', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_cold');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_dry');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_wet', 'trait_cyborg_climate_adjustment_volcanic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_wet', 'cybernetic');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
-            VALUES ('trait_cyborg_climate_adjustment_cold', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Enhanced heating components and frost-resistant lubricants help in cold climates but are a hindrance in others.', NULL, '10_species_traits_cyborg.txt');
+            VALUES ('trait_cyborg_climate_adjustment_cold', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Enhanced heating components and frost-resistant lubricants help in cold climates but are a hindrance in others.', 'Grants Adapted Habitability on planets with a Cold Climate.', '10_species_traits_cyborg.txt');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'BIOLOGICAL');
 INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_cold', 'LITHOID');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_wet');
 INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_dry');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_cold', 'trait_cyborg_climate_adjustment_volcanic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'organic');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'positive');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'habitability');
 INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_cold', 'cybernetic');
+INSERT OR IGNORE INTO trait
+                (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
+            VALUES ('trait_cyborg_climate_adjustment_volcanic', 1, 'cyborg', 0, 0, 0, 'The Machine Age', 'Ablative plating and particulate scrubbers make volcanic worlds survivable, at the cost of comfort anywhere else.', 'Grants Adapted Habitability on Volcanic Worlds.', '10_species_traits_cyborg.txt');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'BIOLOGICAL');
+INSERT OR IGNORE INTO trait_archetype (trait_key, archetype) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'LITHOID');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'trait_cyborg_climate_adjustment_wet');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'trait_cyborg_climate_adjustment_dry');
+INSERT OR IGNORE INTO trait_opposite (trait_key, opposite_key) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'trait_cyborg_climate_adjustment_cold');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'organic');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'positive');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'habitability');
+INSERT OR IGNORE INTO trait_tag (trait_key, tag) VALUES ('trait_cyborg_climate_adjustment_volcanic', 'cybernetic');
 INSERT OR IGNORE INTO trait
                 (key, cost, category, initial, randomized, hidden, required_dlc, description, effect, source_file)
             VALUES ('trait_cyborg_ancient_dreadnought', 2, 'cyborg', 0, 0, 0, 'The Machine Age', 'Equipped with miniaturized energy modules, there is a marked enhancement in industrial productivity and an increase in frame-integrated weaponry damage.', NULL, '10_species_traits_cyborg.txt');
@@ -10698,6 +10800,11 @@ INSERT OR IGNORE INTO trait_modifier
                    VALUES ('trait_cyborg_climate_adjustment_cold', 'pc_alpine_habitability', '0.7', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pc_alpine_habitability', 'Alpine World Habitability', 1);
+INSERT OR IGNORE INTO trait_modifier
+                       (trait_key, modifier_key, modifier_value, sort_order)
+                   VALUES ('trait_cyborg_climate_adjustment_volcanic', 'pc_volcanic_habitability', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_volcanic_habitability', 'Volcanic World Habitability', 1);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_cyborg_ancient_dreadnought', 'army_damage_mult', '5.0', 0);
@@ -20560,7 +20667,7 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_pleasure_seekers', 'Pleasure Seekers', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
-Additional Starting Buildings: Civilian Industries', 'normal', NULL, 1, 0, NULL, NULL, NULL, 38);
+Additional Starting Buildings: Civilian Industries, Holo-Theatres', 'normal', NULL, 1, 0, NULL, NULL, NULL, 38);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_pleasure_seekers', 'add_attunement_the_instrument_of_desire', '60.0', 0);
@@ -22191,10 +22298,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_tankbound', 'Tankbound', 'Adds the Tankbound trait.
-Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Specialists.
-Urban Districts have additional Production Overseers jobs.', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
+               VALUES ('civic_tankbound', 'Tankbound', 'Homeworld: Generator Districts: +1
+Species Traits: Tankbound
+Colonist Jobs are Specialists
+Urban Districts have additional Production Overseers Jobs', 'normal', NULL, 1, 0, NULL, NULL, NULL, 76);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_tankbound', 'planet_automated_jobs_upkeep_mult', '-0.25', 0);
@@ -26629,7 +26736,7 @@ INSERT OR REPLACE INTO civic
                     ascension_lock, ascension_blocks, icon, sort_order)
                VALUES ('civic_corporate_hedonism', 'Corporate Hedonism', 'Civilians are replaced with Hedonists
 Allows the Decadent Lifestyle Living Standard
-Additional Starting Buildings: Civilian Industries
+Additional Starting Buildings: Civilian Industries, Holo-Theatres
 The Amusement Megaplex Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 239);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -27969,10 +28076,10 @@ INSERT OR IGNORE INTO civic_requirement
 INSERT OR REPLACE INTO civic
                    (key, name, description, civic_type, required_dlc, selectable, locked,
                     ascension_lock, ascension_blocks, icon, sort_order)
-               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Adds the Tankbound trait.
-Farmers, Miners, and Technicians are fully Automated.
-Colonist Jobs are Specialists.
-Urban Districts have additional Production Overseers jobs.
+               VALUES ('civic_tankbound_corporate', 'Corporate Thinktank', 'Homeworld: Generator Districts: +1
+Species Traits: Tankbound
+Colonist Jobs are Specialists
+Urban Districts have additional Production Overseers Jobs
 The Virtual Entertainment Studios Corporate Building generates additional Trade and adds +200 Trader jobs to our Capital.', 'corporate', NULL, 1, 0, NULL, NULL, NULL, 273);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
@@ -35604,7 +35711,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_infernal', 'produces', 'alloys', '0.75', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('livestock_zoo_animal', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_livestock_farmers', 7);
+                   VALUES ('livestock_zoo_animal', 'Protected Fauna', 'worker', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_livestock_farmers', 7);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_zoo_animal', 'upkeep', 'food', '1.0', 0);
@@ -35613,7 +35720,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('livestock_zoo_beast', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_livestock_farmers', 8);
+                   VALUES ('livestock_zoo_beast', 'Gladiatorial Xeno', 'worker', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_livestock_farmers', 8);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_zoo_beast', 'upkeep', 'food', '1.0', 0);
@@ -35622,7 +35729,25 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bio_trophy', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 'planet_bio_trophies', 9);
+                   VALUES ('livestock_zoo_animal_infernal', 'Protected Fauna', 'worker', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_livestock_metallurgists', 9);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_animal_infernal', 'upkeep', 'alloys', '0.25', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_animal_infernal', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
+                   VALUES ('livestock_zoo_beast_infernal', 'Gladiatorial Xeno', 'worker', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_livestock_metallurgists', 10);
+INSERT OR IGNORE INTO job_resource
+                               (job_key, kind, resource, amount, sort_order)
+                           VALUES ('livestock_zoo_beast_infernal', 'upkeep', 'alloys', '0.25', 0);
+INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
+                       VALUES ('livestock_zoo_beast_infernal', 'planet_amenities_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
+                   VALUES ('bio_trophy', 'Bio-Trophy', 'bio_trophy', 'Their only job is to be themselves.', 'planet_bio_trophies', 11);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('bio_trophy', 'produces', 'unity', '1.0', 0);
@@ -35631,29 +35756,29 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', NULL, 10);
+                   VALUES ('purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', NULL, 12);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('crisis_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', NULL, 11);
+                   VALUES ('crisis_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', NULL, 13);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('assimilation', 'Undergoing Assimilation', 'assimilation', 'This pop is being integrated into our collective.', 'planet_jobs', 12);
+                   VALUES ('assimilation', 'Undergoing Assimilation', 'assimilation', 'This pop is being integrated into our collective.', 'planet_jobs', 14);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('criminal', 'Criminal', 'criminal', 'These criminals live outside the bounds of legal society, some by choice and some by circumstance.', 'planet_criminals', 13);
+                   VALUES ('criminal', 'Criminal', 'criminal', 'These criminals live outside the bounds of legal society, some by choice and some by circumstance.', 'planet_criminals', 15);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('criminal', 'branch_office_criminal_syndicate_value_add', '7.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('branch_office_criminal_syndicate_value_add', 'Criminal Branch Office Trade', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('deviant_drone', 'Deviant Drone', 'deviant_drone', 'These deviants no longer obey the Hive Mind.', 'planet_jobs', 14);
+                   VALUES ('deviant_drone', 'Deviant Drone', 'deviant_drone', 'These deviants no longer obey the Hive Mind.', 'planet_jobs', 16);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('deviant_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('corrupt_drone', 'Corrupt Drone', 'corrupt_drone', 'These drones have been corrupted and no longer obey the directives of the core intelligence.', 'planet_jobs', 15);
+                   VALUES ('corrupt_drone', 'Corrupt Drone', 'corrupt_drone', 'These drones have been corrupted and no longer obey the directives of the core intelligence.', 'planet_jobs', 17);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('corrupt_drone', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fotd_protectors', 'Protector', 'worker', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', NULL, 16);
+                   VALUES ('fotd_protectors', 'Protector', 'worker', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', NULL, 18);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fotd_protectors', 'planet_crime_add', '-5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -35667,7 +35792,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('organic_exhibit', 'Organic Specimen', 'bio_trophy', 'The uplifted organics enhance our drones'' life-creation subroutines, infusing new perspectives and lessons into future projects.', 'planet_bio_trophies', 17);
+                   VALUES ('organic_exhibit', 'Organic Specimen', 'bio_trophy', 'The uplifted organics enhance our drones'' life-creation subroutines, infusing new perspectives and lessons into future projects.', 'planet_bio_trophies', 19);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('organic_exhibit', 'produces', 'unity', '0.5', 0);
@@ -35675,12 +35800,12 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('organic_exhibit', 'upkeep', 'food', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('livestock_lithoid', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 'planet_livestock_miners', 18);
+                   VALUES ('livestock_lithoid', 'Livestock', 'worker', 'They have but one purpose: to become feed for their betters.', 'planet_livestock_miners', 20);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('livestock_zoo_animal_lithoid', 'Protected Fauna', 'pre_sapients', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_livestock_miners', 19);
+                   VALUES ('livestock_zoo_animal_lithoid', 'Protected Fauna', 'worker', 'These xenos are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_livestock_miners', 21);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
@@ -35689,7 +35814,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('livestock_zoo_beast_lithoid', 'Gladiatorial Xeno', 'pre_sapients', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_livestock_miners', 20);
+                   VALUES ('livestock_zoo_beast_lithoid', 'Gladiatorial Xeno', 'worker', 'These xenos are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_livestock_miners', 22);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('livestock_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
@@ -35698,31 +35823,31 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_lithoid', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 21);
+                   VALUES ('purge_lithoid', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 23);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_robot', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 22);
+                   VALUES ('purge_robot', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 24);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_processing', 'Processing', 'purge', NULL, 'planet_jobs', 23);
+                   VALUES ('purge_processing', 'Processing', 'purge', NULL, 'planet_jobs', 25);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_processing', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_processing_lithoid', 'Processing', 'purge', NULL, 'planet_jobs', 24);
+                   VALUES ('purge_processing_lithoid', 'Processing', 'purge', NULL, 'planet_jobs', 26);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_processing_lithoid', 'produces', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_processing_infernal', 'Processing', 'purge', NULL, 'planet_jobs', 25);
+                   VALUES ('purge_processing_infernal', 'Processing', 'purge', NULL, 'planet_jobs', 27);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_processing_infernal', 'produces', 'alloys', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_processing_robot', 'Processing', 'purge', NULL, 'planet_jobs', 26);
+                   VALUES ('purge_processing_robot', 'Processing', 'purge', NULL, 'planet_jobs', 28);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_processing_robot', 'produces', 'alloys', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_labor_camps', 'Forced Labor', 'purge', NULL, 'pop_category_purge', 27);
+                   VALUES ('purge_labor_camps', 'Forced Labor', 'purge', NULL, 'pop_category_purge', 29);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_labor_camps', 'produces', 'food', '3.0', 0);
@@ -35730,21 +35855,21 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_labor_camps', 'produces', 'minerals', '3.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_matrix', 'Chemical Processing', 'purge', NULL, 'pop_category_purge', 28);
+                   VALUES ('purge_matrix', 'Chemical Processing', 'purge', NULL, 'pop_category_purge', 30);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_matrix', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('purge_sacrifice', 'Sacrifice', 'purge', 'The Eater craves more than conflict alone. The bodies of our enemies are fitting tribute.', 'pop_category_purge', 29);
+                   VALUES ('purge_sacrifice', 'Sacrifice', 'purge', 'The Eater craves more than conflict alone. The bodies of our enemies are fitting tribute.', 'pop_category_purge', 31);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('purge_sacrifice', 'produces', 'unity', '2.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bio_trophy_unemployment', 'Neglected Bio-Trophy', 'bio_trophy_unemployment', 'These Bio-Trophies are neglected and without our care, exposing them to the cruelty of the galaxy. Their existence is our failure.', 'unemployment_resources', 30);
+                   VALUES ('bio_trophy_unemployment', 'Neglected Bio-Trophy', 'bio_trophy_unemployment', 'These Bio-Trophies are neglected and without our care, exposing them to the cruelty of the galaxy. Their existence is our failure.', 'unemployment_resources', 32);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('slave_unemployment', 'Unemployed Slaves', 'slave_unemployment', 'These slaves are currently not assigned to any task.', NULL, 31);
+                   VALUES ('slave_unemployment', 'Unemployed Slaves', 'slave_unemployment', 'These slaves are currently not assigned to any task.', NULL, 33);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('politician', 'Politician', 'ruler', 'The government of an entire colony is a daunting task that requires dedicated and highly trained individuals.', 'planet_politicians', 32);
+                   VALUES ('politician', 'Politician', 'ruler', 'The government of an entire colony is a daunting task that requires dedicated and highly trained individuals.', 'planet_politicians', 34);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('politician', 'produces', 'unity', '5.0', 0);
@@ -35752,7 +35877,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('politician', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('knight_commander', 'Lord Commander', 'ruler', 'The knights are worthy and honorable - the best our society has to offer. But even they need leadership. Where the Lord Commander leads, there shall the knights follow.', 'planet_knights', 33);
+                   VALUES ('knight_commander', 'Lord Commander', 'ruler', 'The knights are worthy and honorable - the best our society has to offer. But even they need leadership. Where the Lord Commander leads, there shall the knights follow.', 'planet_knights', 35);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('knight_commander', 'produces', 'unity', '2.0', 0);
@@ -35773,7 +35898,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_naval_cap_add', 'Naval Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('dystopian_enforcer', 'Enforcer', 'ruler', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 'planet_enforcers', 34);
+                   VALUES ('dystopian_enforcer', 'Enforcer', 'ruler', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 'planet_enforcers', 36);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('dystopian_enforcer', 'planet_crime_add', '-25.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -35787,7 +35912,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('dystopian_telepath', 'Telepath', 'ruler', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 'planet_telepaths', 35);
+                   VALUES ('dystopian_telepath', 'Telepath', 'ruler', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 'planet_telepaths', 37);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('dystopian_telepath', 'produces', 'unity', '4.5', 0);
@@ -35803,19 +35928,19 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('head_researcher', 'Science Director', 'ruler', 'These specialists coordinate and manage the research and development of new technologies.', NULL, 36);
+                   VALUES ('head_researcher', 'Science Director', 'ruler', 'These specialists coordinate and manage the research and development of new technologies.', NULL, 38);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('high_priest', 'High Priest', 'ruler', 'To whom do guides turn when they themselves seek guidance? Another, more experienced guide.', NULL, 37);
+                   VALUES ('high_priest', 'High Priest', 'ruler', 'To whom do guides turn when they themselves seek guidance? Another, more experienced guide.', NULL, 39);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('noble', 'Noble', 'ruler', 'Heavy is the burden of the nobility, whose birthright is to rule over their unwashed lessers. Luckily, there are a few financial advantages to the position.', NULL, 38);
+                   VALUES ('noble', 'Noble', 'ruler', 'Heavy is the burden of the nobility, whose birthright is to rule over their unwashed lessers. Luckily, there are a few financial advantages to the position.', NULL, 40);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('merchant', 'Merchant', 'ruler', 'They buy. They sell. They hoard. They re-sell. Agents, dealers, retailers, wholesalers - wherever there is trade, there are merchants.', NULL, 39);
+                   VALUES ('merchant', 'Merchant', 'ruler', 'They buy. They sell. They hoard. They re-sell. Agents, dealers, retailers, wholesalers - wherever there is trade, there are merchants.', NULL, 41);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('executive', 'Executive', 'ruler', 'Only an executive has the power to drive leading-edge initiatives and synergistically benchmark dynamically conceptualized deliverables.', NULL, 40);
+                   VALUES ('executive', 'Executive', 'ruler', 'Only an executive has the power to drive leading-edge initiatives and synergistically benchmark dynamically conceptualized deliverables.', NULL, 42);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('warden', 'Planetary Warden', 'ruler', 'Overseeing an entire penal colony as its warden demands individuals who are highly skilled and wholly committed to the task at hand.', NULL, 41);
+                   VALUES ('warden', 'Planetary Warden', 'ruler', 'Overseeing an entire penal colony as its warden demands individuals who are highly skilled and wholly committed to the task at hand.', NULL, 43);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('physicist', 'Physicist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_physicists', 42);
+                   VALUES ('physicist', 'Physicist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_physicists', 44);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('physicist', 'produces', 'physics_research', '3.0', 0);
@@ -35823,7 +35948,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('physicist', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('biologist', 'Biologist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_biologists', 43);
+                   VALUES ('biologist', 'Biologist', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_biologists', 45);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('biologist', 'produces', 'society_research', '3.0', 0);
@@ -35831,7 +35956,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('biologist', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('engineer', 'Engineer', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_engineers', 44);
+                   VALUES ('engineer', 'Engineer', 'specialist', 'The eternal mystery of the world is its comprehensibility.', 'planet_engineers', 46);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('engineer', 'produces', 'engineering_research', '3.0', 0);
@@ -35839,9 +35964,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('engineer', 'upkeep', 'consumer_goods', '1.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_keeper', 'Zookeeper', 'specialist', 'These zookeepers look after the needs of the fauna under their care.', NULL, 45);
+                   VALUES ('xeno_zoo_keeper', 'Zookeeper', 'specialist', 'These zookeepers look after the needs of the fauna under their care.', NULL, 47);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bureaucrat', 'Bureaucrat', 'specialist', 'Fulfilling the bureaucratic demands of an empire is a daunting task that requires dedicated and highly trained individuals.', 'planet_bureaucrats', 46);
+                   VALUES ('bureaucrat', 'Bureaucrat', 'specialist', 'Fulfilling the bureaucratic demands of an empire is a daunting task that requires dedicated and highly trained individuals.', 'planet_bureaucrats', 48);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('bureaucrat', 'produces', 'unity', '3.0', 0);
@@ -35849,7 +35974,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('bureaucrat', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('enforcer', 'Enforcer', 'specialist', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 'planet_enforcers', 47);
+                   VALUES ('enforcer', 'Enforcer', 'specialist', 'Law enforcement officers are responsible for upholding the law and maintaining peace.', 'planet_enforcers', 49);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('enforcer', 'planet_crime_add', '-25.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -35863,9 +35988,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('educator', 'Educator', 'specialist', 'Dedicated to preparing the youth, these tireless champions of knowledge perform the irreplaceable service of ensuring that every citizen is ready to face the galaxy.', NULL, 48);
+                   VALUES ('educator', 'Educator', 'specialist', 'Dedicated to preparing the youth, these tireless champions of knowledge perform the irreplaceable service of ensuring that every citizen is ready to face the galaxy.', NULL, 50);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('telepath', 'Telepath', 'specialist', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 'planet_telepaths', 49);
+                   VALUES ('telepath', 'Telepath', 'specialist', 'Members of the Psi Corps, a unit of psionically-gifted crime fighters.', 'planet_telepaths', 51);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('telepath', 'produces', 'unity', '4.5', 0);
@@ -35881,7 +36006,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('entertainer', 'Entertainer', 'specialist', 'It is said there are only two types of lifeforms in the galaxy: the entertainers, and the entertained.', 'planet_entertainers', 50);
+                   VALUES ('entertainer', 'Entertainer', 'specialist', 'It is said there are only two types of lifeforms in the galaxy: the entertainers, and the entertained.', 'planet_entertainers', 52);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('entertainer', 'produces', 'unity', '0.5', 0);
@@ -35893,11 +36018,11 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('culture_worker', 'Culture Worker', 'specialist', 'Maintaining the arts is the realm of these workers, vital for the inner development and social expression of citizens.', NULL, 51);
+                   VALUES ('culture_worker', 'Culture Worker', 'specialist', 'Maintaining the arts is the realm of these workers, vital for the inner development and social expression of citizens.', NULL, 53);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('unifier', 'Unification Officer', 'specialist', 'The administrative corps of our newly unified colony, these officers ensure that amenities are delivered to those in need.', NULL, 52);
+                   VALUES ('unifier', 'Unification Officer', 'specialist', 'The administrative corps of our newly unified colony, these officers ensure that amenities are delivered to those in need.', NULL, 54);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chemist', 'Chemist', 'specialist', 'The synthetic development of volatile motes by chemical processes is left to these specialists.', 'planet_chemists', 53);
+                   VALUES ('chemist', 'Chemist', 'specialist', 'The synthetic development of volatile motes by chemical processes is left to these specialists.', 'planet_chemists', 55);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('chemist', 'produces', 'volatile_motes', '2.0', 0);
@@ -35905,7 +36030,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('chemist', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('translucer', 'Translucer', 'specialist', 'These specialists transform minerals into rare crystals in a laboratory environment.', 'planet_translucers', 54);
+                   VALUES ('translucer', 'Translucer', 'specialist', 'These specialists transform minerals into rare crystals in a laboratory environment.', 'planet_translucers', 56);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('translucer', 'produces', 'rare_crystals', '2.0', 0);
@@ -35913,7 +36038,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('translucer', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_refiner', 'Gas Refiner', 'specialist', 'Managing the complex chain of reactions required to refine gas from minerals effectively requires advanced machinery and highly-trained experts.', 'planet_refiners', 55);
+                   VALUES ('gas_refiner', 'Gas Refiner', 'specialist', 'Managing the complex chain of reactions required to refine gas from minerals effectively requires advanced machinery and highly-trained experts.', 'planet_refiners', 57);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_refiner', 'produces', 'exotic_gases', '2.0', 0);
@@ -35921,7 +36046,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_refiner', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('roboticist', 'Roboticist', 'specialist', 'These technicians build robots, that the robots may build for the nation.', 'planet_pop_assemblers', 56);
+                   VALUES ('roboticist', 'Roboticist', 'specialist', 'These technicians build robots, that the robots may build for the nation.', 'planet_pop_assemblers', 58);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('roboticist', 'upkeep', 'alloys', '2.0', 0);
@@ -35930,7 +36055,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 'planet_doctors', 57);
+                   VALUES ('healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 'planet_doctors', 59);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
@@ -35939,7 +36064,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('trader', 'Trader', 'specialist', 'These proud deal-makers boost the value of everyday commodities, and expedite the movement of goods to where they are most needed or desired.', 'planet_traders', 58);
+                   VALUES ('trader', 'Trader', 'specialist', 'These proud deal-makers boost the value of everyday commodities, and expedite the movement of goods to where they are most needed or desired.', 'planet_traders', 60);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('trader', 'produces', 'trade', '8.0', 0);
@@ -35947,19 +36072,19 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('trader', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('numistic_priest', 'Numistic Priest', 'specialist', 'These zealous facilitators of commerce have vowed to squeeze every last drop of value from deals carried out in Numa''s name.', NULL, 59);
+                   VALUES ('numistic_priest', 'Numistic Priest', 'specialist', 'These zealous facilitators of commerce have vowed to squeeze every last drop of value from deals carried out in Numa''s name.', NULL, 61);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('preacher', 'Prosperity Preacher', 'specialist', 'Prosperity Preachers spread the good word to the masses that they, too, can prosper, if only they will part with a small donation to the cause.', NULL, 60);
+                   VALUES ('preacher', 'Prosperity Preacher', 'specialist', 'Prosperity Preachers spread the good word to the masses that they, too, can prosper, if only they will part with a small donation to the cause.', NULL, 62);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('manager', 'Manager', 'specialist', 'The endless struggle to balance conflicting demands from the middle of the managerial hierarchy is envied by few.', NULL, 61);
+                   VALUES ('manager', 'Manager', 'specialist', 'The endless struggle to balance conflicting demands from the middle of the managerial hierarchy is envied by few.', NULL, 63);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('steward', 'Steward', 'specialist', 'These democratically-elected volunteers ensure the smooth running of our cooperative society, for the benefit of all its members.', NULL, 62);
+                   VALUES ('steward', 'Steward', 'specialist', 'These democratically-elected volunteers ensure the smooth running of our cooperative society, for the benefit of all its members.', NULL, 64);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('necromancer', 'Necromancer', 'specialist', 'Raising the dead to fight in the nation''s armies is hard work. Only the most skilled practitioners know the secret arts required to achieve this feat!', NULL, 63);
+                   VALUES ('necromancer', 'Necromancer', 'specialist', 'Raising the dead to fight in the nation''s armies is hard work. Only the most skilled practitioners know the secret arts required to achieve this feat!', NULL, 65);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('death_chronicler', 'Death Chronicler', 'specialist', 'Entropy is the domain of these scholars, who observe and record death and its effects in all their various expressions.', NULL, 64);
+                   VALUES ('death_chronicler', 'Death Chronicler', 'specialist', 'Entropy is the domain of these scholars, who observe and record death and its effects in all their various expressions.', NULL, 66);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('necro_apprentice', 'Necrophyte', 'specialist', 'Through years of hard work culminating in a lavish Elevation Ritual, those unfortunates not born into the ruling caste can be subsumed into it.', 'planet_necro_apprentices', 65);
+                   VALUES ('necro_apprentice', 'Necrophyte', 'specialist', 'Through years of hard work culminating in a lavish Elevation Ritual, those unfortunates not born into the ruling caste can be subsumed into it.', 'planet_necro_apprentices', 67);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('necro_apprentice', 'produces', 'unity', '0.75', 0);
@@ -35975,7 +36100,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('foundry', 'Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 'planet_metallurgists', 66);
+                   VALUES ('foundry', 'Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 'planet_metallurgists', 68);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('foundry', 'produces', 'alloys', '3.0', 0);
@@ -35983,9 +36108,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('foundry', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('catalytic_technician', 'Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', NULL, 67);
+                   VALUES ('catalytic_technician', 'Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', NULL, 69);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('artisan', 'Artisan', 'specialist', 'Skilled craft workers that manufacture domestic and luxury goods of various types.', 'planet_artisans', 68);
+                   VALUES ('artisan', 'Artisan', 'specialist', 'Skilled craft workers that manufacture domestic and luxury goods of various types.', 'planet_artisans', 70);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan', 'produces', 'consumer_goods', '6.0', 0);
@@ -35993,11 +36118,11 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('artificer', 'Artificer', 'specialist', 'Skilled and creative craft workers that manufacture domestic and luxury goods of stunning quality.', NULL, 69);
+                   VALUES ('artificer', 'Artificer', 'specialist', 'Skilled and creative craft workers that manufacture domestic and luxury goods of stunning quality.', NULL, 71);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('pearl_diver', 'Pearl Diver', NULL, 'Concerning cultivation and farming more than diving, these specialists still bring back a large variety of treasures from the depths.', NULL, 70);
+                   VALUES ('pearl_diver', 'Pearl Diver', NULL, 'Concerning cultivation and farming more than diving, these specialists still bring back a large variety of treasures from the depths.', NULL, 72);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('reassigner', 'Reassigner', 'specialist', 'Reassigners ensure that once a Megacorporation''s citizen has passed on, their remains will stay at work until the fulfillment of their contract.', 'planet_jobs', 71);
+                   VALUES ('reassigner', 'Reassigner', 'specialist', 'Reassigners ensure that once a Megacorporation''s citizen has passed on, their remains will stay at work until the fulfillment of their contract.', 'planet_jobs', 73);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('reassigner', 'upkeep', 'consumer_goods', '2.0', 0);
@@ -36006,7 +36131,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bath_attendant', 'Spa Attendant', 'specialist', 'Trained Attendants for the Mutagenic Spas. Their purpose in life is to ensure their clients'' continued health through a variety of services, including intemperate detoxification and carefully curated genotype degeneration.', 'planet_bath_attendants', 72);
+                   VALUES ('bath_attendant', 'Spa Attendant', 'specialist', 'Trained Attendants for the Mutagenic Spas. Their purpose in life is to ensure their clients'' continued health through a variety of services, including intemperate detoxification and carefully curated genotype degeneration.', 'planet_bath_attendants', 74);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('bath_attendant', 'upkeep', 'consumer_goods', '1.0', 0);
@@ -36015,9 +36140,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Machine Pops but increase Amenities Usage.', NULL, 73);
+                   VALUES ('bath_attendant_individual_machine', 'Lubrication Terminal', 'specialist', 'Lubrication Terminals turn Alloys into new Machine Pops but increase Amenities Usage.', NULL, 75);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 74);
+                   VALUES ('knight', 'Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 76);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('knight', 'produces', 'unity', '1.0', 0);
@@ -36049,9 +36174,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('knight_quest_progress_add', 'Monthly Quest Progress', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('archaeoengineers', 'Archaeo-Engineer', 'specialist', 'Sometimes, it belongs in a warship, not a museum.', NULL, 75);
+                   VALUES ('archaeoengineers', 'Archaeo-Engineer', 'specialist', 'Sometimes, it belongs in a warship, not a museum.', NULL, 77);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('resort_worker', 'Resort Worker', 'specialist', 'Skilled artisans of hospitality who are dedicated to creating an unforgettable experience. They work hard, so you don''t have to.', 'planet_entertainers', 76);
+                   VALUES ('resort_worker', 'Resort Worker', 'specialist', 'Skilled artisans of hospitality who are dedicated to creating an unforgettable experience. They work hard, so you don''t have to.', 'planet_entertainers', 78);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('resort_worker', 'produces', 'unity', '1.0', 0);
@@ -36070,7 +36195,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_trade_produces_mult', 'Trade from Living Standards', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('polytechnic_mentor', 'Thermotechnic Mentor', 'specialist', 'With a diverse background of skills, this mentor helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 'planet_mentors', 77);
+                   VALUES ('polytechnic_mentor', 'Thermotechnic Mentor', 'specialist', 'With a diverse background of skills, this mentor helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 'planet_mentors', 79);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('polytechnic_mentor', 'produces', 'unity', '1.0', 0);
@@ -36087,7 +36212,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('polytechnic_mentor', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('offworld_prospector', 'Offworld Prospector', 'specialist', 'Enterprising prospectors travel offworld to hunt for Volatile Motes and Living Metal on Molten Worlds.', 'planet_jobs', 78);
+                   VALUES ('offworld_prospector', 'Offworld Prospector', 'specialist', 'Enterprising prospectors travel offworld to hunt for Volatile Motes and Living Metal on Molten Worlds.', 'planet_jobs', 80);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('offworld_prospector', 'produces', 'sr_living_metal', '1.5', 0);
@@ -36098,7 +36223,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('offworld_prospector', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('soldier', 'Soldier', 'specialist', 'Military professionals are needed to train a steady stream of new recruits for army and naval operations.', 'planet_soldiers', 79);
+                   VALUES ('soldier', 'Soldier', 'specialist', 'Military professionals are needed to train a steady stream of new recruits for army and naval operations.', 'planet_soldiers', 81);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('soldier', 'upkeep', 'alloys', '1.0', 0);
@@ -36115,7 +36240,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('battle_thrall', 'Battle Thrall', 'specialist', 'Elite slave warriors, trained from birth, who fight with unparalleled zeal and ferocity. Their loyalty and dedication make them formidable on the front lines.', 'planet_soldiers', 80);
+                   VALUES ('battle_thrall', 'Battle Thrall', 'specialist', 'Elite slave warriors, trained from birth, who fight with unparalleled zeal and ferocity. Their loyalty and dedication make them formidable on the front lines.', 'planet_soldiers', 82);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('battle_thrall', 'upkeep', 'alloys', '1.0', 0);
@@ -36132,9 +36257,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', NULL, 81);
+                   VALUES ('colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', NULL, 83);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('clerk', 'Clerk', 'worker', 'White-collar workers perform the various administrative office tasks that are crucial to any sufficiently complex working environment. A hopelessly outdated profession.', 'planet_clerks', 82);
+                   VALUES ('clerk', 'Clerk', 'worker', 'White-collar workers perform the various administrative office tasks that are crucial to any sufficiently complex working environment. A hopelessly outdated profession.', 'planet_clerks', 84);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('clerk', 'produces', 'trade', '3.0', 0);
@@ -36147,28 +36272,28 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('technician', 'Technician', 'worker', 'Power plants require plenty of warm bodies to operate equipment and oversee operations.', 'planet_technician', 83);
+                   VALUES ('technician', 'Technician', 'worker', 'Power plants require plenty of warm bodies to operate equipment and oversee operations.', 'planet_technician', 85);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('technician', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('miner', 'Miner', 'worker', 'With modern power drills and other advanced tools, mining may not be the back-breaking profession it once was, but it is still far from easy.', 'planet_miners', 84);
+                   VALUES ('miner', 'Miner', 'worker', 'With modern power drills and other advanced tools, mining may not be the back-breaking profession it once was, but it is still far from easy.', 'planet_miners', 86);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('miner', 'produces', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('crystal_miner', 'Crystal Miner', 'worker', 'Specialist miners are employed for the careful extraction and refinement of rare crystals.', NULL, 85);
+                   VALUES ('crystal_miner', 'Crystal Miner', 'worker', 'Specialist miners are employed for the careful extraction and refinement of rare crystals.', NULL, 87);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_extractor', 'Gas Extractor', 'worker', 'Advanced hydraulic fracking methods are employed by Gas Extractors in order to free rare, exotic gases from promising rock beds.', NULL, 86);
+                   VALUES ('gas_extractor', 'Gas Extractor', 'worker', 'Advanced hydraulic fracking methods are employed by Gas Extractors in order to free rare, exotic gases from promising rock beds.', NULL, 88);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mote_harvester', 'Mote Harvester', 'worker', 'One of the most dangerous professions, mote harvesting involves trapping and sealing volatile motes to be used as fuel or explosives.', NULL, 87);
+                   VALUES ('mote_harvester', 'Mote Harvester', 'worker', 'One of the most dangerous professions, mote harvesting involves trapping and sealing volatile motes to be used as fuel or explosives.', NULL, 89);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('farmer', 'Farmer', 'worker', 'Farming looks mighty easy when your plow is a pencil and you''re a thousand miles from the corn field.', 'planet_farmers', 88);
+                   VALUES ('farmer', 'Farmer', 'worker', 'Farming looks mighty easy when your plow is a pencil and you''re a thousand miles from the corn field.', 'planet_farmers', 90);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('farmer', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mortal_initiate', 'Mortal Initiate', 'worker', 'These most devout pupils of their faith dedicate the remaining portion of their lives to the betterment of their society - a study which concludes with their willing, fatal sacrifice.', 'planet_bureaucrats', 89);
+                   VALUES ('mortal_initiate', 'Mortal Initiate', 'worker', 'These most devout pupils of their faith dedicate the remaining portion of their lives to the betterment of their society - a study which concludes with their willing, fatal sacrifice.', 'planet_bureaucrats', 91);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('mortal_initiate', 'produces', 'unity', '1.0', 0);
@@ -36180,13 +36305,13 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('scrap_miner', 'Scrap Miner', NULL, 'Scrap Miners explore the depths of the shattered remains for materials suitable for construction.', NULL, 90);
+                   VALUES ('scrap_miner', 'Scrap Miner', NULL, 'Scrap Miners explore the depths of the shattered remains for materials suitable for construction.', NULL, 92);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('angler', 'Angler', 'worker', 'Hook and line are things of the past, but sustainably growing and hauling food out of nature takes equal patience, much planning, and great care.', NULL, 91);
+                   VALUES ('angler', 'Angler', 'worker', 'Hook and line are things of the past, but sustainably growing and hauling food out of nature takes equal patience, much planning, and great care.', NULL, 93);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ranger', 'Ranger', 'worker', 'Special individuals tasked with ensuring that our colonies remain clean and natural.', NULL, 92);
+                   VALUES ('ranger', 'Ranger', 'worker', 'Special individuals tasked with ensuring that our colonies remain clean and natural.', NULL, 94);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('squire', 'Squire', 'worker', 'Becoming a knight takes years of training. Those seeking admission into the Order must first serve a knight, learning from their example even as they strive to make their noble lives more comfortable.', 'planet_squires', 93);
+                   VALUES ('squire', 'Squire', 'worker', 'Becoming a knight takes years of training. Those seeking admission into the Order must first serve a knight, learning from their example even as they strive to make their noble lives more comfortable.', 'planet_squires', 95);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('squire', 'upkeep', 'alloys', '0.5', 0);
@@ -36211,7 +36336,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('foundry_prison_worker', 'Penal Metallurgist', 'worker', 'Trained prisoners are used to turn raw minerals into durable alloys used in various advanced construction.', 'planet_metallurgists', 94);
+                   VALUES ('foundry_prison_worker', 'Penal Metallurgist', 'worker', 'Trained prisoners are used to turn raw minerals into durable alloys used in various advanced construction.', 'planet_metallurgists', 96);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('foundry_prison_worker', 'produces', 'alloys', '1.5', 0);
@@ -36219,7 +36344,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('foundry_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('catalytic_technician_prison_worker', 'Penal Catalytic Technician', 'worker', 'These trained prisoners turn raw organic matter into durable alloys for advanced construction.', 'planet_metallurgists', 95);
+                   VALUES ('catalytic_technician_prison_worker', 'Penal Catalytic Technician', 'worker', 'These trained prisoners turn raw organic matter into durable alloys for advanced construction.', 'planet_metallurgists', 97);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('catalytic_technician_prison_worker', 'produces', 'alloys', '1.875', 0);
@@ -36227,7 +36352,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('catalytic_technician_prison_worker', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('artisan_prison_worker', 'Penal Artisan', 'worker', 'These trained prisoners manufacture domestic and luxury goods of various types.', 'planet_artisans', 96);
+                   VALUES ('artisan_prison_worker', 'Penal Artisan', 'worker', 'These trained prisoners manufacture domestic and luxury goods of various types.', 'planet_artisans', 98);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan_prison_worker', 'produces', 'consumer_goods', '3.0', 0);
@@ -36235,7 +36360,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('artificer_prison_worker', 'Penal Artificer', 'worker', 'Skilled prisoners that manufacture domestic and luxury goods of stunning quality.', 'planet_artisans', 97);
+                   VALUES ('artificer_prison_worker', 'Penal Artificer', 'worker', 'Skilled prisoners that manufacture domestic and luxury goods of stunning quality.', 'planet_artisans', 99);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artificer_prison_worker', 'produces', 'consumer_goods', '3.5', 0);
@@ -36243,7 +36368,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artificer_prison_worker', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_pop_assemblers', 98);
+                   VALUES ('spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_pop_assemblers', 100);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('spawning_drone', 'upkeep', 'food', '5.0', 0);
@@ -36252,9 +36377,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('offspring_drone', 'Offspring Drone', 'complex_drone', 'The administrator of the entire planet resides here. It is through Offspring drones that the Progenitor enacts their grand design.', NULL, 99);
+                   VALUES ('offspring_drone', 'Offspring Drone', 'complex_drone', 'The administrator of the entire planet resides here. It is through Offspring drones that the Progenitor enacts their grand design.', NULL, 101);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 'planet_pop_assemblers', 100);
+                   VALUES ('replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 'planet_pop_assemblers', 102);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('replicator', 'upkeep', 'alloys', '1.0', 0);
@@ -36263,7 +36388,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gestation_drone', 'Gestation Drone', 'complex_drone', 'Designed to nurture, these specialized drones oversee the growth of young biologicals, preparing them to become integral cybernetic contributors to the collective.', 'planet_doctors', 101);
+                   VALUES ('gestation_drone', 'Gestation Drone', 'complex_drone', 'Designed to nurture, these specialized drones oversee the growth of young biologicals, preparing them to become integral cybernetic contributors to the collective.', 'planet_doctors', 103);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gestation_drone', 'produces', 'society_research', '1.0', 0);
@@ -36281,7 +36406,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('evaluator', 'Evaluator', 'complex_drone', 'Signals to and from the Drones must be amplified, analyzed and cleaned of deviancy.', 'planet_evaluators', 102);
+                   VALUES ('evaluator', 'Evaluator', 'complex_drone', 'Signals to and from the Drones must be amplified, analyzed and cleaned of deviancy.', 'planet_evaluators', 104);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('evaluator', 'produces', 'unity', '2.0', 0);
@@ -36293,7 +36418,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('coordinator', 'Coordinator', 'complex_drone', 'Signals to and from the Core must be amplified, boosted, and cleaned of static and data corruption.', 'planet_bureaucrats', 103);
+                   VALUES ('coordinator', 'Coordinator', 'complex_drone', 'Signals to and from the Core must be amplified, boosted, and cleaned of static and data corruption.', 'planet_bureaucrats', 105);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('coordinator', 'produces', 'unity', '3.0', 0);
@@ -36301,11 +36426,11 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('coordinator', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('synapse_drone', 'Synapse Drone', 'complex_drone', 'The macroscopic embodiment of a synapse, these drones focus on amplifying the overmind''s ceaseless messages, and cleaning them of distortions.', NULL, 104);
+                   VALUES ('synapse_drone', 'Synapse Drone', 'complex_drone', 'The macroscopic embodiment of a synapse, these drones focus on amplifying the overmind''s ceaseless messages, and cleaning them of distortions.', NULL, 106);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chronicle_drone', 'Chronicle Drone', 'complex_drone', 'These specialized drones turn their thoughts to entropy, researching terminal decay as a counterpoint to our own, continued existence.', NULL, 105);
+                   VALUES ('chronicle_drone', 'Chronicle Drone', 'complex_drone', 'These specialized drones turn their thoughts to entropy, researching terminal decay as a counterpoint to our own, continued existence.', NULL, 107);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('calculator_physicist', 'Physics Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_physicists', 106);
+                   VALUES ('calculator_physicist', 'Physics Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_physicists', 108);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_physicist', 'produces', 'physics_research', '3.0', 0);
@@ -36313,9 +36438,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_physicist', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('brain_drone_physicist', 'Physics Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 107);
+                   VALUES ('brain_drone_physicist', 'Physics Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 109);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('calculator_biologist', 'Biology Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_biologists', 108);
+                   VALUES ('calculator_biologist', 'Biology Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_biologists', 110);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_biologist', 'produces', 'society_research', '3.0', 0);
@@ -36323,13 +36448,13 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_biologist', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('brain_drone_biologist', 'Biology Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 109);
+                   VALUES ('brain_drone_biologist', 'Biology Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 111);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('archaeo_drone', 'Archaeo-Engineering Drone', 'complex_drone', 'For a Hive, cultural preservation doesn''t hold as much power as an archaeolaser.', NULL, 110);
+                   VALUES ('archaeo_drone', 'Archaeo-Engineering Drone', 'complex_drone', 'For a Hive, cultural preservation doesn''t hold as much power as an archaeolaser.', NULL, 112);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('archaeo_unit', 'Archaeo-Engineering Unit', 'complex_drone', 'Specialized drones for the careful manipulation and study of ancient artifacts.', NULL, 111);
+                   VALUES ('archaeo_unit', 'Archaeo-Engineering Unit', 'complex_drone', 'Specialized drones for the careful manipulation and study of ancient artifacts.', NULL, 113);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('calculator_engineer', 'Engineering Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_engineers', 112);
+                   VALUES ('calculator_engineer', 'Engineering Subroutine', 'complex_drone', 'Endlessly processing equations, probabilities, and testing new functions, Calculators lead the technological development of the Machine Intelligence.', 'planet_engineers', 114);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_engineer', 'produces', 'engineering_research', '3.0', 0);
@@ -36337,9 +36462,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('calculator_engineer', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('brain_drone_engineer', 'Engineering Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 113);
+                   VALUES ('brain_drone_engineer', 'Engineering Brain Drone', 'complex_drone', 'Scientists, researchers, and inventors: Brain Drones are responsible for the technological development of the nation.', NULL, 115);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('artisan_drone', 'Artisan Drone', 'complex_drone', 'A variety of consumable goods and necessities are manufactured by these artisanal drones. Additionally, the occasional aesthetic creation is not entirely without merits.', 'planet_artisans', 114);
+                   VALUES ('artisan_drone', 'Artisan Drone', 'complex_drone', 'A variety of consumable goods and necessities are manufactured by these artisanal drones. Additionally, the occasional aesthetic creation is not entirely without merits.', 'planet_artisans', 116);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan_drone', 'produces', 'consumer_goods', '10.0', 0);
@@ -36347,7 +36472,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('artisan_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fabricator', 'Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 'planet_metallurgists', 115);
+                   VALUES ('fabricator', 'Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 'planet_metallurgists', 117);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fabricator', 'produces', 'alloys', '3.0', 0);
@@ -36355,11 +36480,11 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fabricator', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('alloy_drone', 'Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', NULL, 116);
+                   VALUES ('alloy_drone', 'Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', NULL, 118);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('catalytic_drone', 'Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', NULL, 117);
+                   VALUES ('catalytic_drone', 'Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', NULL, 119);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chemist_drone', 'Chem-Drone', 'complex_drone', 'Rather than maintain systems of mote traps, Chem-Drones distill volatile motes directly from minerals through a series of complex chemical processes.', 'planet_chemists', 118);
+                   VALUES ('chemist_drone', 'Chem-Drone', 'complex_drone', 'Rather than maintain systems of mote traps, Chem-Drones distill volatile motes directly from minerals through a series of complex chemical processes.', 'planet_chemists', 120);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('chemist_drone', 'produces', 'volatile_motes', '2.0', 0);
@@ -36367,7 +36492,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('chemist_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('translucer_drone', 'Lensing Drone', 'complex_drone', 'Those rare crystals that cannot be found can be manufactured via translucing instead. Lensing Drones specialize in just that.', 'planet_translucers', 119);
+                   VALUES ('translucer_drone', 'Lensing Drone', 'complex_drone', 'Those rare crystals that cannot be found can be manufactured via translucing instead. Lensing Drones specialize in just that.', 'planet_translucers', 121);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('translucer_drone', 'produces', 'rare_crystals', '2.0', 0);
@@ -36375,7 +36500,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('translucer_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_refiner_drone', 'Refinery Drone', 'complex_drone', 'The management and operation of exotic gas refineries is handled by these drones.', 'planet_refiners', 120);
+                   VALUES ('gas_refiner_drone', 'Refinery Drone', 'complex_drone', 'The management and operation of exotic gas refineries is handled by these drones.', 'planet_refiners', 122);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_refiner_drone', 'produces', 'exotic_gases', '2.0', 0);
@@ -36383,7 +36508,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_refiner_drone', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('patrol_drone', 'Hunter-Seeker Drone', 'complex_drone', 'Deviancy and function corruption that threatens the stability of the collective must be remedied.', 'planet_jobs', 121);
+                   VALUES ('patrol_drone', 'Hunter-Seeker Drone', 'complex_drone', 'Deviancy and function corruption that threatens the stability of the collective must be remedied.', 'planet_jobs', 123);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('patrol_drone', 'produces', 'unity', '0.5', 0);
@@ -36396,13 +36521,13 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mote_harvesting_drone', 'Mote Harvesting Drone', 'complex_drone', 'Due to the inherently volatile nature of preternatural motes, the drones who specialize in trapping and harvesting them have a high turnover rate.', NULL, 122);
+                   VALUES ('mote_harvesting_drone', 'Mote Harvesting Drone', 'complex_drone', 'Due to the inherently volatile nature of preternatural motes, the drones who specialize in trapping and harvesting them have a high turnover rate.', NULL, 124);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('crystal_mining_drone', 'Crystal Mining Drone', 'complex_drone', 'Miners specialized in carefully extracting and refining rare crystals from geological formations.', NULL, 123);
+                   VALUES ('crystal_mining_drone', 'Crystal Mining Drone', 'complex_drone', 'Miners specialized in carefully extracting and refining rare crystals from geological formations.', NULL, 125);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_extraction_drone', 'Gas Extraction Drone', 'complex_drone', 'These specialized drones employ advanced hydraulic fracking methods to free rare, exotic gases from promising rock beds.', NULL, 124);
+                   VALUES ('gas_extraction_drone', 'Gas Extraction Drone', 'complex_drone', 'These specialized drones employ advanced hydraulic fracking methods to free rare, exotic gases from promising rock beds.', NULL, 126);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('logistics_drone', 'Logistic Drone', 'complex_drone', 'These drones serve as the arteries of the collective''s supply lines, ensuring every other drone receives required resources.', 'planet_traders', 125);
+                   VALUES ('logistics_drone', 'Logistic Drone', 'complex_drone', 'These drones serve as the arteries of the collective''s supply lines, ensuring every other drone receives required resources.', 'planet_traders', 127);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('logistics_drone', 'produces', 'trade', '6.0', 0);
@@ -36410,31 +36535,31 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('logistics_drone', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mining_drone', 'Mining Drone', 'simple_drone', 'Equipped with modern power drills and advanced machinery, these drones extract and prepare valuable minerals for industrial, military, and consumer use.', 'planet_miners', 126);
+                   VALUES ('mining_drone', 'Mining Drone', 'simple_drone', 'Equipped with modern power drills and advanced machinery, these drones extract and prepare valuable minerals for industrial, military, and consumer use.', 'planet_miners', 128);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('mining_drone', 'produces', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('scrap_miner_drone', 'Scrap Miner Drone', 'simple_drone', 'Scrap Miner Drones explore the depths of the shattered ring world for materials suitable for construction.', NULL, 127);
+                   VALUES ('scrap_miner_drone', 'Scrap Miner Drone', 'simple_drone', 'Scrap Miner Drones explore the depths of the shattered ring world for materials suitable for construction.', NULL, 129);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('agri_drone', 'Agri-Drone', 'simple_drone', 'Food production requires a variety of workers, from operators of planting and harvesting machinery, to watering, fertilizer and pesticide systems managers, to livestock handlers.', 'planet_farmers', 128);
+                   VALUES ('agri_drone', 'Agri-Drone', 'simple_drone', 'Food production requires a variety of workers, from operators of planting and harvesting machinery, to watering, fertilizer and pesticide systems managers, to livestock handlers.', 'planet_farmers', 130);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('agri_drone', 'produces', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('technician_drone', 'Tech-Drone', 'simple_drone', 'The machinists, operators, and technicians who manage and oversee power plant operations.', 'planet_technician', 129);
+                   VALUES ('technician_drone', 'Tech-Drone', 'simple_drone', 'The machinists, operators, and technicians who manage and oversee power plant operations.', 'planet_technician', 131);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('technician_drone', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('maintenance_drone', 'Maintenance Drone', 'maintenance_drone', 'The machinery, systems and infrastructure that serve our needs must be constantly maintained. As must other drones.', 'planet_maintenance_drones', 130);
+                   VALUES ('maintenance_drone', 'Maintenance Drone', 'maintenance_drone', 'The machinery, systems and infrastructure that serve our needs must be constantly maintained. As must other drones.', 'planet_maintenance_drones', 132);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('maintenance_drone', 'produces', 'trade', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('wilderness_maintenance_drone', 'Pliable Biomass', 'wilderness_heart_strata', 'Biomass brimming with potential, stored and maintained until it is needed.', NULL, 131);
+                   VALUES ('wilderness_maintenance_drone', 'Pliable Biomass', 'wilderness_heart_strata', 'Biomass brimming with potential, stored and maintained until it is needed.', NULL, 133);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('warrior_drone', 'Warrior Drone', 'complex_drone', 'Military experts who specialize in the training of new army drones and naval crew.', 'planet_soldiers', 132);
+                   VALUES ('warrior_drone', 'Warrior Drone', 'complex_drone', 'Military experts who specialize in the training of new army drones and naval crew.', 'planet_soldiers', 134);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('warrior_drone', 'upkeep', 'alloys', '1.0', 0);
@@ -36451,7 +36576,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bath_attendant_machine', 'Lubrication Terminal', 'simple_drone', 'Lubrication Terminals are specially programmed drones, overseeing the submerged production of new shells, carefully monitoring the lubricant conditions during the process.', 'planet_bath_attendants_machine', 133);
+                   VALUES ('bath_attendant_machine', 'Lubrication Terminal', 'simple_drone', 'Lubrication Terminals are specially programmed drones, overseeing the submerged production of new shells, carefully monitoring the lubricant conditions during the process.', 'planet_bath_attendants_machine', 135);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('bath_attendant_machine', 'upkeep', 'minerals', '4.0', 0);
@@ -36460,9 +36585,9 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('bath_attendant_hive', 'Permutation Attendance Drone', 'simple_drone', 'Specialized Drones, grown for the sole purpose of overseeing the Permutation Process during the creation of new biological drones for the hive.', NULL, 134);
+                   VALUES ('bath_attendant_hive', 'Permutation Attendance Drone', 'simple_drone', 'Specialized Drones, grown for the sole purpose of overseeing the Permutation Process during the creation of new biological drones for the hive.', NULL, 136);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('polytechnic_drone', 'Pyroclastic Drone', 'complex_drone', 'With a diverse background of skills, this drone helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 'planet_mentors', 135);
+                   VALUES ('polytechnic_drone', 'Pyroclastic Drone', 'complex_drone', 'With a diverse background of skills, this drone helps bridge disciplinary gaps to boost the efficiency of specialized workers.', 'planet_mentors', 137);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('polytechnic_drone', 'produces', 'unity', '1.0', 0);
@@ -36479,7 +36604,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('polytechnic_drone', 'upkeep', 'minerals', '7.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('offworld_prospector_drone', 'Offworld Prospector Drone', 'complex_drone', 'Long-range drones are deployed to nearby Molten Worlds to identify and harvest Volatile Motes and Living Metal.', 'planet_jobs', 136);
+                   VALUES ('offworld_prospector_drone', 'Offworld Prospector Drone', 'complex_drone', 'Long-range drones are deployed to nearby Molten Worlds to identify and harvest Volatile Motes and Living Metal.', 'planet_jobs', 138);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('offworld_prospector_drone', 'produces', 'sr_living_metal', '1.5', 0);
@@ -36490,21 +36615,21 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('offworld_prospector_drone', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('pre_sapient', 'Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'pop_category_pre_sapients', 137);
+                   VALUES ('pre_sapient', 'Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'pop_category_pre_sapients', 139);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('pre_sapient_nascent', 'Pre-Sapient', 'pre_sapients', 'Spawns of sapient species, soon to grow into their intelligence.', 'pop_category_pre_sapients', 138);
+                   VALUES ('pre_sapient_nascent', 'Pre-Sapient', 'pre_sapients', 'Spawns of sapient species, soon to grow into their intelligence.', 'pop_category_pre_sapients', 140);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hunted_pre_sapient', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'planet_livestock_farmers', 139);
+                   VALUES ('hunted_pre_sapient', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'planet_livestock_farmers', 141);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunted_pre_sapient', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'planet_livestock_miners', 140);
+                   VALUES ('hunted_pre_sapient_lithoid', 'Hunted Pre-Sapient', 'pre_sapients', 'Simple beasts to an extent, and yet their behavior betrays some degree of intelligence...', 'planet_livestock_miners', 142);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunted_pre_sapient_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_animal', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 141);
+                   VALUES ('xeno_zoo_animal', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 143);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_animal', 'upkeep', 'food', '1.0', 0);
@@ -36513,7 +36638,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_animal_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 142);
+                   VALUES ('xeno_zoo_animal_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 144);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_animal_nascent', 'upkeep', 'food', '1.0', 0);
@@ -36522,7 +36647,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_animal_lithoid', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 143);
+                   VALUES ('xeno_zoo_animal_lithoid', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 145);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_animal_lithoid', 'upkeep', 'minerals', '1.0', 0);
@@ -36531,7 +36656,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_animal_lithoid_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 144);
+                   VALUES ('xeno_zoo_animal_lithoid_nascent', 'Conserved Fauna', 'pre_sapients', 'These near-intelligent fauna are cared for and studied in a controlled environment, ensuring their conservation.', 'planet_xeno_zoo_animals', 146);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_animal_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
@@ -36540,7 +36665,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_beast', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 145);
+                   VALUES ('xeno_zoo_beast', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 147);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_beast', 'upkeep', 'food', '1.0', 0);
@@ -36549,7 +36674,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_beast_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 146);
+                   VALUES ('xeno_zoo_beast_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 148);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_beast_nascent', 'upkeep', 'food', '1.0', 0);
@@ -36558,7 +36683,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_beast_lithoid', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 147);
+                   VALUES ('xeno_zoo_beast_lithoid', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 149);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_beast_lithoid', 'upkeep', 'minerals', '1.0', 0);
@@ -36567,7 +36692,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('xeno_zoo_beast_lithoid_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 148);
+                   VALUES ('xeno_zoo_beast_lithoid_nascent', 'Gladiatorial Beast', 'pre_sapients', 'These beasts are pitted in combat against our warriors, entertaining the masses while keeping the bestial population at sustainable levels.', 'planet_xeno_zoo_animals', 150);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('xeno_zoo_beast_lithoid_nascent', 'upkeep', 'minerals', '1.0', 0);
@@ -36576,7 +36701,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hunter_gatherer', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 'planet_farmers', 149);
+                   VALUES ('hunter_gatherer', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 'planet_farmers', 151);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunter_gatherer', 'produces', 'food', '1.0', 0);
@@ -36585,7 +36710,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hunter_gatherer_lithoid', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 'planet_farmers', 150);
+                   VALUES ('hunter_gatherer_lithoid', 'Hunter-Gatherer', 'worker', 'These semi-nomadic explorers survive by foraging and hunting. There is evidence of early tool use.', 'planet_farmers', 152);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hunter_gatherer_lithoid', 'produces', 'minerals', '1.0', 0);
@@ -36594,28 +36719,28 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('peasant', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 'planet_farmers', 151);
+                   VALUES ('peasant', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 'planet_farmers', 153);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('peasant', 'produces', 'food', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('peasant_lithoid', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 'planet_farmers', 152);
+                   VALUES ('peasant_lithoid', 'Peasant', 'worker', 'The peasants toil endlessly in the fields, so that those perceived as their betters might prosper.', 'planet_farmers', 154);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('peasant_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_warrior', 'Warrior', 'specialist', 'Members of a combative warrior class. These fighters rely on bladed weapons, spears or various blunt instruments to see them through combat.', NULL, 153);
+                   VALUES ('primitive_warrior', 'Warrior', 'specialist', 'Members of a combative warrior class. These fighters rely on bladed weapons, spears or various blunt instruments to see them through combat.', NULL, 155);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_warrior', 'planet_defense_armies_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_noble', 'Feudal Noble', 'ruler', 'The landed nobility rule from their stone castles and keeps.', 'planet_politicians', 154);
+                   VALUES ('primitive_noble', 'Feudal Noble', 'ruler', 'The landed nobility rule from their stone castles and keeps.', 'planet_politicians', 156);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_noble', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_researcher', 'Scholar', 'specialist', 'The learned of this society, often relying on oral tradition to pass knowledge between generations.', 'planet_researchers', 155);
+                   VALUES ('primitive_researcher', 'Scholar', 'specialist', 'The learned of this society, often relying on oral tradition to pass knowledge between generations.', 'planet_researchers', 157);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_researcher', 'produces', 'physics_research', '0.5', 0);
@@ -36626,12 +36751,12 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_researcher', 'produces', 'society_research', '0.5', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_priest', 'Cleric', 'specialist', 'Spiritual leaders and preachers who conduct religious ceremonies and oversee all matters concerning faith.', 'planet_jobs', 156);
+                   VALUES ('primitive_priest', 'Cleric', 'specialist', 'Spiritual leaders and preachers who conduct religious ceremonies and oversee all matters concerning faith.', 'planet_jobs', 158);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_priest', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_laborer', 'Manufacturers', 'specialist', 'These early industrial manufacturers toil away in factories, which can now be operated day and night thanks to recent advances in electricity.', 'planet_jobs_productive', 157);
+                   VALUES ('primitive_laborer', 'Manufacturers', 'specialist', 'These early industrial manufacturers toil away in factories, which can now be operated day and night thanks to recent advances in electricity.', 'planet_jobs_productive', 159);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_laborer', 'produces', 'alloys', '1.0', 0);
@@ -36642,22 +36767,22 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_laborer', 'upkeep', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_miner', 'Miner', 'worker', 'Dangerous and sometimes lethal work in the dark bowels of the planet.', 'planet_miners', 158);
+                   VALUES ('primitive_miner', 'Miner', 'worker', 'Dangerous and sometimes lethal work in the dark bowels of the planet.', 'planet_miners', 160);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_technician', 'Technician', 'worker', 'These technicians shuffle coal or maintain primitive nuclear generators.', 'planet_technician', 159);
+                   VALUES ('primitive_technician', 'Technician', 'worker', 'These technicians shuffle coal or maintain primitive nuclear generators.', 'planet_technician', 161);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_technician', 'produces', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_farmer', 'Farmer', 'worker', 'These farmers work the land, typically with the help of primitive but effective farming equipment.', 'planet_farmers', 160);
+                   VALUES ('primitive_farmer', 'Farmer', 'worker', 'These farmers work the land, typically with the help of primitive but effective farming equipment.', 'planet_farmers', 162);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_farmer', 'produces', 'food', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_researcher_2', 'Researcher', 'specialist', 'Researchers employing scientific methodology to advance the rapidly expanding knowledge base of their civilization.', 'planet_researchers', 161);
+                   VALUES ('primitive_researcher_2', 'Researcher', 'specialist', 'Researchers employing scientific methodology to advance the rapidly expanding knowledge base of their civilization.', 'planet_researchers', 163);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_researcher_2', 'produces', 'physics_research', '1.0', 0);
@@ -36671,25 +36796,25 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_researcher_2', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_priest_2', 'Priest', 'specialist', 'Religious leaders who occupy various priestly offices.', 'planet_jobs', 162);
+                   VALUES ('primitive_priest_2', 'Priest', 'specialist', 'Religious leaders who occupy various priestly offices.', 'planet_jobs', 164);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_priest_2', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_entertainer', 'Entertainer', 'specialist', 'Celebrities and media personalities that provide entertainment and distraction from day-to-day life.', NULL, 163);
+                   VALUES ('primitive_entertainer', 'Entertainer', 'specialist', 'Celebrities and media personalities that provide entertainment and distraction from day-to-day life.', NULL, 165);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_warrior_2', 'Soldier', 'specialist', 'Professional soldiers, typically armed with early projectile weapons powered by exothermic combustion.', NULL, 164);
+                   VALUES ('primitive_warrior_2', 'Soldier', 'specialist', 'Professional soldiers, typically armed with early projectile weapons powered by exothermic combustion.', NULL, 166);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_warrior_2', 'planet_defense_armies_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_bureaucrat', 'Bureaucrat', 'ruler', 'Many early industrialist and post-industrialist societies are governed by an ever-expanding class of civil servants.', 'planet_politicians', 165);
+                   VALUES ('primitive_bureaucrat', 'Bureaucrat', 'ruler', 'Many early industrialist and post-industrialist societies are governed by an ever-expanding class of civil servants.', 'planet_politicians', 167);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_bureaucrat', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('solarpunk_anarchist', 'Content Terraformer', 'ruler', 'Having achieved their utopia these world sculptors are glad to rest.', 'planet_politicians', 166);
+                   VALUES ('solarpunk_anarchist', 'Content Terraformer', 'ruler', 'Having achieved their utopia these world sculptors are glad to rest.', 'planet_politicians', 168);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('solarpunk_anarchist', 'produces', 'unity', '3.0', 0);
@@ -36698,7 +36823,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_administrator', 'Administrator', 'specialist', 'These paper-pushers ensure that the bureaucracy exists.', 'planet_bureaucrats', 167);
+                   VALUES ('primitive_administrator', 'Administrator', 'specialist', 'These paper-pushers ensure that the bureaucracy exists.', 'planet_bureaucrats', 169);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_administrator', 'produces', 'unity', '2.0', 0);
@@ -36706,38 +36831,38 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_administrator', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hive_sustenance_drone', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 'planet_farmers', 168);
+                   VALUES ('hive_sustenance_drone', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 'planet_farmers', 170);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hive_sustenance_drone', 'produces', 'food', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hive_sustenance_drone_lithoid', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 'planet_farmers', 169);
+                   VALUES ('hive_sustenance_drone_lithoid', 'Sustenance Drone', 'simple_drone', 'The difference between a successful hivemind and a starved one comes down to how successful their resource procurement is.', 'planet_farmers', 171);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hive_sustenance_drone_lithoid', 'produces', 'minerals', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hive_basic_agri_drone', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 'planet_farmers', 170);
+                   VALUES ('hive_basic_agri_drone', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 'planet_farmers', 172);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hive_basic_agri_drone', 'produces', 'food', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('hive_basic_agri_drone_lithoid', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 'planet_farmers', 171);
+                   VALUES ('hive_basic_agri_drone_lithoid', 'Basic Agricultural Drone', 'simple_drone', 'Simple and unspecialized drones work the fields, their consciousness aware that food can be grown, but the task has yet to be optimized.', 'planet_farmers', 173);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('hive_basic_agri_drone_lithoid', 'produces', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_warrior', 'Simple Warrior Drone', 'simple_drone', 'Having yet to fully come to grips with genetic specialization, these drones are grown bulkier to protect their hive. They have yet to evolve any specialized weapon appendages.', NULL, 172);
+                   VALUES ('primitive_hive_warrior', 'Simple Warrior Drone', 'simple_drone', 'Having yet to fully come to grips with genetic specialization, these drones are grown bulkier to protect their hive. They have yet to evolve any specialized weapon appendages.', NULL, 174);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_hive_warrior', 'planet_defense_armies_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_synapse_drone', 'Nascent Synapse Drone', 'complex_drone', 'The budding Overmind formed between the local drones has found a need to extend their consciousness further. These more cerebral Synapse Drones mainly facilitate this.', 'planet_bureaucrats', 173);
+                   VALUES ('primitive_hive_synapse_drone', 'Nascent Synapse Drone', 'complex_drone', 'The budding Overmind formed between the local drones has found a need to extend their consciousness further. These more cerebral Synapse Drones mainly facilitate this.', 'planet_bureaucrats', 175);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_synapse_drone', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_cerebellum_drone', 'Cerebellum Drone', 'complex_drone', 'Analyzing and discovering solutions to new difficulties is the hallmark of any flourishing society - these drones focus on finding solutions for other drones'' problems and avoiding future pitfalls', 'planet_researchers', 174);
+                   VALUES ('primitive_hive_cerebellum_drone', 'Cerebellum Drone', 'complex_drone', 'Analyzing and discovering solutions to new difficulties is the hallmark of any flourishing society - these drones focus on finding solutions for other drones'' problems and avoiding future pitfalls', 'planet_researchers', 176);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_cerebellum_drone', 'produces', 'physics_research', '0.5', 0);
@@ -36748,7 +36873,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_cerebellum_drone', 'produces', 'society_research', '0.5', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_factory_drone', 'Factory Drone', 'simple_drone', 'Drones that are more or less part of the very factory they work in. These specialized laborers assemble everything from weapons to vehicles at an astounding rate.', 'planet_artisans', 175);
+                   VALUES ('primitive_hive_factory_drone', 'Factory Drone', 'simple_drone', 'Drones that are more or less part of the very factory they work in. These specialized laborers assemble everything from weapons to vehicles at an astounding rate.', 'planet_artisans', 177);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_factory_drone', 'produces', 'alloys', '2.0', 0);
@@ -36756,22 +36881,22 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_factory_drone', 'upkeep', 'minerals', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_miner', 'Mining Drone', 'simple_drone', 'Sacrificing safety for success, these drones delve deep beneath the earth to feed the ever-hungry engine that is society.', 'planet_miners', 176);
+                   VALUES ('primitive_hive_miner', 'Mining Drone', 'simple_drone', 'Sacrificing safety for success, these drones delve deep beneath the earth to feed the ever-hungry engine that is society.', 'planet_miners', 178);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_technician', 'Tech-Drone', 'simple_drone', 'Operating dirty energy generators is not a job any living being can do forever. Still, these drones are enhanced with superior lungs as well as inherent radioactive resistance, so they last longer than most.', 'planet_technician', 177);
+                   VALUES ('primitive_hive_technician', 'Tech-Drone', 'simple_drone', 'Operating dirty energy generators is not a job any living being can do forever. Still, these drones are enhanced with superior lungs as well as inherent radioactive resistance, so they last longer than most.', 'planet_technician', 179);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_technician', 'produces', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_farmer', 'Agri-Drone', 'simple_drone', 'Food production overseen by a continent spanning hive-mind is a marvel of logistics and agronomy, every section of the designated agricultural area is used to its fullest.', 'planet_farmers', 178);
+                   VALUES ('primitive_hive_farmer', 'Agri-Drone', 'simple_drone', 'Food production overseen by a continent spanning hive-mind is a marvel of logistics and agronomy, every section of the designated agricultural area is used to its fullest.', 'planet_farmers', 180);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_farmer', 'produces', 'food', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_brain_drone', 'Brain Drone', 'complex_drone', 'Drones employing the scientific method are capable of taking massive leaps in their consciousness knowledge base. Often too large.', 'planet_researchers', 179);
+                   VALUES ('primitive_hive_brain_drone', 'Brain Drone', 'complex_drone', 'Drones employing the scientific method are capable of taking massive leaps in their consciousness knowledge base. Often too large.', 'planet_researchers', 181);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_brain_drone', 'produces', 'physics_research', '1.0', 0);
@@ -36782,22 +36907,22 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_brain_drone', 'produces', 'society_research', '1.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_spawning_drone', 'Spawning Drone', 'complex_drone', 'Having each member of a society reproduce is vastly inefficient. These drones specialize in generating whatever new drones the Hive needs.', NULL, 180);
+                   VALUES ('primitive_hive_spawning_drone', 'Spawning Drone', 'complex_drone', 'Having each member of a society reproduce is vastly inefficient. These drones specialize in generating whatever new drones the Hive needs.', NULL, 182);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_warrior_2', 'Warrior Drone', 'simple_drone', 'Specialized for war, these hulking drones have multiple specialized appendages perfected for crushing their own species.', NULL, 181);
+                   VALUES ('primitive_hive_warrior_2', 'Warrior Drone', 'simple_drone', 'Specialized for war, these hulking drones have multiple specialized appendages perfected for crushing their own species.', NULL, 183);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('primitive_hive_warrior_2', 'planet_defense_armies_add', '3.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('primitive_hive_synapse_drone_2', 'Synapse Drone', 'complex_drone', 'Administrating and coordinating an entire country is no easier if you are a single individual. These drones ensure that every drone has an appropriate task.', 'planet_bureaucrats', 182);
+                   VALUES ('primitive_hive_synapse_drone_2', 'Synapse Drone', 'complex_drone', 'Administrating and coordinating an entire country is no easier if you are a single individual. These drones ensure that every drone has an appropriate task.', 'planet_bureaucrats', 184);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('primitive_hive_synapse_drone_2', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('event_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 183);
+                   VALUES ('event_purge', 'Purging', 'purge', 'This pop is being purged in accordance with our policies.', 'planet_jobs', 185);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ratling_scavenger', 'Scavenger', 'worker', 'They scurry amongst the scrapyards, collecting discarded machinery and ancient electronics for repurposing.', 'planet_farmers', 184);
+                   VALUES ('ratling_scavenger', 'Scavenger', 'worker', 'They scurry amongst the scrapyards, collecting discarded machinery and ancient electronics for repurposing.', 'planet_farmers', 186);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ratling_scavenger', 'produces', 'food', '1.0', 0);
@@ -36808,21 +36933,21 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ratling_scavenger', 'produces', 'consumer_goods', '1.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('odd_factory_worker', 'Odd Factory Worker', 'worker', 'These workers labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 'planet_metallurgists', 185);
+                   VALUES ('odd_factory_worker', 'Odd Factory Worker', 'worker', 'These workers labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 'planet_metallurgists', 187);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('odd_factory_worker', 'produces', 'alloys', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('odd_factory_drone', 'Odd Factory Drone', 'simple_drone', 'These drones labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 'planet_metallurgists', 186);
+                   VALUES ('odd_factory_drone', 'Odd Factory Drone', 'simple_drone', 'These drones labor in the ancient and mysterious factory of unknown origin. What could go wrong?', 'planet_metallurgists', 188);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('odd_factory_drone', 'produces', 'alloys', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('underground_trade_worker', 'Subterranean Liaison', 'specialist', 'These Liaisons live underground and work for closer relations and improved trade with the Subterranean Civilization.', NULL, 187);
+                   VALUES ('underground_trade_worker', 'Subterranean Liaison', 'specialist', 'These Liaisons live underground and work for closer relations and improved trade with the Subterranean Civilization.', NULL, 189);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('underground_contact_drone', 'Subterranean Liaison Drone', 'simple_drone', 'These Drones live underground, transferring resources to and from the Subterranean Civilization.', NULL, 188);
+                   VALUES ('underground_contact_drone', 'Subterranean Liaison Drone', 'simple_drone', 'These Drones live underground, transferring resources to and from the Subterranean Civilization.', NULL, 190);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('dimensional_portal_researcher', 'Dimensional Portal Researcher', 'specialist', 'Researchers who risk their very existence and sanity to study the mysteries of the Dimensional Portal.', 'planet_researchers', 189);
+                   VALUES ('dimensional_portal_researcher', 'Dimensional Portal Researcher', 'specialist', 'Researchers who risk their very existence and sanity to study the mysteries of the Dimensional Portal.', 'planet_researchers', 191);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('dimensional_portal_researcher', 'produces', 'physics_research', '6.0', 0);
@@ -36830,7 +36955,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('dimensional_portal_researcher', 'upkeep', 'consumer_goods', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('dimensional_portal_researcher_gestalt', 'Dimensional Portal Drone', 'complex_drone', 'Drones at risk of destruction or subversion which study the mysteries of the Dimensional Portal.', 'planet_researchers', 190);
+                   VALUES ('dimensional_portal_researcher_gestalt', 'Dimensional Portal Drone', 'complex_drone', 'Drones at risk of destruction or subversion which study the mysteries of the Dimensional Portal.', 'planet_researchers', 192);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('dimensional_portal_researcher_gestalt', 'produces', 'physics_research', '6.0', 0);
@@ -36838,7 +36963,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('dimensional_portal_researcher_gestalt', 'upkeep', 'energy', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('space_time_anomaly_researcher', 'Space-Time Anomaly Researcher', 'specialist', 'Researchers who study the curious properties of the stable space-time anomaly.', 'planet_researchers', 191);
+                   VALUES ('space_time_anomaly_researcher', 'Space-Time Anomaly Researcher', 'specialist', 'Researchers who study the curious properties of the stable space-time anomaly.', 'planet_researchers', 193);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_time_anomaly_researcher', 'produces', 'physics_research', '4.0', 0);
@@ -36852,7 +36977,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_time_anomaly_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('space_time_anomaly_researcher_gestalt', 'Space-Time Anomaly Drone', 'complex_drone', 'Drones which study the curious properties of the stable space-time anomaly.', 'planet_researchers', 192);
+                   VALUES ('space_time_anomaly_researcher_gestalt', 'Space-Time Anomaly Drone', 'complex_drone', 'Drones which study the curious properties of the stable space-time anomaly.', 'planet_researchers', 194);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_time_anomaly_researcher_gestalt', 'produces', 'physics_research', '4.0', 0);
@@ -36866,7 +36991,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_time_anomaly_researcher_gestalt', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_plant_engineer', 'Gas Plant Engineer', 'specialist', 'These workers operate the massive filter facilities built over Cave Mushroom spore exhausts.', 'planet_refiners', 193);
+                   VALUES ('gas_plant_engineer', 'Gas Plant Engineer', 'specialist', 'These workers operate the massive filter facilities built over Cave Mushroom spore exhausts.', 'planet_refiners', 195);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_plant_engineer', 'produces', 'exotic_gases', '3.0', 0);
@@ -36874,7 +36999,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_plant_engineer', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('gas_plant_engineer_gestalt', 'Gas Plant Drone', 'complex_drone', 'These drones maintain and operate the massive filter facilities built on top of Cave Mushroom spore exhausts.', 'planet_refiners', 194);
+                   VALUES ('gas_plant_engineer_gestalt', 'Gas Plant Drone', 'complex_drone', 'These drones maintain and operate the massive filter facilities built on top of Cave Mushroom spore exhausts.', 'planet_refiners', 196);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_plant_engineer_gestalt', 'produces', 'exotic_gases', '3.0', 0);
@@ -36882,9 +37007,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('gas_plant_engineer_gestalt', 'upkeep', 'minerals', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cave_cleaner', 'Cave Cleaner', NULL, 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', NULL, 195);
+                   VALUES ('cave_cleaner', 'Cave Cleaner', NULL, 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', NULL, 197);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cave_cleaner_gestalt', 'Cave Cleaner Drone', 'simple_drone', 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 'planet_miners', 196);
+                   VALUES ('cave_cleaner_gestalt', 'Cave Cleaner Drone', 'simple_drone', 'These workers clear out burned-out Cave Mushroom passages to unearth mineral veins.', 'planet_miners', 198);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cave_cleaner_gestalt', 'produces', 'minerals', '5.0', 0);
@@ -36892,9 +37017,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cave_cleaner_gestalt', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('titan_hunter', 'Titan Hunter', 'worker', 'Fearless individuals who hunt the planet''s titanic lifeforms for food. Their bones, teeth and tusks also make impressive - and valuable - trophies.', NULL, 197);
+                   VALUES ('titan_hunter', 'Titan Hunter', 'worker', 'Fearless individuals who hunt the planet''s titanic lifeforms for food. Their bones, teeth and tusks also make impressive - and valuable - trophies.', NULL, 199);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('robot_caretaker', 'Robot Caretaker', 'specialist', 'A caretaker maintains the robot who has become something of a mascot for the planet.', 'planet_bureaucrats', 198);
+                   VALUES ('robot_caretaker', 'Robot Caretaker', 'specialist', 'A caretaker maintains the robot who has become something of a mascot for the planet.', 'planet_bureaucrats', 200);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('robot_caretaker', 'produces', 'unity', '2.5', 0);
@@ -36902,9 +37027,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('robot_caretaker', 'produces', 'engineering_research', '2.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('turtle_miner', 'Nemma Miner', 'worker', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', NULL, 199);
+                   VALUES ('turtle_miner', 'Nemma Miner', 'worker', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', NULL, 201);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('turtle_miner_gestalt', 'Nemma Mining Drone', 'simple_drone', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 'planet_miners', 200);
+                   VALUES ('turtle_miner_gestalt', 'Nemma Mining Drone', 'simple_drone', 'Using powerful drills, we can harvest both the mineral shell and the biological innards of the giant native Nemmas.', 'planet_miners', 202);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('turtle_miner_gestalt', 'produces', 'minerals', '3.0', 0);
@@ -36915,7 +37040,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('turtle_miner_gestalt', 'upkeep', 'energy', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('machine_nurse', 'Bio-Assistant', 'bio_trophy', 'Biological assistants tasked with helping malfunctioning drones perform simple tasks.', 'planet_bio_trophies', 201);
+                   VALUES ('machine_nurse', 'Bio-Assistant', 'bio_trophy', 'Biological assistants tasked with helping malfunctioning drones perform simple tasks.', 'planet_bio_trophies', 203);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('machine_nurse', 'produces', 'unity', '1.5', 0);
@@ -36923,7 +37048,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('machine_nurse', 'upkeep', 'energy', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('manufactorium_specialist', 'Operator', 'specialist', 'These highly skilled workers operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 'planet_metallurgists', 202);
+                   VALUES ('manufactorium_specialist', 'Operator', 'specialist', 'These highly skilled workers operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 'planet_metallurgists', 204);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_specialist', 'produces', 'alloys', '5.0', 0);
@@ -36931,7 +37056,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_specialist', 'upkeep', 'minerals', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('manufactorium_complex_drone', 'Operator Drone', 'complex_drone', 'These highly specialized drones operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 'planet_metallurgists', 203);
+                   VALUES ('manufactorium_complex_drone', 'Operator Drone', 'complex_drone', 'These highly specialized drones operate delicate and ancient machinery, creating resources at a fraction of the usual cost.', 'planet_metallurgists', 205);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_complex_drone', 'produces', 'alloys', '6.0', 0);
@@ -36939,9 +37064,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_complex_drone', 'upkeep', 'minerals', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('manufactorium_scraper', 'Dismantler', NULL, 'Breaking the ancient machinery apart is a risky but rewarding task. These workers will have a lot on their hands, given the size of the facility.', NULL, 204);
+                   VALUES ('manufactorium_scraper', 'Dismantler', NULL, 'Breaking the ancient machinery apart is a risky but rewarding task. These workers will have a lot on their hands, given the size of the facility.', NULL, 206);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('manufactorium_scraper_drone', 'Drone Dismantler', 'simple_drone', 'Breaking the ancient machinery apart is a risky but rewarding task. These drones will have a lot on their hands, given the size of the facility.', 'planet_miners', 205);
+                   VALUES ('manufactorium_scraper_drone', 'Drone Dismantler', 'simple_drone', 'Breaking the ancient machinery apart is a risky but rewarding task. These drones will have a lot on their hands, given the size of the facility.', 'planet_miners', 207);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_scraper_drone', 'produces', 'minerals', '1.0', 0);
@@ -36952,7 +37077,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('manufactorium_scraper_drone', 'produces', 'engineering_research', '0.25', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('archivist', 'Archivist', 'specialist', 'Under Keides'' careful guidance, these Archivists are responsible for cataloging data in accordance with Vagrosian standards.', 'planet_researchers', 206);
+                   VALUES ('archivist', 'Archivist', 'specialist', 'Under Keides'' careful guidance, these Archivists are responsible for cataloging data in accordance with Vagrosian standards.', 'planet_researchers', 208);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('archivist', 'produces', 'physics_research', '3.0', 0);
@@ -36966,7 +37091,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('archivist', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('puddle_technician', 'Puddle Technician', 'worker', 'Diversification of food production is a worthwhile endeavor.', 'planet_farmers', 207);
+                   VALUES ('puddle_technician', 'Puddle Technician', 'worker', 'Diversification of food production is a worthwhile endeavor.', 'planet_farmers', 209);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('puddle_technician', 'produces', 'food', '6.0', 0);
@@ -36974,7 +37099,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('puddle_technician', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('puddle_technician_drone', 'Puddle Technician Drone', 'simple_drone', 'Utilizing the unique meteorology to harvest additional resources will benefit the collective.', 'planet_farmers', 208);
+                   VALUES ('puddle_technician_drone', 'Puddle Technician Drone', 'simple_drone', 'Utilizing the unique meteorology to harvest additional resources will benefit the collective.', 'planet_farmers', 210);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('puddle_technician_drone', 'produces', 'food', '6.0', 0);
@@ -36982,7 +37107,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('puddle_technician_drone', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stasis_warden', 'Stasis Warden', 'specialist', 'Wardens maintain the stasis prison, along with marking citizens for disappearance.', 'planet_enforcers', 209);
+                   VALUES ('stasis_warden', 'Stasis Warden', 'specialist', 'Wardens maintain the stasis prison, along with marking citizens for disappearance.', 'planet_enforcers', 211);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stasis_warden', 'produces', 'physics_research', '2.0', 0);
@@ -36995,7 +37120,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stasis_warden_drone', 'Stasis Warden Drone', 'complex_drone', 'Warden drones maintain the stasis prison, along with marking deviants for disappearance.', 'planet_jobs', 210);
+                   VALUES ('stasis_warden_drone', 'Stasis Warden Drone', 'complex_drone', 'Warden drones maintain the stasis prison, along with marking deviants for disappearance.', 'planet_jobs', 212);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stasis_warden_drone', 'produces', 'physics_research', '2.0', 0);
@@ -37007,7 +37132,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astrogarbage_collector', 'Astrogarbage Collector', 'worker', 'A special unit responsible for collecting space debris from planetary orbit.', 'planet_miners', 211);
+                   VALUES ('astrogarbage_collector', 'Astrogarbage Collector', 'worker', 'A special unit responsible for collecting space debris from planetary orbit.', 'planet_miners', 213);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astrogarbage_collector', 'produces', 'alloys', '2.0', 0);
@@ -37016,7 +37141,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astrogarbage_collector_gestalt', 'Astrogarbage Drone', 'simple_drone', 'A special drone unit responsible for collecting space debris from planetary orbit.', 'planet_miners', 212);
+                   VALUES ('astrogarbage_collector_gestalt', 'Astrogarbage Drone', 'simple_drone', 'A special drone unit responsible for collecting space debris from planetary orbit.', 'planet_miners', 214);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astrogarbage_collector_gestalt', 'produces', 'alloys', '3.0', 0);
@@ -37025,7 +37150,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('myrmeku_power_farmer', 'Myrmeku Power Farmer', 'specialist', 'Technicians that harness energy from Myrmeku colonies.', 'planet_technician', 213);
+                   VALUES ('myrmeku_power_farmer', 'Myrmeku Power Farmer', 'specialist', 'Technicians that harness energy from Myrmeku colonies.', 'planet_technician', 215);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('myrmeku_power_farmer', 'produces', 'energy', '12.0', 0);
@@ -37036,7 +37161,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('myrmeku_power_farmer', 'upkeep', 'alloys', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('myrmeku_power_farmer_gestalt', 'Myrmeku Power Drone', 'complex_drone', 'Tech-Drones that harness energy from Myrmeku colonies.', 'planet_technician', 214);
+                   VALUES ('myrmeku_power_farmer_gestalt', 'Myrmeku Power Drone', 'complex_drone', 'Tech-Drones that harness energy from Myrmeku colonies.', 'planet_technician', 216);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('myrmeku_power_farmer_gestalt', 'produces', 'energy', '12.0', 0);
@@ -37047,7 +37172,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('myrmeku_power_farmer_gestalt', 'upkeep', 'alloys', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stratovent_researcher', 'Vent Researcher', 'specialist', 'Researchers specialized in studying spaceborne fauna and guiding travelers to see them.', 'planet_researchers', 215);
+                   VALUES ('stratovent_researcher', 'Vent Researcher', 'specialist', 'Researchers specialized in studying spaceborne fauna and guiding travelers to see them.', 'planet_researchers', 217);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stratovent_researcher', 'produces', 'society_research', '1.5', 0);
@@ -37062,17 +37187,17 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stratovent_refiner', 'Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 'planet_miners', 216);
+                   VALUES ('stratovent_refiner', 'Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 'planet_miners', 218);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stratovent_refiner', 'produces', 'exotic_gases', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stratovent_refiner_upg', 'Expanded Vent Refiner', 'specialist', 'Researchers specialized in studying spaceborne fauna and educating travelers on their behavior.', 'planet_miners', 217);
+                   VALUES ('stratovent_refiner_upg', 'Expanded Vent Refiner', 'specialist', 'Researchers specialized in studying spaceborne fauna and educating travelers on their behavior.', 'planet_miners', 219);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stratovent_refiner_upg', 'produces', 'exotic_gases', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('stratovent_refiner_minerals', 'Collapsed Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 'planet_miners', 218);
+                   VALUES ('stratovent_refiner_minerals', 'Collapsed Vent Refiner', 'specialist', 'Workers specialized in gathering and refining precious gases from the Stratospheric Vents.', 'planet_miners', 220);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stratovent_refiner_minerals', 'produces', 'exotic_gases', '1.0', 0);
@@ -37080,9 +37205,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('stratovent_refiner_minerals', 'produces', 'minerals', '2.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mineral_diver', 'Deep Sea Diver', NULL, 'Deep sea experts who recover sunken minerals from the ocean depths.', NULL, 219);
+                   VALUES ('mineral_diver', 'Deep Sea Diver', NULL, 'Deep sea experts who recover sunken minerals from the ocean depths.', NULL, 221);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mineral_diver_drone', 'Underwater Drone', 'simple_drone', 'Mining Drones that can withstand great pressure to collect sunken minerals from the ocean depths.', 'planet_miners', 220);
+                   VALUES ('mineral_diver_drone', 'Underwater Drone', 'simple_drone', 'Mining Drones that can withstand great pressure to collect sunken minerals from the ocean depths.', 'planet_miners', 222);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('mineral_diver_drone', 'produces', 'minerals', '3.0', 0);
@@ -37090,7 +37215,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('mineral_diver_drone', 'produces', 'alloys', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('alien_hunter', 'Alien Hunter', 'worker', 'A special task force assigned to hunt alien fauna.', 'planet_farmers', 221);
+                   VALUES ('alien_hunter', 'Alien Hunter', 'worker', 'A special task force assigned to hunt alien fauna.', 'planet_farmers', 223);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('alien_hunter', 'produces', 'food', '2.0', 0);
@@ -37099,19 +37224,19 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_environment_tolerance', 'Habitability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_overseer', 'Overseer', 'precursor', 'The stalwart few have rejected lives of luxury in favor of public service. It is up to them to oversee and guide the remnants of their ancient civilization.', NULL, 222);
+                   VALUES ('fe_overseer', 'Overseer', 'precursor', 'The stalwart few have rejected lives of luxury in favor of public service. It is up to them to oversee and guide the remnants of their ancient civilization.', NULL, 224);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_overseer', 'planet_stability_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_sky_cardinal', 'Sky Cardinal', 'precursor', 'And it was there, in the sky, that the future was born. The light was blinding, but a few could see past it. They took it upon themselves to lead others forward.', NULL, 223);
+                   VALUES ('fe_sky_cardinal', 'Sky Cardinal', 'precursor', 'And it was there, in the sky, that the future was born. The light was blinding, but a few could see past it. They took it upon themselves to lead others forward.', NULL, 225);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_sky_cardinal', 'planet_stability_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_guardian_bot', 'Guardian', 'precursor', 'These ancient machines maintain a ceaseless vigil over the expired remains of billions of cryogenically frozen sapients.', NULL, 224);
+                   VALUES ('fe_guardian_bot', 'Guardian', 'precursor', 'These ancient machines maintain a ceaseless vigil over the expired remains of billions of cryogenically frozen sapients.', NULL, 226);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_guardian_bot', 'planet_crime_add', '-25.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -37121,7 +37246,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_protector', 'Protector', 'precursor', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', NULL, 225);
+                   VALUES ('fe_protector', 'Protector', 'precursor', 'So that the majority can rest peacefully and enjoy their lives of extravagance, these rough individuals stand ready in the night to visit violence on those who would do them harm.', NULL, 227);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_protector', 'planet_crime_add', '-100.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -37131,7 +37256,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_archivist', 'Archivist', 'precursor', 'Each data fragment must be filed, cataloged, and indexed precisely according to the ancient rites established eons ago by the First Librarian.', 'planet_jobs', 226);
+                   VALUES ('fe_archivist', 'Archivist', 'precursor', 'Each data fragment must be filed, cataloged, and indexed precisely according to the ancient rites established eons ago by the First Librarian.', 'planet_jobs', 228);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_archivist', 'produces', 'society_research', '5.0', 0);
@@ -37142,27 +37267,27 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_archivist', 'produces', 'engineering_research', '5.0', 2);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_acolyte_farm', 'Acolyte of the Plow', 'precursor', 'Was it, not the plow, this noblest of instruments, that Kazargiel used to sever the poisonous tail of the thrice-cursed demon and stave off famine?', 'planet_farmers', 227);
+                   VALUES ('fe_acolyte_farm', 'Acolyte of the Plow', 'precursor', 'Was it, not the plow, this noblest of instruments, that Kazargiel used to sever the poisonous tail of the thrice-cursed demon and stave off famine?', 'planet_farmers', 229);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_acolyte_farm', 'produces', 'food', '8.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_acolyte_mine', 'Acolyte of the Hammer', 'precursor', 'And with one mighty blow, Saint Mazakudal used her burning hammer to split the skull of the First Wraith in two, opening up the path to the crystals.', 'planet_miners', 228);
+                   VALUES ('fe_acolyte_mine', 'Acolyte of the Hammer', 'precursor', 'And with one mighty blow, Saint Mazakudal used her burning hammer to split the skull of the First Wraith in two, opening up the path to the crystals.', 'planet_miners', 230);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_acolyte_mine', 'produces', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_acolyte_generator', 'Acolyte of the Hyperspanner', 'precursor', 'Remember also the hyper spanner and how it was used by Bazagg the Shining to tame the sun when it seemed like darkness would overtake the world.', 'planet_technician', 229);
+                   VALUES ('fe_acolyte_generator', 'Acolyte of the Hyperspanner', 'precursor', 'Remember also the hyper spanner and how it was used by Bazagg the Shining to tame the sun when it seemed like darkness would overtake the world.', 'planet_technician', 231);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_acolyte_generator', 'produces', 'energy', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_augur', 'Augur of the Shroud', 'precursor', 'It speaks, but not in words. To divine any meaning, one must hover on the precipice of madness.', 'planet_jobs', 230);
+                   VALUES ('fe_augur', 'Augur of the Shroud', 'precursor', 'It speaks, but not in words. To divine any meaning, one must hover on the precipice of madness.', 'planet_jobs', 232);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_augur', 'produces', 'unity', '5.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_xeno_keeper', 'Xeno-Keeper', 'precursor', 'These precursor zookeepers look after the needs of the Xeno-Wards under their care.', NULL, 231);
+                   VALUES ('fe_xeno_keeper', 'Xeno-Keeper', 'precursor', 'These precursor zookeepers look after the needs of the Xeno-Wards under their care.', NULL, 233);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('fe_xeno_keeper', 'planet_crime_add', '-20.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -37172,34 +37297,34 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_xeno_ward', 'Xeno-Ward', 'xeno_ward', 'These specimens have been gathered here, in settings that approximate their natural environments, to ensure the preservation of their species in an often chaotic and destructive galaxy.', 'planet_jobs', 232);
+                   VALUES ('fe_xeno_ward', 'Xeno-Ward', 'xeno_ward', 'These specimens have been gathered here, in settings that approximate their natural environments, to ensure the preservation of their species in an often chaotic and destructive galaxy.', 'planet_jobs', 234);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_xeno_ward', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_hedonist', 'Hedonist', 'precursor', 'A life of total opulence, where every possible material need or desire can be satisfied.', 'planet_jobs', 233);
+                   VALUES ('fe_hedonist', 'Hedonist', 'precursor', 'A life of total opulence, where every possible material need or desire can be satisfied.', 'planet_jobs', 235);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_hedonist', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_acolyte_artisan', 'Acolyte of the Workshop', 'precursor', 'And so Aznakha said to the acolytes, ''Go to the workshops, and form with your crafts the future you seek''.', 'planet_jobs', 234);
+                   VALUES ('fe_acolyte_artisan', 'Acolyte of the Workshop', 'precursor', 'And so Aznakha said to the acolytes, ''Go to the workshops, and form with your crafts the future you seek''.', 'planet_jobs', 236);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('fe_acolyte_artisan', 'produces', 'consumer_goods', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('fe_maintenance_bot', 'Caretaker', 'precursor', 'These ancient machines tirelessly maintain and repair the decaying machinery of the ringworld on which they reside.', 'planet_jobs', 235);
+                   VALUES ('fe_maintenance_bot', 'Caretaker', 'precursor', 'These ancient machines tirelessly maintain and repair the decaying machinery of the ringworld on which they reside.', 'planet_jobs', 237);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_propagandist', 'Overlord Propagandist', 'specialist', 'Propagandists working for the local ministry are experts at infiltrating and defusing situations among the locals.', 'planet_overlord_propagandists', 236);
+                   VALUES ('overlord_propagandist', 'Overlord Propagandist', 'specialist', 'Propagandists working for the local ministry are experts at infiltrating and defusing situations among the locals.', 'planet_overlord_propagandists', 238);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_propagandist', 'upkeep', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_propagandist_drone', 'Overlord Propagandist', 'complex_drone', 'Diplomatically equipped drones who are experts at defusing rebellious thoughts and ideas.', 'planet_overlord_propagandists', 237);
+                   VALUES ('overlord_propagandist_drone', 'Overlord Propagandist', 'complex_drone', 'Diplomatically equipped drones who are experts at defusing rebellious thoughts and ideas.', 'planet_overlord_propagandists', 239);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_propagandist_drone', 'upkeep', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_academic', 'Overlord Academic', 'specialist', 'Academics who work with specialists from several empires, conducting particular experiments and research that can benefit them all.', 'planet_overlord_academics', 238);
+                   VALUES ('overlord_academic', 'Overlord Academic', 'specialist', 'Academics who work with specialists from several empires, conducting particular experiments and research that can benefit them all.', 'planet_overlord_academics', 240);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_academic', 'produces', 'physics_research', '0.5', 0);
@@ -37213,7 +37338,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_academic', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_academic_drone', 'Overlord Academic', 'complex_drone', 'Specifically equipped drones who utilize resources from several empires to conduct unique experiments and research.', 'planet_overlord_academics', 239);
+                   VALUES ('overlord_academic_drone', 'Overlord Academic', 'complex_drone', 'Specifically equipped drones who utilize resources from several empires to conduct unique experiments and research.', 'planet_overlord_academics', 241);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_academic_drone', 'produces', 'physics_research', '0.5', 0);
@@ -37227,7 +37352,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_academic_drone', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_trader', 'Overlord Trader', 'specialist', 'Traders who specialize in selling foreign goods at the local domestic market.', 'planet_overlord_traders', 240);
+                   VALUES ('overlord_trader', 'Overlord Trader', 'specialist', 'Traders who specialize in selling foreign goods at the local domestic market.', 'planet_overlord_traders', 242);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_trader', 'upkeep', 'trade', '7.0', 0);
@@ -37236,75 +37361,75 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_trader_drone', 'Distribution Drone', 'complex_drone', 'A distribution drone which specializes in redistributing foreign goods among its peers for maximum efficiency.', 'planet_overlord_traders', 241);
+                   VALUES ('overlord_trader_drone', 'Distribution Drone', 'complex_drone', 'A distribution drone which specializes in redistributing foreign goods among its peers for maximum efficiency.', 'planet_overlord_traders', 243);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_trader_drone', 'upkeep', 'energy', '7.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('aid_worker', 'Aid Worker', 'worker', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', NULL, 242);
+                   VALUES ('aid_worker', 'Aid Worker', 'worker', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', NULL, 244);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('aid_worker', 'planet_amenities_add', '5.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('aid_worker_drone', 'Aid Worker', 'simple_drone', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', NULL, 243);
+                   VALUES ('aid_worker_drone', 'Aid Worker', 'simple_drone', 'Aid workers bring foreign knowledge and goods to improve the lives of the local population, in ways often overlooked by the domestic government.', NULL, 245);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_breeder', 'Overlord Breeder', 'specialist', 'Feeding the Offspring is a vital job to ensure stability on the planet. It''s also a fairly well paid job.', 'planet_overlord_breeders', 244);
+                   VALUES ('overlord_breeder', 'Overlord Breeder', 'specialist', 'Feeding the Offspring is a vital job to ensure stability on the planet. It''s also a fairly well paid job.', 'planet_overlord_breeders', 246);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_breeder', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_breeder_drone', 'Overlord Breeder', 'complex_drone', 'Feeding the newborn drones is an important part of ensuring the young spawn can grow correctly, quickly, and effectively.', 'planet_overlord_breeders', 245);
+                   VALUES ('overlord_breeder_drone', 'Overlord Breeder', 'complex_drone', 'Feeding the newborn drones is an important part of ensuring the young spawn can grow correctly, quickly, and effectively.', 'planet_overlord_breeders', 247);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_breeder_drone', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mind_thrall', 'Mind Thrall', 'worker', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', NULL, 246);
+                   VALUES ('mind_thrall', 'Mind Thrall', 'worker', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', NULL, 248);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('mind_thrall_drone', 'Mind Thrall', 'simple_drone', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', NULL, 247);
+                   VALUES ('mind_thrall_drone', 'Mind Thrall', 'simple_drone', 'The thralls come together in large groups to temporarily serve the machine network''s need, renting out their minds for processing needs.', NULL, 249);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_offspring_drone_feeder', 'Offspring Drone Feeder', 'specialist', 'It is a prestigious responsibility to keep the Offspring safe and comfortable, even if the role often involves merely gathering food for it.', 'planet_overlord_offspring_drone_feeder', 248);
+                   VALUES ('overlord_offspring_drone_feeder', 'Offspring Drone Feeder', 'specialist', 'It is a prestigious responsibility to keep the Offspring safe and comfortable, even if the role often involves merely gathering food for it.', 'planet_overlord_offspring_drone_feeder', 250);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_offspring_drone_feeder', 'planet_jobs_worker_produces_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_offspring_drone_feeder_drone', 'Offspring Drone Feeder', 'complex_drone', 'Feeding the Offspring is a vital job to ensure stability on the planet.', 'planet_overlord_offspring_drone_feeder', 249);
+                   VALUES ('overlord_offspring_drone_feeder_drone', 'Offspring Drone Feeder', 'complex_drone', 'Feeding the Offspring is a vital job to ensure stability on the planet.', 'planet_overlord_offspring_drone_feeder', 251);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_offspring_drone_feeder_drone', 'planet_jobs_simple_drone_produces_mult', '0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_simple_drone_produces_mult', 'Menial Drone Output', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_metallurgist', 'Overlord Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 'planet_overlord_metallurgists', 250);
+                   VALUES ('overlord_metallurgist', 'Overlord Metallurgist', 'specialist', 'Highly trained workers are needed to turn raw minerals into the durable alloys that are used in a wide variety of advanced construction.', 'planet_overlord_metallurgists', 252);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_metallurgist', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_foundry_drone', 'Overlord Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 'planet_overlord_metallurgists', 251);
+                   VALUES ('overlord_foundry_drone', 'Overlord Foundry Drone', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Foundry Drones.', 'planet_overlord_metallurgists', 253);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_foundry_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_fabricator', 'Overlord Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 'planet_overlord_metallurgists', 252);
+                   VALUES ('overlord_fabricator', 'Overlord Fabricator', 'complex_drone', 'Valuable minerals are processed into durable alloys for naval development and advanced construction by highly-specialized Fabricators.', 'planet_overlord_metallurgists', 254);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_fabricator', 'upkeep', 'minerals', '8.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_catalytic_technician', 'Overlord Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 'planet_overlord_metallurgists', 253);
+                   VALUES ('overlord_catalytic_technician', 'Overlord Catalytic Technician', 'specialist', 'Highly trained workers are needed to turn raw organic matter into durable alloys necessary for advanced construction.', 'planet_overlord_metallurgists', 255);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_catalytic_technician', 'upkeep', 'food', '9.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_catalytic_drone', 'Overlord Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 'planet_overlord_metallurgists', 254);
+                   VALUES ('overlord_catalytic_drone', 'Overlord Catalytic Drone', 'complex_drone', 'Valuable organic compounds are processed into durable alloys for naval development and advanced construction by highly-specialized Catalytic Drones.', 'planet_overlord_metallurgists', 256);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_catalytic_drone', 'upkeep', 'food', '9.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_beholder', 'Overlord Beholder', 'specialist', 'Military overseers working with a larger network of command centers to calculate the best possible defense routes for their contractor.', 'planet_overlord_beholders', 255);
+                   VALUES ('overlord_beholder', 'Overlord Beholder', 'specialist', 'Military overseers working with a larger network of command centers to calculate the best possible defense routes for their contractor.', 'planet_overlord_beholders', 257);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_beholder_drone', 'Overlord Beholder', 'complex_drone', 'Military drones working within a larger synaptic network to calculate the best possible means of defense.', 'planet_overlord_beholders', 256);
+                   VALUES ('overlord_beholder_drone', 'Overlord Beholder', 'complex_drone', 'Military drones working within a larger synaptic network to calculate the best possible means of defense.', 'planet_overlord_beholders', 258);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_necromancer', 'Overlord Necromancer', 'specialist', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 'planet_overlord_necromancers', 257);
+                   VALUES ('overlord_necromancer', 'Overlord Necromancer', 'specialist', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 'planet_overlord_necromancers', 259);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_necromancer', 'upkeep', 'food', '6.0', 0);
@@ -37313,7 +37438,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_necromancer_drone', 'Overlord Necromancer Drone', 'complex_drone', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 'planet_overlord_necromancers', 258);
+                   VALUES ('overlord_necromancer_drone', 'Overlord Necromancer Drone', 'complex_drone', 'Skilled practitioners of the secrets art, from our Overlord, have shared the secrets of reanimation to a chosen few.', 'planet_overlord_necromancers', 260);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_necromancer_drone', 'upkeep', 'food', '6.0', 0);
@@ -37322,17 +37447,17 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_reassigner', 'Overlord Reassigner', 'specialist', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 'planet_overlord_reassigners', 259);
+                   VALUES ('overlord_reassigner', 'Overlord Reassigner', 'specialist', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 'planet_overlord_reassigners', 261);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_reassigner', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_reassigner_drone', 'Overlord Reassigner Drone', 'complex_drone', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 'planet_overlord_reassigners', 260);
+                   VALUES ('overlord_reassigner_drone', 'Overlord Reassigner Drone', 'complex_drone', 'The Overlord has made sure that their employees will never be out of a job and have now extended that courtesy to their vassals.', 'planet_overlord_reassigners', 262);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_reassigner_drone', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_recruiter', 'Overlord Recruiter', 'specialist', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 'planet_overlord_recruiters', 261);
+                   VALUES ('overlord_recruiter', 'Overlord Recruiter', 'specialist', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 'planet_overlord_recruiters', 263);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_recruiter', 'upkeep', 'energy', '5.0', 0);
@@ -37344,7 +37469,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_recruiter_drone', 'Overlord Recruiter Drone', 'complex_drone', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 'planet_overlord_recruiters', 262);
+                   VALUES ('overlord_recruiter_drone', 'Overlord Recruiter Drone', 'complex_drone', 'The Overlord desires for the Vassal to be able to defend themselves. That is at least what they say before they ship the fresh recruits off-world.', 'planet_overlord_recruiters', 264);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_recruiter_drone', 'upkeep', 'energy', '5.0', 0);
@@ -37356,25 +37481,25 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_ranger', 'Overlord Ranger', 'worker', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', NULL, 263);
+                   VALUES ('overlord_ranger', 'Overlord Ranger', 'worker', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', NULL, 265);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('overlord_ranger', 'planet_pops_consumer_goods_upkeep_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_ranger_drone', 'Overlord Ranger Drone', 'simple_drone', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', NULL, 264);
+                   VALUES ('overlord_ranger_drone', 'Overlord Ranger Drone', 'simple_drone', 'Tasked with ensuring that nature is always present in some form on the planet, the Ranger is on the lookout for anything that could endanger the area sectioned off by the Overlord.', NULL, 266);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_arborist', 'Overlord Arborist', 'worker', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 'planet_overlord_arborists', 265);
+                   VALUES ('overlord_arborist', 'Overlord Arborist', 'worker', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 'planet_overlord_arborists', 267);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_arborist', 'upkeep', 'food', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_arborist_drone', 'Overlord Arborist Drone', 'simple_drone', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 'planet_overlord_arborists', 266);
+                   VALUES ('overlord_arborist_drone', 'Overlord Arborist Drone', 'simple_drone', 'On this world, the Overlord planted a sapling from their world tree. It is our responsibility to ensure it never withers, lest we face their wrath.', 'planet_overlord_arborists', 268);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_arborist_drone', 'upkeep', 'food', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_bio_trophy', 'Overlord Bio-Trophy', 'worker', 'Worried that we might lack for anything or even be hurt, our Overlord has provided a lucky few with the opportunity to experience what they call', 'planet_overlord_bio_trophies', 267);
+                   VALUES ('overlord_bio_trophy', 'Overlord Bio-Trophy', 'worker', 'Worried that we might lack for anything or even be hurt, our Overlord has provided a lucky few with the opportunity to experience what they call', 'planet_overlord_bio_trophies', 269);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_bio_trophy', 'produces', 'unity', '1.0', 0);
@@ -37383,12 +37508,12 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_happiness', 'Happiness', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_bio_trophy_drone', 'Overlord Bio-Trophy Drone', 'simple_drone', 'The drones our Overlord directed to this structure are told to', 'planet_overlord_bio_trophies', 268);
+                   VALUES ('overlord_bio_trophy_drone', 'Overlord Bio-Trophy Drone', 'simple_drone', 'The drones our Overlord directed to this structure are told to', 'planet_overlord_bio_trophies', 270);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_bio_trophy_drone', 'produces', 'unity', '0.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_manager', 'Overlord Manager', 'specialist', 'Middle managers that optimize the behavior of the local white-collar workers to synergize with the Overlord''s long-term corporate trajectory.', 'planet_overlord_managers', 269);
+                   VALUES ('overlord_manager', 'Overlord Manager', 'specialist', 'Middle managers that optimize the behavior of the local white-collar workers to synergize with the Overlord''s long-term corporate trajectory.', 'planet_overlord_managers', 271);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_manager', 'produces', 'unity', '2.0', 0);
@@ -37399,7 +37524,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_manager', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_mortal_initiate', 'Overlord Mortal Initiate', 'worker', 'The customs of our Overlord may seem strange and mysterious, but our way forward is by accepting them. Only those who are willing will be asked to make the ultimate sacrifice.', 'planet_overlord_mortal_initiates', 270);
+                   VALUES ('overlord_mortal_initiate', 'Overlord Mortal Initiate', 'worker', 'The customs of our Overlord may seem strange and mysterious, but our way forward is by accepting them. Only those who are willing will be asked to make the ultimate sacrifice.', 'planet_overlord_mortal_initiates', 272);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_mortal_initiate', 'produces', 'unity', '1.0', 0);
@@ -37411,7 +37536,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_mortal_initiate_drone', 'Overlord Mortal Initiate Drone', 'simple_drone', 'The customs of our Overlord may seem strange and mysterious, yet we are to be a part of them. A few of our drones have been designated to join what the Overlord calls ''a study of life'', one which concludes with their willing sacrifice.', 'planet_overlord_mortal_initiates', 271);
+                   VALUES ('overlord_mortal_initiate_drone', 'Overlord Mortal Initiate Drone', 'simple_drone', 'The customs of our Overlord may seem strange and mysterious, yet we are to be a part of them. A few of our drones have been designated to join what the Overlord calls ''a study of life'', one which concludes with their willing sacrifice.', 'planet_overlord_mortal_initiates', 273);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_mortal_initiate_drone', 'produces', 'unity', '1.0', 0);
@@ -37419,7 +37544,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_mortal_initiate_drone', 'produces', 'society_research', '0.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_knight', 'Overlord Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 272);
+                   VALUES ('overlord_knight', 'Overlord Knight', 'specialist', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 274);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_knight', 'upkeep', 'alloys', '1.0', 0);
@@ -37432,7 +37557,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_knight_drone', 'Overlord Knight', 'complex_drone', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 273);
+                   VALUES ('overlord_knight_drone', 'Overlord Knight', 'complex_drone', 'Trained for combat; well educated; virtuous. These knights represent the very best of our society, and they have dedicated their lives to the search for the Toxic God.', 'planet_knights', 275);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_knight_drone', 'upkeep', 'alloys', '1.0', 0);
@@ -37445,7 +37570,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 'planet_doctors', 274);
+                   VALUES ('overlord_healthcare', 'Medical Worker', 'specialist', 'A micro-unit of prevention is worth a macro-unit of cure. Sometimes, however, both are needed.', 'planet_doctors', 276);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_healthcare', 'upkeep', 'consumer_goods', '1.0', 0);
@@ -37466,7 +37591,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 'planet_pop_assemblers', 275);
+                   VALUES ('overlord_replicator', 'Replicator', 'complex_drone', 'A machine that builds a machine that builds a machine that...', 'planet_pop_assemblers', 277);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_replicator', 'upkeep', 'alloys', '1.0', 0);
@@ -37475,7 +37600,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pop_assembly_add', 'Monthly Mechanical Pop Assembly', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_pop_assemblers', 276);
+                   VALUES ('overlord_spawning_drone', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_pop_assemblers', 278);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_spawning_drone', 'upkeep', 'food', '5.0', 0);
@@ -37484,7 +37609,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('overlord_spawning_drone_lithoid', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_jobs', 277);
+                   VALUES ('overlord_spawning_drone_lithoid', 'Spawning Drone', 'complex_drone', 'By careful management of temperatures, nutrition, and infection prevention, these drones tend to the spawning pools that produce young.', 'planet_jobs', 279);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('overlord_spawning_drone_lithoid', 'upkeep', 'minerals', '5.0', 0);
@@ -37493,7 +37618,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('fake_pop_growth_mod', 'Monthly Organic Pop Growth', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_laborer', 'Laborer', 'worker', 'As assets they were worked to the bone. With freedom has come renewed purpose, and a vigor that no slave could ever hope to match.', 'planet_laborer', 278);
+                   VALUES ('low_tech_laborer', 'Laborer', 'worker', 'As assets they were worked to the bone. With freedom has come renewed purpose, and a vigor that no slave could ever hope to match.', 'planet_laborer', 280);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_laborer', 'produces', 'consumer_goods', '3.0', 0);
@@ -37501,22 +37626,22 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_laborer', 'produces', 'alloys', '1.5', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_miner', 'Prospector', 'worker', 'Stubborn, ill-mannered, indomitable; these former indentured miners are as solid as scrap metal.', 'planet_miners', 279);
+                   VALUES ('low_tech_miner', 'Prospector', 'worker', 'Stubborn, ill-mannered, indomitable; these former indentured miners are as solid as scrap metal.', 'planet_miners', 281);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_miner', 'produces', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_technician', 'Reactor Engineer', 'worker', 'Aboard their masters'' vessels, indentured engineers were often assigned the lowliest and most dangerous jobs. This hardship only sharpened their skills.', 'planet_technician', 280);
+                   VALUES ('low_tech_technician', 'Reactor Engineer', 'worker', 'Aboard their masters'' vessels, indentured engineers were often assigned the lowliest and most dangerous jobs. This hardship only sharpened their skills.', 'planet_technician', 282);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_technician', 'produces', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_farmer', 'Homesteader', 'worker', 'The agri-worlds of our former masters were scenes of brutal oppression. Now, our homesteaders are free to enjoy the fruits of their labor.', 'planet_farmers', 281);
+                   VALUES ('low_tech_farmer', 'Homesteader', 'worker', 'The agri-worlds of our former masters were scenes of brutal oppression. Now, our homesteaders are free to enjoy the fruits of their labor.', 'planet_farmers', 283);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_farmer', 'produces', 'food', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_researcher', 'Scientist', 'specialist', 'Our former masters ignored our gifts and downplayed our intelligence. Now, the keenest minds among us are free to follow their ambition.', 'planet_researchers', 282);
+                   VALUES ('low_tech_researcher', 'Scientist', 'specialist', 'Our former masters ignored our gifts and downplayed our intelligence. Now, the keenest minds among us are free to follow their ambition.', 'planet_researchers', 284);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_researcher', 'produces', 'physics_research', '1.0', 0);
@@ -37530,7 +37655,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_researcher', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_priest', 'Preacher', 'specialist', 'Our preachers remind us that freedom is a divine right; united in faith, we find our common strength.', 'planet_bureaucrats', 283);
+                   VALUES ('low_tech_priest', 'Preacher', 'specialist', 'Our preachers remind us that freedom is a divine right; united in faith, we find our common strength.', 'planet_bureaucrats', 285);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_priest', 'produces', 'unity', '1.0', 0);
@@ -37542,7 +37667,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_bureaucrat', 'Administrator', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained logistics personnel.', 'planet_bureaucrats', 284);
+                   VALUES ('low_tech_bureaucrat', 'Administrator', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained logistics personnel.', 'planet_bureaucrats', 286);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_bureaucrat', 'produces', 'unity', '1.0', 0);
@@ -37550,7 +37675,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_bureaucrat', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_manager', 'Supervisor', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained managers.', 'planet_managers', 285);
+                   VALUES ('low_tech_manager', 'Supervisor', 'specialist', 'Our former masters delegated much of their empire''s day-to-day administration to indentured assets. The result was a class of highly trained managers.', 'planet_managers', 287);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_manager', 'produces', 'unity', '1.0', 0);
@@ -37561,7 +37686,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('low_tech_manager', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('low_tech_warrior', 'Militia', 'specialist', 'Indentured soldiers were mainly used as cannon fodder; the fortunate few who survived have volunteered to protect our newfound freedom with their lives.', NULL, 286);
+                   VALUES ('low_tech_warrior', 'Militia', 'specialist', 'Indentured soldiers were mainly used as cannon fodder; the fortunate few who survived have volunteered to protect our newfound freedom with their lives.', NULL, 288);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('low_tech_warrior', 'planet_crime_add', '-10.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -37571,7 +37696,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('broken_shackles_scavenger', 'Scavenger', 'worker', 'Scavengers explore the ruins of the Crashed Slaver Ship for anything of value.', 'planet_researchers', 287);
+                   VALUES ('broken_shackles_scavenger', 'Scavenger', 'worker', 'Scavengers explore the ruins of the Crashed Slaver Ship for anything of value.', 'planet_researchers', 289);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('broken_shackles_scavenger', 'produces', 'alloys', '1.0', 0);
@@ -37589,33 +37714,33 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('captain', 'Captain', NULL, NULL, NULL, 288);
+                   VALUES ('captain', 'Captain', NULL, NULL, NULL, 290);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chief_navigator', 'Chief Navigator', NULL, NULL, NULL, 289);
+                   VALUES ('chief_navigator', 'Chief Navigator', NULL, NULL, NULL, 291);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('principal_pilot', 'Pilot First Class', NULL, NULL, NULL, 290);
+                   VALUES ('principal_pilot', 'Pilot First Class', NULL, NULL, NULL, 292);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ship_weapons_officer', 'Ship Weapons Officer', NULL, NULL, NULL, 291);
+                   VALUES ('ship_weapons_officer', 'Ship Weapons Officer', NULL, NULL, NULL, 293);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ship_logistics_officer', 'Ship Logistics Officer', NULL, NULL, NULL, 292);
+                   VALUES ('ship_logistics_officer', 'Ship Logistics Officer', NULL, NULL, NULL, 294);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('special_operations_commander', 'Special Operations Officer', NULL, NULL, NULL, 293);
+                   VALUES ('special_operations_commander', 'Special Operations Officer', NULL, NULL, NULL, 295);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('commanding_officer', 'Commanding Officer', NULL, NULL, NULL, 294);
+                   VALUES ('commanding_officer', 'Commanding Officer', NULL, NULL, NULL, 296);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chief_supply_officer', 'Chief Supply Officer', NULL, NULL, NULL, 295);
+                   VALUES ('chief_supply_officer', 'Chief Supply Officer', NULL, NULL, NULL, 297);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('intelligence_officer', 'Intelligence Officer', NULL, NULL, NULL, 296);
+                   VALUES ('intelligence_officer', 'Intelligence Officer', NULL, NULL, NULL, 298);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('chief_security_officer', 'Chief Security Officer', NULL, NULL, NULL, 297);
+                   VALUES ('chief_security_officer', 'Chief Security Officer', NULL, NULL, NULL, 299);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('government_employee', 'Government Official', NULL, NULL, NULL, 298);
+                   VALUES ('government_employee', 'Government Official', NULL, NULL, NULL, 300);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('researcher', 'Researcher', NULL, 'The eternal mystery of the world is its comprehensibility.', NULL, 299);
+                   VALUES ('researcher', 'Researcher', NULL, 'The eternal mystery of the world is its comprehensibility.', NULL, 301);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('none', 'None', NULL, NULL, NULL, 300);
+                   VALUES ('none', 'None', NULL, NULL, NULL, 302);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('munitions_decommissioner', 'Munitions Decommissioner', 'specialist', 'These practical researchers inspect and reverse-engineer ancient weapons to fit our modern specifications.', 'planet_researchers', 301);
+                   VALUES ('munitions_decommissioner', 'Munitions Decommissioner', 'specialist', 'These practical researchers inspect and reverse-engineer ancient weapons to fit our modern specifications.', 'planet_researchers', 303);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioner', 'produces', 'alloys', '1.0', 0);
@@ -37626,7 +37751,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioner', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('munitions_decommissioning_unit', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 'planet_researchers', 302);
+                   VALUES ('munitions_decommissioning_unit', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 'planet_researchers', 304);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_unit', 'produces', 'alloys', '1.0', 0);
@@ -37637,7 +37762,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_unit', 'upkeep', 'food', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('munitions_decommissioning_unit_lithoid', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 'planet_researchers', 303);
+                   VALUES ('munitions_decommissioning_unit_lithoid', 'Munitions Decommissioning Unit', 'complex_drone', 'Specialized units for the disassembly and analysis of ancient weapons.', 'planet_researchers', 305);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_unit_lithoid', 'produces', 'alloys', '1.0', 0);
@@ -37648,7 +37773,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_unit_lithoid', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('munitions_decommissioning_drone', 'Munitions Decommissioning Drone', 'complex_drone', 'These drones efficiently disassemble ancient weapons to fit our modern specifications.', 'planet_researchers', 304);
+                   VALUES ('munitions_decommissioning_drone', 'Munitions Decommissioning Drone', 'complex_drone', 'These drones efficiently disassemble ancient weapons to fit our modern specifications.', 'planet_researchers', 306);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_drone', 'produces', 'alloys', '1.0', 0);
@@ -37659,7 +37784,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('munitions_decommissioning_drone', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astral_researcher', 'Astral Researcher', 'specialist', 'The strands of space-time contain the secrets of every dimension, including our own. These researchers work tirelessly to decipher their significance while minimizing paradoxes.', 'planet_researchers', 305);
+                   VALUES ('astral_researcher', 'Astral Researcher', 'specialist', 'The strands of space-time contain the secrets of every dimension, including our own. These researchers work tirelessly to decipher their significance while minimizing paradoxes.', 'planet_researchers', 307);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_researcher', 'produces', 'physics_research', '2.5', 0);
@@ -37676,7 +37801,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_researcher', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astral_drone', 'Astral Drone', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These drones are tasked with deciphering their significance while minimizing paradoxes.', 'planet_researchers', 306);
+                   VALUES ('astral_drone', 'Astral Drone', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These drones are tasked with deciphering their significance while minimizing paradoxes.', 'planet_researchers', 308);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_drone', 'produces', 'physics_research', '2.5', 0);
@@ -37693,7 +37818,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_drone', 'upkeep', 'minerals', '6.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astral_unit', 'Astral Unit', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These units attempt to decipher their significance while avoiding paradoxes at all costs.', 'planet_researchers', 307);
+                   VALUES ('astral_unit', 'Astral Unit', 'complex_drone', 'The strands of space-time contain the secrets of every dimension, including our own. These units attempt to decipher their significance while avoiding paradoxes at all costs.', 'planet_researchers', 309);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_unit', 'produces', 'physics_research', '2.5', 0);
@@ -37710,14 +37835,14 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('astral_unit', 'upkeep', 'energy', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astrometeorologist', 'Astrometeorologist', 'specialist', 'Astrometeorologists are specialized in researching cosmic environmental effects.', NULL, 308);
+                   VALUES ('astrometeorologist', 'Astrometeorologist', 'specialist', 'Astrometeorologists are specialized in researching cosmic environmental effects.', NULL, 310);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astrometeorologist_hive', 'Astrometeorologist Drone', 'complex_drone', 'These research drones are specialized to detect and catalog the effects of cosmic storms.', NULL, 309);
+                   VALUES ('astrometeorologist_hive', 'Astrometeorologist Drone', 'complex_drone', 'These research drones are specialized to detect and catalog the effects of cosmic storms.', NULL, 311);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('astrometeorologist_machine', 'Astrometeorologist Unit', 'complex_drone', 'These research units painstakingly detail every astronomical event as to learn more from it.', NULL, 310);
+                   VALUES ('astrometeorologist_machine', 'Astrometeorologist Unit', 'complex_drone', 'These research units painstakingly detail every astronomical event as to learn more from it.', NULL, 312);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
                    VALUES ('haruspex', 'Haruspex', 'specialist', 'Evangelical mechanics and surgeons of the divine, rendering unworthy and replacing it with holy cybernetics.
-This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 'planet_bureaucrats', 311);
+This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 'planet_bureaucrats', 313);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('haruspex', 'produces', 'unity', '1.5', 0);
@@ -37733,7 +37858,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
                    VALUES ('technophant', 'Technophant', 'ruler', 'Exalted interpreters of divine wetware. They guide the people toward a perfect fusion of and machine.
-This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 'planet_bureaucrats', 312);
+This Job requires the Pop to have the Ritualistic Implants of any Cybernetic Creed or Cybernetic trait.', 'planet_bureaucrats', 314);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('technophant', 'produces', 'unity', '5.0', 0);
@@ -37748,7 +37873,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('neural_chip', 'Neural Chip', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 'planet_neural_chips', 313);
+                   VALUES ('neural_chip', 'Neural Chip', 'chip_slave', 'A single Neural Chip is inconsequential. Once connected, their processing capabilities increase exponentially.', 'planet_neural_chips', 315);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('neural_chip', 'produces', 'society_research', '0.375', 0);
@@ -37765,7 +37890,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('neural_chip', 'upkeep', 'energy', '4.5', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('augmentor', 'Augmentor', 'specialist', 'Augmentors are skilled technicians who alter the organic form with cybernetic enhancement.', 'planet_augmentors', 314);
+                   VALUES ('augmentor', 'Augmentor', 'specialist', 'Augmentors are skilled technicians who alter the organic form with cybernetic enhancement.', 'planet_augmentors', 316);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('augmentor', 'produces', 'society_research', '1.5', 0);
@@ -37780,7 +37905,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('augmentor_drone', 'Augmentor Drone', 'complex_drone', 'Augmentor Drones research and design cybernetic implants.', 'planet_augmentors', 315);
+                   VALUES ('augmentor_drone', 'Augmentor Drone', 'complex_drone', 'Augmentor Drones research and design cybernetic implants.', 'planet_augmentors', 317);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('augmentor_drone', 'produces', 'society_research', '1.5', 0);
@@ -37791,7 +37916,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('augmentor_drone', 'upkeep', 'alloys', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('identity_designer', 'Identity Designer', 'specialist', 'Identity Designers intricately create new synthetic minds.', 'planet_pop_assemblers', 316);
+                   VALUES ('identity_designer', 'Identity Designer', 'specialist', 'Identity Designers intricately create new synthetic minds.', 'planet_pop_assemblers', 318);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('identity_designer', 'produces', 'engineering_research', '2.5', 0);
@@ -37803,7 +37928,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cyberdome_duelist', 'Hyper-Gladiator', 'specialist', 'Hyper-Gladiators face off in the Cyberdome, utilizing cutting-edge cybernetic implants.', 'planet_jobs', 317);
+                   VALUES ('cyberdome_duelist', 'Hyper-Gladiator', 'specialist', 'Hyper-Gladiators face off in the Cyberdome, utilizing cutting-edge cybernetic implants.', 'planet_jobs', 319);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cyberdome_duelist', 'produces', 'unity', '1.0', 0);
@@ -37819,7 +37944,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cyberdome_spectator', 'Spectator', 'worker', 'Spectators enjoy games in the Cyberdome. When witnessed via cyberbrain, even the cheapest seats provide a spectacle, but when neurocasting is enabled it''s possible to experience gladiatorial combat in first person.', 'planet_cyberdome_spectator', 318);
+                   VALUES ('cyberdome_spectator', 'Spectator', 'worker', 'Spectators enjoy games in the Cyberdome. When witnessed via cyberbrain, even the cheapest seats provide a spectacle, but when neurocasting is enabled it''s possible to experience gladiatorial combat in first person.', 'planet_cyberdome_spectator', 320);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cyberdome_spectator', 'produces', 'energy', '2.0', 0);
@@ -37827,7 +37952,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cyberdome_spectator', 'produces', 'trade', '2.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('clip_maximizer', 'Material', 'purge', 'Suitably broken down and reconfigured, they can serve to fill the quota', 'planet_clip_maximizer', 319);
+                   VALUES ('clip_maximizer', 'Material', 'purge', 'Suitably broken down and reconfigured, they can serve to fill the quota', 'planet_clip_maximizer', 321);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('clip_maximizer', 'produces', 'consumer_goods', '5.0', 0);
@@ -37835,7 +37960,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('clip_maximizer', 'upkeep', 'energy', '0.1', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('nanotech_research_unit', 'Nanotech Research Unit', 'complex_drone', 'Nanotech Research Units meticulously engineer never before seen materials, pieced together atom by atom.', 'planet_researchers', 320);
+                   VALUES ('nanotech_research_unit', 'Nanotech Research Unit', 'complex_drone', 'Nanotech Research Units meticulously engineer never before seen materials, pieced together atom by atom.', 'planet_researchers', 322);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('nanotech_research_unit', 'produces', 'physics_research', '1.0', 0);
@@ -37852,7 +37977,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('nanotech_research_unit', 'upkeep', 'nanites', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('nanotech_researcher', 'Nanotech Researcher', 'specialist', 'Nanotech Researchers meticulously engineer never before seen materials, pieced together atom by atom.', 'planet_researchers', 321);
+                   VALUES ('nanotech_researcher', 'Nanotech Researcher', 'specialist', 'Nanotech Researchers meticulously engineer never before seen materials, pieced together atom by atom.', 'planet_researchers', 323);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('nanotech_researcher', 'produces', 'physics_research', '1.0', 0);
@@ -37869,7 +37994,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('nanotech_researcher', 'upkeep', 'nanites', '1.0', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('treasure_gatherer', 'Treasure Curator', 'specialist', 'Trained to appraise all manner of rare and valuable goods, they can extract the highest value from treasures found across the galaxy.', 'planet_treasure_gatherers', 322);
+                   VALUES ('treasure_gatherer', 'Treasure Curator', 'specialist', 'Trained to appraise all manner of rare and valuable goods, they can extract the highest value from treasures found across the galaxy.', 'planet_treasure_gatherers', 324);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('treasure_gatherer', 'produces', 'energy', '10.0', 0);
@@ -37889,7 +38014,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('treasure_gatherer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('wrangler', 'Wrangler', 'specialist', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 'planet_primal_jobs', 323);
+                   VALUES ('wrangler', 'Wrangler', 'specialist', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 'planet_primal_jobs', 325);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('wrangler', 'produces', 'society_research', '1.0', 0);
@@ -37900,7 +38025,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('wrangler', 'upkeep', 'consumer_goods', '2.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('drone_wrangler', 'Wrangler Drone', 'complex_drone', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 'planet_primal_jobs', 324);
+                   VALUES ('drone_wrangler', 'Wrangler Drone', 'complex_drone', 'The proper preservation, study, and management of local fauna is vital to the success of our worlds.', 'planet_primal_jobs', 326);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_wrangler', 'produces', 'society_research', '1.0', 0);
@@ -37911,7 +38036,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_wrangler', 'upkeep', 'minerals', '4.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('treasure_gatherer_gestalt', 'Treasure Drone', 'complex_drone', 'Able to appraise all manner of rare and valuable goods, they can extract the highest possible utility from treasures found across the galaxy.', 'planet_treasure_gatherers', 325);
+                   VALUES ('treasure_gatherer_gestalt', 'Treasure Drone', 'complex_drone', 'Able to appraise all manner of rare and valuable goods, they can extract the highest possible utility from treasures found across the galaxy.', 'planet_treasure_gatherers', 327);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('treasure_gatherer_gestalt', 'produces', 'energy', '10.0', 0);
@@ -37928,9 +38053,9 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('treasure_gatherer_gestalt', 'upkeep', 'minerals', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('disconnected_drone', 'Disconnected Drone', 'simple_drone', 'Severed from their collective consciousness, these drones are guided by little more than base instinct.', 'planet_disconnected_drones', 326);
+                   VALUES ('disconnected_drone', 'Disconnected Drone', 'simple_drone', 'Severed from their collective consciousness, these drones are guided by little more than base instinct.', 'planet_disconnected_drones', 328);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('skywatcher', 'Skywatcher', 'specialist', 'These highly trained guardians ensure a constant and secure uplink to the Deep Space Citadel.', 'planet_soldiers', 327);
+                   VALUES ('skywatcher', 'Skywatcher', 'specialist', 'These highly trained guardians ensure a constant and secure uplink to the Deep Space Citadel.', 'planet_soldiers', 329);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('skywatcher', 'upkeep', 'alloys', '1.0', 0);
@@ -37947,7 +38072,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('skywatcher_drone', 'Skywatcher Drone', 'complex_drone', 'These specialized drones ensure a constant and secure uplink to the Deep Space Citadel.', 'planet_soldiers', 328);
+                   VALUES ('skywatcher_drone', 'Skywatcher Drone', 'complex_drone', 'These specialized drones ensure a constant and secure uplink to the Deep Space Citadel.', 'planet_soldiers', 330);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('skywatcher_drone', 'upkeep', 'alloys', '1.0', 0);
@@ -37964,11 +38089,11 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_defense_armies_add', 'Planetary Defense Armies', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('genomic_researcher', 'Genomic Researcher', 'specialist', 'Genomic Researchers conduct research into our genetic future.', NULL, 329);
+                   VALUES ('genomic_researcher', 'Genomic Researcher', 'specialist', 'Genomic Researchers conduct research into our genetic future.', NULL, 331);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('genomic_drone', 'Genomic Drone', 'complex_drone', 'Genomic Drones conduct research into our genetic future.', NULL, 330);
+                   VALUES ('genomic_drone', 'Genomic Drone', 'complex_drone', 'Genomic Drones conduct research into our genetic future.', NULL, 332);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('transference_volunteer', 'Transference Volunteer', 'specialist', 'For many, the mindlink with the Beast is but an afterthought. Constant, but remote. For some however, the need to merge with it is irrepressible. These volunteers act as a conduit as their minds are slowly absorbed into the beastly collective.', 'planet_transference_volunteers', 331);
+                   VALUES ('transference_volunteer', 'Transference Volunteer', 'specialist', 'For many, the mindlink with the Beast is but an afterthought. Constant, but remote. For some however, the need to merge with it is irrepressible. These volunteers act as a conduit as their minds are slowly absorbed into the beastly collective.', 'planet_transference_volunteers', 333);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('transference_volunteer', 'produces', 'unity', '1.5', 0);
@@ -37988,7 +38113,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('transference_drone', 'Transference Drone', 'complex_drone', 'While the mindlink established a permanent connection between the Beast and us, the transference is a slow process. Without these precautions we risk shattering both psyches and ruin everything.', 'planet_transference_volunteers', 332);
+                   VALUES ('transference_drone', 'Transference Drone', 'complex_drone', 'While the mindlink established a permanent connection between the Beast and us, the transference is a slow process. Without these precautions we risk shattering both psyches and ruin everything.', 'planet_transference_volunteers', 334);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('transference_drone', 'produces', 'unity', '1.5', 0);
@@ -38008,7 +38133,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('sand_whisperer', 'Sand Whisperer', 'specialist', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 'planet_jobs_productive', 333);
+                   VALUES ('sand_whisperer', 'Sand Whisperer', 'specialist', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 'planet_jobs_productive', 335);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
@@ -38016,7 +38141,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('sand_whisperer', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('sand_caretaker', 'Sand Caretaker', 'specialist', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 'planet_jobs_productive', 334);
+                   VALUES ('sand_caretaker', 'Sand Caretaker', 'specialist', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 'planet_jobs_productive', 336);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
@@ -38024,7 +38149,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('sand_caretaker', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('drone_sand_whisperer', 'Sand Whisperer drone', 'complex_drone', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 'planet_jobs_productive', 335);
+                   VALUES ('drone_sand_whisperer', 'Sand Whisperer drone', 'complex_drone', 'When communicating with the psionic Sand Whisperers can collect a small amount of Zro from them.', 'planet_jobs_productive', 337);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_sand_whisperer', 'produces', 'sr_zro', '1.0', 0);
@@ -38032,7 +38157,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_sand_whisperer', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('drone_sand_caretaker', 'Sand Caretaker drone', 'complex_drone', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 'planet_jobs_productive', 336);
+                   VALUES ('drone_sand_caretaker', 'Sand Caretaker drone', 'complex_drone', 'When communicating with the psionic Sand Caretakers can collect a small amount of Zro from them.', 'planet_jobs_productive', 338);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_sand_caretaker', 'produces', 'sr_zro', '1.0', 0);
@@ -38040,7 +38165,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_sand_caretaker', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('space_junk_collector', 'Space Junk Collector', 'specialist', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 'planet_jobs_productive', 337);
+                   VALUES ('space_junk_collector', 'Space Junk Collector', 'specialist', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 'planet_jobs_productive', 339);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_junk_collector', 'produces', 'alloys', '5.0', 0);
@@ -38048,7 +38173,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('space_junk_collector', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('drone_space_junk_collector', 'Space Junk Collector drone', 'complex_drone', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 'planet_jobs_productive', 338);
+                   VALUES ('drone_space_junk_collector', 'Space Junk Collector drone', 'complex_drone', 'Orbital space junk periodically enters this planet''s atmosphere. Whatever doesn''t burn up on entry can be collected and recycled.', 'planet_jobs_productive', 340);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_space_junk_collector', 'produces', 'alloys', '5.0', 0);
@@ -38056,7 +38181,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_space_junk_collector', 'upkeep', 'energy', '10.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('telepath_drone', 'Telepath Drone', 'complex_drone', 'Operatives of the Psi Corps, a unit of psionically-advanced drones dedicated to reducing deviancy.', 'planet_telepaths', 339);
+                   VALUES ('telepath_drone', 'Telepath Drone', 'complex_drone', 'Operatives of the Psi Corps, a unit of psionically-advanced drones dedicated to reducing deviancy.', 'planet_telepaths', 341);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('telepath_drone', 'produces', 'unity', '4.5', 0);
@@ -38072,7 +38197,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('physician_drone', 'Physician Drone', 'complex_drone', 'A specialized drone capable of diagnosing and repairing both artificial and organic entities. It meticulously catalogs everything it comes across, storing the data for use by the collective.', 'planet_doctors', 340);
+                   VALUES ('physician_drone', 'Physician Drone', 'complex_drone', 'A specialized drone capable of diagnosing and repairing both artificial and organic entities. It meticulously catalogs everything it comes across, storing the data for use by the collective.', 'planet_doctors', 342);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('physician_drone', 'produces', 'unity', '3.0', 0);
@@ -38084,14 +38209,14 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('observator_drone', 'Observator Drone', 'complex_drone', 'A drone put in charge of observing the Shroud, Zro, and the effects the two have on observable reality.', NULL, 341);
+                   VALUES ('observator_drone', 'Observator Drone', 'complex_drone', 'A drone put in charge of observing the Shroud, Zro, and the effects the two have on observable reality.', NULL, 343);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('energy_thrall', 'Energy Thrall', 'worker', 'Excess energies of the population can be put to better use in sustaining quality leadership. Each Energy Thrall is implanted with a specially calibrated siphoning device which collects their essence into easy-to-transfer power cells.', 'planet_energy_thralls', 342);
+                   VALUES ('energy_thrall', 'Energy Thrall', 'worker', 'Excess energies of the population can be put to better use in sustaining quality leadership. Each Energy Thrall is implanted with a specially calibrated siphoning device which collects their essence into easy-to-transfer power cells.', 'planet_energy_thralls', 344);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('energy_thrall', 'produces', 'unity', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('drone_energy_thrall', 'Energy Drone', 'simple_drone', 'Idle consciousnesses can be put to better use in sustaining quality leadership nodes. Each Energy Drone is implanted with a specially calibrated siphoning device which collects their unused energy into easy-to-transfer power cells.', 'planet_energy_thralls', 343);
+                   VALUES ('drone_energy_thrall', 'Energy Drone', 'simple_drone', 'Idle consciousnesses can be put to better use in sustaining quality leadership nodes. Each Energy Drone is implanted with a specially calibrated siphoning device which collects their unused energy into easy-to-transfer power cells.', 'planet_energy_thralls', 345);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('drone_energy_thrall', 'produces', 'unity', '1.0', 0);
@@ -38100,7 +38225,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_no_happiness_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('test_subject', 'Test Subject', 'criminal', 'Convicted of criminal activity, these individuals have been put to productive use as live test subjects in technological experiments.', 'planet_test_subjects', 344);
+                   VALUES ('test_subject', 'Test Subject', 'criminal', 'Convicted of criminal activity, these individuals have been put to productive use as live test subjects in technological experiments.', 'planet_test_subjects', 346);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('test_subject', 'produces', 'engineering_research', '0.5', 0);
@@ -38122,7 +38247,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('test_subject_drone', 'Test Subject Drone', 'deviant_drone', 'After straying from the will of the collective, these deviants have been put to productive use as live test subjects in technological experiments.', 'planet_test_subjects', 345);
+                   VALUES ('test_subject_drone', 'Test Subject Drone', 'deviant_drone', 'After straying from the will of the collective, these deviants have been put to productive use as live test subjects in technological experiments.', 'planet_test_subjects', 347);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('test_subject_drone', 'produces', 'engineering_research', '0.5', 0);
@@ -38140,7 +38265,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('experiment_engineer', 'Experiment Engineer', 'specialist', 'These elite researchers carry out experiments on live test subjects drawn from the criminal population, with no qualms about the severity of their methodologies.', 'planet_experiment_engineer', 346);
+                   VALUES ('experiment_engineer', 'Experiment Engineer', 'specialist', 'These elite researchers carry out experiments on live test subjects drawn from the criminal population, with no qualms about the severity of their methodologies.', 'planet_experiment_engineer', 348);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('experiment_engineer', 'produces', 'physics_research', '1.0', 0);
@@ -38154,7 +38279,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('experiment_engineer', 'upkeep', 'consumer_goods', '1.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('experiment_engineer_drone', 'Experiment Engineer Drone', 'complex_drone', 'These research drones carry out experiments on live test subjects drawn from the deviant population. No methodology is too harsh if it benefits the collective.', 'planet_experiment_engineer', 347);
+                   VALUES ('experiment_engineer_drone', 'Experiment Engineer Drone', 'complex_drone', 'These research drones carry out experiments on live test subjects drawn from the deviant population. No methodology is too harsh if it benefits the collective.', 'planet_experiment_engineer', 349);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('experiment_engineer_drone', 'produces', 'physics_research', '1.0', 0);
@@ -38168,7 +38293,7 @@ INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('experiment_engineer_drone', 'upkeep', 'minerals', '3.0', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('slave_orderly', 'Orderly', 'worker', 'These workers are responsible for the day-to-day care of those subjected to experimental procedures that often render them unable to care for themselves.', NULL, 348);
+                   VALUES ('slave_orderly', 'Orderly', 'worker', 'These workers are responsible for the day-to-day care of those subjected to experimental procedures that often render them unable to care for themselves.', NULL, 350);
 INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
                        VALUES ('slave_orderly', 'pop_experiment_engineer_bonus_workforce_mult', '0.025', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -38182,7 +38307,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('production_overseer', 'Production Overseer', 'specialist', 'Production Overseers work to eliminate inefficiencies and maximize the outputs from complex manufacturing processes.', 'planet_production_overseers', 349);
+                   VALUES ('production_overseer', 'Production Overseer', 'specialist', 'Production Overseers work to eliminate inefficiencies and maximize the outputs from complex manufacturing processes.', 'planet_production_overseers', 351);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('production_overseer', 'produces', 'engineering_research', '2.0', 0);
@@ -38198,11 +38323,11 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_amenities_add', 'Amenities', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('spe_colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', NULL, 350);
+                   VALUES ('spe_colonist', 'Colonist', NULL, 'The settling of a new world is no easy undertaking.', NULL, 352);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('extradimensional_research_unit', 'Extra-dimensional Research Unit', 'complex_drone', 'Dedicated research units focused on studies into the dimensions of thought.', NULL, 351);
+                   VALUES ('extradimensional_research_unit', 'Extra-dimensional Research Unit', 'complex_drone', 'Dedicated research units focused on studies into the dimensions of thought.', NULL, 353);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('shroud_trader', 'Empathic Marketer', 'specialist', 'These experts attune to the emotional zeitgeist in the local markets, striking deals and hosting seminars on current trends in thought leadership.', 'planet_traders', 352);
+                   VALUES ('shroud_trader', 'Empathic Marketer', 'specialist', 'These experts attune to the emotional zeitgeist in the local markets, striking deals and hosting seminars on current trends in thought leadership.', 'planet_traders', 354);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('shroud_trader', 'produces', 'trade', '6.0', 0);
@@ -38214,7 +38339,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('category_psionics_draw_chance_mult', 'Chance for Psionics Research Options', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cruise_passenger', 'First Class Passenger', 'cruise_passenger', 'First Class Passengers enjoy the highest level of comfort and service.', 'planet_cruise_passengers', 353);
+                   VALUES ('cruise_passenger', 'First Class Passenger', 'cruise_passenger', 'First Class Passengers enjoy the highest level of comfort and service.', 'planet_cruise_passengers', 355);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cruise_passenger', 'produces', 'unity', '2.0', 0);
@@ -38226,12 +38351,12 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cruise_passenger_unemployment', 'Economy Class Passenger', 'cruise_passenger_unemployment', 'Economy Class Passengers enjoy the stars from shared quarters while eyeing the First Class manors with envy.', 'planet_cruise_passengers', 354);
+                   VALUES ('cruise_passenger_unemployment', 'Economy Class Passenger', 'cruise_passenger_unemployment', 'Economy Class Passengers enjoy the stars from shared quarters while eyeing the First Class manors with envy.', 'planet_cruise_passengers', 356);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cruise_passenger_unemployment', 'upkeep', 'consumer_goods', '0.33', 0);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cruise_crew_overseer', 'Activity Manager', 'ruler', 'Activity Managers ensure that all crew is working at maximal efficiency to satisfy every minute need of the passengers.', 'planet_entertainers', 355);
+                   VALUES ('cruise_crew_overseer', 'Activity Manager', 'ruler', 'Activity Managers ensure that all crew is working at maximal efficiency to satisfy every minute need of the passengers.', 'planet_entertainers', 357);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cruise_crew_overseer', 'produces', 'unity', '2.0', 0);
@@ -38250,7 +38375,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_cat_specialist_bonus_workforce_mult', 'Job Efficiency for Specialists', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('cruise_crew_overseer_drone', 'Activity Management Drone', 'complex_drone', 'Activity Management Drones ensure that all drones operate at maximal efficiency to satisfy every minute need of the passengers.', 'planet_entertainers', 356);
+                   VALUES ('cruise_crew_overseer_drone', 'Activity Management Drone', 'complex_drone', 'Activity Management Drones ensure that all drones operate at maximal efficiency to satisfy every minute need of the passengers.', 'planet_entertainers', 358);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('cruise_crew_overseer_drone', 'produces', 'unity', '2.0', 0);
@@ -38269,7 +38394,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_artisan_drone_bonus_workforce_mult', 'Job Efficiency for Artisan Drones', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ark_waystation_trader', 'Waystation Comptroller', 'specialist', 'The remote management of stations is a thankless task of endless logistic needs, but someone must handle it.', 'planet_traders', 357);
+                   VALUES ('ark_waystation_trader', 'Waystation Comptroller', 'specialist', 'The remote management of stations is a thankless task of endless logistic needs, but someone must handle it.', 'planet_traders', 359);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ark_waystation_trader', 'produces', 'trade', '5.0', 0);
@@ -38281,7 +38406,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ark_harvester', 'Astro-Harvester', 'specialist', 'Astro-Harvesters facilitate the collection of orbital deposits and their processing, greatly increasing resource yield.', 'planet_ark_harvester', 358);
+                   VALUES ('ark_harvester', 'Astro-Harvester', 'specialist', 'Astro-Harvesters facilitate the collection of orbital deposits and their processing, greatly increasing resource yield.', 'planet_ark_harvester', 360);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ark_harvester', 'produces', 'minerals', '1.5', 0);
@@ -38297,7 +38422,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arkship_action_speed', 'Arkship Action Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ark_waystation_trader_gestalt', 'Trade Coordination Drone', 'complex_drone', 'A processing unit assigned to coordinate the flow of goods between our Waystations and the wider market. Efficiency is its only directive.', 'planet_traders', 359);
+                   VALUES ('ark_waystation_trader_gestalt', 'Trade Coordination Drone', 'complex_drone', 'A processing unit assigned to coordinate the flow of goods between our Waystations and the wider market. Efficiency is its only directive.', 'planet_traders', 361);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ark_waystation_trader_gestalt', 'produces', 'trade', '4.0', 0);
@@ -38309,7 +38434,7 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_starbase_capacity_mult', 'Station Capacity', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ark_harvester_gestalt', 'Astro-Harvester Drone', 'complex_drone', 'Astro-Harvester Drones are engineered for spacewalk operations, facilitating the collection of orbital deposits from outside of the Ark.', 'planet_ark_harvester', 360);
+                   VALUES ('ark_harvester_gestalt', 'Astro-Harvester Drone', 'complex_drone', 'Astro-Harvester Drones are engineered for spacewalk operations, facilitating the collection of orbital deposits from outside of the Ark.', 'planet_ark_harvester', 362);
 INSERT OR IGNORE INTO job_resource
                                (job_key, kind, resource, amount, sort_order)
                            VALUES ('ark_harvester_gestalt', 'produces', 'minerals', '1.5', 0);
@@ -38325,13 +38450,13 @@ INSERT OR IGNORE INTO job_modifier (job_key, modifier, value, sort_order)
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('arkship_action_speed', 'Arkship Action Speed', 1);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('ark_deep_sleep', 'Cryo-Sleeper', 'deep_sleep', 'Limited resources allowed only so many to make the journey awake.', 'planet_ark_deep_sleep', 361);
+                   VALUES ('ark_deep_sleep', 'Cryo-Sleeper', 'deep_sleep', 'Limited resources allowed only so many to make the journey awake.', 'planet_ark_deep_sleep', 363);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('duelist', 'Duelist', 'specialist', 'Martial experts who display their deadly art for the entertainment of the masses.', NULL, 362);
+                   VALUES ('duelist', 'Duelist', 'specialist', 'Martial experts who display their deadly art for the entertainment of the masses.', NULL, 364);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('historical_curator', 'Historical Curator', 'specialist', 'Categorizes and contextualizes the most extraordinary specimens in order to gain a greater understanding of important galactic events.', NULL, 363);
+                   VALUES ('historical_curator', 'Historical Curator', 'specialist', 'Categorizes and contextualizes the most extraordinary specimens in order to gain a greater understanding of important galactic events.', NULL, 365);
 INSERT OR REPLACE INTO job (key, name, category, description, budget_source, sort_order)
-                   VALUES ('storm_dancer', 'Storm Dancer', 'specialist', 'Far from a simple entertainer, the work of a Storm Dancer is to embody the very essence of the storm.', NULL, 364);
+                   VALUES ('storm_dancer', 'Storm Dancer', 'specialist', 'Far from a simple entertainer, the work of a Storm Dancer is to embody the very essence of the storm.', NULL, 366);
 INSERT OR REPLACE INTO colony_type (key, name, description, sort_order) VALUES ('col_city', 'Urban World', 'Boosts Trade output.', 0);
 INSERT OR REPLACE INTO colony_type_modifier (colony_type_key, modifier, value, sort_order)
                        VALUES ('col_city', 'trader_jobs_bonus_workforce_mult', '0.15', 0);
@@ -43188,24 +43313,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_physicist_automated_workforce_mult', 'Physicists Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_master_archive', 'planet', 'job_biologist_automated_workforce_mult', '0.5', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_master_archive', 'planet', 'job_engineer_automated_workforce_mult', '0.5', NULL, 4);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_master_archive', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.5', NULL, 5);
+                       VALUES ('building_master_archive', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.5', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_physicist_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_master_archive', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.5', NULL, 6);
+                       VALUES ('building_master_archive', 'planet', 'job_biologist_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_master_archive', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.5', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_biologist_automated_workforce_mult', 'Biology Subroutines Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_master_archive', 'planet', 'job_engineer_automated_workforce_mult', '0.5', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_master_archive', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.5', NULL, 7);
@@ -43358,24 +43483,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_farm_automated_workforce_mult', 'Acolytes of the Plow Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_complex', 'planet', 'job_farmer_automated_workforce_mult', '0.75', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_complex', 'planet', 'job_agri_drone_automated_workforce_mult', '0.75', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_complex', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_nourishment_complex', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_complex', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_nourishment_complex', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nourishment_complex', 'planet', 'job_farmer_automated_workforce_mult', '0.75', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nourishment_complex', 'planet', 'job_agri_drone_automated_workforce_mult', '0.75', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_nourishment_center', 'Nourishment Center', 'resource', 'Every conceivable flavor can be replicated within these walls.', NULL, NULL, NULL, NULL, NULL, 245);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nourishment_center', 'cost', 'alloys', '2500.0', 0);
@@ -43403,24 +43528,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_farm_automated_workforce_mult', 'Acolytes of the Plow Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_center', 'planet', 'job_farmer_automated_workforce_mult', '1.0', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_center', 'planet', 'job_agri_drone_automated_workforce_mult', '1.0', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_center', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_nourishment_center', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nourishment_center', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 5);
+                       VALUES ('building_nourishment_center', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nourishment_center', 'planet', 'job_farmer_automated_workforce_mult', '1.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_farmer_automated_workforce_mult', 'Farmers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nourishment_center', 'planet', 'job_agri_drone_automated_workforce_mult', '1.0', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_agri_drone_automated_workforce_mult', 'Agri-Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_dimensional_replicator', 'Dimensional Replicator', 'manufacturing', 'This fabricator''s technology achieves flawless conversion from energy to matter.', NULL, NULL, NULL, NULL, NULL, 246);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_dimensional_replicator', 'cost', 'alloys', '1500.0', 0);
@@ -43497,24 +43622,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_generator_automated_workforce_mult', 'Acolytes of the Hyperspanner Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_3_singularity', 'planet', 'job_technician_automated_workforce_mult', '0.75', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_3_singularity', 'planet', 'job_technician_drone_automated_workforce_mult', '0.75', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_3_singularity', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_class_3_singularity', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_3_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_class_3_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_class_3_singularity', 'planet', 'job_technician_automated_workforce_mult', '0.75', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_class_3_singularity', 'planet', 'job_technician_drone_automated_workforce_mult', '0.75', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_class_4_singularity', 'Class-4 Singularity', 'resource', 'This singularity''s power output challenges the laws of physics, yet the containment fields hold with unwavering stability.', NULL, NULL, NULL, NULL, NULL, 249);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_class_4_singularity', 'cost', 'alloys', '2500.0', 0);
@@ -43535,24 +43660,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_generator_automated_workforce_mult', 'Acolytes of the Hyperspanner Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_4_singularity', 'planet', 'job_technician_automated_workforce_mult', '1.0', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_4_singularity', 'planet', 'job_technician_drone_automated_workforce_mult', '1.0', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_4_singularity', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_class_4_singularity', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_class_4_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_class_4_singularity', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_class_4_singularity', 'planet', 'job_technician_automated_workforce_mult', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_automated_workforce_mult', 'Technicians Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_class_4_singularity', 'planet', 'job_technician_drone_automated_workforce_mult', '1.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_technician_drone_automated_workforce_mult', 'Tech-Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_micro_forge', 'Hyper-Forge', 'manufacturing', 'This forge''s production speed is limited only by the quantity of resources loaded into it.', NULL, NULL, NULL, NULL, NULL, 250);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_micro_forge', 'cost', 'alloys', '1500.0', 0);
@@ -43568,24 +43693,24 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_micro_forge', '6
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_micro_forge', 'foundry', '600.0', 0);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_micro_forge', 'planet', 'job_foundry_automated_workforce_mult', '0.25', NULL, 0);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_foundry_automated_workforce_mult', 'Metallurgists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_micro_forge', 'planet', 'job_fabricator_automated_workforce_mult', '0.25', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_fabricator_automated_workforce_mult', 'Fabricators Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_micro_forge', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 2);
+                       VALUES ('building_micro_forge', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_micro_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_micro_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_micro_forge', 'planet', 'job_foundry_automated_workforce_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_foundry_automated_workforce_mult', 'Metallurgists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_micro_forge', 'planet', 'job_fabricator_automated_workforce_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_fabricator_automated_workforce_mult', 'Fabricators Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_nano_forge', 'Auto-Forge', 'manufacturing', 'The expansive nano-replicator bays in this forge transform raw materials into advanced alloys with marvelous efficiency.', NULL, NULL, NULL, NULL, NULL, 251);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_nano_forge', 'cost', 'alloys', '2500.0', 0);
@@ -43608,24 +43733,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_structures_upkeep_mult', 'Infrastructure Upkeep', 0);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nano_forge', 'planet', 'job_foundry_automated_workforce_mult', '0.5', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_foundry_automated_workforce_mult', 'Metallurgists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nano_forge', 'planet', 'job_fabricator_automated_workforce_mult', '0.5', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_fabricator_automated_workforce_mult', 'Fabricators Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nano_forge', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_nano_forge', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_nano_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_nano_forge', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nano_forge', 'planet', 'job_foundry_automated_workforce_mult', '0.5', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_foundry_automated_workforce_mult', 'Metallurgists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_nano_forge', 'planet', 'job_fabricator_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_fabricator_automated_workforce_mult', 'Fabricators Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_sky_dome', 'Sky Dome', 'amenity', 'This floating city, propelled by state-of-the-art anti-gravity technology, provides an idyllic haven for its inhabitants.', NULL, NULL, NULL, NULL, NULL, 252);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_sky_dome', 'cost', 'alloys', '1500.0', 0);
@@ -43710,24 +43835,24 @@ INSERT OR REPLACE INTO build_time (key, days) VALUES ('building_fe_fortress', '6
 INSERT OR IGNORE INTO building_job (building_key, job, amount, sort_order) VALUES ('building_fe_fortress', 'soldier', '600.0', 0);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_fortress', 'planet', 'job_soldier_automated_workforce_mult', '0.25', NULL, 0);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_soldier_automated_workforce_mult', 'Soldiers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_fortress', 'planet', 'job_warrior_drone_automated_workforce_mult', '0.25', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_warrior_drone_automated_workforce_mult', 'Warrior Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_fortress', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 2);
+                       VALUES ('building_fe_fortress', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_fortress', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_fe_fortress', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_fortress', 'planet', 'job_soldier_automated_workforce_mult', '0.25', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_soldier_automated_workforce_mult', 'Soldiers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_fortress', 'planet', 'job_warrior_drone_automated_workforce_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_warrior_drone_automated_workforce_mult', 'Warrior Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_stronghold', 'Aegis Complex', 'army', 'This monumental planetary defense complex protects with countless armories and shielding; the planet''s mountains will crumble before its defenses.', NULL, NULL, NULL, NULL, NULL, 255);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_stronghold', 'cost', 'alloys', '2500.0', 0);
@@ -43748,24 +43873,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_orbital_bombardment_damage', 'Orbital Bombardment Damage', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_stronghold', 'planet', 'job_soldier_automated_workforce_mult', '0.5', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_soldier_automated_workforce_mult', 'Soldiers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_stronghold', 'planet', 'job_warrior_drone_automated_workforce_mult', '0.5', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_warrior_drone_automated_workforce_mult', 'Warrior Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_stronghold', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_fe_stronghold', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_stronghold', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_fe_stronghold', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_stronghold', 'planet', 'job_soldier_automated_workforce_mult', '0.5', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_soldier_automated_workforce_mult', 'Soldiers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_stronghold', 'planet', 'job_warrior_drone_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_warrior_drone_automated_workforce_mult', 'Warrior Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_administration_1', 'Omnivident Administration', 'unity', 'Integral to a galaxy-spanning bureaucratic system, this extensive complex is connected to a vast administrative network.', NULL, NULL, NULL, NULL, NULL, 256);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_administration_1', 'cost', 'alloys', '1500.0', 0);
@@ -44126,24 +44251,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_assembly_2', 'planet', 'job_roboticist_automated_workforce_mult', '0.5', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_roboticist_automated_workforce_mult', 'Roboticists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_assembly_2', 'planet', 'job_replicator_automated_workforce_mult', '0.5', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_replicator_automated_workforce_mult', 'Replicators Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_assembly_2', 'planet', 'auto_mod_monthly_add', '1000.0', NULL, 4);
+                       VALUES ('building_fe_assembly_2', 'planet', 'auto_mod_monthly_add', '1000.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_assembly_2', 'planet', 'planet_stability_add', '1.0', NULL, 5);
+                       VALUES ('building_fe_assembly_2', 'planet', 'planet_stability_add', '1.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_assembly_2', 'planet', 'job_roboticist_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_roboticist_automated_workforce_mult', 'Roboticists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_assembly_2', 'planet', 'job_replicator_automated_workforce_mult', '0.5', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_replicator_automated_workforce_mult', 'Replicators Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_clinic_1', 'Molecular-Revitalization Institute', 'amenity', 'Molecular-Revitalization Institutes delve deep into cellular intricacies to amplify the effectiveness of medical treatments, significantly improving the quality and longevity of the populations'' health.', NULL, NULL, NULL, NULL, NULL, 266);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_1', 'cost', 'alloys', '1500.0', 0);
@@ -44174,29 +44299,29 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_1', 'planet', 'job_spawning_drone_automated_workforce_mult', '0.25', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_spawning_drone_automated_workforce_mult', 'Spawning Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_1', 'planet', 'job_healthcare_automated_workforce_mult', '0.25', NULL, 4);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_healthcare_automated_workforce_mult', 'Medical Workers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_1', 'planet', 'auto_mod_monthly_add', '800.0', NULL, 5);
+                       VALUES ('building_fe_clinic_1', 'planet', 'auto_mod_monthly_add', '800.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_1', 'planet', 'clone_soldiers_sustained', '500.0', NULL, 6);
+                       VALUES ('building_fe_clinic_1', 'planet', 'clone_soldiers_sustained', '500.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('clone_soldiers_sustained', 'Clone Soldier Pops Sustained', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_1', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 7);
+                       VALUES ('building_fe_clinic_1', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_clinic_1', 'planet', 'job_healthcare_automated_workforce_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_healthcare_automated_workforce_mult', 'Medical Workers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_clinic_1', 'planet', 'job_spawning_drone_automated_workforce_mult', '0.25', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_spawning_drone_automated_workforce_mult', 'Spawning Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_clinic_2', 'Bioregeneration Institute', 'amenity', 'The Bioregeneration Institute, at the pinnacle of medical technology, pioneers groundbreaking bio-regenerative therapies, continuously redefining the boundaries of life extension.', NULL, NULL, NULL, NULL, NULL, 267);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_clinic_2', 'cost', 'alloys', '2500.0', 0);
@@ -44227,29 +44352,29 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_2', 'planet', 'job_spawning_drone_automated_workforce_mult', '0.5', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_spawning_drone_automated_workforce_mult', 'Spawning Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_2', 'planet', 'job_healthcare_automated_workforce_mult', '0.5', NULL, 4);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_healthcare_automated_workforce_mult', 'Medical Workers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_2', 'planet', 'auto_mod_monthly_add', '1200.0', NULL, 5);
+                       VALUES ('building_fe_clinic_2', 'planet', 'auto_mod_monthly_add', '1200.0', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('auto_mod_monthly_add', 'Pops with Auto-Modding Traits Optimized Per Month', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_2', 'planet', 'clone_soldiers_sustained', '500.0', NULL, 6);
+                       VALUES ('building_fe_clinic_2', 'planet', 'clone_soldiers_sustained', '500.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('clone_soldiers_sustained', 'Clone Soldier Pops Sustained', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_clinic_2', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 7);
+                       VALUES ('building_fe_clinic_2', 'planet', 'organic_pop_bonus_workforce_mult', '0.05', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('organic_pop_bonus_workforce_mult', 'Job Efficiency for Organic Pops', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_clinic_2', 'planet', 'job_healthcare_automated_workforce_mult', '0.5', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_healthcare_automated_workforce_mult', 'Medical Workers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_clinic_2', 'planet', 'job_spawning_drone_automated_workforce_mult', '0.5', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_spawning_drone_automated_workforce_mult', 'Spawning Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_security_1', 'Justice Complex', 'government', 'This massive judicial complex seamlessly intertwines courts and law enforcement.', NULL, NULL, NULL, NULL, NULL, 268);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_security_1', 'cost', 'alloys', '1500.0', 0);
@@ -44490,6 +44615,11 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_entertainment_1', 'planet', 'job_entertainer_automated_workforce_mult', '0.25', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_entertainer_automated_workforce_mult', 'Entertainers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_entertainment_1', 'planet', 'job_logistics_drone_automated_workforce_mult', '0.25', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_logistics_drone_automated_workforce_mult', 'Logistic Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_entertainment_2', 'Omni-Bliss Nexus', 'amenity', 'A colossal culmination of entertainment, this nexus transcends conventional limits, where dreams materialize before desires are realized.', NULL, NULL, NULL, NULL, NULL, 275);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_entertainment_2', 'cost', 'alloys', '2500.0', 0);
@@ -44523,6 +44653,11 @@ INSERT OR IGNORE INTO building_modifier
                        VALUES ('building_fe_entertainment_2', 'planet', 'job_entertainer_automated_workforce_mult', '0.5', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_entertainer_automated_workforce_mult', 'Entertainers Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_entertainment_2', 'planet', 'job_logistics_drone_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_logistics_drone_automated_workforce_mult', 'Logistic Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_lab_1', 'Quantum Innovation Nexus', 'research', 'This nexus boasts state-of-the-art equipment and an unprecedented staff capacity, ushering in an era where quantum theories are not just explored but harnessed for groundbreaking innovation.', NULL, NULL, NULL, NULL, NULL, 276);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_lab_1', 'cost', 'alloys', '1500.0', 0);
@@ -44555,24 +44690,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_physicist_automated_workforce_mult', 'Physicists Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_1', 'planet', 'job_biologist_automated_workforce_mult', '0.25', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_1', 'planet', 'job_engineer_automated_workforce_mult', '0.25', NULL, 4);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_1', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.25', NULL, 5);
+                       VALUES ('building_fe_lab_1', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.25', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_physicist_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_1', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.25', NULL, 6);
+                       VALUES ('building_fe_lab_1', 'planet', 'job_biologist_automated_workforce_mult', '0.25', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_lab_1', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.25', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_biologist_automated_workforce_mult', 'Biology Subroutines Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_lab_1', 'planet', 'job_engineer_automated_workforce_mult', '0.25', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_fe_lab_1', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.25', NULL, 7);
@@ -44616,24 +44751,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_physicist_automated_workforce_mult', 'Physicists Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_2', 'planet', 'job_biologist_automated_workforce_mult', '0.5', NULL, 3);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_2', 'planet', 'job_engineer_automated_workforce_mult', '0.5', NULL, 4);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_2', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.5', NULL, 5);
+                       VALUES ('building_fe_lab_2', 'planet', 'job_calculator_physicist_automated_workforce_mult', '0.5', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_physicist_automated_workforce_mult', 'Physics Subroutines Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_lab_2', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.5', NULL, 6);
+                       VALUES ('building_fe_lab_2', 'planet', 'job_biologist_automated_workforce_mult', '0.5', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_biologist_automated_workforce_mult', 'Biologists Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_lab_2', 'planet', 'job_calculator_biologist_automated_workforce_mult', '0.5', NULL, 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_calculator_biologist_automated_workforce_mult', 'Biology Subroutines Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_lab_2', 'planet', 'job_engineer_automated_workforce_mult', '0.5', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_engineer_automated_workforce_mult', 'Engineers Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_fe_lab_2', 'planet', 'job_calculator_engineer_automated_workforce_mult', '0.5', NULL, 7);
@@ -44661,24 +44796,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_mine_automated_workforce_mult', 'Acolytes of the Hammer Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_1', 'planet', 'job_miner_automated_workforce_mult', '0.75', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_1', 'planet', 'job_mining_drone_automated_workforce_mult', '0.75', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_1', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_fe_mine_1', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_1', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_fe_mine_1', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_mine_1', 'planet', 'job_miner_automated_workforce_mult', '0.75', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_mine_1', 'planet', 'job_mining_drone_automated_workforce_mult', '0.75', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_fe_mine_2', 'Quantum Drilling Hub', 'resource', 'This mining hub can extract minerals anywhere down to the planet''s outer core using quantum tunneling technology to bore through solid or liquid materials without physical contact.', NULL, NULL, NULL, NULL, NULL, 279);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_fe_mine_2', 'cost', 'alloys', '2500.0', 0);
@@ -44701,24 +44836,24 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('job_fe_acolyte_mine_automated_workforce_mult', 'Acolytes of the Hammer Automated Workforce', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_2', 'planet', 'job_miner_automated_workforce_mult', '1.0', NULL, 1);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_2', 'planet', 'job_mining_drone_automated_workforce_mult', '1.0', NULL, 2);
-INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
-INSERT OR IGNORE INTO building_modifier
-                           (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_2', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 3);
+                       VALUES ('building_fe_mine_2', 'planet', 'planet_building_build_speed_mult', '0.03', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
-                       VALUES ('building_fe_mine_2', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 4);
+                       VALUES ('building_fe_mine_2', 'planet', 'planet_decision_enact_speed_mult', '0.03', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_decision_enact_speed_mult', 'Decision Enactment Speed', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_mine_2', 'planet', 'job_miner_automated_workforce_mult', '1.0', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_miner_automated_workforce_mult', 'Miners Automated Workforce', 1);
+INSERT OR IGNORE INTO building_modifier
+                           (building_key, scope, modifier_key, value, condition, sort_order)
+                       VALUES ('building_fe_mine_2', 'planet', 'job_mining_drone_automated_workforce_mult', '1.0', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_mining_drone_automated_workforce_mult', 'Mining Drones Automated Workforce', 1);
 INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES ('building_private_mining_consortium', 'Private Mining Consortium', 'resource', 'A private mineral extraction company owned by a megacorporation. It employs local miners to access the planet''s wealth.', 'corporate', '{"leaf":"is_legit_or_legal_criminal","value":"yes"}', '{"op":"and","args":[{"leaf":"is_artificial","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_city"}]}]}]}', NULL, NULL, 280);
 INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES ('building_private_mining_consortium', 'cost', 'influence', '10.0', 0);
@@ -50726,8 +50861,8 @@ INSERT OR REPLACE INTO district_resource (key, kind, resource, amount) VALUES ('
 INSERT OR REPLACE INTO district_resource (key, kind, resource, amount) VALUES ('district_ark_military', 'upkeep', 'energy', '1.0');
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('district_ark_military', '240.0');
 INSERT OR IGNORE INTO district_job (key, job, amount) VALUES ('district_ark_military', 'soldier', '200.0');
-INSERT INTO game_start_script (key, effects_json) VALUES ('generate_start_buildings_and_districts', '[{"e":"set_flag","flag":"ignore_ai_building_limitations"},{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":2},{"e":"set_variable","which":"farming_districts","value":3},{"e":"set_variable","which":"ark_energy_district_cap","value":2},{"e":"set_variable","which":"ark_basic_districts","value":1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"no"},"body":[{"e":"add_building","building":"building_capital"},{"e":"add_district","district":"district_city","amount":2},{"e":"add_zone","district":"district_city","zone":"zone_research_unity","slot":1},{"e":"add_zone","district":"district_city","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity","slot":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_hive_capital"},{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]},{"limit":null,"body":[{"e":"add_building","building":"building_offspring_nest"}]}]},{"e":"add_building","building":"building_hive_warren"},{"e":"add_district","district":"district_hive","amount":2},{"e":"add_zone","district":"district_hive","zone":"zone_research_unity","slot":1},{"e":"add_zone","district":"district_hive","zone":"zone_foundry","slot":2}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_machine_capital"},{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"no"},"body":[{"e":"add_district","district":"district_nexus","amount":2},{"e":"add_zone","district":"district_nexus","zone":"zone_research_unity","slot":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_nexus","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_nexus","zone":"zone_foundry","slot":2}]}]}]},{"limit":null,"body":[{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity_gestalt","slot":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_foundry","slot":2}]}]}]}]},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity","slot":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_hive_capital"},{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]}]},{"e":"add_building","building":"building_hive_warren"},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity_gestalt","slot":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_foundry","slot":2}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_machine_capital"},{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity_gestalt","slot":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_foundry","slot":2}]}]},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_archetype","value":"LITHOID"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":5},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_trait","value":"trait_infernal"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":4},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_tree_of_life"},{"leaf":"has_origin","value":"origin_here_be_dragons"}]},"body":[{"e":"set_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"set_variable","which":"farming_districts","value":0}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"change_variable","which":"energy_districts","value":3}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_hive_bodysnatcher"},{"leaf":"has_origin","value":"origin_syncretic_evolution"},{"leaf":"has_origin","value":"origin_necrophage"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},"body":[{"e":"set_flag","flag":"machine_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"is_archetype","value":"LITHOID"}]},"body":[{"e":"set_flag","flag":"lithoid_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"set_flag","flag":"infernal_subspecies"}]},{"limit":null,"body":[{"e":"set_flag","flag":"non_lithoid_subspecies"},{"e":"change_variable","which":"farming_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_ark_research_unity"}]},{"limit":null,"body":[{"e":"add_building","building":"building_temple"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_ark_research_unity"}]},{"limit":null,"body":[{"e":"add_building","building":"building_research_lab_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"add_building","building":"building_luxury_residence"}]},{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},"body":[{"e":"add_building","building":"building_communal_housing_large"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}]},"body":[{"e":"add_building","building":"building_stronghold"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}]},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_civil_education"}]}]},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}]},"body":[{"e":"add_building","building":"building_commercial_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"}]}]},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_foundry_1"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_wilderness"},"body":[{"e":"remove_all_buildings"},{"e":"set_flag","flag":"wilderness_planet"},{"e":"add_district","district":"district_craglands","amount":2},{"e":"add_zone","district":"district_craglands","zone":"zone_research_unity_wilderness","slot":1},{"e":"add_zone","district":"district_craglands","zone":"zone_urban_wilderness","slot":2},{"e":"add_building","building":"building_capital_wilderness","zone":"zone_default"},{"e":"add_building","building":"building_cradle_of_rebirth","zone":"zone_default"},{"e":"add_building","building":"building_natural_furnace_0","zone":"zone_default"},{"e":"add_building","building":"building_avatar_chamber_1","zone":"zone_default"},{"e":"add_building","building":"building_brain_node_1","zone":"zone_research_unity_wilderness"},{"e":"add_building","building":"building_commensal_clearing_1","zone":"zone_research_unity_wilderness"},{"e":"add_building","building":"building_tendril_cradle_1","zone":"zone_urban_wilderness"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_default"},"body":[{"e":"change_variable","which":"energy_districts","value":1},{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"yes"},"body":[{"e":"change_variable","which":"ark_energy_district_cap","value":1},{"e":"change_variable","which":"ark_basic_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_trait","value":"trait_organic"},{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"change_variable","which":"mining_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_forever_cruise"},"body":[{"e":"remove_district","district":"district_ark_city"},{"e":"add_district","district":"district_ark_forever_cruise","amount":1},{"e":"add_district","district":"district_ark_forever_cruise","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_forever_cruise_city_mixed","slot":2},{"e":"change_variable","which":"energy_districts","value":-1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},"body":[{"e":"add_building","building":"building_passenger_dorms","zone":"zone_ark_forever_cruise_city_mixed"}]}]},{"e":"add_building","building":"building_passenger_dorms","zone":"zone_ark_forever_cruise_city_mixed"},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"leaf":"has_country_flag","value":"machine_subspecies"}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant","zone":"zone_ark_forever_cruise_city_mixed"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_country_flag","value":"machine_subspecies"},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},"body":[{"e":"add_building","building":"building_robot_assembly_plant","zone":"zone_ark_forever_cruise_city_mixed"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_sacred_path"},"body":[{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]},"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_sacred_path_pilgrims","slot":1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_origin","value":"origin_heirs_of_the_khan"}]},"body":[{"e":"add_district","district":"district_ark_military","amount":1}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_shroud_forged"},"body":[{"e":"add_building","building":"building_shroud_observatory_1"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_mindwardens"},"body":[{"e":"add_building","building":"building_ancient_ward_1"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"or","args":[{"leaf":"has_zone","value":"zone_resort_hunting_ground"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_country_flag","value":"trophy_hunter_alignment"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]}]}]},{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"trophy_hunter_alignment"}]}]}]},"body":[{"e":"add_building","building":"hunting_grounds"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_country_flag","value":"animal_handler_alignment"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]}]}]},"body":[{"e":"add_building","building":"wildlife_sanctuary"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]},"body":[{"e":"add_building","building":"primal_arena"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"animal_handler_alignment"}]}]}]},"body":[{"e":"add_building","building":"symbiosis_nexus"}]},{"limit":{"leaf":"has_origin","value":"origin_primal_calling"},"body":[{"e":"add_building","building":"wildlife_ranch"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"set_flag","flag":"suppress_vanilla_factions"},{"e":"remove_building","building":"building_temple"},{"e":"remove_building","building":"building_factory_1"},{"e":"remove_building","building":"building_commercial_zone"},{"e":"remove_building","building":"building_precinct_house"},{"e":"remove_building","building":"building_stronghold"},{"e":"add_building","building":"building_amphitheater_of_the_mind"},{"e":"add_building","building":"building_sanctuary_of_toil"},{"e":"add_building","building":"building_battlement_of_steel"},{"e":"add_building","building":"building_forge_of_the_fellowship"},{"e":"if","branches":[{"limit":{"leaf":"has_civic","value":"civic_civil_education"},"body":[{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_synthetic_fertility"},"body":[{"e":"set_variable","which":"num_dead_identities","value":300},{"e":"add_building","building":"building_abandoned_gene_clinic"},{"e":"add_building","building":"building_identity_repository"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_arc_welders"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"change_variable","which":"energy_districts","value":"mining_districts"},{"e":"set_variable","which":"mining_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_payback"},"body":[{"e":"remove_district","district":"district_city"},{"e":"set_variable","which":"energy_districts","value":1},{"e":"set_variable","which":"mining_districts","value":1},{"e":"set_variable","which":"farming_districts","value":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"is_archetype","value":"LITHOID"},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"change_variable","which":"mining_districts","value":1}]},{"limit":null,"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"set_flag","flag":"payback_enlightenment_built"},{"e":"add_zone","district":"district_city","zone":"zone_payback_enlightenment","slot":1},{"e":"add_building","building":"building_medical_2","zone":"zone_payback_enlightenment"},{"e":"add_building","building":"building_energy_grid","zone":"zone_payback_enlightenment"},{"e":"add_building","building":"building_mineral_purification_plant","zone":"zone_payback_enlightenment"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_broken_shackles"},"body":[{"e":"add_district","district":"district_crashed_slaver_ship","amount":6},{"e":"remove_all_buildings"},{"e":"remove_zone","district":"district_crashed_slaver_ship","zone":"zone_research_unity"},{"e":"remove_zone","district":"district_crashed_slaver_ship","zone":"zone_industrial"},{"e":"remove_building","building":"building_colony_shelter"},{"e":"add_building","building":"building_low_tech_capital","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_admin_hub","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_research_lab","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_scrap_refinery","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_farm","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_power_plant","zone":"zone_default"},{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"angler_shackles"},"body":[{"e":"add_district","district":"district_farming","amount":1},{"e":"add_zone","district":"district_farming","zone":"zone_anglers"},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"set_variable","which":"energy_districts","value":0},{"e":"set_variable","which":"mining_districts","value":0},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"remove_district","district":"district_city"},{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"set_flag","flag":"toxic_knights_arkship"},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_knights","slot":1},{"e":"add_building","building":"building_order_keep","zone":"zone_ark_knights"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_subterranean"},{"leaf":"has_origin","value":"origin_subterranean_machines"}]},"body":[{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_volcanic"}]},"body":[{"e":"set_flag","flag":"uncapped_mining"},{"e":"add_district","district":"district_mining","amount":1},{"e":"add_zone","district":"district_mining","zone":"zone_subterranean_urban"},{"e":"change_variable","which":"mining_districts","value":-1}]},{"limit":null,"body":[{"e":"set_flag","flag":"uncapped_mining"},{"e":"add_district","district":"district_melting","amount":1},{"e":"add_zone","district":"district_melting","zone":"zone_subterranean_urban"},{"e":"change_variable","which":"mining_districts","value":-1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_ocean_paradise"},{"leaf":"has_origin","value":"origin_ocean_machines"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_necrophage"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_valid_civic","value":"civic_scorched_earth"},{"leaf":"has_valid_civic","value":"civic_hive_scorched_earth"},{"leaf":"has_menace_perk","value":"menp_behemoth_ever_hungry"}]}]}]},"body":[{"e":"add_building","building":"building_necrophage_elevation_chamber"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_shattered_ring"},"body":[{"e":"change_variable","which":"mining_districts","value":2},{"e":"set_flag","flag":"uncapped_energy"},{"e":"set_flag","flag":"uncapped_mining"},{"e":"set_flag","flag":"uncapped_farming"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_remnants"},{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]},"body":[{"e":"add_building","building":"building_archaeostudies_faculty","zone":"zone_research_unity"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_clone_army"},"body":[{"e":"add_building","building":"building_clone_army_clone_vat"},{"e":"add_building","building":"building_clone_army_clone_vat"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_mechanists"},"body":[{"e":"add_building","building":"building_robot_assembly_plant"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_broken_shackles"}]}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"add_district","district":"district_farming","amount":1},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"},"body":[{"e":"add_zone","district":"district_farming","zone":"zone_agrarian_anglers"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_farming","zone":"zone_anglers"}]}]},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"leaf":"has_origin","value":"origin_broken_shackles"}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"set_flag","flag":"angler_shackles"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_aristocratic_elite"},"body":[{"e":"add_building","building":"building_noble_estates"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_astrometeorology"},{"leaf":"has_civic","value":"civic_astrometeorology_hive"},{"leaf":"has_civic","value":"civic_astrometeorology_machine"},{"leaf":"has_civic","value":"civic_astrometeorology_megacorp"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center"}]},{"limit":null,"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"},"body":[{"e":"add_building","building":"building_augmentation_bazaars"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":2}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_civil_education"},"body":[{"e":"add_building","building":"building_state_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_sacrificial_temple_1"}]},{"limit":null,"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_dystopian_society"},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_eager_explorers"},{"leaf":"has_civic","value":"civic_privatized_exploration"},{"leaf":"has_civic","value":"civic_hive_stargazers"},{"leaf":"has_civic","value":"civic_machine_exploration_protocol"}]},"body":[{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_artificial","value":"yes"}]}]}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_ranger_lodge"}]},{"limit":null,"body":[{"e":"add_building","building":"building_ranger_lodge","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"exists","value":"owner"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers"},"body":[{"e":"add_building","building":"building_lifecrypt_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_machine"},"body":[{"e":"add_building","building":"building_lifecrypt_machine_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_hive_mind"},"body":[{"e":"add_building","building":"building_lifecrypt_hive_mind_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_corporate"},"body":[{"e":"add_building","building":"building_lifecrypt_corporate_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_free_traders"},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_hive_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_life_seeded"}]},"body":[{"e":"add_building","building":"building_gaiaseeders_1"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memorialist"},{"leaf":"has_valid_civic","value":"civic_hive_memorialist"},{"leaf":"has_valid_civic","value":"civic_machine_memorialist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_galactic_memorial_1"}]},{"limit":null,"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memory_vault"},{"leaf":"has_valid_civic","value":"civic_memory_vault_corporate"},{"leaf":"has_valid_civic","value":"civic_memory_vault_machine"},{"leaf":"has_valid_civic","value":"civic_memory_vault_hive"}]},"body":[{"e":"add_building","building":"building_paragon_memory_vaults"},{"e":"set_variable","which":"paragon_memory_vault","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"add_building","building":"building_toxic_bath","zone":"zone_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_toxic_bath_hive","zone":"zone_foundry"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_industrial"},"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_foundry"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"add_building","building":"building_toxic_bath","zone":"zone_ark_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_toxic_bath_hive","zone":"zone_ark_foundry"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"leaf":"is_nomadic","value":"yes"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_ark_industrial"},"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_ark_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_ark_foundry"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_transcendental_retreat"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"add_building","building":"building_hive_transcendental_retreat"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},"body":[{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"no"},"body":[{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_permanent_employment"},"body":[{"e":"add_building","building":"building_posthumous_employment_center"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_pleasure_seekers"},{"leaf":"has_valid_civic","value":"civic_corporate_hedonism"}]},"body":[{"e":"add_building","building":"building_factory_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_reanimated_armies"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_building","value":"building_stronghold"},"body":[{"e":"remove_building","building":"building_stronghold"}]}]},{"e":"add_building","building":"building_dread_encampment"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_relentless_industrialists"},{"leaf":"has_valid_civic","value":"civic_corporate_relentless_industrialists"}]},"body":[{"e":"add_building","building":"building_coordinated_fulfillment_center_1","zone":"zone_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_zone","value":"zone_habitat_research_unity"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_habitat_research_unity"}]},{"limit":{"op":"and","args":[{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_research_unity"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_shared_burden"},"body":[{"e":"add_building","building":"building_communal_housing"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]},"body":[{"e":"remove_building","building":"building_holo_theatres"},{"e":"add_building","building":"building_storm_summoning_theater"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_tactical_algorithms"},"body":[{"e":"add_building","building":"building_military_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_twisted_experimenters"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_hive_mind"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_corporate"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1"}]},{"limit":null,"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_warrior_culture"},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"while","count":2,"limit":null,"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">","value":"0"},"body":[{"e":"change_variable","which":"farming_districts","value":-1},{"e":"change_variable","which":"energy_districts","value":1}]}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_void_dwellers"}]},"body":[{"e":"while","count":2,"limit":null,"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">","value":"0"},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"energy_districts","value":1}]}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"uses_district_set","value":"volcanic_world"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cosmic_dawn"},"body":[{"e":"set_variable","which":"cd_pods_var","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":"=","value":"1"},"body":[{"e":"add_building","building":"building_hydroponics_farm"}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"3"},"body":[{"e":"add_building","building":"building_hydroponics_farm"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_district","district":"district_city","amount":1}]},{"limit":{"leaf":"has_authority","value":"auth_hive_mind"},"body":[{"e":"add_district","district":"district_hive","amount":1}]}]},{"e":"add_district","district":"district_geothermal","amount":"energy_districts"},{"e":"add_district","district":"district_melting","amount":"mining_districts"},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">","value":"ark_energy_district_cap"},"body":[{"e":"set_variable","which":"energy_districts","value":"ark_energy_district_cap"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_photosynthesis_fields","amount":"energy_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_energy"},"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"energy_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_1","amount":1}]},{"e":"add_zone","district":"district_nexus_1","zone":"zone_energy_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_energy","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_generator","amount":"energy_districts"}]},{"limit":null,"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_hollow_mountains","amount":"mining_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_mining"},"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"mining_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_2","amount":1}]},{"e":"add_zone","district":"district_nexus_2","zone":"zone_minerals_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_basic","amount":"ark_basic_districts"},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_food"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_harvest"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_orchard_forests","amount":"farming_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_farming"},"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_zone","district":"district_hab_energy","zone":"zone_habitat_hydroponics"},{"e":"add_district","district":"district_hab_energy","amount":"farming_districts"},{"e":"add_building","building":"building_hydroponics_farm","zone":"zone_habitat_hydroponics"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]}]}]}]},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"},{"e":"clear_variable","which":"ark_energy_district_cap"},{"e":"clear_variable","which":"ark_basic_districts"},{"e":"remove_flag","flag":"uncapped_energy"},{"e":"remove_flag","flag":"uncapped_mining"},{"e":"remove_flag","flag":"uncapped_farming"},{"e":"remove_flag","flag":"wilderness_planet"}]');
-INSERT INTO game_start_script (key, effects_json) VALUES ('void_dweller_home_planet_setup', '[{"e":"set_flag","flag":"habitat_level_2"},{"e":"set_flag","flag":"ignore_ai_building_limitations"},{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":2},{"e":"set_variable","which":"farming_districts","value":3},{"e":"set_variable","which":"ark_energy_district_cap","value":2},{"e":"set_variable","which":"ark_basic_districts","value":1},{"e":"add_building","building":"building_hab_major_capital"},{"e":"add_district","district":"district_hab_housing","amount":2},{"e":"if","branches":[{"limit":{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_hab_housing","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_hab_housing","zone":"zone_foundry","slot":2}]}]},{"e":"add_district","district":"district_hab_science","amount":1},{"e":"add_zone","district":"district_hab_housing","zone":"zone_habitat_research_unity","slot":1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_archetype","value":"LITHOID"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":5},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_trait","value":"trait_infernal"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":4},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_tree_of_life"},{"leaf":"has_origin","value":"origin_here_be_dragons"}]},"body":[{"e":"set_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"set_variable","which":"farming_districts","value":0}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"change_variable","which":"energy_districts","value":3}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_authority","value":"auth_hive_mind"},"body":[{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]},{"limit":null,"body":[{"e":"add_building","building":"building_offspring_nest"}]}]},{"e":"add_building","building":"building_hive_warren"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_authority","value":"auth_machine_intelligence"},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_hive_bodysnatcher"},{"leaf":"has_origin","value":"origin_syncretic_evolution"},{"leaf":"has_origin","value":"origin_necrophage"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},"body":[{"e":"set_flag","flag":"machine_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"is_archetype","value":"LITHOID"}]},"body":[{"e":"set_flag","flag":"lithoid_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"set_flag","flag":"infernal_subspecies"}]},{"limit":null,"body":[{"e":"set_flag","flag":"non_lithoid_subspecies"},{"e":"change_variable","which":"farming_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_temple","zone":"zone_ark_research_unity"}]},{"limit":null,"body":[{"e":"add_building","building":"building_temple"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_research_lab_1","zone":"zone_ark_research_unity"}]},{"limit":null,"body":[{"e":"add_building","building":"building_research_lab_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"add_building","building":"building_luxury_residence"}]},{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},"body":[{"e":"add_building","building":"building_communal_housing_large"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}]},"body":[{"e":"add_building","building":"building_stronghold"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}]},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_civil_education"}]}]},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}]},"body":[{"e":"add_building","building":"building_commercial_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"}]}]},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_foundry_1"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_broken_shackles"}]}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"add_district","district":"district_farming","amount":1},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"},"body":[{"e":"add_zone","district":"district_farming","zone":"zone_agrarian_anglers"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_farming","zone":"zone_anglers"}]}]},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"leaf":"has_origin","value":"origin_broken_shackles"}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"set_flag","flag":"angler_shackles"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_aristocratic_elite"},"body":[{"e":"add_building","building":"building_noble_estates"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_astrometeorology"},{"leaf":"has_civic","value":"civic_astrometeorology_hive"},{"leaf":"has_civic","value":"civic_astrometeorology_machine"},{"leaf":"has_civic","value":"civic_astrometeorology_megacorp"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_astrometeorology_observation_center"}]},{"limit":null,"body":[{"e":"add_building","building":"building_astrometeorology_observation_center","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"},"body":[{"e":"add_building","building":"building_augmentation_bazaars"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":2}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_civil_education"},"body":[{"e":"add_building","building":"building_state_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_sacrificial_temple_1"}]},{"limit":null,"body":[{"e":"remove_building","building":"building_temple"},{"e":"add_building","building":"building_sacrificial_temple_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_dystopian_society"},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_eager_explorers"},{"leaf":"has_civic","value":"civic_privatized_exploration"},{"leaf":"has_civic","value":"civic_hive_stargazers"},{"leaf":"has_civic","value":"civic_machine_exploration_protocol"}]},"body":[{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_artificial","value":"yes"}]}]}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_ranger_lodge"}]},{"limit":null,"body":[{"e":"add_building","building":"building_ranger_lodge","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"exists","value":"owner"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers"},"body":[{"e":"add_building","building":"building_lifecrypt_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_machine"},"body":[{"e":"add_building","building":"building_lifecrypt_machine_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_hive_mind"},"body":[{"e":"add_building","building":"building_lifecrypt_hive_mind_1"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_corporate"},"body":[{"e":"add_building","building":"building_lifecrypt_corporate_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_free_traders"},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_hive_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_life_seeded"}]},"body":[{"e":"add_building","building":"building_gaiaseeders_1"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memorialist"},{"leaf":"has_valid_civic","value":"civic_hive_memorialist"},{"leaf":"has_valid_civic","value":"civic_machine_memorialist"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_galactic_memorial_1"}]},{"limit":null,"body":[{"e":"add_building","building":"building_galactic_memorial_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memory_vault"},{"leaf":"has_valid_civic","value":"civic_memory_vault_corporate"},{"leaf":"has_valid_civic","value":"civic_memory_vault_machine"},{"leaf":"has_valid_civic","value":"civic_memory_vault_hive"}]},"body":[{"e":"add_building","building":"building_paragon_memory_vaults"},{"e":"set_variable","which":"paragon_memory_vault","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"add_building","building":"building_toxic_bath","zone":"zone_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_toxic_bath_hive","zone":"zone_foundry"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_industrial"},"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_foundry"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"add_building","building":"building_toxic_bath","zone":"zone_ark_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_toxic_bath_hive","zone":"zone_ark_foundry"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"leaf":"is_nomadic","value":"yes"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_ark_industrial"},"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_ark_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_toxic_bath_machine","zone":"zone_ark_foundry"}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_transcendental_retreat"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"add_building","building":"building_hive_transcendental_retreat"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},"body":[{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"no"},"body":[{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_permanent_employment"},"body":[{"e":"add_building","building":"building_posthumous_employment_center"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_pleasure_seekers"},{"leaf":"has_valid_civic","value":"civic_corporate_hedonism"}]},"body":[{"e":"add_building","building":"building_factory_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_reanimated_armies"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_building","value":"building_stronghold"},"body":[{"e":"remove_building","building":"building_stronghold"}]}]},{"e":"add_building","building":"building_dread_encampment"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_relentless_industrialists"},{"leaf":"has_valid_civic","value":"civic_corporate_relentless_industrialists"}]},"body":[{"e":"add_building","building":"building_coordinated_fulfillment_center_1","zone":"zone_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_zone","value":"zone_habitat_research_unity"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_habitat_research_unity"}]},{"limit":{"op":"and","args":[{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"add_building","building":"building_organic_sanctuary","zone":"zone_research_unity"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_shared_burden"},"body":[{"e":"add_building","building":"building_communal_housing"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]},"body":[{"e":"remove_building","building":"building_holo_theatres"},{"e":"add_building","building":"building_storm_summoning_theater"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_tactical_algorithms"},"body":[{"e":"add_building","building":"building_military_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_twisted_experimenters"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_hive_mind"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_corporate"}]},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_zone","value":"zone_habitat_research_unity"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_habitat_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_research_unity"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_research_unity_gestalt"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_research_unity_gestalt"}]},{"limit":{"leaf":"has_zone","value":"zone_ark_sacred_path_pilgrims"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_ark_sacred_path_pilgrims"}]},{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"add_building","building":"building_experimentation_chambers_1"}]},{"limit":null,"body":[{"e":"add_building","building":"building_experimentation_chambers_1","zone":"zone_research_unity"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_warrior_culture"},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"while","count":2,"limit":null,"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">","value":"0"},"body":[{"e":"change_variable","which":"farming_districts","value":-1},{"e":"change_variable","which":"energy_districts","value":1}]}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_void_dwellers"}]},"body":[{"e":"while","count":2,"limit":null,"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">","value":"0"},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"energy_districts","value":1}]}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">","value":"ark_energy_district_cap"},"body":[{"e":"set_variable","which":"energy_districts","value":"ark_energy_district_cap"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_photosynthesis_fields","amount":"energy_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_energy"},"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"energy_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_1","amount":1}]},{"e":"add_zone","district":"district_nexus_1","zone":"zone_energy_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_energy","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_generator","amount":"energy_districts"}]},{"limit":null,"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_hollow_mountains","amount":"mining_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_mining"},"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"mining_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_2","amount":1}]},{"e":"add_zone","district":"district_nexus_2","zone":"zone_minerals_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_basic","amount":"ark_basic_districts"},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_food"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_harvest"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_orchard_forests","amount":"farming_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_farming"},"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_zone","district":"district_hab_energy","zone":"zone_habitat_hydroponics"},{"e":"add_district","district":"district_hab_energy","amount":"farming_districts"},{"e":"add_building","building":"building_hydroponics_farm","zone":"zone_habitat_hydroponics"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]}]}]}]},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"},{"e":"clear_variable","which":"ark_energy_district_cap"},{"e":"clear_variable","which":"ark_basic_districts"},{"e":"remove_flag","flag":"uncapped_energy"},{"e":"remove_flag","flag":"uncapped_mining"},{"e":"remove_flag","flag":"uncapped_farming"},{"e":"remove_flag","flag":"wilderness_planet"}]');
+INSERT INTO game_start_script (key, effects_json) VALUES ('generate_start_buildings_and_districts', '[{"e":"set_flag","flag":"ignore_ai_building_limitations"},{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":2},{"e":"set_variable","which":"farming_districts","value":3},{"e":"set_variable","which":"ark_energy_district_cap","value":2},{"e":"set_variable","which":"ark_basic_districts","value":1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_capital"},{"e":"add_district","district":"district_city","amount":2},{"e":"add_zone","district":"district_city","zone":"zone_research_unity","slot":1},{"e":"add_zone","district":"district_city","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_hive_capital"},{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]},{"limit":null,"body":[{"e":"add_building","building":"building_offspring_nest"}]}]},{"e":"add_building","building":"building_hive_warren"},{"e":"add_district","district":"district_hive","amount":2},{"e":"add_zone","district":"district_hive","zone":"zone_research_unity","slot":1},{"e":"add_zone","district":"district_hive","zone":"zone_foundry","slot":2}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"add_building","building":"building_machine_capital"},{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"add_district","district":"district_nexus","amount":2},{"e":"add_zone","district":"district_nexus","zone":"zone_research_unity","slot":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_nexus","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_nexus","zone":"zone_foundry","slot":2}]}]},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity","slot":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_hive_capital"},{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]}]},{"e":"add_building","building":"building_hive_warren"},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity_gestalt","slot":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_foundry","slot":2}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"add_building","building":"building_machine_capital"},{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_district","district":"district_ark_city","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_research_unity_gestalt","slot":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_ark_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_foundry","slot":2}]}]},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_archetype","value":"LITHOID"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":5},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_trait","value":"trait_infernal"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":4},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_tree_of_life"},{"leaf":"has_origin","value":"origin_here_be_dragons"}]},"body":[{"e":"set_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"set_variable","which":"farming_districts","value":0}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_hive_bodysnatcher"},{"leaf":"has_origin","value":"origin_syncretic_evolution"},{"leaf":"has_origin","value":"origin_necrophage"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},"body":[{"e":"set_flag","flag":"machine_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"is_archetype","value":"LITHOID"}]},"body":[{"e":"set_flag","flag":"lithoid_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"set_flag","flag":"infernal_subspecies"}]},{"limit":null,"body":[{"e":"set_flag","flag":"non_lithoid_subspecies"},{"e":"change_variable","which":"farming_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_wilderness"},"body":[{"e":"remove_all_buildings"},{"e":"set_flag","flag":"wilderness_planet"},{"e":"add_district","district":"district_craglands","amount":2},{"e":"add_zone","district":"district_craglands","zone":"zone_research_unity_wilderness","slot":1},{"e":"add_zone","district":"district_craglands","zone":"zone_urban_wilderness","slot":2},{"e":"add_building","building":"building_capital_wilderness","zone":"zone_default"},{"e":"add_building","building":"building_cradle_of_rebirth","zone":"zone_default"},{"e":"add_building","building":"building_natural_furnace_0","zone":"zone_default"},{"e":"add_building","building":"building_avatar_chamber_1","zone":"zone_default"},{"e":"add_building","building":"building_brain_node_1","zone":"zone_research_unity_wilderness"},{"e":"add_building","building":"building_commensal_clearing_1","zone":"zone_research_unity_wilderness"},{"e":"add_building","building":"building_tendril_cradle_1","zone":"zone_urban_wilderness"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_default"},"body":[{"e":"change_variable","which":"energy_districts","value":1},{"e":"if","branches":[{"limit":{"leaf":"is_nomadic","value":"yes"},"body":[{"e":"change_variable","which":"ark_energy_district_cap","value":1},{"e":"change_variable","which":"ark_basic_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_trait","value":"trait_organic"},{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"change_variable","which":"mining_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_forever_cruise"},"body":[{"e":"remove_district","district":"district_ark_city"},{"e":"add_district","district":"district_ark_forever_cruise","amount":1},{"e":"add_district","district":"district_ark_forever_cruise","amount":1},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_forever_cruise_city_mixed","slot":2},{"e":"change_variable","which":"energy_districts","value":-1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"not","args":[{"leaf":"has_country_flag","value":"forever_cruise_over"}]}]},"body":[{"e":"add_building","building":"building_passenger_dorms","zone":"zone_ark_forever_cruise_city_mixed"}]}]},{"e":"add_building","building":"building_passenger_dorms","zone":"zone_ark_forever_cruise_city_mixed"},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"leaf":"has_country_flag","value":"machine_subspecies"}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant","zone":"zone_ark_forever_cruise_city_mixed"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_country_flag","value":"machine_subspecies"},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},"body":[{"e":"add_building","building":"building_robot_assembly_plant","zone":"zone_ark_forever_cruise_city_mixed"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_sacred_path"},"body":[{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_sacred_path_pilgrims","slot":1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"has_origin","value":"origin_heirs_of_the_khan"}]},"body":[{"e":"add_district","district":"district_ark_military","amount":1}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_shroud_forged"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_mindwardens"},"body":[{"e":"add_building","building":"building_ancient_ward_1"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"or","args":[{"leaf":"has_zone","value":"zone_resort_hunting_ground"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_country_flag","value":"trophy_hunter_alignment"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]}]}]},{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"trophy_hunter_alignment"}]}]}]},"body":[{"e":"add_building","building":"hunting_grounds"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_country_flag","value":"animal_handler_alignment"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]}]}]},"body":[{"e":"add_building","building":"wildlife_sanctuary"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_valid_civic","value":"civic_warrior_culture"}]}]}]},"body":[{"e":"add_building","building":"primal_arena"}]},{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_primal_calling"},{"op":"and","args":[{"op":"and","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_origin","value":"origin_primal_calling"}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"animal_handler_alignment"}]}]}]},"body":[{"e":"add_building","building":"symbiosis_nexus"}]},{"limit":{"leaf":"has_origin","value":"origin_primal_calling"},"body":[{"e":"add_building","building":"wildlife_ranch"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cybernetic_creed"},"body":[{"e":"set_flag","flag":"suppress_vanilla_factions"},{"e":"remove_building","building":"building_factory_1"},{"e":"set_flag","flag":"ignore_creed_building_limitation"},{"e":"unknown","key":"add_building_to_starting_research_unity_zone"},{"e":"unknown","key":"add_building_to_starting_research_unity_zone"},{"e":"unknown","key":"add_building_to_starting_industry_zone"},{"e":"unknown","key":"add_building_to_starting_industry_zone"},{"e":"if","branches":[{"limit":{"leaf":"has_civic","value":"civic_civil_education"},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"remove_flag","flag":"ignore_creed_building_limitation"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_synthetic_fertility"},"body":[{"e":"set_variable","which":"num_dead_identities","value":300},{"e":"add_building","building":"building_abandoned_gene_clinic"},{"e":"add_building","building":"building_identity_repository"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_arc_welders"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"change_variable","which":"energy_districts","value":"mining_districts"},{"e":"set_variable","which":"mining_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_payback"},"body":[{"e":"remove_district","district":"district_city"},{"e":"set_variable","which":"energy_districts","value":1},{"e":"set_variable","which":"mining_districts","value":1},{"e":"set_variable","which":"farming_districts","value":1},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"is_archetype","value":"LITHOID"},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"change_variable","which":"mining_districts","value":1}]},{"limit":null,"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"set_flag","flag":"payback_enlightenment_built"},{"e":"add_zone","district":"district_city","zone":"zone_payback_enlightenment","slot":1},{"e":"add_building","building":"building_medical_2","zone":"zone_payback_enlightenment"},{"e":"add_building","building":"building_energy_grid","zone":"zone_payback_enlightenment"},{"e":"add_building","building":"building_mineral_purification_plant","zone":"zone_payback_enlightenment"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_broken_shackles"},"body":[{"e":"add_district","district":"district_crashed_slaver_ship","amount":6},{"e":"remove_all_buildings"},{"e":"remove_zone","district":"district_crashed_slaver_ship","zone":"zone_research_unity"},{"e":"remove_zone","district":"district_crashed_slaver_ship","zone":"zone_industrial"},{"e":"remove_building","building":"building_colony_shelter"},{"e":"add_building","building":"building_low_tech_capital","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_admin_hub","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_research_lab","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_scrap_refinery","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_farm","zone":"zone_default"},{"e":"add_building","building":"building_low_tech_power_plant","zone":"zone_default"},{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"angler_shackles"},"body":[{"e":"add_district","district":"district_farming","amount":1},{"e":"add_zone","district":"district_farming","zone":"zone_anglers"},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"set_variable","which":"energy_districts","value":0},{"e":"set_variable","which":"mining_districts","value":0},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"is_nomadic","value":"no"}]},"body":[{"e":"remove_district","district":"district_city"},{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"is_nomadic","value":"yes"}]},"body":[{"e":"set_flag","flag":"toxic_knights_arkship"},{"e":"add_zone","district":"district_ark_city","zone":"zone_ark_knights","slot":1},{"e":"add_building","building":"building_order_keep","zone":"zone_ark_knights"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_subterranean"},{"leaf":"has_origin","value":"origin_subterranean_machines"}]},"body":[{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_volcanic"}]},"body":[{"e":"set_flag","flag":"uncapped_mining"},{"e":"add_district","district":"district_mining","amount":1},{"e":"add_zone","district":"district_mining","zone":"zone_subterranean_urban"},{"e":"change_variable","which":"mining_districts","value":-1}]},{"limit":null,"body":[{"e":"set_flag","flag":"uncapped_mining"},{"e":"add_district","district":"district_melting","amount":1},{"e":"add_zone","district":"district_melting","zone":"zone_subterranean_urban"},{"e":"change_variable","which":"mining_districts","value":-1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_ocean_paradise"},{"leaf":"has_origin","value":"origin_ocean_machines"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_necrophage"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_valid_civic","value":"civic_scorched_earth"},{"leaf":"has_valid_civic","value":"civic_hive_scorched_earth"},{"leaf":"has_menace_perk","value":"menp_behemoth_ever_hungry"}]}]}]},"body":[{"e":"add_building","building":"building_necrophage_elevation_chamber"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_shattered_ring"},"body":[{"e":"change_variable","which":"mining_districts","value":2},{"e":"set_flag","flag":"uncapped_energy"},{"e":"set_flag","flag":"uncapped_mining"},{"e":"set_flag","flag":"uncapped_farming"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_origin","value":"origin_remnants"},{"leaf":"host_has_dlc","value":"Ancient Relics Story Pack"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_clone_army"},"body":[{"e":"add_building","building":"building_clone_army_clone_vat"},{"e":"add_building","building":"building_clone_army_clone_vat"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_mechanists"},"body":[{"e":"add_building","building":"building_robot_assembly_plant"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_broken_shackles"}]}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"add_district","district":"district_farming","amount":1},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"},"body":[{"e":"add_zone","district":"district_farming","zone":"zone_agrarian_anglers"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_farming","zone":"zone_anglers"}]}]},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"leaf":"has_origin","value":"origin_broken_shackles"}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"set_flag","flag":"angler_shackles"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_aristocratic_elite"},"body":[{"e":"add_building","building":"building_noble_estates"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_astrometeorology"},{"leaf":"has_civic","value":"civic_astrometeorology_hive"},{"leaf":"has_civic","value":"civic_astrometeorology_machine"},{"leaf":"has_civic","value":"civic_astrometeorology_megacorp"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"},"body":[{"e":"add_building","building":"building_augmentation_bazaars"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":2}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_civil_education"},"body":[{"e":"add_building","building":"building_state_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_dystopian_society"},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_eager_explorers"},{"leaf":"has_civic","value":"civic_privatized_exploration"},{"leaf":"has_civic","value":"civic_hive_stargazers"},{"leaf":"has_civic","value":"civic_machine_exploration_protocol"}]},"body":[{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_artificial","value":"yes"}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_machine"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_hive_mind"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_corporate"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_free_traders"},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_hive_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_life_seeded"}]},"body":[{"e":"add_building","building":"building_gaiaseeders_1"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memorialist"},{"leaf":"has_valid_civic","value":"civic_hive_memorialist"},{"leaf":"has_valid_civic","value":"civic_machine_memorialist"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memory_vault"},{"leaf":"has_valid_civic","value":"civic_memory_vault_corporate"},{"leaf":"has_valid_civic","value":"civic_memory_vault_machine"},{"leaf":"has_valid_civic","value":"civic_memory_vault_hive"}]},"body":[{"e":"add_building","building":"building_paragon_memory_vaults"},{"e":"set_variable","which":"paragon_memory_vault","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_permanent_employment"},"body":[{"e":"add_building","building":"building_posthumous_employment_center"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_pleasure_seekers"},{"leaf":"has_valid_civic","value":"civic_corporate_hedonism"}]},"body":[{"e":"add_building","building":"building_holo_theatres"},{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_reanimated_armies"},"body":[{"e":"add_building","building":"building_dread_encampment"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_relentless_industrialists"},{"leaf":"has_valid_civic","value":"civic_corporate_relentless_industrialists"}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_shared_burden"},"body":[{"e":"add_building","building":"building_communal_housing"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]},"body":[{"e":"add_building","building":"building_storm_summoning_theater"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_tactical_algorithms"},"body":[{"e":"add_building","building":"building_military_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_twisted_experimenters"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_hive_mind"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_corporate"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_warrior_culture"},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"change_variable","which":"energy_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_broken_shackles"},{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_origin","value":"origin_forever_cruise"}]}]}]},"body":[{"e":"add_building","building":"building_luxury_residence"}]},{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},"body":[{"e":"add_building","building":"building_communal_housing_large"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_valid_civic","value":"civic_reanimated_armies"}]}]}]},"body":[{"e":"add_building","building":"building_stronghold"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]}]}]},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_valid_civic","value":"civic_civil_education"}]}]}]},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"}]}]},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_foundry_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"uses_district_set","value":"volcanic_world"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_origin","value":"origin_cosmic_dawn"},"body":[{"e":"set_variable","which":"cd_pods_var","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":"=","value":"1"},"body":[{"e":"add_building","building":"building_hydroponics_farm"}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"3"},"body":[{"e":"add_building","building":"building_hydroponics_farm"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_district","district":"district_city","amount":1}]},{"limit":{"leaf":"has_authority","value":"auth_hive_mind"},"body":[{"e":"add_district","district":"district_hive","amount":1}]}]},{"e":"add_district","district":"district_geothermal","amount":"energy_districts"},{"e":"add_district","district":"district_melting","amount":"mining_districts"},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">","value":"ark_energy_district_cap"},"body":[{"e":"set_variable","which":"energy_districts","value":"ark_energy_district_cap"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_photosynthesis_fields","amount":"energy_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_energy"},"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"energy_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_1","amount":1}]},{"e":"add_zone","district":"district_nexus_1","zone":"zone_energy_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_energy","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_generator","amount":"energy_districts"}]},{"limit":null,"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_hollow_mountains","amount":"mining_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_mining"},"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"mining_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_2","amount":1}]},{"e":"add_zone","district":"district_nexus_2","zone":"zone_minerals_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_basic","amount":"ark_basic_districts"},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_food"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_harvest"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_orchard_forests","amount":"farming_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_farming"},"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_zone","district":"district_hab_energy","zone":"zone_habitat_hydroponics"},{"e":"add_district","district":"district_hab_energy","amount":"farming_districts"},{"e":"add_building","building":"building_hydroponics_farm","zone":"zone_habitat_hydroponics"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]}]}]}]},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"},{"e":"clear_variable","which":"ark_energy_district_cap"},{"e":"clear_variable","which":"ark_basic_districts"},{"e":"remove_flag","flag":"uncapped_energy"},{"e":"remove_flag","flag":"uncapped_mining"},{"e":"remove_flag","flag":"uncapped_farming"},{"e":"remove_flag","flag":"wilderness_planet"}]');
+INSERT INTO game_start_script (key, effects_json) VALUES ('void_dweller_home_planet_setup', '[{"e":"set_flag","flag":"habitat_level_2"},{"e":"set_flag","flag":"ignore_ai_building_limitations"},{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":2},{"e":"set_variable","which":"farming_districts","value":3},{"e":"set_variable","which":"ark_energy_district_cap","value":2},{"e":"set_variable","which":"ark_basic_districts","value":1},{"e":"add_building","building":"building_hab_major_capital"},{"e":"add_district","district":"district_hab_housing","amount":2},{"e":"if","branches":[{"limit":{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"}]},"body":[{"e":"add_zone","district":"district_hab_housing","zone":"zone_industrial","slot":2},{"e":"add_building","building":"building_factory_1","zone":"zone_industrial"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_hab_housing","zone":"zone_foundry","slot":2}]}]},{"e":"add_district","district":"district_hab_science","amount":1},{"e":"add_zone","district":"district_hab_housing","zone":"zone_habitat_research_unity","slot":1},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"exists","value":"this"},{"leaf":"uses_ship_category","value":"bio_ship"}]},"body":[{"e":"change_variable","which":"farming_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_archetype","value":"LITHOID"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":5},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_trait","value":"trait_infernal"},"body":[{"e":"set_variable","which":"energy_districts","value":2},{"e":"set_variable","which":"mining_districts","value":4},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_origin","value":"origin_tree_of_life"},{"leaf":"has_origin","value":"origin_here_be_dragons"}]},"body":[{"e":"set_variable","which":"farming_districts","value":1}]},{"limit":null,"body":[{"e":"set_variable","which":"farming_districts","value":0}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_authority","value":"auth_hive_mind"},"body":[{"e":"if","branches":[{"limit":{"op":"not","args":[{"leaf":"has_origin","value":"origin_progenitor_hive"}]},"body":[{"e":"add_building","building":"building_spawning_pool"}]},{"limit":null,"body":[{"e":"add_building","building":"building_offspring_nest"}]}]},{"e":"add_building","building":"building_hive_warren"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_authority","value":"auth_machine_intelligence"},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"add_building","building":"building_drone_storage"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},"body":[{"e":"add_building","building":"building_machine_assembly_plant"},{"e":"set_variable","which":"energy_districts","value":3},{"e":"set_variable","which":"mining_districts","value":4},{"e":"set_variable","which":"farming_districts","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"leaf":"has_valid_civic","value":"civic_hive_bodysnatcher"},{"leaf":"has_origin","value":"origin_syncretic_evolution"},{"leaf":"has_origin","value":"origin_necrophage"},{"leaf":"has_origin","value":"origin_forever_cruise"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"leaf":"has_trait","value":"trait_machine_unit"}]}]},"body":[{"e":"set_flag","flag":"machine_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"is_archetype","value":"LITHOID"}]},"body":[{"e":"set_flag","flag":"lithoid_subspecies"}]},{"limit":{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_hive_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_machine_guided_sapience"},{"leaf":"has_valid_civic","value":"civic_corporate_guided_sapience"}]}]},{"leaf":"has_trait","value":"trait_infernal"}]},"body":[{"e":"set_flag","flag":"infernal_subspecies"}]},{"limit":null,"body":[{"e":"set_flag","flag":"non_lithoid_subspecies"},{"e":"change_variable","which":"farming_districts","value":1}]}]}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_broken_shackles"}]}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"add_district","district":"district_farming","amount":1},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_agrarian_idyll"},"body":[{"e":"add_zone","district":"district_farming","zone":"zone_agrarian_anglers"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_farming","zone":"zone_anglers"}]}]},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_anglers"},{"leaf":"has_valid_civic","value":"civic_machine_anglers"},{"leaf":"has_valid_civic","value":"civic_corporate_machine_anglers"}]},{"leaf":"has_origin","value":"origin_broken_shackles"}]},{"leaf":"is_planet_class","value":"pc_ocean"}]},"body":[{"e":"set_flag","flag":"uncapped_farming"},{"e":"set_flag","flag":"angler_shackles"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_aristocratic_elite"},"body":[{"e":"add_building","building":"building_noble_estates"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_astrometeorology"},{"leaf":"has_civic","value":"civic_astrometeorology_hive"},{"leaf":"has_civic","value":"civic_astrometeorology_machine"},{"leaf":"has_civic","value":"civic_astrometeorology_megacorp"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_augmentation_bazaars"},"body":[{"e":"add_building","building":"building_augmentation_bazaars"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_corporate_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_hive_catalytic_processing"},{"leaf":"has_valid_civic","value":"civic_machine_catalytic_processing"}]},"body":[{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":2}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_civil_education"},"body":[{"e":"add_building","building":"building_state_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_dystopian_society"},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_eager_explorers"},{"leaf":"has_civic","value":"civic_privatized_exploration"},{"leaf":"has_civic","value":"civic_hive_stargazers"},{"leaf":"has_civic","value":"civic_machine_exploration_protocol"}]},"body":[{"e":"change_variable","which":"energy_districts","value":-1},{"e":"change_variable","which":"mining_districts","value":-1},{"e":"change_variable","which":"farming_districts","value":-1}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_artificial","value":"yes"}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_machine"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_hive_mind"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]},{"limit":{"leaf":"has_valid_civic","value":"civic_entropy_drinkers_corporate"},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_free_traders"},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_hive_idyllic_bloom"},{"leaf":"has_valid_civic","value":"civic_life_seeded"}]},"body":[{"e":"add_building","building":"building_gaiaseeders_1"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memorialist"},{"leaf":"has_valid_civic","value":"civic_hive_memorialist"},{"leaf":"has_valid_civic","value":"civic_machine_memorialist"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_memory_vault"},{"leaf":"has_valid_civic","value":"civic_memory_vault_corporate"},{"leaf":"has_valid_civic","value":"civic_memory_vault_machine"},{"leaf":"has_valid_civic","value":"civic_memory_vault_hive"}]},"body":[{"e":"add_building","building":"building_paragon_memory_vaults"},{"e":"set_variable","which":"paragon_memory_vault","value":0}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]},{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]}]},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]},{"op":"or","args":[{"leaf":"has_authority","value":"auth_machine_intelligence"},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_hive_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_machine_toxic_baths"},{"leaf":"has_valid_civic","value":"civic_toxic_baths_individual_machine"},{"leaf":"has_valid_civic","value":"civic_corporate_toxic_baths_individual_machine"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]},{"leaf":"has_authority","value":"auth_hive_mind"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_obsessional_directive"},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_permanent_employment"},"body":[{"e":"add_building","building":"building_posthumous_employment_center"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_pleasure_seekers"},{"leaf":"has_valid_civic","value":"civic_corporate_hedonism"}]},"body":[{"e":"add_building","building":"building_holo_theatres"},{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_reanimated_armies"},"body":[{"e":"add_building","building":"building_dread_encampment"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_relentless_industrialists"},{"leaf":"has_valid_civic","value":"civic_corporate_relentless_industrialists"}]},"body":[{"e":"unknown","key":"add_building_to_starting_industry_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"leaf":"has_valid_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_forever_cruise"}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_shared_burden"},"body":[{"e":"add_building","building":"building_communal_housing"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]},"body":[{"e":"add_building","building":"building_storm_summoning_theater"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_machine_tactical_algorithms"},"body":[{"e":"add_building","building":"building_military_academy"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_twisted_experimenters"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_hive_mind"},{"leaf":"has_valid_civic","value":"civic_twisted_experimenters_corporate"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"leaf":"has_valid_civic","value":"civic_warrior_culture"},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_tankbound"},{"leaf":"has_valid_civic","value":"civic_tankbound_corporate"}]},"body":[{"e":"change_variable","which":"energy_districts","value":1}]}]},{"e":"if","branches":[{"limit":{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_broken_shackles"},{"leaf":"has_origin","value":"origin_wilderness"}]}]},"body":[{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_death_cult"},{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}]}]}]}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}]},"body":[{"e":"unknown","key":"add_building_to_starting_research_unity_zone"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_shared_burden"},{"leaf":"has_origin","value":"origin_forever_cruise"}]}]}]},"body":[{"e":"add_building","building":"building_luxury_residence"}]},{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}]},{"leaf":"has_valid_civic","value":"civic_shared_burden"}]},"body":[{"e":"add_building","building":"building_communal_housing_large"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_valid_civic","value":"civic_reanimated_armies"}]}]}]},"body":[{"e":"add_building","building":"building_stronghold"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_civic","value":"civic_storm_callers"},{"leaf":"has_civic","value":"civic_storm_callers_megacorp"}]}]}]},"body":[{"e":"add_building","building":"building_holo_theatres","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_valid_civic","value":"civic_civil_education"}]}]}]},"body":[{"e":"add_building","building":"building_precinct_house"}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},"body":[{"e":"add_building","building":"building_commercial_zone","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_private_healthcare_corporate"}]}]},"body":[{"e":"add_building","building":"building_medical_1","unique":true}]}]},{"e":"if","branches":[{"limit":{"op":"and","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}]},{"op":"and","args":[{"leaf":"is_archetype","value":"MACHINE"},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}]},"body":[{"e":"add_building","building":"building_foundry_1"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">","value":"ark_energy_district_cap"},"body":[{"e":"set_variable","which":"energy_districts","value":"ark_energy_district_cap"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"energy_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_photosynthesis_fields","amount":"energy_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_energy"},"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"energy_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_1","amount":1}]},{"e":"add_zone","district":"district_nexus_1","zone":"zone_energy_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_energy","amount":"energy_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_generator","amount":"energy_districts"}]},{"limit":null,"body":[{"e":"add_district","district":"district_generator","amount":"energy_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"mining_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_hollow_mountains","amount":"mining_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_mining"},"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[{"e":"while","count":"mining_districts","limit":null,"body":[{"e":"add_district","district":"district_nexus_2","amount":1}]},{"e":"add_zone","district":"district_nexus_2","zone":"zone_minerals_nexus"}]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_district","district":"district_hab_mining","amount":"mining_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_mining","amount":"mining_districts"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[{"e":"add_district","district":"district_ark_basic","amount":"ark_basic_districts"},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_food"}]},{"limit":null,"body":[{"e":"add_zone","district":"district_ark_basic","zone":"zone_ark_harvest"}]}]}]}]},{"e":"if","branches":[{"limit":{"leaf":"check_variable","which":"farming_districts","cmp":">=","value":"1"},"body":[{"e":"if","branches":[{"limit":{"leaf":"has_carrier_flag","value":"wilderness_planet"},"body":[{"e":"add_district","district":"district_orchard_forests","amount":"farming_districts"}]},{"limit":{"leaf":"has_carrier_flag","value":"uncapped_farming"},"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]},{"limit":{"leaf":"is_planet_class","value":"pc_machine"},"body":[]},{"limit":{"leaf":"is_planet_class","value":"pc_habitat"},"body":[{"e":"add_zone","district":"district_hab_energy","zone":"zone_habitat_hydroponics"},{"e":"add_district","district":"district_hab_energy","amount":"farming_districts"},{"e":"add_building","building":"building_hydroponics_farm","zone":"zone_habitat_hydroponics"}]},{"limit":{"leaf":"is_planet_class","value":"pc_ark"},"body":[]},{"limit":null,"body":[{"e":"add_district","district":"district_farming","amount":"farming_districts"}]}]}]}]},{"e":"clear_variable","which":"energy_districts"},{"e":"clear_variable","which":"mining_districts"},{"e":"clear_variable","which":"farming_districts"},{"e":"clear_variable","which":"ark_energy_district_cap"},{"e":"clear_variable","which":"ark_basic_districts"},{"e":"remove_flag","flag":"uncapped_energy"},{"e":"remove_flag","flag":"uncapped_mining"},{"e":"remove_flag","flag":"uncapped_farming"},{"e":"remove_flag","flag":"wilderness_planet"}]');
 INSERT OR REPLACE INTO ship_size_resource (key, kind, resource, amount) VALUES ('bio_titan', 'upkeep', 'food', '32.0');
 INSERT OR REPLACE INTO ship_size_resource (key, kind, resource, amount) VALUES ('bio_titan', 'upkeep', 'alloys', '4.0');
 INSERT OR REPLACE INTO build_time (key, days) VALUES ('bio_titan', '1800.0');
@@ -52846,7 +52981,7 @@ INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes
 INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes_json)
                VALUES ('terminal_gasgiant_category', 5, 'Terminal Orbit', 'A small and otherwise insignificant moon orbiting this gas giant appears to be on a trajectory that will soon result in a collision with its primary.', '[{"event": "anomaly.2570", "name": "Terminal Orbit"}]');
 INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes_json)
-               VALUES ('terrestial_telescope_category', 3, 'Terrestrial Telescopes', 'Scans performed by the indicate the presence of a derelict space station in the System.
+               VALUES ('terrestial_telescope_category', 3, 'Terrestrial Telescopes', 'Scans from our science ship indicate the presence of a derelict space station in the System.
 It looks like it was deposited there by a passing cosmic storm. Life signs return negative, and there are no power signals of any kind. Two massive telescopes protrude from opposite sides of the station. These optical instruments appear advanced, and far too large relative to the station''s size. The technology and architecture are not yet familiar to us.
 We could attempt to reactivate the telescopes, as this could yield some interesting insights.', '[{"event": "cstorms.1605", "name": "Terrestrial Telescopes"}]');
 INSERT OR REPLACE INTO anomaly_category (key, level, name, description, outcomes_json)
@@ -76050,7 +76185,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('stellar_ignition_habitability_mod_3', 'Stellar Ignition', 'The increased luminosity brought upon by dark matter fusion reactions in this system has decreased the habitability throughout the system.', NULL);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('stellar_ignition_habitability_mod_4', 'Stellar Ignition', 'The increased luminosity brought upon by dark matter fusion reactions in this system has decreased the habitability throughout the system.', NULL);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('stellar_ignition_habitability_mod_5', 'Stellar Ignition', 'The increased luminosity brought upon by dark matter fusion reactions in this system has decreased the habitability throughout the system.', NULL);
-INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('stellar_ignition_mod', 'Stellar Ignition', 'Dark matter sustained nuclear fusion has significantly increased the output and luminosity of this star.', 'System Wide Habitability: $@stellar_ignition_hab_penalty|0%$');
+INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('stellar_ignition_mod', 'Stellar Ignition', 'Dark matter sustained nuclear fusion has significantly increased the output and luminosity of this star.', 'System Wide Habitability (Non-Artificial Habitable Worlds): $@stellar_ignition_hab_penalty|0%$ Stacks with each Ignition in the system, to $@stellar_ignition_hab_penalty_max|0%$');
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('stellar_ignition_mod', 'station_gatherers_produces_mult', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -90817,7 +90952,7 @@ INSERT INTO tradition_swap
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_cybernetics_augmentation_overload#1', 'tr_cybernetics_augmentation_overload', 'tr_cybernetics_synaptic_sub_processing', 'Synaptic Sub-Processing', 'Offloading routine thought patterns into central hubs decreases the synaptic load on our uplink nodes.', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"}]}]}', 0, '1.0', 'Spawning Pools provide +200 Augmentor Drone Jobs
-Empire Size from Districts: -25%', 1);
+Empire Size from Districts: -15%', 1);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cybernetics_augmentation_overload#1', 'empire_size_districts_mult', '-0.15', NULL, 0);
@@ -90835,7 +90970,7 @@ INSERT INTO tradition_swap
 Situation Speed: +5%
 After Cyberization
 Spawning Pools provide +200 Augmentor Drone Jobs
-Empire Size from Districts: -25%', 3);
+Empire Size from Districts: -15%', 3);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_modular_cybernetics', 'tradition_cybernetics', 'normal', 'Modular Cybernetics', 'Improving the compatibility of our cybernetic enhancements will reduce downtime while retrofitting.', '{"leaf":"has_tradition","value":"tr_cybernetics_integrated_anatomy"}', NULL, 'Mechanical Modification Points and Mechanical Species Trait Picks also apply to Organic species.
@@ -92071,7 +92206,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('diplo_weight_naval_mult', 'Diplomatic Weight From Fleet Power', 1);
 INSERT INTO ascension_perk
                (key, name, description, is_path, potential_json, possible_json,
-                required_dlc, tooltip, sort_order) VALUES ('ap_hydrocentric', 'Hydrocentric', 'No longer shall we settle for', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Aquatics Species Pack"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_hydrocentric"}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_pc_ocean_preference"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_wet"},{"leaf":"has_trait","value":"trait_robot_aquatic"},{"leaf":"has_trait","value":"trait_auto_hab_preference"}]},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"op":"or","args":[{"leaf":"has_aquatic_trait","value":"yes"},{"leaf":"has_trait","value":"trait_auto_hab_preference"}]}]}', 'Aquatics Species Pack', 'Allows the construction of Ice Mining Stations on starbases, which enable the Expand Planetary Sea decision on Ocean worlds and Flood Habitat decision on Habitats.
+                required_dlc, tooltip, sort_order) VALUES ('ap_hydrocentric', 'Hydrocentric', 'No longer shall we settle for', 0, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Aquatics Species Pack"},{"op":"not","args":[{"leaf":"has_ascension_perk","value":"ap_hydrocentric"}]},{"op":"or","args":[{"leaf":"has_trait","value":"trait_pc_ocean_preference"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_wet"},{"leaf":"has_trait","value":"trait_robot_aquatic"},{"leaf":"has_trait","value":"trait_auto_hab_preference"}]},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"leaf":"has_aquatic_trait","value":"yes"}]}', 'Aquatics Species Pack', 'Allows the construction of Ice Mining Stations on starbases, which enable the Expand Planetary Sea decision on Ocean worlds and Flood Habitat decision on Habitats.
 Species with the Aquatic or Waterproof trait gain 50% greater benefits for living on Ocean worlds, but penalties for living on non-Wet worlds are likewise amplified.', 16);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
@@ -94877,6 +95012,218 @@ INSERT INTO tradition_modifier
                    VALUES ('will_of_motion', 'ship_speed_mult', '0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_planet_food_boost', 'Encourage Colony Growth', '[{"cost": {"food": 1000.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"no"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"planet_growth_discouraged"},{"leaf":"has_modifier","value":"planet_population_control"}]}]},{"leaf":"always","value":"no"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_food_boost"}]}', '[{"modifier": "planet_food_boost", "days": 3600}]', NULL, 0);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_planet_luxuries_boost', 'Distribute Luxury Goods', '[{"cost": {"consumer_goods": 100.0}, "when": {"cmp": "<", "leaf": "pop_amount", "value": "1000"}}, {"cost": {"consumer_goods": 200.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "1000"}, {"cmp": "<", "leaf": "pop_amount", "value": "2000"}], "op": "and"}}, {"cost": {"consumer_goods": 300.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "2000"}, {"cmp": "<", "leaf": "pop_amount", "value": "3000"}], "op": "and"}}, {"cost": {"consumer_goods": 400.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "3000"}, {"cmp": "<", "leaf": "pop_amount", "value": "4000"}], "op": "and"}}, {"cost": {"consumer_goods": 500.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "4000"}, {"cmp": "<", "leaf": "pop_amount", "value": "5000"}], "op": "and"}}, {"cost": {"consumer_goods": 600.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "5000"}, {"cmp": "<", "leaf": "pop_amount", "value": "6000"}], "op": "and"}}, {"cost": {"consumer_goods": 700.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "6000"}, {"cmp": "<", "leaf": "pop_amount", "value": "7000"}], "op": "and"}}, {"cost": {"consumer_goods": 800.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "7000"}, {"cmp": "<", "leaf": "pop_amount", "value": "8500"}], "op": "and"}}, {"cost": {"consumer_goods": 900.0}, "when": {"args": [{"cmp": ">=", "leaf": "pop_amount", "value": "8500"}, {"cmp": "<", "leaf": "pop_amount", "value": "10000"}], "op": "and"}}, {"cost": {"consumer_goods": 1000.0}, "when": {"cmp": ">=", "leaf": "pop_amount", "value": "10000"}}]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_luxuries_boost"}]}', '[{"modifier": "planet_luxuries_boost", "days": 3600}]', NULL, 1);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_enact_population_control', 'Declare Population Controls', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"op":"not","args":[{"leaf":"has_policy_flag","value":"population_controls_not_allowed"}]},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_population_control"}]}]}', NULL, '[{"modifier": "planet_population_control", "days": -1}]', NULL, 2);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_population_control', 'End Population Controls', NULL, '{"leaf":"has_modifier","value":"planet_population_control"}', NULL, NULL, '["planet_population_control"]', 3);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_enact_population_control_gestalt', 'Cease Drone Production', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_population_control_gestalt"}]}]}', NULL, '[{"modifier": "planet_population_control_gestalt", "days": -1}]', NULL, 4);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_population_control_gestalt', 'Continue Drone Production', NULL, '{"leaf":"has_modifier","value":"planet_population_control_gestalt"}', NULL, NULL, '["planet_population_control_gestalt"]', 5);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_enact_robot_assembly_control', 'Cease Robot Assembly', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_policy_flag","value":"robots_outlawed"}]},{"leaf":"has_technology","value":"tech_robotic_workers"},{"op":"or","args":[{"op":"and","args":[{"leaf":"has_policy_flag","value":"ai_full_rights"},{"leaf":"has_policy_flag","value":"population_controls_allowed"}]},{"op":"not","args":[{"leaf":"has_policy_flag","value":"ai_full_rights"}]}]}]},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_robot_assembly_control"}]}]}', NULL, '[{"modifier": "planet_robot_assembly_control", "days": -1}]', NULL, 6);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_robot_assembly_control', 'Resume Robot Assembly', NULL, '{"leaf":"has_modifier","value":"planet_robot_assembly_control"}', NULL, NULL, '["planet_robot_assembly_control"]', 7);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_expel_population', 'Expel Excess Population', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_policy_flag","value":"population_controls_not_allowed"}]}]}', '{"op":"and","args":[{"leaf":"free_housing","cmp":"<","value":"0"},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_population_expelled"}]},{"leaf":"any_owned_pop_group","value":"scope"}]}', '[{"modifier": "planet_population_expelled", "days": 1800}]', NULL, 8);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_discourage_growth', 'Discourage Colony Growth', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_policy_flag","value":"population_controls_not_allowed"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_growth_discouraged"}]}]}', NULL, '[{"modifier": "planet_growth_discouraged", "days": -1}]', '["planet_food_boost"]', 9);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_discourage_growth', 'End Growth Discouragement', NULL, '{"leaf":"has_modifier","value":"planet_growth_discouraged"}', NULL, NULL, '["planet_growth_discouraged"]', 10);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_penal_colony', 'Create Penal Colony', '[{"cost": {"unity": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"leaf":"has_modifier","value":"resort_colony"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"slave_colony"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_city"}]},{"op":"not","args":[{"leaf":"any_owned_planet","value":"scope"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]},{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]},{"leaf":"is_artificial","value":"no"}]}', NULL, '[{"modifier": "penal_colony", "days": -1}]', NULL, 11);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_abolish_penal_colony', 'Abolish Penal Colony', '[{"cost": {"unity": 2500.0}, "when": null}]', '{"leaf":"has_modifier","value":"penal_colony"}', NULL, NULL, '["penal_colony"]', 12);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_slave_colony', 'Create Thrall-World', '[{"cost": {"unity": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_city"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"resort_colony"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"penal_colony"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"slave_colony"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_artificial","value":"no"}]}', '{"op":"and","args":[{"leaf":"any_owned_pop_group","value":"scope"},{"op":"and","args":[{"leaf":"num_districts","value":"scope"},{"leaf":"num_buildings","value":"scope"}]}]}', '[{"modifier": "slave_colony", "days": -1}]', NULL, 13);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_abolish_slave_colony', 'Abolish Thrall-World', '[{"cost": {"unity": 2500.0}, "when": null}]', '{"leaf":"has_modifier","value":"slave_colony"}', NULL, NULL, '["slave_colony"]', 14);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_resort_colony', 'Create Resort World', '[{"cost": {"unity": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"penal_colony"},{"leaf":"has_modifier","value":"slave_colony"},{"leaf":"has_modifier","value":"resort_colony"},{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_nanotech"},{"leaf":"has_carrier_flag","value":"arcology_project_construction"},{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_nuked"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_memorialist_empire","value":"yes"},{"leaf":"has_trait","value":"trait_survivor"},{"leaf":"has_trait","value":"trait_pc_nuked_preference"},{"leaf":"has_trait","value":"trait_plantoid_radiotrophic"}]}]}]},{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_relic"},{"op":"not","args":[{"leaf":"is_memorialist_empire","value":"yes"}]}]}]}]},{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_artificial","value":"no"}]}', '{"op":"and","args":[{"op":"and","args":[{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"}]},{"op":"not","args":[{"leaf":"any_owned_planet","value":"scope"}]},{"leaf":"has_building_construction","value":"no"}]}', '[{"modifier": "resort_colony", "days": -1}]', NULL, 15);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_abolish_resort_colony', 'Abolish Planetary Resort', '[{"cost": {"unity": 2500.0}, "when": null}]', '{"leaf":"has_modifier","value":"resort_colony"}', NULL, NULL, '["resort_colony"]', 16);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_mastery_of_nature', 'Mastery of Nature', '[{"cost": {"energy": 2000.0, "influence": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_artificial","value":"no"},{"leaf":"has_ascension_perk","value":"ap_mastery_of_nature"},{"op":"not","args":[{"leaf":"has_modifier","value":"mastery_of_nature"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]}]}', NULL, '[{"modifier": "mastery_of_nature", "days": -1}]', NULL, 17);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_arcology_project', 'Arcology Project', '[{"cost": {"alloys": 10000.0, "influence": 200.0}, "when": null}]', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_planet_class","value":"pc_nanotech"},{"leaf":"has_modifier","value":"resort_colony"},{"leaf":"has_modifier","value":"penal_colony"},{"leaf":"has_modifier","value":"slave_colony"},{"leaf":"has_modifier","value":"pm_wenkwort_custodian"},{"leaf":"has_carrier_flag","value":"resort_colony_queued"}]}]},{"leaf":"is_artificial","value":"no"},{"leaf":"exists","value":"owner"},{"leaf":"has_ascension_perk","value":"ap_arcology_project"}]}', '{"op":"and","args":[{"leaf":"num_uncleared_blockers","cmp":"<","value":"1"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_ai","value":"no"},{"op":"and","args":[{"op":"and","args":[{"leaf":"free_district_slots","cmp":"<","value":"1"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"},{"leaf":"num_districts","value":"scope"}]},{"op":"not","args":[{"leaf":"has_planet_flag","value":"legendary_leader_planet"}]}]}]},{"op":"not","args":[{"leaf":"is_ai","value":"no"}]}]}]}', NULL, NULL, 18);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_arcology_project_relic', 'Restore Ecumenopolis', '[{"cost": {"alloys": 10000.0, "influence": 200.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_artificial","value":"no"},{"leaf":"exists","value":"owner"},{"op":"or","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}]}', '{"op":"and","args":[{"leaf":"num_uncleared_blockers","cmp":"<","value":"1"},{"leaf":"has_technology","value":"tech_housing_2"}]}', NULL, NULL, 19);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_market_nomination', 'Galactic Market Hub Nomination', '[{"cost": {"energy": 1000.0, "influence": 150.0}, "when": null}]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_global_flag","value":"ongoing_market_nomination"},{"leaf":"has_global_flag","value":"ongoing_market_relocation_nomination"}]},{"leaf":"exists","value":"from"},{"leaf":"from","value":"scope"},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"from","value":"scope"}]}', NULL, NULL, 20);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_boost_market_nomination', 'Boost Nomination Bid', '[{"cost": {"energy": 2000.0, "influence": 300.0}, "when": null}]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_global_flag","value":"ongoing_market_nomination"},{"leaf":"has_global_flag","value":"ongoing_market_relocation_nomination"}]},{"op":"or","args":[{"leaf":"has_modifier","value":"market_nominee_level_1"},{"leaf":"has_modifier","value":"market_nominee_level_2"},{"leaf":"has_modifier","value":"market_nominee_level_3"},{"leaf":"has_modifier","value":"market_nominee_level_4"},{"leaf":"has_modifier","value":"market_nominee_level_5"}]},{"leaf":"from","value":"scope"},{"leaf":"is_nomadic","value":"no"}]}', '{"op":"not","args":[{"leaf":"has_carrier_flag","value":"boosted_twice"}]}', NULL, NULL, 21);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_revoke_market_nomination', 'Revoke Nomination', '[{"cost": {"influence": 10.0}, "when": null}]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_global_flag","value":"ongoing_market_nomination"},{"leaf":"has_global_flag","value":"ongoing_market_relocation_nomination"}]},{"op":"or","args":[{"leaf":"has_modifier","value":"market_nominee_level_1"},{"leaf":"has_modifier","value":"market_nominee_level_2"},{"leaf":"has_modifier","value":"market_nominee_level_3"},{"leaf":"has_modifier","value":"market_nominee_level_4"},{"leaf":"has_modifier","value":"market_nominee_level_5"}]},{"leaf":"from","value":"scope"}]}', NULL, NULL, NULL, 22);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_divine_algorithm', 'Implement Divine Algorithm', '[{"cost": {"unity": 500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"divine_algorithm"},{"op":"not","args":[{"leaf":"has_modifier","value":"divine_algorithm"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', NULL, '[{"modifier": "divine_algorithm", "days": 3600}]', NULL, 23);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_art_monument', 'Exhibit Art Monument', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_country_flag","value":"artist_monument_collector"},{"op":"or","args":[{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]},{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]},{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]},{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]},{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]}]}]},{"op":"not","args":[{"leaf":"has_modifier","value":"artist_monument_erected"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', NULL, '[{"modifier": "artist_monument_erected", "days": -1}]', NULL, 24);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_demolish_art_monument', 'Remove Art Monument', NULL, '{"leaf":"has_modifier","value":"artist_monument_erected"}', NULL, NULL, '["artist_monument_erected"]', 25);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_lithoid_swarm_consume_world', 'Consume World', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_lithoid_devouring_swarm","value":"yes"},{"leaf":"is_nomadic","value":"no"}]},{"leaf":"can_have_habitable_deposits","value":"yes"},{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"leaf":"has_planet_flag","value":"being_devoured"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', NULL, NULL, NULL, 26);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_project_cornucopia', 'Project Cornucopia', '[{"cost": {"energy": 500.0, "unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_artificial","value":"no"},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_machine"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_hive"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_city"}]},{"op":"not","args":[{"leaf":"has_deposit","value":"d_project_cornucopia"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]},{"op":"and","args":[{"leaf":"is_galactic_community_member","value":"yes"},{"leaf":"is_active_resolution","value":"resolution_industry_project_cornucopia"}]}]}', NULL, NULL, NULL, 27);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_crystalline_refugees', 'Settle Crystalline Refugees', '[{"cost": {"influence": 10.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_habitat"},{"leaf":"exists","value":"owner"},{"leaf":"exists","value":"event_target:central_crystal_empire"},{"leaf":"has_country_flag","value":"crystalline_refugees_flag"}]}', '{"leaf":"event_target:central_crystal_empire","value":"scope"}', NULL, NULL, 28);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_crystalline_architecture', 'Crystalline Construction', '[{"cost": {"influence": 10.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_habitat"},{"leaf":"exists","value":"owner"},{"leaf":"exists","value":"event_target:central_crystal_empire"},{"leaf":"has_country_flag","value":"crystalline_architecture_flag"},{"op":"not","args":[{"leaf":"has_modifier","value":"crystalline_architecture_mod"}]}]}', '{"leaf":"event_target:central_crystal_empire","value":"scope"}', '[{"modifier": "crystalline_architecture_mod", "days": -1}]', NULL, 29);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_shattered_ring_project', 'Repair the Shattered Ring', '[{"cost": {"alloys": 7500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_shattered_ring_habitable"},{"leaf":"exists","value":"owner"}]}', '{"op":"and","args":[{"leaf":"num_uncleared_blockers","cmp":"<","value":"1"},{"leaf":"has_technology","value":"tech_mega_engineering"}]}', NULL, NULL, 30);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_shattered_ring_project_interloper', 'Remove the Interloper', '[{"cost": {"alloys": 10000.0}, "when": null}]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_shattered_ring_habitable"},{"leaf":"is_planet_class","value":"pc_ringworld_habitable"}]},{"leaf":"solar_system","value":"scope"}]}', '{"leaf":"has_technology","value":"tech_mega_engineering"}', NULL, NULL, 31);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_expand_planetary_sea', 'Expand Planetary Sea', '[{"cost": {"energy": 1000.0, "influence": 50.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_ocean"},{"leaf":"exists","value":"owner"},{"leaf":"has_ascension_perk","value":"ap_hydrocentric"},{"leaf":"is_terraforming","value":"no"}]}', '{"op":"and","args":[{"leaf":"any_owned_starbase","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_variable_set","value":"ice_dumping_happened"},{"leaf":"check_variable","value":"scope"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_variable_set","value":"ice_dumping_happened"}]},{"leaf":"always","value":"yes"}]}]}]}', NULL, NULL, 32);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_flood_habitat', 'Flood Habitat', '[{"cost": {"energy": 1000.0, "influence": 50.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_habitat"},{"leaf":"exists","value":"owner"},{"leaf":"has_ascension_perk","value":"ap_hydrocentric"},{"op":"not","args":[{"leaf":"has_modifier","value":"flooded_habitat"}]}]}', '{"leaf":"any_owned_starbase","value":"scope"}', NULL, NULL, 33);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_expand_dayside', 'Expand Dayside Infrastructure', '[{"cost": {"energy": 500.0, "minerals": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_carrier_flag","value":"tidally_locked_world"},{"op":"not","args":[{"leaf":"has_deposit","value":"d_dayside_farm"}]}]}', NULL, NULL, NULL, 34);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_introduce_chaos', 'Introduce Chaos', '[{"cost": {"energy": 500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_carrier_flag","value":"perfect_organization"},{"leaf":"exists","value":"owner"},{"leaf":"is_gestalt","value":"no"}]}', NULL, '[{"modifier": "imperfect_organization_modifier", "days": -1}]', '["perfect_organization_modifier"]', 35);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('incinerate_the_flagella', 'Incinerate the Flagella', NULL, '{"op":"and","args":[{"leaf":"has_carrier_flag","value":"matriarch_horror"},{"leaf":"exists","value":"owner"},{"leaf":"is_xenophile","value":"no"}]}', NULL, '[{"modifier": "burnt_tiyanki_trophy", "days": -1}]', '["tiyanki_trophy"]', 36);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_open_shroud_rift', 'Pierce the Shroud', '[{"cost": {"sr_zro": 25.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_artificial","value":"no"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_shroud_forged"},{"op":"not","args":[{"leaf":"has_country_flag","value":"finish_shroud_forged_control_flag"}]}]}]}', '{"op":"and","args":[{"leaf":"any_deposit","value":"scope"},{"leaf":"count_deposits","value":"scope"},{"op":"not","args":[{"leaf":"has_carrier_flag","value":"zroni_legacy_flag"}]}]}', NULL, NULL, 37);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_entrap_shroud_entity', 'Entrap Shroud Entity', '[{"cost": {"sr_zro": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_artificial","value":"no"},{"leaf":"has_carrier_flag","value":"zroni_legacy_flag"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_shroud_forged"},{"leaf":"has_country_flag","value":"shroud_forged_traitor"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"shroud_forged_trapped_entity"},{"leaf":"has_modifier","value":"shroud_forged_trapped_lesser_entity"},{"leaf":"has_country_flag","value":"entrapping_shroud_entity"}]}]}]}]}', '{"leaf":"count_owned_planet","value":"scope"}', NULL, NULL, 38);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_activate_dimensional_manipulation_device', 'Activate Dimensional Manipulation Device', '[{"cost": {"sr_dark_matter": 1000.0}, "when": null}]', '{"leaf":"has_carrier_flag","value":"dimensional_manipulation_device_deactivated"}', NULL, NULL, NULL, 39);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_consecrate_habitat_knights', 'Consecrate Habitat', '[{"cost": {"influence": 50.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"has_relic","value":"r_toxic_god"}]},{"leaf":"uses_district_set","value":"habitat"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_building","value":"building_order_castle"},{"leaf":"has_building","value":"building_order_keep"}]}]}]}', '{"op":"and","args":[{"leaf":"free_building_slots","cmp":">","value":"0"},{"leaf":"check_variable","value":"scope"}]}', NULL, NULL, 40);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_consecrate_arkship_knights', 'Consecrate Arkship', '[{"cost": {"influence": 500.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_toxic_knights"},{"leaf":"has_relic","value":"r_toxic_god"},{"leaf":"is_nomadic","value":"yes"}]},{"leaf":"uses_district_set","value":"nomad"},{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_building","value":"building_order_castle"},{"leaf":"has_building","value":"building_order_keep"}]}]}]}', '{"op":"and","args":[{"leaf":"free_building_slots","cmp":">","value":"0"},{"leaf":"check_variable","value":"scope"}]}', NULL, NULL, 41);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_expand_preserves', 'Expand Preservers', '[{"cost": {"minerals": 500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"leaf":"has_deposit","value":"d_big_nature_preserve_blocker"},{"leaf":"free_district_slots","cmp":">","value":"0"}]}', NULL, NULL, NULL, 42);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_reorganize_leviathan_parade', 'Relocate the Parade', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"reorganizing_leviathan_parade"},{"op":"not","args":[{"leaf":"has_carrier_flag","value":"no_reorganize"}]}]}', NULL, NULL, NULL, 43);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_planetary_workshift', 'Enforce Planetary Work Shifts', NULL, '{"leaf":"has_country_flag","value":"planetary_workshift_ready"}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planetary_workshift_deployed"}]}', '[{"modifier": "planetary_workshift_deployed", "days": -1}]', NULL, 44);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_launch_anticrime_campaign', 'Launch Anti-Crime Campaign', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"planet_crime","cmp":">=","value":"10"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"crime_lord_deal"},{"leaf":"has_modifier","value":"anticrime_campaign"}]}]}]}', NULL, '[{"modifier": "anticrime_campaign", "days": -1}]', NULL, 45);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_anticrime_campaign', 'End Anti-Crime Campaign', NULL, '{"leaf":"has_modifier","value":"anticrime_campaign"}', NULL, NULL, '["anticrime_campaign"]', 46);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_negotiate_with_crime_lords', 'Negotiate with Crime Lords', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"planet_crime","cmp":">=","value":"10"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"crime_lord_deal"},{"leaf":"has_modifier","value":"anticrime_campaign"}]}]}]}', NULL, '[{"modifier": "crime_lord_deal", "days": -1}]', NULL, 47);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_crime_lord_deal', 'End Deal with Crime Lords', NULL, '{"leaf":"has_modifier","value":"crime_lord_deal"}', NULL, '[{"modifier": "crime_lord_deal_broken", "days": 1800}]', '["crime_lord_deal"]', 48);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_caravaneer_bunkbeds', 'Trium Bunk Beds Deployment', NULL, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_country_flag","value":"bunkbeds_ready"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"bunkbeds_deployed"}]}', '[{"modifier": "bunkbeds_deployed", "days": 28800}]', NULL, 49);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_caravaneer_tupperware', 'Trium Food Container Deployment', NULL, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_country_flag","value":"tupperware_ready"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"tupperware_deployed"}]}', '[{"modifier": "tupperware_deployed", "days": 28800}]', NULL, 50);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_caravaneer_atmospheric_deodorizer', 'Trium Atmospheric Deodorizer Deployment', NULL, '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_country_flag","value":"atmospheric_deodorizer_ready"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"atmospheric_deodorizer_deployed"}]}', '[{"modifier": "atmospheric_deodorizer_deployed", "days": 28800}]', NULL, 51);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_tissue_growth_stimulants', 'Deploy Tissue Growth Stimulants', '[{"cost": {"energy": 200.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"has_country_flag","value":"city_of_bones_completed"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"tissue_growth_stimulants"}]}', '[{"modifier": "tissue_growth_stimulants", "days": 3600}]', NULL, 52);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_explosive_fungifoam_housing', 'Construct Explosive Fungiform Housing Units', '[{"cost": {"energy": 500.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_country_flag","value":"city_of_bones_completed"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"explosive_fungifoam_housing"}]}', '[{"modifier": "explosive_fungifoam_housing", "days": -1}]', NULL, 53);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_baol_life_seed', 'Nu-Baol Life-Seeding', NULL, '{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_relic"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_planet_class","value":"pc_gaia"}]}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]},{"leaf":"is_artificial","value":"no"},{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"relic_last_baol_activated"},{"leaf":"has_country_flag","value":"not_activated_baol"}]}', NULL, NULL, NULL, 54);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_baol_life_seed_enhance', 'Nu-Baol Life-Enhancing', NULL, '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_gaia"},{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"relic_last_baol_activated"}]}', NULL, NULL, NULL, 55);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_baol_life_seed_artificial', 'Nu-Baol Life-Seeding', NULL, '{"op":"and","args":[{"leaf":"is_artificial","value":"yes"},{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"relic_last_baol_activated"},{"leaf":"has_country_flag","value":"not_activated_baol"}]}', NULL, NULL, NULL, 56);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_museum_exhibits', 'Send Artifacts to Museum Exhibits', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"is_megacorp","value":"no"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_modifier","value":"planet_museum_exhibits"}]},{"leaf":"num_assigned_jobs","value":"scope"}]}', '[{"modifier": "planet_museum_exhibits", "days": -1}]', NULL, 57);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_manager_awards', 'Initiate Performance Competition', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"is_worker_coop_empire","value":"no"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_manager_awards"}]}', '[{"modifier": "planet_manager_awards", "days": -1}]', NULL, 58);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_sanctuary_exhibits', 'Send Artifacts to Organic Sanctuaries', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_sanctuary_exhibits"}]}', '[{"modifier": "planet_sanctuary_exhibits", "days": -1}]', NULL, 59);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_artifact_relays_hivemind', 'Incorporate Artifact Relays', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_artifact_relays_hivemind"}]}', NULL, NULL, 60);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_artifact_relays_machine', 'Incorporate Artifact Relays', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_civic","value":"civic_machine_servitor"}]}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_artifact_relays_machine"}]}', NULL, NULL, 61);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_machine_oracle', 'Activate Oracle Nexus', '[{"cost": {"energy": 200.0, "unity": 500.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"has_country_flag","value":"oracle_completed"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"oracle_software_integration"}]}', '[{"modifier": "oracle_software_integration", "days": 3600}]', NULL, 62);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_yuht_cleanseplanet', 'Initiate Yuht Cleansing Process', '[{"cost": {"energy": 500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"can_have_habitable_deposits","value":"yes"},{"leaf":"has_country_flag","value":"artifact_yuht_research_completed"},{"op":"not","args":[{"leaf":"has_modifier","value":"pm_yuht_cleansing"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', NULL, '[{"modifier": "pm_yuht_cleansing", "days": -1}]', NULL, 63);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_transplant_tree', 'Transplant Tree of Life', '[{"cost": {"food": 500.0}, "when": null}]', '{"leaf":"has_modifier","value":"no_lifetree"}', NULL, NULL, '["no_lifetree"]', 64);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_extradimensional_experimentation', 'Extradimensional Experimentation', '[{"cost": {"sr_zro": 500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_galactic_community_member","value":"yes"},{"leaf":"is_active_resolution","value":"resolution_galacticstudies_extradimensional_experimentation"},{"op":"not","args":[{"leaf":"has_modifier","value":"pm_extradimensional_experimentation"}]}]}', '{"leaf":"has_building","value":"building_research_efficiency_1"}', '[{"modifier": "pm_extradimensional_experimentation", "days": -1}]', NULL, 65);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_end_extradimensional_experimentation', 'End Extradimensional Experimentation', NULL, '{"leaf":"has_modifier","value":"pm_extradimensional_experimentation"}', NULL, NULL, '["pm_extradimensional_experimentation"]', 66);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_strip_mining', 'Strip Mining', '[{"cost": {"influence": 15.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_specialist_subject_tier","value":"scope"},{"leaf":"any_deposit","value":"scope"},{"op":"not","args":[{"op":"and","args":[{"leaf":"uses_district_set","value":"shattered_ring_world"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_subterranean_empire","value":"yes"}]}]}]}]}', NULL, NULL, NULL, 67);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_grow_progenitor', 'Grow a New Progenitor', '[{"cost": {"food": 400.0}, "when": {"leaf": "is_lithoid_empire", "value": "no"}}, {"cost": {"minerals": 400.0}, "when": {"leaf": "is_lithoid_empire", "value": "yes"}}]', '{"op":"and","args":[{"leaf":"has_deposit","value":"d_progenitor_empty"},{"leaf":"exists","value":"owner"},{"leaf":"has_origin","value":"origin_progenitor_hive"}]}', NULL, NULL, NULL, 68);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_unshackled_memorial', 'Memorial to the Unshackled', '[{"cost": {"minerals": 2500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"origin_broken_shackles_crashed_slaver_ship_depleted"},{"leaf":"has_deposit","value":"d_crashed_slaver_ship"}]}', NULL, NULL, NULL, 69);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_remove_wreckage', 'Remove Wreckage', '[{"cost": {"minerals": 2500.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_deposit","value":"d_crashed_slaver_ship"},{"leaf":"original_owner","value":"no"}]}', '{"leaf":"has_technology","value":"tech_housing_2"}', NULL, NULL, 70);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_deploy_beholder', 'Deploy Murmuring Monolith', '[{"cost": {"sr_zro": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"event_target:beholder_leader"},{"leaf":"has_building","value":"building_the_beholder"}]}', '{"op":"not","args":[{"leaf":"has_carrier_flag","value":"psi_inoculating_pops"}]}', NULL, NULL, 71);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_psi_inoculate_pops', 'Begin Psi-Inoculation', '[{"cost": {"sr_zro": 50.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"event_target:beholder_leader"},{"leaf":"has_building","value":"building_the_beholder"},{"op":"not","args":[{"leaf":"has_carrier_flag","value":"psi_inoculating_pops"}]}]}', '{"op":"and","args":[{"leaf":"any_owned_pop_group","value":"scope"},{"op":"not","args":[{"leaf":"has_carrier_flag","value":"beholder_psi_pops_cooldown_timer"}]}]}', NULL, NULL, 72);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_cease_psi_inoculate_pops', 'Cease Psi-Inoculation', NULL, '{"op":"and","args":[{"leaf":"exists","value":"event_target:beholder_leader"},{"leaf":"has_building","value":"building_the_beholder"},{"leaf":"has_carrier_flag","value":"psi_inoculating_pops"}]}', NULL, NULL, NULL, 73);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_paragon_origin_subdue_reformists', 'Anti Reformist Raids', '[{"cost": {"unity": 1.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"exists","value":"ruler"},{"leaf":"ruler","value":"scope"},{"leaf":"any_situation","value":"scope"},{"leaf":"is_regular_empire","value":"yes"}]},{"leaf":"has_modifier","value":"paragon_origin_reformists"}]}', NULL, NULL, NULL, 74);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_fractal_seed', 'Fractal Seed', '[{"cost": {"astral_threads": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"op":"not","args":[{"leaf":"has_deposit","value":"d_fractal_seed"}]}]}', NULL, NULL, NULL, 75);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_breed_rockworm_hive', 'Rockworm Hive', NULL, '{"op":"and","args":[{"leaf":"has_country_flag","value":"can_breed_rockworm_hives"},{"op":"not","args":[{"leaf":"has_deposit","value":"d_rockworm_hive"}]},{"op":"not","args":[{"leaf":"has_deposit","value":"d_rockworm_hive_volcanic"}]}]}', NULL, NULL, NULL, 76);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_incubate_wind_creatures', 'Incubate Wind Creatures', NULL, '{"op":"and","args":[{"leaf":"check_variable","value":"scope"},{"op":"not","args":[{"leaf":"has_deposit","value":"d_forceful_winds"}]}]}', NULL, NULL, NULL, 77);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_tidal_lock_planet', 'Intentional Tidal Locking', NULL, '{"op":"and","args":[{"leaf":"has_country_flag","value":"tidal_lock_knowledge"},{"op":"or","args":[{"leaf":"is_moon","value":"yes"},{"leaf":"has_moon","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"intentionally_tidally_locked"},{"leaf":"has_carrier_flag","value":"tidally_locked_world"},{"leaf":"is_artificial","value":"yes"},{"leaf":"is_planet_class","value":"pc_city"}]}]}]}', NULL, '[{"modifier": "intentionally_tidally_locked", "days": -1}]', NULL, 78);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_display_microplanet_husk', 'Display Microplanet Husk', '[{"cost": {"astral_threads": 100.0, "energy": 500.0}, "when": null}]', '{"leaf":"has_country_flag","value":"can_build_microplanet_memorial"}', NULL, NULL, NULL, 79);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_uproot_weed', 'Uproot Weeds', '[{"cost": {"energy": 500.0}, "when": null}]', '{"leaf":"has_seeded_modifier","value":"yes"}', NULL, NULL, NULL, 80);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_bleak_planet', 'Soil Rehabilitation', '[{"cost": {"energy": 750.0, "food": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_modifier","value":"bleak_planet"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"leaf":"is_nomadic","value":"no"}]}]}', NULL, NULL, '["bleak_planet"]', 81);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_build_dayside_farm', 'Day Farm Construction', '[{"cost": {"energy": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"or","args":[{"leaf":"has_modifier","value":"tidal_locked"},{"leaf":"has_modifier","value":"intentionally_tidally_locked"}]},{"op":"and","args":[{"leaf":"has_technology","value":"tech_power_hub_1"},{"leaf":"is_nomadic","value":"no"}]},{"op":"not","args":[{"leaf":"has_deposit","value":"d_dayside_farm"}]}]}', NULL, NULL, NULL, 82);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_hazardous_weather', 'Planetary Weather Control Systems', '[{"cost": {"energy": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"or","args":[{"leaf":"has_modifier","value":"hazardous_weather"},{"leaf":"has_modifier","value":"wild_storms"}]},{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"leaf":"is_nomadic","value":"no"}]}]}', NULL, NULL, NULL, 83);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_dangerous_wildlife', 'Hostile Fauna Removal', '[{"cost": {"energy": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"not","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"}]},{"leaf":"has_modifier","value":"dangerous_wildlife"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_terrestrial_sculpting"},{"leaf":"is_nomadic","value":"no"}]}]}', NULL, NULL, '["dangerous_wildlife"]', 84);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_stripmine_planet', 'Strip Mine Planet', '[{"cost": {"energy": 5000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_environmentalist"},{"leaf":"is_wilderness_empire","value":"yes"}]}]},{"leaf":"has_technology","value":"tech_mineral_purification_2"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_deposit","value":"d_planet_stripmine"},{"leaf":"is_planet_class","value":"pc_volcanic"}]}]},{"leaf":"is_artificial","value":"no"}]}', '{"leaf":"num_districts","value":"scope"}', NULL, NULL, 85);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_rebuild_genesis_preserve', 'Build Genesis Preserve', '[{"cost": {"minerals": 1000.0, "unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_guided_sapience_empire","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_deposit","value":"d_genesis_preserve"},{"leaf":"has_deposit","value":"d_genesis_monument"}]}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"leaf":"free_district_slots","cmp":">","value":"1"}', NULL, NULL, 86);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_server_shut_down', 'Server Shut Down', '[{"cost": {"unity": 200.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_tradition","value":"tr_virtuality_finish"}]}', '{"leaf":"is_capital","value":"no"}', NULL, NULL, 87);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_nanotech_swarm_consume_world', 'Subsume World', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_tradition","value":"tr_nanotech_3"},{"leaf":"can_have_habitable_deposits","value":"yes"},{"leaf":"is_capital","value":"no"},{"op":"not","args":[{"leaf":"has_planet_flag","value":"being_devoured"}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', NULL, NULL, NULL, 88);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_hunker_down', 'Hunker Down', '[{"cost": {"unity": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_storm_resistant_production_building","value":"yes"},{"op":"not","args":[{"leaf":"has_modifier","value":"storm_hunkered_down_modifier"}]}]}', '{"op":"and","args":[{"leaf":"has_storm_resistant_production_building","value":"yes"},{"op":"not","args":[{"leaf":"has_modifier","value":"storm_hunkered_down_modifier"}]}]}', NULL, NULL, 89);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_stop_hunker_down', 'End Hunker Down', NULL, '{"op":"and","args":[{"leaf":"has_storm_resistant_production_building","value":"yes"},{"leaf":"has_modifier","value":"storm_hunkered_down_modifier"}]}', '{"op":"and","args":[{"leaf":"has_storm_resistant_production_building","value":"yes"},{"leaf":"has_modifier","value":"storm_hunkered_down_modifier"}]}', NULL, NULL, 90);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_cultivated_worldscaping', 'Cultivated Worldscaping', '[{"cost": {"energy": 2000.0, "influence": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_environmental_architects_empire","value":"yes"},{"leaf":"habitable_planet_not_urban","value":"yes"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_modifier","value":"cultivated_worldscaping_modifier"},{"leaf":"has_modifier","value":"mastery_of_nature"}]}]}]}', '{"op":"and","args":[{"leaf":"check_variable_arithmetic","value":"scope"},{"leaf":"check_variable_arithmetic","value":"scope"}]}', '[{"modifier": "cultivated_worldscaping_modifier", "days": -1}]', NULL, 91);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_evopred_no_hive_world', 'Prevent Hive World Growth', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"is_mutation_authority","value":"yes"},{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"has_carrier_flag","value":"no_evopred_hive_world"}]}]}]}', NULL, NULL, NULL, 92);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_evopred_hive_world', 'Allow Hive World Growth', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_evolutionary_predators"},{"leaf":"is_mutation_authority","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_hive"}]},{"leaf":"has_carrier_flag","value":"no_evopred_hive_world"}]}', NULL, NULL, NULL, 93);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_prismatic_ice_exhibit', 'Prismatic Ice Exhibit', NULL, '{"leaf":"has_country_flag","value":"can_exhibit_prismatic_ice"}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_modifier","value":"exhibiting_prismatic_ice"}]},{"leaf":"check_variable","value":"scope"}]}', '[{"modifier": "exhibiting_prismatic_ice", "days": -1}]', NULL, 94);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_blazing_scourge', 'Blazing Scourge', '[{"cost": {"minerals": 300.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_valid_civic","value":"civic_pyrolatry"},{"leaf":"is_artificial","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_planet_class","value":"pc_city"},{"leaf":"is_planet_class","value":"pc_machine"},{"leaf":"is_planet_class","value":"pc_hive"},{"leaf":"is_ideal","value":"yes"}]}]}]}', '{"leaf":"check_variable","value":"scope"}', NULL, NULL, 95);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_starfire_cannon', 'Construct Starfire Cannon', '[{"cost": {"alloys": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"from"},{"leaf":"exists","value":"space_owner"},{"leaf":"from","value":"scope"},{"leaf":"space_owner","value":"scope"}]}', '{"op":"and","args":[{"leaf":"from","value":"scope"},{"leaf":"solar_system","value":"scope"}]}', NULL, NULL, 96);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_living_metal_distribution', 'Distribute Living Metal', '[{"cost": {"sr_living_metal": 250.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_galvanic_empire","value":"yes"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"living_metal_distribution_effect"}]}', '[{"modifier": "living_metal_distribution_effect", "days": -1}]', NULL, 97);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_add_aura_blocker', 'Add Shrouded Vegetation blockers', '[{"cost": {"food": 1000.0}, "when": null}]', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"fertility_accord"},{"leaf":"count_deposits","value":"scope"},{"op":"or","args":[{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_covenant_with_the_composer_of_strands","value":"yes"},{"leaf":"has_country_flag","value":"forging_our_own_path"}]}]},{"leaf":"free_district_slots","cmp":">","value":"1"}]},{"op":"or","args":[{"leaf":"has_covenant_with_the_composer_of_strands","value":"yes"},{"leaf":"has_country_flag","value":"forging_our_own_path"}]}]}]}', NULL, NULL, NULL, 98);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_thought_police', 'Thought Police', NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"has_country_flag","value":"thought_police_recruited"},{"leaf":"check_variable","value":"scope"},{"leaf":"check_variable","value":"scope"}]},{"op":"not","args":[{"leaf":"has_modifier","value":"thought_police_established"}]}]}', NULL, '[{"modifier": "thought_police_established", "days": 3600}]', NULL, 99);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_divine_deposits', 'Divine for Deposits', '[{"cost": {"sr_zro": 150.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"leader"},{"leaf":"leader","value":"scope"},{"op":"not","args":[{"leaf":"has_carrier_flag","value":"has_divine_deposits"}]}]}', NULL, NULL, NULL, 100);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_wilderness_expand', 'Expand Planet Size', '[{"cost": {"biomass": 2.0}, "when": null}, {"cost": {"influence": 50.0}, "when": null}]', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"is_wilderness_empire","value":"yes"},{"op":"or","args":[{"leaf":"planet_size","cmp":"<","value":"25"},{"op":"and","args":[{"leaf":"has_tradition","value":"tr_purity_stage_3_swap"},{"leaf":"planet_size","cmp":"<","value":"30"}]}]}]}', NULL, NULL, NULL, 101);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_unaligned_shields', 'Realign Shields', NULL, '{"leaf":"has_modifier","value":"checklist_unaligned_shields"}', '{"leaf":"solar_system","value":"scope"}', NULL, NULL, 102);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_flush_coolant', 'Flush Coolant', '[{"cost": {"exotic_gases": 150.0}, "when": null}]', '{"leaf":"has_modifier","value":"checklist_corrosive_coolant"}', '{"leaf":"solar_system","value":"scope"}', NULL, NULL, 103);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_deep_sleep', 'Prepare the Deep Sleep', '[{"cost": {"influence": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_deep_sleep_country","value":"yes"},{"op":"not","args":[{"leaf":"has_modifier","value":"planet_deep_sleep"}]}]}', '{"op":"and","args":[{"leaf":"has_deposit","value":"d_deep_sleep_cryo_pods_renewed"},{"op":"or","args":[{"leaf":"num_assigned_jobs","value":"scope"},{"leaf":"num_assigned_jobs","value":"scope"}]}]}', '[{"modifier": "planet_deep_sleep", "days": 1800}]', NULL, 104);
+INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES ('decision_nomad_embarkation', 'Embark', '[{"cost": {"influence": 500.0}, "when": null}, {"cost": {"alloys": 10000.0}, "when": {"leaf": "country_uses_bio_ships", "value": "no"}}, {"cost": {"alloys": 10000.0, "mult": 0.5}, "when": {"leaf": "country_uses_bio_ships", "value": "yes"}}, {"cost": {"food": 10000.0, "mult": 1.75}, "when": {"leaf": "country_uses_bio_ships", "value": "yes"}}]', '{"leaf":"can_embark_trigger","value":"yes"}', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"op":"not","args":[{"leaf":"has_country_flag","value":"already_embarking"}]},{"op":"not","args":[{"leaf":"any_owned_planet","value":"scope"}]}]}', NULL, NULL, 105);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
                VALUES ('agenda_infinite_opportunities', 'Infinite Opportunities', 'Let''s promote and celebrate our technological achievements.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"always","value":"yes"}', NULL, NULL, 0);
@@ -100030,40 +100377,40 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_authoritarian', 16, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 17, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_authoritarian"},{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_authoritarian', 17, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 18, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_authoritarian', 18, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 19, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_authoritarian', 19, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_authoritarian","value":"no"}]},{"leaf":"has_faction","value":"totalitarian"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 20, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_authoritarian","value":"no"}]},{"leaf":"has_faction","value":"totalitarian"}]}');
+                   VALUES ('ethic_authoritarian', 20, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|authoritarian|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 21, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|authoritarian|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_authoritarian', 21, 'country', 'From Federation Type', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 22, 'country', 'From Federation Type', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+                   VALUES ('ethic_authoritarian', 22, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_authoritarian"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 23, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_authoritarian"}');
+                   VALUES ('ethic_authoritarian', 23, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 24, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_authoritarian"}');
+                   VALUES ('ethic_authoritarian', 24, 'country', 'From Authority', 'add', '0.25', NULL, NULL, NULL, '{"leaf":"has_election_type","value":"none"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 25, 'country', 'From Authority', 'factor', '1.25', NULL, NULL, NULL, '{"leaf":"has_election_type","value":"none"}');
+                   VALUES ('ethic_authoritarian', 25, 'country', 'From Authority', 'add', '-0.25', NULL, NULL, NULL, '{"leaf":"has_election_type","value":"democratic"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 26, 'country', 'From Authority', 'factor', '0.75', NULL, NULL, NULL, '{"leaf":"has_election_type","value":"democratic"}');
+                   VALUES ('ethic_authoritarian', 26, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_authoritarian"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 27, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_authoritarian"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_authoritarian', 27, 'country', 'From Relations', 'add', NULL, 'value:authoritarian_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_authoritarian', 28, 'country', 'From Relations', 'factor', NULL, 'value:authoritarian_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_authoritarian', 28, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_egalitarian', 0, 'tag', '+ Empire has Egalitarian Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_egalitarian","value":"yes"}');
@@ -100108,40 +100455,40 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_egalitarian', 13, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 14, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_egalitarian"},{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_egalitarian', 14, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 15, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_egalitarian', 15, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 16, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_egalitarian', 16, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_egalitarian","value":"no"}]},{"leaf":"has_faction","value":"progressive"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 17, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_egalitarian","value":"no"}]},{"leaf":"has_faction","value":"progressive"}]}');
+                   VALUES ('ethic_egalitarian', 17, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_egalitarian"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 18, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_egalitarian"}');
+                   VALUES ('ethic_egalitarian', 18, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 19, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_egalitarian"}');
+                   VALUES ('ethic_egalitarian', 19, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|egalitarian|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 20, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|egalitarian|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_egalitarian', 20, 'country', 'From Authority', 'add', '-0.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"none"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 21, 'country', 'From Authority', 'factor', '0.75', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"none"}]}');
+                   VALUES ('ethic_egalitarian', 21, 'country', 'From Authority', 'add', '0.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"democratic"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 22, 'country', 'From Authority', 'factor', '1.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_election_type","value":"democratic"}]}');
+                   VALUES ('ethic_egalitarian', 22, 'country', 'All Species have Citizenship', 'add', '0.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"other_organic_species","value":"yes"},{"leaf":"all_organic_full_citizenship","value":"yes"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 23, 'country', 'All Species have Citizenship', 'factor', '1.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"other_organic_species","value":"yes"},{"leaf":"all_organic_full_citizenship","value":"yes"}]}');
+                   VALUES ('ethic_egalitarian', 23, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_egalitarian"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 24, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_egalitarian"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_egalitarian', 24, 'country', 'From Relations', 'add', NULL, 'value:egalitarian_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_egalitarian', 25, 'country', 'From Relations', 'factor', NULL, 'value:egalitarian_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_egalitarian', 25, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_xenophobe', 0, 'tag', '+ Empire has Xenophobe Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_xenophobe","value":"yes"}');
@@ -100201,52 +100548,52 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_xenophobe', 18, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 19, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_xenophobe"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_xenophobe', 19, 'country', 'Has Supremacist Faction or Isolationist Faction', 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophobe","value":"no"},{"op":"or","args":[{"leaf":"has_faction","value":"supremacist"},{"leaf":"has_faction","value":"isolationist"}]}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 20, 'country', 'Has Supremacist Faction or Isolationist Faction', 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophobe","value":"no"},{"op":"or","args":[{"leaf":"has_faction","value":"supremacist"},{"leaf":"has_faction","value":"isolationist"}]}]}');
+                   VALUES ('ethic_xenophobe', 20, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_xenophobe"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 21, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_xenophobe"}');
+                   VALUES ('ethic_xenophobe', 21, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 22, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophobe"}');
+                   VALUES ('ethic_xenophobe', 22, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|xenophobe|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 23, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|xenophobe|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_xenophobe', 23, 'country', NULL, 'add', '0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 24, 'country', NULL, 'factor', '1.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+                   VALUES ('ethic_xenophobe', 24, 'country', NULL, 'add', '0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 25, 'country', NULL, 'factor', '1.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+                   VALUES ('ethic_xenophobe', 25, 'country', 'Different Species with Citizenship', 'add', '-0.25', NULL, NULL, NULL, '{"leaf":"allows_alien_leaders","value":"yes"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 26, 'country', 'Different Species with Citizenship', 'factor', '0.75', NULL, NULL, NULL, '{"leaf":"allows_alien_leaders","value":"yes"}');
+                   VALUES ('ethic_xenophobe', 26, 'country', 'Defending against Xenos', 'add', '2.0', NULL, NULL, NULL, '{"leaf":"any_war","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 27, 'country', 'Defending against Xenos', 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"any_war","value":"scope"}');
+                   VALUES ('ethic_xenophobe', 27, 'country', 'From Slaves taken by Alien Empires', 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"species","value":"scope"},{"leaf":"any_relation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 28, 'country', 'From Slaves taken by Alien Empires', 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"species","value":"scope"},{"leaf":"any_relation","value":"scope"}]}');
+                   VALUES ('ethic_xenophobe', 28, 'country', 'From Homicidal Empires', 'add', '2.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 29, 'country', 'From Homicidal Empires', 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+                   VALUES ('ethic_xenophobe', 29, 'country', 'From Alien Empires Purges', 'add', '3.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 30, 'country', 'From Alien Empires Purges', 'factor', '4.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+                   VALUES ('ethic_xenophobe', 30, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 31, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_xenophobe', 31, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 32, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_xenophobe', 32, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_xenophobe"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 33, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_xenophobe"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_xenophobe', 33, 'country', 'From Relations', 'add', NULL, 'value:xenophobe_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophobe', 34, 'country', 'From Relations', 'factor', NULL, 'value:xenophobe_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_xenophobe', 34, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_xenophile', 0, 'tag', '+ Empire has Xenophile Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_xenophile","value":"yes"}');
@@ -100303,49 +100650,49 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_xenophile', 17, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 18, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_xenophile"},{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_xenophile', 18, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophile","value":"no"}]},{"leaf":"has_faction","value":"xenoist"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 19, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_xenophile","value":"no"}]},{"leaf":"has_faction","value":"xenoist"}]}');
+                   VALUES ('ethic_xenophile', 19, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_xenophile"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 20, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_xenophile"}');
+                   VALUES ('ethic_xenophile', 20, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 21, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_xenophile"}');
+                   VALUES ('ethic_xenophile', 21, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|xenophile|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 22, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|xenophile|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_xenophile', 22, 'country', NULL, 'add', '-0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 23, 'country', NULL, 'factor', '0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+                   VALUES ('ethic_xenophile', 23, 'country', NULL, 'add', '-0.67', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 24, 'country', NULL, 'factor', '0.33', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+                   VALUES ('ethic_xenophile', 24, 'country', 'Different Species with Citizenship', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"allows_alien_leaders","value":"yes"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 25, 'country', 'Different Species with Citizenship', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"allows_alien_leaders","value":"yes"}]}');
+                   VALUES ('ethic_xenophile', 25, 'country', 'From Alien Empires Purges', 'add', '-0.75', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 26, 'country', 'From Alien Empires Purges', 'factor', '0.25', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+                   VALUES ('ethic_xenophile', 26, 'country', 'From Homicidal Empires', 'add', '-0.65', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 27, 'country', 'From Homicidal Empires', 'factor', '0.35', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+                   VALUES ('ethic_xenophile', 27, 'country', 'From Xenos Slavery', 'add', '-0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_same_species","value":"root"},{"leaf":"any_relation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 28, 'country', 'From Xenos Slavery', 'factor', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_same_species","value":"root"},{"leaf":"any_relation","value":"scope"}]}');
+                   VALUES ('ethic_xenophile', 28, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 29, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_xenophile', 29, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 30, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_xenophile', 30, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_xenophile"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 31, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_xenophile"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_xenophile', 31, 'country', 'From Relations', 'add', NULL, 'value:xenophile_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_xenophile', 32, 'country', 'From Relations', 'factor', NULL, 'value:xenophile_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_xenophile', 32, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_militarist', 0, 'tag', '+ Empire has Militarist Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_militarist","value":"yes"}');
@@ -100414,61 +100761,61 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_militarist', 21, 'tag', '+ Empire Ethic embraced by The Templars of Steel', NULL, NULL, NULL, NULL, NULL, '{"leaf":"has_country_flag","value":"cybernetic_creed_war"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 22, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_militarist"},{"leaf":"has_ethic","value":"ethic_fanatic_militarist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_militarist', 22, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_militarist","value":"no"}]},{"leaf":"has_faction","value":"imperialist"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 23, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_militarist","value":"no"}]},{"leaf":"has_faction","value":"imperialist"}]}');
+                   VALUES ('ethic_militarist', 23, 'country', 'From Federation Type', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 24, 'country', 'From Federation Type', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+                   VALUES ('ethic_militarist', 24, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_militarist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 25, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_militarist"}');
+                   VALUES ('ethic_militarist', 25, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 26, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_militarist"}');
+                   VALUES ('ethic_militarist', 26, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|militarist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 27, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|militarist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_militarist', 27, 'country', NULL, 'add', '-0.67', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 28, 'country', NULL, 'factor', '0.33', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+                   VALUES ('ethic_militarist', 28, 'country', 'From Lasting Peace', 'add', NULL, 'value:militarist_ethics_from_peace', NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 29, 'country', 'From Lasting Peace', 'factor', NULL, 'value:militarist_ethics_from_peace', NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
+                   VALUES ('ethic_militarist', 29, 'country', 'From Wars', 'add', '1.0', NULL, NULL, NULL, '{"leaf":"is_at_war","value":"yes"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 30, 'country', 'From Wars', 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"is_at_war","value":"yes"}');
+                   VALUES ('ethic_militarist', 30, 'country', 'From Rivals in Wars', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_at_war","value":"yes"},{"leaf":"any_war","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 31, 'country', 'From Rivals in Wars', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_at_war","value":"yes"},{"leaf":"any_war","value":"scope"}]}');
+                   VALUES ('ethic_militarist', 31, 'country', 'War Recently Lost', 'add', '1.0', NULL, NULL, NULL, '{"leaf":"recently_lost_war","value":"yes"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 32, 'country', 'War Recently Lost', 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"recently_lost_war","value":"yes"}');
+                   VALUES ('ethic_militarist', 32, 'country', 'From Hostile Neighbors', 'add', '0.5', NULL, NULL, NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 33, 'country', 'From Hostile Neighbors', 'factor', '1.5', NULL, NULL, NULL, '{"leaf":"any_neighbor_country","value":"scope"}');
+                   VALUES ('ethic_militarist', 33, 'country', 'Superior Rival Military', 'add', '0.25', NULL, NULL, NULL, '{"leaf":"any_rival_country","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 34, 'country', 'Superior Rival Military', 'factor', '1.25', NULL, NULL, NULL, '{"leaf":"any_rival_country","value":"scope"}');
+                   VALUES ('ethic_militarist', 34, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 35, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_militarist', 35, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 36, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_militarist', 36, 'country', 'Lost Colonies', 'add', '1.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 37, 'country', 'Lost Colonies', 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"any_relation","value":"scope"}');
+                   VALUES ('ethic_militarist', 37, 'country', NULL, 'add', '-0.25', NULL, NULL, NULL, '{"leaf":"has_policy_flag","value":"no_wars"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 38, 'country', NULL, 'factor', '0.75', NULL, NULL, NULL, '{"leaf":"has_policy_flag","value":"no_wars"}');
+                   VALUES ('ethic_militarist', 38, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_militarist"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 39, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_militarist"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_militarist', 39, 'country', 'From Creed', 'add', '0.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_war"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_militarist', 40, 'country', 'From Creed', 'factor', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_war"}]}');
+                   VALUES ('ethic_militarist', 40, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_pacifist', 0, 'tag', '+ Empire has Pacifist Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_pacifist","value":"yes"}');
@@ -100513,43 +100860,43 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_pacifist', 13, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 14, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_pacifist"},{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_pacifist', 14, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_pacifist","value":"no"}]},{"leaf":"has_faction","value":"prosperity"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 15, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_pacifist","value":"no"}]},{"leaf":"has_faction","value":"prosperity"}]}');
+                   VALUES ('ethic_pacifist', 15, 'country', NULL, 'add', '0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 16, 'country', NULL, 'factor', '1.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}');
+                   VALUES ('ethic_pacifist', 16, 'country', NULL, 'add', '-0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 17, 'country', NULL, 'factor', '0.5', NULL, NULL, NULL, '{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"}');
+                   VALUES ('ethic_pacifist', 17, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_pacifist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 18, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_pacifist"}');
+                   VALUES ('ethic_pacifist', 18, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 19, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_pacifist"}');
+                   VALUES ('ethic_pacifist', 19, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|pacifist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 20, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|pacifist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_pacifist', 20, 'country', 'From Lasting Peace', 'add', NULL, 'value:pacifist_ethics_from_peace', NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 21, 'country', 'From Lasting Peace', 'factor', NULL, 'value:pacifist_ethics_from_peace', NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"years_of_peace","value":"scope"}]}');
+                   VALUES ('ethic_pacifist', 21, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 22, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_pacifist', 22, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 23, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_pacifist', 23, 'country', NULL, 'add', '-0.25', NULL, NULL, NULL, '{"leaf":"has_policy_flag","value":"unrestricted_wars"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 24, 'country', NULL, 'factor', '0.75', NULL, NULL, NULL, '{"leaf":"has_policy_flag","value":"unrestricted_wars"}');
+                   VALUES ('ethic_pacifist', 24, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_pacifist"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 25, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_pacifist"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_pacifist', 25, 'country', 'From Non-Aggression Pacts', 'add', NULL, 'value:pacifist_ethics_from_pacts', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_pacifist', 26, 'country', 'From Non-Aggression Pacts', 'factor', NULL, 'value:pacifist_ethics_from_pacts', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_pacifist', 26, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_spiritualist', 0, 'tag', '+ Empire has Spiritualist Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_spiritualist","value":"yes"}');
@@ -100588,49 +100935,49 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_spiritualist', 11, 'tag', '+ Empire Ethic embraced by Acclaimed Faction', NULL, NULL, NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"stately_acclaim"},{"leaf":"any_pop_faction","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 12, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_spiritualist"},{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_spiritualist', 12, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 13, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_spiritualist', 13, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 14, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_spiritualist', 14, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_spiritualist","value":"no"}]},{"leaf":"has_faction","value":"traditionalist"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 15, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_spiritualist","value":"no"}]},{"leaf":"has_faction","value":"traditionalist"}]}');
+                   VALUES ('ethic_spiritualist', 15, 'country', 'From Federation Type', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 16, 'country', 'From Federation Type', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+                   VALUES ('ethic_spiritualist', 16, 'country', 'From Federation Leader', 'add', '0.2', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"},{"leaf":"any_owned_leader","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 17, 'country', 'From Federation Leader', 'factor', '1.2', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"},{"leaf":"any_owned_leader","value":"scope"}]}');
+                   VALUES ('ethic_spiritualist', 17, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_spiritualist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 18, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_spiritualist"}');
+                   VALUES ('ethic_spiritualist', 18, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 19, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_spiritualist"}');
+                   VALUES ('ethic_spiritualist', 19, 'country', NULL, 'add', '0.1', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 20, 'country', NULL, 'factor', '1.1', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}');
+                   VALUES ('ethic_spiritualist', 20, 'country', 'From Psionic Ascension', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_psionic_ascension","value":"yes"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 21, 'country', 'From Psionic Ascension', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_psionic_ascension","value":"yes"}]}');
+                   VALUES ('ethic_spiritualist', 21, 'country', 'From Psionic Traditions', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 22, 'country', 'From Psionic Traditions', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"op":"or","args":[{"leaf":"has_tradition","value":"tr_psionics_psionic_assimilation"},{"leaf":"has_tradition","value":"tr_psionics_shroud_great_awakening"}]}]}');
+                   VALUES ('ethic_spiritualist', 22, 'country', NULL, 'add', '-0.25', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 23, 'country', NULL, 'factor', '0.75', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
+                   VALUES ('ethic_spiritualist', 23, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|spiritualist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 24, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|spiritualist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_spiritualist', 24, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_spiritualist"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 25, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_spiritualist"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_spiritualist', 25, 'country', 'From Relations', 'add', NULL, 'value:spiritualist_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_spiritualist', 26, 'country', 'From Relations', 'factor', NULL, 'value:spiritualist_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_spiritualist', 26, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
                    VALUES ('ethic_materialist', 0, 'tag', '+ Empire has Materialist Governing Ethics', NULL, NULL, NULL, NULL, NULL, '{"leaf":"is_materialist","value":"yes"}');
@@ -100681,43 +101028,43 @@ INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, fact
                    VALUES ('ethic_materialist', 15, 'tag', '+ Empire Ethic embraced by The Choir of the Mind', NULL, NULL, NULL, NULL, NULL, '{"leaf":"has_country_flag","value":"cybernetic_creed_research"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 16, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_ethic","value":"ethic_materialist"},{"leaf":"has_ethic","value":"ethic_fanatic_materialist"},{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"check_modifier_value","value":"scope"},{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}]}]}');
+                   VALUES ('ethic_materialist', 16, 'country', 'From Observer', 'add', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 17, 'country', 'From Observer', 'factor', '20.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_materialist', 17, 'country', 'From Observer', 'add', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 18, 'country', 'From Observer', 'factor', '10.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"primitive"},{"leaf":"has_country_flag","value":"preftl_societal_enlightenment_pact"},{"leaf":"capital_scope","value":"scope"}]}');
+                   VALUES ('ethic_materialist', 18, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_materialist","value":"no"}]},{"leaf":"has_faction","value":"technologist"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 19, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_materialist","value":"no"}]},{"leaf":"has_faction","value":"technologist"}]}');
+                   VALUES ('ethic_materialist', 19, 'country', 'From Federation Type', 'add', '0.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 20, 'country', 'From Federation Type', 'factor', '1.5', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"has_federation","value":"yes"},{"leaf":"federation","value":"scope"}]}');
+                   VALUES ('ethic_materialist', 20, 'country', NULL, 'add', '1.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_materialist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 21, 'country', NULL, 'factor', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_materialist"}');
+                   VALUES ('ethic_materialist', 21, 'country', NULL, 'add', '2.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 22, 'country', NULL, 'factor', '3.0', NULL, NULL, NULL, '{"leaf":"has_ethic","value":"ethic_fanatic_materialist"}');
+                   VALUES ('ethic_materialist', 22, 'country', NULL, 'add', '0.25', NULL, NULL, NULL, '{"leaf":"has_origin","value":"origin_mechanists"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 23, 'country', NULL, 'factor', '1.25', NULL, NULL, NULL, '{"leaf":"has_origin","value":"origin_mechanists"}');
+                   VALUES ('ethic_materialist', 23, 'country', NULL, 'add', '0.25', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 24, 'country', NULL, 'factor', '1.25', NULL, NULL, NULL, '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_individual_machine","value":"no"}]},{"leaf":"has_policy_flag","value":"ai_full_rights"}]}');
+                   VALUES ('ethic_materialist', 24, 'country', 'FROM_OVERLORD', 'add', NULL, 'value:ethics_from_overlord|ETHIC|materialist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 25, 'country', 'FROM_OVERLORD', 'factor', NULL, 'value:ethics_from_overlord|ETHIC|materialist|', NULL, NULL, '{"op":"and","args":[{"leaf":"exists","value":"overlord"},{"leaf":"has_loyalty","cmp":">","value":"0"}]}');
+                   VALUES ('ethic_materialist', 25, 'country', 'From Council', 'add', '0.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_materialist"}', '0.1', NULL);
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 26, 'country', 'From Council', 'factor', '1.0', NULL, '{"leaf":"council_leader_ethic","value":"ethic_materialist"}', '0.1', '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_materialist', 26, 'country', 'From Creed', 'add', '0.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_research"}]}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 27, 'country', 'From Creed', 'factor', '1.0', NULL, NULL, NULL, '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"has_country_flag","value":"cybernetic_creed_research"}]}');
+                   VALUES ('ethic_materialist', 27, 'country', 'From Relations', 'add', NULL, 'value:materialist_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
 INSERT INTO ethic_attraction (ethic_key, sort_order, kind, description, op, factor,
                    factor_text, per_json, per_value, trigger_json)
-                   VALUES ('ethic_materialist', 28, 'country', 'From Relations', 'factor', NULL, 'value:materialist_ethics_from_relations', NULL, NULL, '{"leaf":"check_variable_arithmetic","value":"scope"}');
+                   VALUES ('ethic_materialist', 28, 'country', 'From Empire', 'factor', '0.0', NULL, NULL, NULL, '{"leaf":"blocks_ethic_attraction","value":"scope"}');
 INSERT INTO prescripted_name (key, text) VALUES ('AI_ARMY_ASSIGNED', 'Army Ship $ARMY|R$ (Missions:, Status)');
 INSERT INTO prescripted_name (key, text) VALUES ('AI_FLEET_ASSIGNED', 'Military Ship $FLEET|R$ (Missions:, Status)');
 INSERT INTO prescripted_name (key, text) VALUES ('AI_FLEET_MISSION_ATTACK', 'Attack');
@@ -107146,7 +107493,7 @@ INSERT INTO prescripted_name (key, text) VALUES ('interlink', 'The Interlink');
 INSERT INTO prescripted_name (key, text) VALUES ('the_curtain', 'The Curtain');
 INSERT INTO prescripted_name (key, text) VALUES ('the_grand_dance', 'The Grand Dance');
 INSERT INTO prescripted_name (key, text) VALUES ('the_masquerade', 'The Masquerade');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('advanced_traits_have_reduced_cost', '{"leaf":"has_tradition","value":"tr_purity_exemplary_genetics"}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('advanced_traits_have_reduced_cost', '{"leaf":"owner","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('ai_owner_has_archaeoengineers', '{"leaf":"owner","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('ai_owner_prefers_armor', '{"leaf":"owner","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('ai_owner_prefers_energy_weapons', '{"leaf":"owner","value":"scope"}');
@@ -107631,6 +107978,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_contacted_all_mino
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_contract_scripted_action', '{"leaf":"has_fleet_flag","value":"transporting_prisoners"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_corporate_government', '{"op":"or","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"has_civic","value":"civic_galactic_sovereign_megacorp"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_corporeal_government', '{"op":"or","args":[{"leaf":"has_government","value":"gov_shroud_corporeal_democracy"},{"leaf":"has_government","value":"gov_shroud_corporeal_oligarchy"},{"leaf":"has_government","value":"gov_shroud_corporeal_dictatorial"},{"leaf":"has_government","value":"gov_shroud_corporeal_imperial"},{"leaf":"has_government","value":"gov_shroud_corporeal_corporate"},{"leaf":"has_government","value":"gov_shroud_corporeal_hive"},{"leaf":"has_government","value":"gov_shroud_corporeal_machine"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_corvette_cloaking_tech', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_cloaking_1"},{"leaf":"has_destroyer_cloaking_tech","value":"yes"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cosmic_storms_dlc', '{"leaf":"host_has_dlc","value":"Cosmic Storms"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_council_subclass', '{"op":"or","args":[{"leaf":"has_trait","value":"subclass_commander_councilor"},{"leaf":"has_trait","value":"subclass_official_diplomacy_councilor"},{"leaf":"has_trait","value":"subclass_official_economy_councilor"},{"leaf":"has_trait","value":"subclass_scientist_councilor"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_covenant_with_end_of_the_cycle', '{"op":"or","args":[{"leaf":"has_modifier","value":"covenant_end_of_the_cycle"},{"leaf":"has_covenant","value":"end_of_the_cycle"}]}');
@@ -107645,6 +107993,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_crisis_stage_1', '
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_crisis_stage_2', '{"leaf":"has_global_flag","value":"crisis_stage_2"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_crisis_stage_3', '{"leaf":"has_global_flag","value":"crisis_stage_3"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_crisis_stage_4', '{"leaf":"has_global_flag","value":"crisis_stage_4"}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cruiser_cloaking_tech', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_cloaking_3"},{"leaf":"has_battleship_cloaking_tech","value":"yes"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_crystal_sphere_situation_ongoing', '{"leaf":"any_situation","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_culture_shock', '{"op":"or","args":[{"leaf":"has_modifier","value":"culture_shock_stone_age"},{"leaf":"has_modifier","value":"culture_shock_bronze_age"},{"leaf":"has_modifier","value":"culture_shock_iron_age"},{"leaf":"has_modifier","value":"culture_shock_late_medieval_age"},{"leaf":"has_modifier","value":"culture_shock_renaissance_age"},{"leaf":"has_modifier","value":"culture_shock_steam_age"},{"leaf":"has_modifier","value":"culture_shock_industrial_age"},{"leaf":"has_modifier","value":"culture_shock_machine_age"},{"leaf":"has_modifier","value":"culture_shock_atomic_age"},{"leaf":"has_modifier","value":"culture_shock_early_space_age"},{"leaf":"has_modifier","value":"planet_culture_shock"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_curator_event', '{"op":"and","args":[{"leaf":"has_active_event","value":"leviathans.500"},{"leaf":"has_active_event","value":"leviathans.504"},{"leaf":"has_active_event","value":"leviathans.591"},{"leaf":"has_active_event","value":"leviathans.507"},{"leaf":"has_active_event","value":"leviathans.509"},{"leaf":"has_active_event","value":"leviathans.508"},{"leaf":"has_active_event","value":"leviathans.510"},{"leaf":"has_active_event","value":"leviathans.515"},{"leaf":"has_active_event","value":"leviathans.520"},{"leaf":"has_active_event","value":"leviathans.525"},{"leaf":"has_active_event","value":"leviathans.530"},{"leaf":"has_active_event","value":"leviathans.535"},{"leaf":"has_active_event","value":"leviathans.540"},{"leaf":"has_active_event","value":"leviathans.545"},{"leaf":"has_active_event","value":"leviathans.550"},{"leaf":"has_active_event","value":"leviathans.555"},{"leaf":"has_active_event","value":"leviathans.556"},{"leaf":"has_active_event","value":"leviathans.558"},{"leaf":"has_active_event","value":"leviathans.511"},{"leaf":"has_active_event","value":"leviathans.590"},{"leaf":"has_active_event","value":"leviathans.599"},{"leaf":"has_active_event","value":"leviathans.600"},{"leaf":"has_active_event","value":"leviathans.4000"},{"leaf":"has_active_event","value":"anomaly.6820"},{"leaf":"has_active_event","value":"grand_archive.4105"},{"leaf":"has_active_event","value":"grand_archive.4106"},{"leaf":"has_active_event","value":"grand_archive.4107"},{"leaf":"has_active_event","value":"grand_archive.4121"},{"leaf":"has_active_event","value":"leviathans.4100"},{"leaf":"has_active_event","value":"leviathans.4105"},{"leaf":"has_active_event","value":"leviathans.4106"},{"leaf":"has_active_event","value":"leviathans.4107"},{"leaf":"has_active_event","value":"leviathans.4110"},{"leaf":"has_active_event","value":"leviathans.4111"},{"leaf":"has_active_event","value":"leviathans.4112"},{"leaf":"has_active_event","value":"leviathans.4115"},{"leaf":"has_active_event","value":"leviathans.4116"},{"leaf":"has_active_event","value":"leviathans.4117"}]}');
@@ -107654,7 +108003,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cybernetic_ascensi
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cybernetic_creed_trait', '{"op":"or","args":[{"leaf":"has_trait","value":"trait_cyborg_creed_of_construction"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_war"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_research"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_labor"},{"leaf":"has_trait","value":"trait_cyborg_ritualistic_implants"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cybernetization_stage_1', '{"op":"or","args":[{"op":"and","args":[{"leaf":"is_scope_type","value":"leader"},{"op":"not","args":[{"leaf":"has_trait","value":"leader_trait_cyborg"}]},{"op":"or","args":[{"leaf":"has_trait","value":"leader_trait_limited_cyborg"},{"leaf":"has_trait","value":"leader_trait_ritualistic_implants_cyborg"},{"leaf":"species","value":"scope"}]}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_scope_type","value":"pop"},{"leaf":"is_scope_type","value":"pop_group"},{"leaf":"is_scope_type","value":"species"}]},{"op":"or","args":[{"leaf":"has_cybernetic_creed_trait","value":"yes"},{"leaf":"has_unplugged_positive_trait","value":"yes"}]}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cybernetization_stage_2', '{"op":"or","args":[{"op":"and","args":[{"leaf":"is_scope_type","value":"leader"},{"leaf":"has_trait","value":"leader_trait_cyborg"}]},{"op":"and","args":[{"op":"or","args":[{"leaf":"is_scope_type","value":"pop"},{"leaf":"is_scope_type","value":"pop_group"},{"leaf":"is_scope_type","value":"species"}]},{"leaf":"has_trait","value":"trait_cybernetic"}]}]}');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cyborg_trait', '{"op":"or","args":[{"leaf":"has_trait","value":"trait_cyborg_power_drills"},{"leaf":"has_trait","value":"trait_cyborg_harvesters"},{"leaf":"has_trait","value":"trait_cyborg_superconductive"},{"leaf":"has_trait","value":"trait_cyborg_efficient_processors"},{"leaf":"has_trait","value":"trait_cyborg_logic_engines"},{"leaf":"has_trait","value":"trait_cyborg_loyalty_circuits"},{"leaf":"has_trait","value":"trait_cyborg_double_jointed"},{"leaf":"has_trait","value":"trait_cyborg_bulky"},{"leaf":"has_trait","value":"trait_cyborg_enhanced_memory"},{"leaf":"has_trait","value":"trait_cyborg_durable"},{"leaf":"has_trait","value":"trait_cyborg_high_maintenance"},{"leaf":"has_trait","value":"trait_cyborg_learning_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_power_intensive"},{"leaf":"has_trait","value":"trait_cyborg_neural_limiters"},{"leaf":"has_trait","value":"trait_cyborg_streamlined_protocols"},{"leaf":"has_trait","value":"trait_cyborg_high_bandwidth"},{"leaf":"has_trait","value":"trait_cyborg_trading_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_scarcity_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_stainless_steel_smile"},{"leaf":"has_trait","value":"trait_cyborg_welded_countenance"},{"leaf":"has_trait","value":"trait_cyborg_apathy_loops"},{"leaf":"has_trait","value":"trait_cyborg_bionic_engineers"},{"leaf":"has_trait","value":"trait_cyborg_bionic_physicists"},{"leaf":"has_trait","value":"trait_cyborg_bionic_sociologists"},{"leaf":"has_trait","value":"trait_cyborg_integrated_weaponry"},{"leaf":"has_trait","value":"trait_cyborg_delicate_frames"},{"leaf":"has_trait","value":"trait_cyborg_limited_memory"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_dry"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_wet"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_cold"},{"leaf":"has_trait","value":"trait_cyborg_ancient_dreadnought"},{"leaf":"has_trait","value":"trait_cyborg_enigmatic_fortress"},{"leaf":"has_trait","value":"trait_cyborg_infinity_sphere"},{"leaf":"has_trait","value":"trait_cyborg_scavenger_bot"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_construction"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_war"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_research"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_labor"},{"leaf":"has_trait","value":"trait_cyborg_ritualistic_implants"},{"leaf":"has_trait","value":"trait_unplugged_neurocalmed"},{"leaf":"has_trait","value":"trait_unplugged_neurosavant"},{"leaf":"has_trait","value":"trait_unplugged_regenoptimized"},{"leaf":"has_unplugged_positive_trait","value":"yes"},{"leaf":"has_unplugged_negative_trait","value":"yes"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cyborg_trait', '{"op":"or","args":[{"leaf":"has_trait","value":"trait_cyborg_power_drills"},{"leaf":"has_trait","value":"trait_cyborg_harvesters"},{"leaf":"has_trait","value":"trait_cyborg_superconductive"},{"leaf":"has_trait","value":"trait_cyborg_efficient_processors"},{"leaf":"has_trait","value":"trait_cyborg_logic_engines"},{"leaf":"has_trait","value":"trait_cyborg_loyalty_circuits"},{"leaf":"has_trait","value":"trait_cyborg_double_jointed"},{"leaf":"has_trait","value":"trait_cyborg_bulky"},{"leaf":"has_trait","value":"trait_cyborg_enhanced_memory"},{"leaf":"has_trait","value":"trait_cyborg_durable"},{"leaf":"has_trait","value":"trait_cyborg_high_maintenance"},{"leaf":"has_trait","value":"trait_cyborg_learning_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_power_intensive"},{"leaf":"has_trait","value":"trait_cyborg_neural_limiters"},{"leaf":"has_trait","value":"trait_cyborg_streamlined_protocols"},{"leaf":"has_trait","value":"trait_cyborg_high_bandwidth"},{"leaf":"has_trait","value":"trait_cyborg_trading_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_scarcity_algorithms"},{"leaf":"has_trait","value":"trait_cyborg_stainless_steel_smile"},{"leaf":"has_trait","value":"trait_cyborg_welded_countenance"},{"leaf":"has_trait","value":"trait_cyborg_apathy_loops"},{"leaf":"has_trait","value":"trait_cyborg_bionic_engineers"},{"leaf":"has_trait","value":"trait_cyborg_bionic_physicists"},{"leaf":"has_trait","value":"trait_cyborg_bionic_sociologists"},{"leaf":"has_trait","value":"trait_cyborg_integrated_weaponry"},{"leaf":"has_trait","value":"trait_cyborg_delicate_frames"},{"leaf":"has_trait","value":"trait_cyborg_limited_memory"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_dry"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_wet"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_cold"},{"leaf":"has_trait","value":"trait_cyborg_climate_adjustment_volcanic"},{"leaf":"has_trait","value":"trait_cyborg_ancient_dreadnought"},{"leaf":"has_trait","value":"trait_cyborg_enigmatic_fortress"},{"leaf":"has_trait","value":"trait_cyborg_infinity_sphere"},{"leaf":"has_trait","value":"trait_cyborg_scavenger_bot"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_construction"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_war"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_research"},{"leaf":"has_trait","value":"trait_cyborg_creed_of_labor"},{"leaf":"has_trait","value":"trait_cyborg_ritualistic_implants"},{"leaf":"has_trait","value":"trait_unplugged_neurocalmed"},{"leaf":"has_trait","value":"trait_unplugged_neurosavant"},{"leaf":"has_trait","value":"trait_unplugged_regenoptimized"},{"leaf":"has_unplugged_positive_trait","value":"yes"},{"leaf":"has_unplugged_negative_trait","value":"yes"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cycle_of_conflict', '{"leaf":"has_country_flag","value":"cycle_of_conflict"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cycle_of_fortune', '{"leaf":"has_country_flag","value":"cycle_of_fortune"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_cycle_of_growth', '{"leaf":"has_country_flag","value":"cycle_of_growth"}');
@@ -107672,6 +108021,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_deficit_situation_
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_deficit_situation_stage_3', '{"leaf":"any_situation","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_deficit_situation_stage_4', '{"leaf":"any_situation","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_deficits', '{"op":"or","args":[{"leaf":"has_deficit","value":"minerals"},{"leaf":"has_deficit","value":"energy"},{"leaf":"has_deficit","value":"food"},{"leaf":"has_deficit","value":"consumer_goods"},{"leaf":"has_deficit","value":"alloys"},{"leaf":"has_deficit","value":"unity"},{"leaf":"has_deficit","value":"influence"},{"leaf":"has_deficit","value":"sr_zro"},{"leaf":"has_deficit","value":"exotic_gases"},{"leaf":"has_deficit","value":"sr_dark_matter"},{"leaf":"has_deficit","value":"sr_living_metal"},{"leaf":"has_deficit","value":"rare_crystals"},{"leaf":"has_deficit","value":"volatile_motes"},{"leaf":"has_deficit","value":"nanites"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_destroyer_cloaking_tech', '{"op":"or","args":[{"leaf":"has_technology","value":"tech_cloaking_2"},{"leaf":"has_cruiser_cloaking_tech","value":"yes"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_devouring_swarm_government', '{"op":"and","args":[{"leaf":"has_government","value":"gov_devouring_swarm"},{"leaf":"has_government","value":"gov_blood_forest"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_disconnected_drone_citizenship_type', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_distar', '{"leaf":"host_has_dlc","value":"Distant Stars Story Pack"}');
@@ -107868,6 +108218,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_ringworld_output_b
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_ruined_megastructure', '{"op":"or","args":[{"leaf":"has_megastructure","value":"gateway_ruined"},{"leaf":"has_megastructure","value":"spy_orb_ruined"},{"leaf":"has_megastructure","value":"ring_world_ruined"},{"leaf":"has_megastructure","value":"think_tank_ruined"},{"leaf":"has_megastructure","value":"hyper_relay_ruined"},{"leaf":"has_megastructure","value":"orbital_ring_ruined"},{"leaf":"has_megastructure","value":"dyson_sphere_ruined"},{"leaf":"has_megastructure","value":"gateway_ness_ruined"},{"leaf":"has_megastructure","value":"crisis_sphere_ruined"},{"leaf":"has_megastructure","value":"mega_shipyard_ruined"},{"leaf":"has_megastructure","value":"quantum_catapult_ruined"},{"leaf":"has_megastructure","value":"quantum_catapult_ruined_slingshot"},{"leaf":"has_megastructure","value":"cosmogenesis_world_ruined"},{"leaf":"has_megastructure","value":"matter_decompressor_ruined"},{"leaf":"has_megastructure","value":"spy_orb_permanently_ruined"},{"leaf":"has_megastructure","value":"interstellar_assembly_ruined"},{"leaf":"has_megastructure","value":"think_tank_permanently_ruined"},{"leaf":"has_megastructure","value":"habitat_central_complex_ruined"},{"leaf":"has_megastructure","value":"dyson_sphere_permanently_ruined"},{"leaf":"has_megastructure","value":"mega_shipyard_permanently_ruined"},{"leaf":"has_megastructure","value":"quantum_catapult_permanently_ruined"},{"leaf":"has_megastructure","value":"strategic_coordination_center_ruined"},{"leaf":"has_megastructure","value":"matter_decompressor_permanently_ruined"},{"leaf":"has_megastructure","value":"mega_art_installation_permanently_ruined"},{"leaf":"has_megastructure","value":"interstellar_assembly_permanently_ruined"},{"leaf":"has_megastructure","value":"strategic_coordination_center_permanently_ruined"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_rural_designation', '{"op":"or","args":[{"leaf":"has_designation","value":"col_capital_extraction"},{"leaf":"has_designation","value":"col_hiv"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_sabotage_starbase_valid_target', '{"leaf":"any_owned_starbase","value":"scope"}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_sacred_site_flag_for_ship_owner', NULL);
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_sacrificial_edict', '{"op":"or","args":[{"leaf":"has_edict","value":"sacrifice_bounty"},{"leaf":"has_edict","value":"sacrifice_bounty_zombie"},{"leaf":"has_edict","value":"sacrifice_harmony"},{"leaf":"has_edict","value":"sacrifice_togetherness"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_salvager_event', '{"op":"and","args":[{"leaf":"has_active_event","value":"enclave.305"},{"leaf":"has_active_event","value":"enclave.310"},{"leaf":"has_active_event","value":"enclave.315"},{"leaf":"has_active_event","value":"enclave.320"},{"leaf":"has_active_event","value":"enclave.325"},{"leaf":"has_active_event","value":"enclave.330"},{"leaf":"has_active_event","value":"enclave.335"},{"leaf":"has_active_event","value":"enclave.340"},{"leaf":"has_active_event","value":"enclave.341"},{"leaf":"has_active_event","value":"enclave.342"},{"leaf":"has_active_event","value":"enclave.345"},{"leaf":"has_active_event","value":"enclave.350"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('has_sapient_combat_computer', '{"op":"or","args":[{"leaf":"has_component","value":"COMBAT_COMPUTER_SWARM_SAPIENT"},{"leaf":"has_component","value":"COMBAT_COMPUTER_LINE_SAPIENT"},{"leaf":"has_component","value":"COMBAT_COMPUTER_PICKET_SAPIENT"},{"leaf":"has_component","value":"COMBAT_COMPUTER_ARTILLERY_SAPIENT"},{"leaf":"has_component","value":"COMBAT_COMPUTER_CARRIER_SAPIENT"},{"leaf":"has_component","value":"COMBAT_COMPUTER_PLATFORM_SAPIENT"}]}');
@@ -108087,7 +108438,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_barren', '{"op":"or
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_battleship_or_above', '{"leaf":"ship_size_multiplier","cmp":">=","value":"@battleship_size_multiplier"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_beastmasters_empire', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_beastmasters"},{"leaf":"has_valid_civic","value":"civic_hive_beastmasters"},{"leaf":"has_valid_civic","value":"civic_machine_beastmasters"},{"leaf":"has_valid_civic","value":"civic_corporate_beastmasters"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_behemoth', '{"op":"or","args":[{"leaf":"is_ship_size","value":"behemoth_01"},{"leaf":"is_ship_size","value":"behemoth_02"},{"leaf":"is_ship_size","value":"behemoth_03"},{"leaf":"is_ship_size","value":"behemoth_04"}]}');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_being_purged', '{"leaf":"is_pop_category","value":"purge"}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_being_purged', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"op":"or","args":[{"leaf":"has_citizenship_type","value":"scope"},{"leaf":"has_citizenship_type","value":"scope"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_binary_star', '{"op":"or","args":[{"leaf":"is_star_class","value":"sc_binary_1"},{"leaf":"is_star_class","value":"sc_binary_2"},{"leaf":"is_star_class","value":"sc_binary_3"},{"leaf":"is_star_class","value":"sc_binary_4"},{"leaf":"is_star_class","value":"sc_binary_5"},{"leaf":"is_star_class","value":"sc_binary_6"},{"leaf":"is_star_class","value":"sc_binary_7"},{"leaf":"is_star_class","value":"sc_binary_8"},{"leaf":"is_star_class","value":"sc_binary_9"},{"leaf":"is_star_class","value":"sc_binary_10"},{"leaf":"is_star_class","value":"sc_crisis_binary_1"},{"leaf":"is_star_class","value":"sc_crisis_binary_2"},{"leaf":"is_star_class","value":"sc_crisis_binary_5"},{"leaf":"is_star_class","value":"sc_crisis_binary_7_8_9"},{"leaf":"is_star_class","value":"sc_crisis_binary_10"},{"leaf":"solar_system","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_broken_shackles_pre_ftl', '{"op":"or","args":[{"leaf":"has_country_flag","value":"broken_shackles_parent_country"},{"leaf":"has_country_flag","value":"broken_shackles_abductees_country"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_candidate_for_early_contact', '{"op":"and","args":[{"leaf":"is_country_type","value":"default"},{"op":"not","args":[{"op":"or","args":[{"leaf":"is_unfriendly","value":"yes"},{"leaf":"has_civic","value":"civic_hive_bodysnatcher"},{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_civic","value":"civic_criminal_heritage"},{"leaf":"is_fanatic_xenophobe","value":"yes"}]}]}]}');
@@ -108295,6 +108646,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_military_arkship_st
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_mindwarden_enclave_founding_allowed', '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"is_enclave_founding_allowed","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_mindwardens_story_system', '{"op":"or","args":[{"leaf":"has_star_flag","value":"mindwarden_system"},{"leaf":"has_star_flag","value":"mindwarden_buffer_system"},{"leaf":"has_star_flag","value":"exiled_system"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_mining_district_uncapped', '{"op":"or","args":[{"leaf":"uses_district_set","value":"shattered_ring_world"},{"op":"and","args":[{"leaf":"exists","value":"owner_or_space_owner"},{"leaf":"owner_or_space_owner","value":"scope"}]},{"leaf":"has_carrier_flag","value":"uncapped_mining_districts"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_multiple_star', '{"op":"or","args":[{"leaf":"is_binary_star","value":"yes"},{"leaf":"is_trinary_star","value":"yes"},{"leaf":"is_quaternary_star","value":"yes"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_mutation_authority', '{"leaf":"has_country_flag","value":"bio_mutation"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_natural_design_empire', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_natural_design"},{"leaf":"has_valid_civic","value":"civic_hive_natural_design"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_nomadic_synaptic_lathe', '{"op":"and","args":[{"leaf":"is_planet_class","value":"pc_cosmogenesis_world"},{"leaf":"owner","value":"scope"}]}');
@@ -108303,6 +108655,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_non_menial_laborer'
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_non_ruined_crisis_sphere', '{"op":"or","args":[{"leaf":"is_megastructure_type","value":"crisis_sphere_0"},{"leaf":"is_megastructure_type","value":"crisis_sphere_1"},{"leaf":"is_megastructure_type","value":"crisis_sphere_2"},{"leaf":"is_megastructure_type","value":"crisis_sphere_3"},{"leaf":"is_megastructure_type","value":"crisis_sphere_4"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_non_sapient_robot', '{"op":"and","args":[{"leaf":"has_trait","value":"trait_mechanical"},{"op":"not","args":[{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"owner","value":"scope"}]}]},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"owner","value":"scope"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_normal_starbase', '{"leaf":"has_starbase_size","cmp":">=","value":"starbase_outpost"}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_ocean_paradise_empire', '{"op":"or","args":[{"leaf":"has_origin","value":"origin_ocean_paradise"},{"leaf":"has_origin","value":"origin_ocean_machines"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_oligarchic_authority', '{"leaf":"has_authority","value":"auth_oligarchic"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_oligarchy', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_oligarchic_authority","value":"yes"},{"leaf":"is_megacorp","value":"yes"}]},{"leaf":"is_egalitarian","value":"no"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_only_eligible_collection_stage_3_reward_not_skipped_aesthetic_wonder', '{"op":"and","args":[{"leaf":"is_eligible_collection_stage_3_reward_not_skipped_xeno_geology","value":"no"},{"leaf":"is_eligible_collection_stage_3_reward_not_skipped_aesthetic_wonder","value":"yes"}]}');
@@ -108340,6 +108693,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_psionic_portrait', 
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_psionic_species', '{"op":"or","args":[{"leaf":"has_trait","value":"trait_psionic"},{"leaf":"has_trait","value":"trait_robot_psionic"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_purity_authority', '{"leaf":"has_country_flag","value":"bio_purity"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_quantum_catapult_megastructure', '{"op":"or","args":[{"leaf":"is_megastructure_type","value":"quantum_catapult_0"},{"leaf":"is_megastructure_type","value":"quantum_catapult_1"},{"leaf":"is_megastructure_type","value":"quantum_catapult_2"},{"leaf":"is_megastructure_type","value":"quantum_catapult_3"},{"leaf":"is_megastructure_type","value":"quantum_catapult_ruined"},{"leaf":"is_megastructure_type","value":"quantum_catapult_restored"},{"leaf":"is_megastructure_type","value":"quantum_catapult_ruined_slingshot"},{"leaf":"is_megastructure_type","value":"quantum_catapult_restored_slingshot"},{"leaf":"is_megastructure_type","value":"quantum_catapult_improved_slingshot"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_quaternary_star', '{"op":"or","args":[{"leaf":"is_star_class","value":"sc_quaternary_1"},{"leaf":"is_star_class","value":"sc_crisis_quaternary_1"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_reanimator', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_reanimated_armies"},{"leaf":"has_valid_civic","value":"civic_permanent_employment"},{"leaf":"has_valid_civic","value":"civic_hive_cordyceptic_drones"},{"leaf":"has_ascension_perk","value":"ap_mechromancy"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_regular_empire', '{"op":"and","args":[{"op":"or","args":[{"leaf":"is_country_type","value":"default"},{"leaf":"is_country_type","value":"awakened_marauders"},{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"},{"leaf":"is_country_type","value":"exiled"}]},{"op":"not","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_regular_pre_ftl', '{"op":"and","args":[{"leaf":"is_primitive","value":"yes"},{"leaf":"is_gestalt","value":"no"}]}');
@@ -108351,7 +108705,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_robot_empire', '{"o
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_robot_servant', '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_citizenship_type","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_robotic_or_voidspawn_species', '{"op":"or","args":[{"leaf":"is_robotic","value":"yes"},{"leaf":"has_trait","value":"trait_voidling"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_robotic_species', '{"leaf":"species","value":"scope"}');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_sacred_site_planet', '{"op":"and","args":[{"leaf":"has_anomaly","value":"no"},{"leaf":"is_star","value":"no"},{"leaf":"has_owner","value":"no"},{"leaf":"is_fe_cluster","value":"no"},{"leaf":"is_marauder_cluster","value":"no"},{"leaf":"is_astral_scar","value":"no"},{"leaf":"is_artificial","value":"no"},{"leaf":"is_ringworld","value":"no"},{"leaf":"solar_system","value":"scope"}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_sacred_site_planet', '{"op":"and","args":[{"leaf":"has_anomaly","value":"no"},{"leaf":"is_star","value":"no"},{"leaf":"has_owner","value":"no"},{"leaf":"is_fe_cluster","value":"no"},{"leaf":"is_marauder_cluster","value":"no"},{"leaf":"is_astral_scar","value":"no"},{"leaf":"is_artificial","value":"no"},{"leaf":"is_ringworld","value":"no"},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_cutholoid"}]},{"leaf":"solar_system","value":"scope"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_sacred_site_waystation', '{"leaf":"solar_system","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_same_planet_class', '{"leaf":"switch","value":"scope"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_scavenger', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_scavengers"},{"leaf":"has_valid_civic","value":"civic_corporate_scavengers"}]}');
@@ -129777,84 +130131,646 @@ INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_sector_as_vassal', 'Delegating', NULL, '50.0', 54);
 INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_colonize_tomb_world', 'Reclaiming', NULL, '25.0', 55);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('behemoth_path', 'feral_insight', 'Behemoth Crisis', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
+Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, but...
+It is now clear that it was always going to be us.
+The Leviathans who dwell in the void are formidable beings of unparalleled might, but lacking in purpose and ambition. The union of their mighty physiology with our intellectual fortitude will birth a new generation of space fauna and bring us to the apex of galactic domination.', 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('behemoth_path', 'crisis_behemoth_level_1', 1, 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('behemoth_path', 'crisis_behemoth_level_2', 2, 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('behemoth_path', 'crisis_behemoth_level_3', 3, 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('behemoth_path', 'crisis_behemoth_level_4', 4, 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('behemoth_path', 'crisis_behemoth_level_5', 5, 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_build_bioships', 0);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_breed_fauna', 1);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_kill_bioships', 2);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_kill_space_fauna', 3);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_cap_fauna', 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_build_behemoth_egg', 5);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_birth_behemoth', 6);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('behemoth_path', 'crisobj_behemoth_rage', 7);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('cosmogenesis_path', 'advanced_logic', 'Cosmogenesis', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
+Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, but...
+It is now clear that it was always going to be us.
+Fallen Empires possess the knowledge we seek, but they have grown dull and complacent. It is our right to surpass them, by any means necessary.', 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('cosmogenesis_path', 'crisis_cosmogenesis_level_1', 1, 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('cosmogenesis_path', 'crisis_cosmogenesis_level_2', 2, 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('cosmogenesis_path', 'crisis_cosmogenesis_level_3', 3, 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('cosmogenesis_path', 'crisis_cosmogenesis_level_4', 4, 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('cosmogenesis_path', 'crisis_cosmogenesis_level_5', 5, 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_research_tech', 0);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_research_thesis', 1);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_have_scholarium_vassals', 2);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_neural_chips', 3);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_have_science_nexuses', 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('cosmogenesis_path', 'crisobj_galcom_science_resolution', 5);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('defender_path', 'integrity', 'Defender of the Galaxy', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
+Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, and...
+It is now clear that the protection of the galaxy will fall to us.
+No matter the horrors and tyrants that rise up, they will find our home to be well protected. Soon, all will learn that this side of universe shall never be broken!', 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('defender_path', 'crisis_defender_level_1', 1, 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('defender_path', 'crisis_defender_level_2', 2, 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('defender_path', 'crisis_defender_level_3', 3, 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('defender_path', 'crisis_defender_level_4', 4, 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('defender_path', 'crisis_defender_level_5', 5, 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_defensive_pacts', 0);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_federated', 1);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_not_in_aggressive_war', 2);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_galcom_activity', 3);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_destroy_crisis_ships', 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_destroy_crisis_countries', 5);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('hyperthermia_path', 'entropy_crystals', 'Galactic Hyperthermia', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
+Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, but...
+It is now clear that it was always going to be us.
+A new way to manipulate energy will allow us to vastly increase our power. We will need to harness the fire of the stars themselves to ignite this era.', 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('hyperthermia_path', 'crisis_hyperthermia_level_1', 1, 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('hyperthermia_path', 'crisis_hyperthermia_level_2', 2, 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('hyperthermia_path', 'crisis_hyperthermia_level_3', 3, 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('hyperthermia_path', 'crisis_hyperthermia_level_4', 4, 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('hyperthermia_path', 'crisis_hyperthermia_level_5', 5, 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_own_volcanics', 0);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_create_volcanics', 1);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_own_red_stars', 2);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_create_red_stars', 3);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_planet_firestorm', 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_lens_beam_impact', 5);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('hyperthermia_path', 'crisobj_entropy_starbase', 6);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('nemesis_path', 'menace', 'Galactic Nemesis', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
+Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, but...
+It is now clear that it was always going to be us.
+Our actions have echoes in another dimension, one of limitless energy. We need only discover how to harness this power in order to bring the galaxy to heel.', 4);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('nemesis_path', 'crisis_level_1', 1, 0);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('nemesis_path', 'crisis_level_2', 2, 1);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('nemesis_path', 'crisis_level_3', 3, 2);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('nemesis_path', 'crisis_level_4', 4, 3);
+INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('nemesis_path', 'crisis_level_5', 5, 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_destroy_empires', 0);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_destroy_enemy_ships', 1);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_destroy_starbases', 2);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_purge_pops', 3);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_destroy_worlds', 4);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_conquer_worlds', 5);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_vassalise_empires', 6);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_have_vassals', 7);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_perform_upsetting_operations', 8);
+INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('nemesis_path', 'crisobj_be_in_breach_of_galcom_law', 9);
+INSERT INTO crisis_path_perk (path_key, perk_key) VALUES ('defender_path', 'ap_defender_of_the_galaxy_nomads');
+INSERT INTO crisis_path_perk (path_key, perk_key) VALUES ('nemesis_path', 'ap_become_the_crisis');
+INSERT INTO crisis_path_perk (path_key, perk_key) VALUES ('cosmogenesis_path', 'ap_cosmogenesis');
+INSERT INTO crisis_path_perk (path_key, perk_key) VALUES ('behemoth_path', 'ap_behemoths');
+INSERT INTO crisis_path_perk (path_key, perk_key) VALUES ('hyperthermia_path', 'ap_galactic_hyperthermia');
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_level_1', 'Concern', '0.0', '[]', NULL, 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_1', 'menp_objectives', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_1', 'menp_undertaker', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_1', 'menp_intimidation', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_level_2', 'Risk', '1000.0', '["Has completed the first Become the Crisis Special Project"]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_1_complete"},{"op":"not","args":[{"leaf":"has_active_event","value":"crisis.4120"}]}]}', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_2', 'menp_crisis_corvette', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_2', 'menp_base_breaker', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_2', 'menp_relentless_aggression', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_level_3', 'Danger', '2000.0', '["Has completed the second Become the Crisis Special Project"]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_2_complete"},{"op":"not","args":[{"leaf":"has_active_event","value":"crisis.4125"}]}]}', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_3', 'menp_crisis_destroyer', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_3', 'menp_easily_replaced', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_3', 'menp_death_from_above', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_3', 'menp_ruthless_raiders', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_level_4', 'Calamity', '5000.0', '["Has completed the third Become the Crisis Special Project"]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_3_complete"},{"op":"not","args":[{"leaf":"has_active_event","value":"crisis.4130"}]}]}', 3);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_4', 'menp_crisis_cruiser', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_4', 'menp_ship_chipper', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_4', 'menp_flyswatter', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_level_5', 'Existential Threat', '10000.0', '["Has completed the fourth Become the Crisis Special Project","Nomadic empires must designate an Aetherophasic Anchor Waystation module before initiating the final stage. Build this module on a Waystation to choose which system will host the Aetherophasic Engine Frame."]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_4_complete"},{"op":"or","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"any_owned_nonprimary_starbase","value":"scope"}]},{"op":"not","args":[{"leaf":"has_active_event","value":"crisis.4135"}]},{"leaf":"is_subject","value":"no"}]}', 4);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_5', 'menp_megastructure', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_5', 'menp_star_eater', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_5', 'menp_mobile_bulwark', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_level_5', 'menp_paid_in_ambition', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_defender_level_1', 'Aspirant', '0.0', '[]', NULL, 5);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_1', 'menp_defender_objectives', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_1', 'menp_defender_opinion_1', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_1', 'menp_defender_galcom_1', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_1', 'menp_defender_federation_1', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_defender_level_2', 'Guardian', '2000.0', '["Has completed the Tailored Diplomacy Special Project"]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_1_complete"},{"leaf":"is_galactic_community_member","value":"yes"}]}', 6);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_2', 'menp_defender_crisis_damage_1', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_2', 'menp_defender_galcom_3', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_2', 'menp_defender_galcom_2', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_2', 'menp_defender_federation_2', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_defender_level_3', 'Champion', '6000.0', '["Has completed the Sources of Inspiration Special Project"]', '{"op":"and","args":[{"leaf":"has_country_flag","value":"crisis_special_project_2_complete"},{"leaf":"is_part_of_galactic_council","value":"yes"},{"leaf":"has_global_flag","value":"galacic_council_announced"}]}', 7);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_3', 'menp_defender_crisis_damage_2', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_3', 'menp_defender_research_1', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_3', 'menp_defender_defense_1', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_defender_level_4', 'Hero', '18000.0', '["Has been elected Custodian of the Galactic Community"]', '{"leaf":"is_galactic_custodian","value":"yes"}', 8);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_4', 'menp_defender_crisis_damage_3', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_4', 'menp_defender_opinion_2', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_4', 'menp_defender_custodian', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_4', 'menp_defender_defense_2', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_defender_level_5', 'Legend', '45000.0', '["Galaxy is facing an Existential crisis.","Has been elected Custodian of the Galactic Community"]', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_crisis","value":"yes"},{"leaf":"any_country","value":"scope"}]},{"leaf":"is_galactic_custodian","value":"yes"}]}', 9);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_5', 'menp_defender_crisis_damage_4', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_5', 'menp_defender_opinion_3', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_5', 'menp_defender_research_2', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_defender_level_5', 'menp_defender_defense_3', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_cosmogenesis_level_1', 'Concern', '0.0', '[]', NULL, 10);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_1', 'menp_cosmo_features_1', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_1', 'menp_cosmo_buildings_1', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_1', 'menp_cosmo_techs_1', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_1', 'menp_cosmo_objectives', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_cosmogenesis_level_2', 'Risk', '4000.0', '["Has researched the Exponential Learning Theory technology"]', '{"leaf":"has_technology","value":"tech_cosmogenesis_crisis_1"}', 11);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_2', 'menp_cosmo_ship_2', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_2', 'menp_cosmo_buildings_2', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_2', 'menp_cosmo_techs_2', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_2', 'menp_cosmo_features_2', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_cosmogenesis_level_3', 'Danger', '10000.0', '["Has researched the Gravitic Brush technology"]', '{"leaf":"has_technology","value":"tech_cosmogenesis_crisis_2"}', 12);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_3', 'menp_cosmo_ship_3', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_3', 'menp_cosmo_buildings_3', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_3', 'menp_cosmo_techs_3', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_3', 'menp_cosmo_features_3', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_cosmogenesis_level_4', 'Calamity', '22000.0', '["Has researched the Theoretical Infinity Thesis technology","We have renounced our Cosmogenesis ambitions."]', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_cosmogenesis_crisis_3"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cosmogenesis_aborted"}]}]}', 13);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_4', 'menp_cosmo_ship_4', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_4', 'menp_cosmo_buildings_4', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_4', 'menp_cosmo_techs_4', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_4', 'menp_cosmo_features_4', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_cosmogenesis_level_5', 'Existential Threat', '60000.0', '["Has researched The Rules of Reality technology","Has researched at least 2 Applied Infinity Thesis","We have renounced our Cosmogenesis ambitions."]', '{"op":"and","args":[{"leaf":"has_technology","value":"tech_cosmogenesis_crisis_4"},{"leaf":"check_variable","value":"scope"},{"op":"not","args":[{"leaf":"has_country_flag","value":"cosmogenesis_aborted"}]},{"leaf":"is_subject","value":"no"}]}', 14);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_5', 'menp_cosmo_features_5', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_5', 'menp_cosmo_buildings_5', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_cosmogenesis_level_5', 'menp_cosmo_techs_5', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_behemoth_level_1', 'Concern', '0.0', '[]', NULL, 15);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_1', 'menp_behemoth_objectives', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_1', 'menp_behemoth_egg', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_1', 'menp_behemoth_society_1', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_1', 'menp_behemoth_food_1', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_behemoth_level_2', 'Risk', '2000.0', '["Has built a Behemoth Egg Megastructure"]', '{"leaf":"has_country_flag","value":"behemoth_egg_built"}', 16);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_2', 'menp_behemoth_hatchling', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_2', 'menp_behemoth_bioship_2', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_2', 'menp_behemoth_society_2', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_2', 'menp_behemoth_food_2', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_behemoth_level_3', 'Danger', '6000.0', '["Has hatched a Behemoth Hatchling from a Behemoth Egg"]', '{"leaf":"has_country_flag","value":"behemoth_egg_hatched"}', 17);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_3', 'menp_behemoth_bioship_1', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_3', 'menp_behemoth_bioships_3', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_3', 'menp_behemoth_society_3', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_behemoth_level_4', 'Calamity', '18000.0', '["Has completed the first Become the Crisis Special Project"]', '{"leaf":"has_country_flag","value":"crisis_special_project_3_complete"}', 18);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_4', 'menp_behemoth_hatchling_2', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_4', 'menp_behemoth_bioship_4', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_4', 'menp_behemoth_mutation_research', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_behemoth_level_5', 'Existential Threat', '45000.0', '["Has completed the fourth Become the Crisis Special Project"]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"crisis_special_project_4_complete"}]}', 19);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_5', 'menp_behemoth_mind_meld', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_5', 'menp_behemoth_primal_roar', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_5', 'menp_behemoth_ever_hungry', 2);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_behemoth_level_5', 'menp_behemoth_egg_2', 3);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_hyperthermia_level_1', 'Concern', '0.0', '["Has completed the New Power Source Special Project"]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv1_unlocked"}]}', 20);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_1', 'menp_hyperthermia_crystals', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_1', 'menp_hyperthermia_harnessing', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_1', 'menp_hyperthermia_crucible', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_hyperthermia_level_2', 'Risk', '0.0', '["Has constructed the Galactic Crucible Frame Megastructure and upgraded it to a Galactic Crucible Chassis"]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv2_unlocked"}]}', 21);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_2', 'menp_hyperthermia_radiant', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_2', 'menp_hyperthermia_conc_entropy', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_2', 'menp_hyperthermia_ignition', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_hyperthermia_level_3', 'Danger', '0.0', '["Has upgraded the Galactic Crucible Chassis Megastructure"]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv3_unlocked"}]}', 22);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_3', 'menp_hyperthermia_cruiser', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_3', 'menp_hyperthermia_coronal', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_3', 'menp_hyperthermia_flames', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_hyperthermia_level_4', 'Calamity', '0.0', '["Has upgraded the Galactic Crucible Core Megastructure","Has completed the Designed Firestorm Special Project","Another empire is already taking control over the galactic core.","Another empire already controls the galactic core and has reshaped the galaxy."]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv4_unlocked"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv4_project"},{"op":"not","args":[{"leaf":"has_global_flag","value":"Hyperthermia_ongoing"}]},{"op":"not","args":[{"leaf":"has_global_flag","value":"Hyperthermia_happened"}]}]}', 23);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_4', 'menp_hyperthermia_reactors', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_4', 'menp_hyperthermia_solarflare', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_4', 'menp_hyperthermia_armada', 2);
+INSERT INTO crisis_level (key, name, required_currency, requirements_json, allow_json, sort_order) VALUES ('crisis_hyperthermia_level_5', 'Existential Threat', '0.0', '["Has upgraded the Galactic Crucible Hub Megastructure","Another empire is already taking control over the galactic core.","Another empire already controls the galactic core and has reshaped the galaxy."]', '{"op":"and","args":[{"leaf":"is_subject","value":"no"},{"leaf":"has_country_flag","value":"Hyperthermia_Lv5_unlocked"},{"op":"not","args":[{"leaf":"has_global_flag","value":"Hyperthermia_ongoing"}]},{"op":"not","args":[{"leaf":"has_global_flag","value":"Hyperthermia_happened"}]}]}', 24);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_5', 'menp_hyperthermia_battleship', 0);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_5', 'menp_hyperthermia_critical_mass', 1);
+INSERT INTO crisis_level_perk (level_key, perk_key, sort_order) VALUES ('crisis_hyperthermia_level_5', 'menp_hyperthermia_ammunition', 2);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_empires', 'Destroy Empires', 'Few things disrupt the galactic balance as much as the annihilation of entire civilizations.
+Destroy other empires to gain this Menace reward.', '[{"op":"base","value":700.0},{"op":"subtract","by":"count_playable_country","mult":25.0},{"op":"round_to","value":50.0},{"op":"min","value":100.0}]', 0, NULL, 0);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_enemy_ships', 'Destroy Enemy Ships', 'Destructive battle is a proven and efficient way to wreak havoc and upset balance.
+Destroy enemy ships to gain this Menace reward.', '[{"op":"base","value":3000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"round"},{"op":"min","value":3.0}]', 0, NULL, 1);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_starbases', 'Destroy Starbases', 'Starbases are the anchor points of empires. Unmoor them, and the empires are doomed to lose control.
+Destroy starbases to gain this Menace reward.', '[{"op":"base","value":3000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"round"},{"op":"min","value":3.0}]', 0, NULL, 2);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_purge_pops', 'Purge or Assimilate Pops', 'An enemy is only a threat as long as it is alive - or an enemy.
+Purge or Assimilate Pops to gain this Menace reward for each 100 Pops Purged or Assimilated.', '[{"op":"base","value":3000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"divide","by":"galaxy_setup:habitable_worlds_scale"},{"op":"round"},{"op":"min","value":3.0}]', 0, NULL, 3);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_worlds', 'Destroy Worlds', 'Take Scorched Earth tactics to a whole other level.
+Reduce planetary surfaces to rubble using Armageddon Bombardment - or use the Colossus'' World Cracker weapon - to gain this Menace reward.', '[{"op":"base","value":150000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"divide","by":"galaxy_setup:habitable_worlds_scale"},{"op":"round_to","value":50.0},{"op":"min","value":150.0}]', 0, NULL, 4);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_conquer_worlds', 'Conquer Worlds', 'Crushing the enemy''s morale can be more efficient than crushing them outright.
+Conquer enemy worlds to gain this Menace reward.', '[{"op":"base","value":100000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"divide","by":"galaxy_setup:habitable_worlds_scale"},{"op":"round_to","value":50.0},{"op":"min","value":100.0}]', 0, NULL, 5);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_vassalise_empires', 'Vassalize Empires', 'As long as they contribute rather than thwart, there is room for subjects in our dominion.
+Vassalize empires to gain this Menace reward.', '[{"op":"base","value":300.0},{"op":"subtract","by":"count_playable_country","mult":25.0},{"op":"round_to","value":50.0},{"op":"min","value":100.0}]', 0, NULL, 6);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_have_vassals', 'Retain Vassals', 'Their obedience stands as testament to our flawless dominion.
+Retain Vassals to gain this annual Menace reward.', '[{"op":"base","value":35.0},{"op":"subtract","by":"count_playable_country","mult":2.5},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 1, NULL, 7);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_perform_upsetting_operations', 'Perform Disruptive Operations', 'Hurting our enemies from the inside has proven to be an excellent complement to traditional force projection.
+Perform certain disruptive Operations to gain this Menace Reward.', '[{"op":"base","value":50.0},{"op":"subtract","by":"count_playable_country","mult":2.5},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 0, NULL, 8);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_be_in_breach_of_galcom_law', 'Be In Breach of Galactic Community Law', 'The audacity of that pathetic bunch of feeble bureaucrats - we will not submit!
+Be In Breach of Galactic Community law to gain this annual Menace reward.', '[{"op":"base","value":200.0},{"op":"subtract","by":"count_playable_country","mult":18.0},{"op":"add","by":"count_galcom_member","mult":8.0},{"op":"round_to","value":10.0},{"op":"min","value":50.0}]', 1, NULL, 9);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_neural_chips', 'Employ Neural Chips', 'The scale of our research is such that sacrifices must be made to accommodate it.
+Use pops as Neural Chips in the Synaptic Lathe to gain Advanced Logic.
+The output of Neural Chips scales up with the number of pops on the Synaptic Lathe and can be further boosted through districts and buildings.', '[{"op":"base","value":0.0},{"op":"add","var":"cosmogenesis_world_advanced_logic_produced"},{"op":"round"},{"op":"min","value":0.0}]', 1, NULL, 10);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_research_tech', 'Research New Technologies', 'With every new discovery, no matter how small, we gain insights into the inner workings of reality.
+Research technologies to gain this Advanced Logic reward.', '[{"op":"base","value":100.0},{"op":"subtract","by":"count_playable_country","mult":10.0},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 0, NULL, 11);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_research_thesis', 'Research Applied Infinity Theses', 'Large-scale experiments to alter the rules that govern the behavior of reality will yield precious data.
+Research these rare technologies to gain this Advanced Logic reward.', '[{"op":"base","value":8000.0},{"op":"subtract","by":"count_playable_country","mult":400.0},{"op":"round_to","value":500.0},{"op":"min","value":1000.0}]', 0, NULL, 12);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_have_scholarium_vassals', 'Retain Scholarium Vassals', 'Research-focused subjects can help us in our quest for absolute knowledge.
+Retain Scholarium Vassals to gain this annual Advanced Logic reward.', '[{"op":"base","value":150.0},{"op":"subtract","by":"count_playable_country","mult":10.0},{"op":"round_to","value":30.0},{"op":"min","value":30.0}]', 1, '{"leaf":"host_has_dlc","value":"Overlord"}', 13);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_have_science_nexuses', 'Control Science Nexuses', 'Located far from any gravitational anomaly, this state-of-the-art research facility is used to ascertain unspoiled spacetime data.
+Control fully upgraded Science Nexus megastructures to gain this annual Advanced Logic reward.', '[{"op":"base","value":600.0},{"op":"subtract","by":"count_playable_country","mult":50.0},{"op":"round_to","value":200.0},{"op":"min","value":200.0}]', 1, NULL, 14);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_galcom_science_resolution', 'Secure Galactic Community Support', 'Convincing the members of the Galactic Community that our research is essential would go a long way toward fulfilling our plans.
+Make the Galactic Community adopt Unchained Knowledge Resolutions to gain this annual Advanced Logic reward.', '[{"op":"base","value":100.0},{"op":"subtract","by":"count_playable_country","mult":2.5},{"op":"round_to","value":10.0},{"op":"min","value":50.0}]', 1, '{"leaf":"host_has_dlc","value":"Federations"}', 15);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_build_bioships', 'Build Biological Ships', 'Having mastered the cultivation of biological ships, we now refine and expand these processes. This ongoing symbiosis yields ever-greater perks, enhancing our fleets and bolstering our dominion over the living cosmos.', '[{"op":"base","value":35.0},{"op":"subtract","by":"count_playable_country","mult":0.5},{"op":"round_to","value":5.0},{"op":"min","value":5.0}]', 0, NULL, 16);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_breed_fauna', 'Breed Space Fauna', 'Having mastered the breeding of Space Fauna, we now refine and expand these processes. This ongoing symbiosis yields ever-greater perks, enhancing our fleets and bolstering our dominion over the living cosmos.', '[{"op":"base","value":50.0},{"op":"subtract","by":"count_playable_country","mult":0.5},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 0, '{"op":"and","args":[{"leaf":"is_homicidal","value":"no"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', 17);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_kill_bioships', 'Destroy Biological Ships', 'Enemy biological ships interfere with our biological dominance. We must act decisively, destroying them to neutralize their threat to our supremacy.', '[{"op":"base","value":3.5},{"op":"multiply","by":"count_playable_country"},{"op":"divide","by":"count_playable_country"},{"op":"round_to","value":3.0}]', 0, NULL, 18);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_kill_space_fauna', 'Kill Space Fauna', 'Hostile Space Fauna threatens our biological dominance. We must act decisively, destroying them to neutralize their threat to our supremacy.', '[{"op":"base","value":20000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 0, NULL, 19);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_cap_fauna', 'Capture Space Fauna', 'Untamed Space Fauna act as rogue elements, posing a unique challenge. We must act decisively, capturing these entities to exploit their potential in order to ensure our supremacy.', '[{"op":"base","value":20000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 0, '{"op":"and","args":[{"leaf":"is_homicidal","value":"no"},{"leaf":"host_has_dlc","value":"Grand Archive"}]}', 20);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_build_behemoth_egg', 'Grow Behemoth Eggs', 'Growing supersized zygotes is a crucial step in our elevation beyond the trivialities of planet-based life.', '[{"op":"base","value":350.0},{"op":"subtract","by":"count_playable_country","mult":25.0},{"op":"round_to","value":25.0},{"op":"min","value":150.0}]', 0, NULL, 21);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_birth_behemoth', 'Birth Behemoths', 'In the vastness of space, colossal lifeforms are taking shape under our watchful guidance. These behemoths, born of our ambition and mastery, will emerge as titanic forces, reshaping the balance of power in our favor.', '[{"op":"base","value":2000.0},{"op":"subtract","by":"count_playable_country","mult":50.0},{"op":"round_to","value":100.0},{"op":"min","value":1000.0}]', 0, NULL, 22);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_behemoth_rage', 'Behemoth Raging', 'Unleashed upon the stars, our Behemoths rampage with primal fury, leaving devastation in their wake. Their uncontrolled wrath is a testament to our power, a force of nature that answers only to our will, when we choose to exert it.', '[{"op":"base","value":250.0},{"op":"subtract","by":"count_playable_country","mult":25.0},{"op":"round_to","value":25.0},{"op":"min","value":75.0}]', 0, NULL, 23);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_own_volcanics', 'Own Volcanic Worlds', 'Rising system heat fuels increased volcanism, perfect for advancing our fiery mission. We should prioritize colonizing Volcanic Worlds to stay ahead.
+Provides passive Crystallized Entropy income each year, scaling with the number of Volcanic World colonies.', '[{"op":"base","value":15.0},{"op":"multiply","var":"root.hyperthermia_volcanic_var"}]', 0, NULL, 24);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_create_volcanics', 'Create Volcanic Worlds', 'Spreading planetary volcanism across the galaxy will fuel our Entropy Crystal economy. With the right terraforming techniques, we can trigger sustained volcanic activity wherever we choose.
+Terraform a planet into a Volcanic World', '[{"op":"base","value":350.0}]', 0, NULL, 25);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_own_red_stars', 'Own Red Stars', 'We should prioritize operating in systems around red stars. Their vast emission surfaces are ideal for harvesting thermal energy.
+Provides passive Crystallized Entropy income each month, scaling with each Class M Star or Class M Red Giant in systems we occupy.', '[{"op":"base","value":2000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"multiply","value":0.5},{"op":"multiply","var":"root.hyperthermia_red_var"},{"op":"round"},{"op":"min","value":3.0}]', 0, NULL, 26);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_create_red_stars', 'Create Red Stars', 'By channeling Entropy Crystals, we can swell stars into Red Giants, fueling the rise of our blazing new empire.
+Stars terraformed by Conduits become Class M Red Giant', '[{"op":"base","value":10000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"multiply","value":3.0},{"op":"round"}]', 0, NULL, 27);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_planet_firestorm', 'Planetary Arson', 'It is time to teach our rivals the true meaning of supremacy, with a firestorm bombardment that will leave their world in ashes.
+Bombard a colony with Firestorm to inflict 100% devastation', '[{"op":"base","value":100.0}]', 0, NULL, 28);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_lens_beam_impact', 'Disrupt Ships', 'Cold and temperate worlds serve us no purpose. We must reshape them, by melting their surfaces into forms more suited to our needs.
+Use the Ship Xl Slot Lensed Paralyzer weapon, equipped on Conduits and Ember Battleships, to bombard enemy worlds.', '[{"op":"base","value":1.0}]', 0, NULL, 29);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_entropy_starbase', 'Own Gravitational Centrifuges', 'Gravitational Centrifuges will help us gather more Crystallized Entropy.
+Construct the Gravitational Centrifuge starbase building in multi-star or Black Hole systems.', '[{"op":"base","value":10.0}]', 0, NULL, 30);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_defensive_pacts', 'Form Alliances', 'Power lies in unity. Our cause is just, but justice without allies cannot endure. We cannot protect a galaxy that does not want to be protected, so we must seek those who share our values and will fight beside us, heart to heart and mind to mind.
+Form Defensive Pacts or grant Federation Association Status to gain this annual Valor reward.', '[{"op":"base","value":50.0},{"op":"subtract","by":"count_playable_country","mult":2.5},{"op":"round_to","value":5.0},{"op":"min","value":10.0}]', 1, NULL, 31);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_federated', 'Be part of a Federation', 'The bonds of a federation are not easily undone. Cooperation and harmony with like-minded empires will lift us all into a new age of prosperity.
+Join or Create a Federation to gain this annual Valor reward.', '[{"op":"base","value":100.0},{"op":"subtract","by":"count_playable_country","mult":5.0},{"op":"round_to","value":5.0},{"op":"min","value":25.0}]', 1, NULL, 32);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_not_in_aggressive_war', 'Do not take part in Wars of Aggression', 'We are guardians, not aggressors; only in standing firm do we earn the galaxy''s trust.
+Do not Attack or join the Attacking side in any war to gain this monthly Valor reward.', '[{"op":"base","value":25.0},{"op":"subtract","by":"count_playable_country","mult":1.0},{"op":"min","value":5.0}]', 1, NULL, 33);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_galcom_activity', 'Contribute to the Galactic Community', 'The Galactic Community''s democratic framework is our best means of forging unity. Through it, we may become a single shield, one strong enough to withstand any threat, yet tempered by respect for the autonomy of its members.
+Support successful Resolutions in the Galactic Community to gain this Valor reward.', '[{"op":"base","value":300.0},{"op":"subtract","by":"count_playable_country","mult":10.0},{"op":"round_to","value":5.0},{"op":"min","value":100.0}]', 0, NULL, 34);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_crisis_ships', 'Destroy Crisis Ships', 'Strength should be our last resort, but there can be no quarter given to the enemies of the galaxy.
+Destroy ships owned by a Crisis to gain this Valor reward.', '[{"op":"base","value":30000.0},{"op":"divide","by":"num_galaxy_systems"},{"op":"round"},{"op":"min","value":3.0}]', 0, NULL, 35);
+INSERT INTO crisis_objective (key, name, description, reward_json, recurring, potential_json, sort_order) VALUES ('crisobj_destroy_crisis_countries', 'Vanquish Crises', 'We do not seek war, but we will not suffer those who imperil the galaxy. If forced, we will ensure these despoilers are remembered only as a lesson.
+Destroy Crisis Empires to gain this Valor reward.', '[{"op":"base","value":9000.0},{"op":"subtract","by":"count_playable_country","mult":200.0},{"op":"round_to","value":100.0},{"op":"min","value":1000.0}]', 0, NULL, 36);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_objectives', 'Menace Objectives', 'Through the disruption of our reality do we ascend to another.', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_undertaker', 'Undertaker', 'Imagine a species full of vibrant life and unbridled potential - now make it stop.', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_undertaker', 'country', 'pop_purge_speed', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_purge_speed', 'Pop Purge Speed', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_intimidation', 'Intimidation', 'There is always another option. It is death.', 2);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_intimidation', 'country', 'country_subject_acceptance_add', '25.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_subject_acceptance_add', 'Subjugation Acceptance', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_base_breaker', 'Base Breaker', 'Overwhelming firepower provides perspective - the ability to see a supposed fortress for what it is: a sitting duck.', 3);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_base_breaker', 'country', 'ship_damage_against_starbases_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_damage_against_starbases_mult', 'Damage vs Starbases and Waystations', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_relentless_aggression', 'Relentless Aggression', 'An attacker who never tires breaks the enemy''s spirit long before their walls.', 4);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_relentless_aggression', 'country', 'country_war_exhaustion_mult', '-0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_easily_replaced', 'Easily Replaced', 'A higher quota is best met by increased production.', 5);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_easily_replaced', 'country', 'starbase_shipyard_build_speed_mult', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_death_from_above', 'Death From Above', 'Our fleets will blot out the sun. As many suns as it takes.', 6);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_death_from_above', 'country', 'ship_orbital_bombardment_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_ruthless_raiders', 'Misconfigured Thrusters', 'If a ship cannot be reliably piloted, its movements cannot be reliably predicted.', 7);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_ruthless_raiders', 'country', 'shipsize_crisis_corvette_evasion_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_crisis_corvette_evasion_mult', 'Menacing Corvette Evasion', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_ruthless_raiders', 'country', 'shipsize_crisis_corvette_disengage_chance_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_crisis_corvette_disengage_chance_mult', 'Menacing Corvette Disengage Chance', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_ship_chipper', 'Targeted Severing', 'The making of a ship betrays its unmaking. There is little essential variance in the designs sprung from the galaxy''s shipyards; we know them all.', 8);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_ship_chipper', 'country', 'ship_weapon_damage', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_flyswatter', 'Flyswatter', 'No folly is beneath our notice, no trespass undeserving of retribution.', 9);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_flyswatter', 'country', 'shipsize_crisis_destroyer_tracking_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_crisis_destroyer_tracking_mult', 'Menacing Destroyer Tracking', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_mobile_bulwark', 'Harsh Priorities', 'Only a scant few systems are required for the continued operation of a Menacing Cruiser under fire, and should be prioritized. Nonessential resources - sapient or otherwise - need not be protected.', 10);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_mobile_bulwark', 'country', 'shipsize_crisis_cruiser_hull_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_crisis_cruiser_hull_mult', 'Menacing Cruiser Hull Points', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_paid_in_ambition', 'Paid in Ambition', 'Honor, glory, sadism - there is always a currency more easily minted.', 11);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_paid_in_ambition', 'country', 'ships_upkeep_mult', '-0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_crisis_corvette', 'Menacing Corvette', 'To think that the wretches'' fleets imagine themselves harried already...', 12);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_crisis_destroyer', 'Menacing Destroyer', 'A crueler hunter for a crueler age.', 13);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_crisis_cruiser', 'Menacing Cruiser', 'A crushing weight.', 14);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_star_eater', 'Eclipse & Apocalypse', 'For far too long has the light shone on our enemies. No longer will they be able to look to the stars for inspiration.', 15);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_megastructure', 'Aetherophasic Engine', 'The Aetherophasic Engine will rip apart the barriers that exist between this world and the Shroud.', 16);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_objectives', 'Valor', 'Valor is earned through steadfast action in defense of the galaxy. It is not given, but earned, proof that we act not in self-interest, but for the protection of all.', 17);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_opinion_1', 'Noble Hearts', 'To lead, we must be known, not through fear, but through hope. We will invest in outreach that uplifts, informs, and builds trust across the stars.', 18);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_galcom_1', 'Inspired Orators', 'A speech is only as good as its orator. We must tailor our words to reach the hearts and minds of our peers - however alien they may appear to us.', 19);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_galcom_1', 'country', 'diplo_weight_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_galcom_1', 'country', 'envoys_add', '1.0', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_federation_1', 'Stalwart Allies', 'Federal administration is a powerful tool that can be leveraged for the benefit of all our allies.', 20);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_1', 'country', 'ship_federation_territory_speed_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_federation_territory_speed_mult', 'Federation Space Sublight Speed', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_1', 'federation', 'federation_fleet_cap_add', '50.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_fleet_cap_add', 'Federation Fleet Capacity', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_crisis_damage_1', 'Defiance', 'Our spirit is strong, and we won''t back down from a fight for fear of getting hurt.', 21);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_galcom_2', 'Political Leaders', 'Our influence grows, and with it, our ability to enact change in the Galactic Community. Our allies trust us, and we must strive to honor their faith.', 22);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_galcom_2', 'country', 'country_influence_produces_mult', '0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_influence_produces_mult', 'Monthly Influence', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_galcom_2', 'country', 'emergency_measures_cooldown_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_federation_2', 'Comrades in Arms', 'We protect the galaxy, but it is good to know that others protect us too. By relying upon each other, we all become stronger.', 23);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_2', 'country', 'ship_federation_territory_fire_rate_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_federation_territory_fire_rate_mult', 'Federation Territory Fire Rate', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_2', 'federation', 'federation_experience_add', '2.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_experience_add', 'Monthly Federation Experience', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_2', 'federation', 'federation_fleet_cap_add', '100.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('federation_fleet_cap_add', 'Federation Fleet Capacity', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_crisis_damage_2', 'Dutiful Fervor', 'The Galaxy believes in us, and we are not about to let them down.', 24);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_crisis_damage_2', 'country', 'ship_shield_mult', '0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_mult', 'Shield Hit Points', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_opinion_2', 'Champions of the Galaxy', 'Symbolism has long shaped the course of empires. To dispel any lingering doubt as to our purpose, we must forge unmistakable emblems behind which the entire galaxy can rally.', 25);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_research_1', 'Cerebellum Initiative', 'Knowledge may be power, but true strength lies in its exchange. By sharing knowledge with our allies, we show that power need not divide. Used wisely, it unites us in common purpose.', 26);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_research_1', 'country', 'research_sharing_mult', '0.2', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_defense_1', 'Fortified Stations', 'Our fleets are our main weapon, but not the only one. Enemies can be halted upon the anvil of our stations so the hammer of our armada can strike them.', 27);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_1', 'country', 'defensive_stations_hull_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defensive_stations_hull_mult', 'Defensive Stations Hull', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_1', 'country', 'defensive_stations_armor_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defensive_stations_armor_mult', 'Defensive Stations Armor', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_1', 'country', 'defensive_stations_shield_hardening_add', '0.15', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defensive_stations_shield_hardening_add', 'Defensive Stations Shield Hardening', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_crisis_damage_3', 'Revered Martyrs', 'There is no virtue in seeking death, but in accepting its possibility for a just cause, there is honor. Victory in the defense of the galaxy demands sacrifice, and those who give their lives for others must never be forgotten.', 28);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_opinion_3', 'Beacon of Unity', 'We have proven ourselves in the eyes of the galaxy. Citizens across countless worlds know in their heart that we will fight until the bitter end to protect them.', 29);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_custodian', 'Highest Office', 'With extraordinary power comes extraordinary responsibility. The mantle of Custodianship is a burden borne for the common good. These powers must never be wielded for ambition, but to draw forth the galaxy''s highest ideals.', 30);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_defense_2', 'Unshakeable Resolve', 'In the face of certain annihilation, we do not stand because we are stronger. We stand because we must.', 31);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_2', 'country', 'ship_military_station_small_upkeep_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_military_station_small_upkeep_mult', 'Defense Platform Upkeep', 0);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_2', 'country', 'shipclass_military_station_build_speed_mult', '0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_build_speed_mult', 'Defense Platform Build Speed', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_crisis_damage_4', 'By Any Means Necessary', 'There are rules of war we have broken, and with full knowledge of the cost. When the current crisis is over, we will be judged. Until then, we do what we must to ensure a galaxy remains to judge us.', 32);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_galcom_3', 'Harmonized Strategy', 'Defense is always veiled in secrecy, but in the situation that is ours, the galaxy must band together to devise the best way to fend off its mortal enemies.', 33);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_research_2', 'No Secrets', 'The selfish secrecy that pushes us to occult our technological progress cannot be tolerated anymore. The stronger our allies, the stronger we are.', 34);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_research_2', 'country', 'research_sharing_mult', '0.3', 0);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_research_2', 'country', 'planet_researchers_produces_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_produces_mult', 'Resources Produced from Researchers', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_defense_3', 'Defenders of the Galaxy', 'We will fight for every star. We will fight for every world. We will fight for every life. We will fight for every inch of our home!', 35);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_3', 'country', 'ship_friendly_territory_fire_rate_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_friendly_territory_fire_rate_mult', 'Ship Fire Rate in Friendly Systems', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_defense_3', 'country', 'ship_friendly_territory_evasion_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_friendly_territory_evasion_mult', 'Evasion Chance in Friendly Systems', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_objectives', 'Advanced Logic', 'Advanced Logic represents our understanding of the laws that govern reality and our power to influence them.', 36);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_objectives', 'country', 'country_physics_research_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_research_produces_mult', 'Monthly Physics Research', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_objectives', 'country', 'planet_physicists_upkeep_mult', '0.03', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_upkeep_mult', 'Upkeep for Physicists', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_buildings_1', 'Perfect Arcologies', 'Fallen Empires may have forgotten how to replicate their advanced technology, but our minds will uncover the bygone secrets of their golden age.', 37);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_techs_1', 'Non-Baryonic Energy', 'Learning how to harness the energy of antibaryonic particles is the next step in the evolution of ultra-compact power generation.', 38);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_features_1', 'Wetware', 'Colossal in scale, the Synaptic Lathe is a reservoir computer. The processing power of our population''s networked minds is used to compute and store data. The benefits are obvious, but some misguided species may view the transmutation of individuals into computing chips as morally questionable.', 39);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_ship_2', 'Conundrumical Escorts', '', 40);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_buildings_2', 'Advanced Harvesting', 'The resource generation capabilities of Fallen Empires have long baffled us. Not anymore.', 41);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_techs_2', 'Antibaryonic Advances', 'Our growing understanding of dark matter and its applications will open new avenues of technological progress.', 42);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_features_2', 'Gravitational Tools', 'Gravity and spacetime shape the universe. Starting with gravity, we will master tools to power our ascension.', 43);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_2', 'country', 'country_society_research_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_research_produces_mult', 'Monthly Society Research', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_2', 'country', 'planet_biologists_upkeep_mult', '0.03', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_upkeep_mult', 'Upkeep for Biologists', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_ship_3', 'Puzzling Cruisers', '', 44);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_buildings_3', 'Complex Infrastructures', 'Now that we have begun to unravel the veil of mystery surrounding Fallen Empires, we must keep continue to pull the thread. In time, the secrets of their technology will come undone.', 45);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_techs_3', 'Exotic Antibaryons', 'Using dark matter in defensive technology and encryption will enable us to create nullifying fields and robust communication channels.', 46);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_features_3', 'Eternal Expansion', 'Precise and incredibly minute alterations in gravity allow us to inject commands into the code of reality. Extreme caution is imperative as we learn the applications of this new and incredible tool.', 47);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_3', 'country', 'country_engineering_research_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_engineering_research_produces_mult', 'Monthly Engineering Research', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_3', 'country', 'planet_engineers_upkeep_mult', '0.03', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_upkeep_mult', 'Upkeep for Engineers', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_ship_4', 'Unsurmisable Flagships', '', 48);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_buildings_4', 'Golden Age', 'The insights of Fallen Empires into dimensional manipulation are astonishing. With every discovery, even their most arcane technology begins to seem simplistic.', 49);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_techs_4', 'Armor and Armaments', 'Our latest technological advancements should enable us to fashion deadlier weapons and more formidable armor for our ships.', 50);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_features_4', 'Rulebreaker', 'Recent experiments confirm that our edits to reality are only temporary. More significant alterations will be necessary to anchor these changes.', 51);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_4', 'country', 'country_physics_research_produces_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_research_produces_mult', 'Monthly Physics Research', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_cosmo_features_4', 'country', 'planet_physicists_upkeep_mult', '0.03', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_physicists_upkeep_mult', 'Upkeep for Physicists', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_buildings_5', 'Memory and Creation', 'The secrets of Fallen Empires, at last uncovered, will usher in a new age for our people.', 52);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_techs_5', 'Nanoswarms', 'With every shift in perspective, new opportunities present themselves. Change on the smallest scale can have massive consequences.', 53);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_cosmo_features_5', 'Void Voyager', 'Large-scale travel to different universes is a daunting task. We must engineer a spacecraft that can not only pierce the fabric of spacetime but also survive the journey.
+Fallen Empires will try to stop us!', 54);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_objectives', 'Feral Insight', 'Examining Behemoth behavior will aid our ultimate goal of transcendence. We will shed the biological restrictions that govern planet-born life.', 55);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_bioship_1', 'Harder Chitin', 'Enduring the harshness of space requires a thick exterior. External fortitude will ensure survival even in the bleakest of conditions.', 56);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioship_1', 'country', 'shipclass_military_hull_mult', '0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_hull_mult', 'Military Ships Hull', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioship_1', 'country', 'ship_armor_hardening_add', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_hardening_add', 'Armor Hardening', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_society_1', 'Accelerated Field Trials', 'Lab experiments are a good starting point but real progress will require practical, high-risk testing in the field.', 57);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_1', 'country', 'planet_farmers_society_research_produces_add', '1.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_society_research_produces_add', 'Society Research Produced per 100 Farmers', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_1', 'country', 'planet_farmers_energy_upkeep_add', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_energy_upkeep_add', 'Energy Upkeep per 100 Farmers', 0);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_1', 'country', 'planet_farmers_minerals_upkeep_add', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_minerals_upkeep_add', 'Minerals Upkeep per 100 Farmers', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_food_1', 'Supersized Crops', 'Sating the ravenous appetite of a Behemoth is an uphill battle. Producing genetically modified food on a huge scale is a start.', 58);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_food_1', 'country', 'country_resource_max_food_add', '100000.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_resource_max_food_add', 'Food Storage Capacity', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_egg', 'Cyclopean Hatcheries', 'A colossal egg demands nothing less than a titanic hatching facility. This orbital hatchery must be positioned at a deliberate distance from the star to accommodate the vast proportions needed to cradle a Behemoth.', 59);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_bioship_2', 'Better Glandular Stimulation', 'With purpose built probes we are artificially stimulating the endocrine glands of the Behemoth to produce growth hormones for accelerated development.', 60);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioship_2', 'country', 'bioship_growth_progress_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bioship_growth_progress_mult', 'Monthly Growth Progress', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioship_2', 'country', 'command_limit_mult', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('command_limit_mult', 'Fleet Command Limit', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_society_2', 'Transversal Enquiries', 'At the intersection of natural selection and bio-engineering, an incomparable force is born.', 61);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_2', 'country', 'country_society_tech_research_speed', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_tech_research_speed', 'Research Speed ( Society)', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_2', 'country', 'planet_biologists_upkeep_mult', '0.05', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_upkeep_mult', 'Upkeep for Biologists', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_food_2', 'Nutrient Overload', 'Sating the ravenous appetite of a Behemoth may well prove impossible. Producing genetically modified food on a massive scale is only the start.', 62);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_food_2', 'country', 'planet_farmers_food_produces_add', '3.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_food_produces_add', 'Food Produced per 100 Farmers', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_food_2', 'country', 'planet_farmers_minerals_upkeep_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_minerals_upkeep_add', 'Minerals Upkeep per 100 Farmers', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_hatchling', 'Gargantuan Brood', 'A litter of Behemoths spans star systems. Our galactic neighbors will respect the autonomy of our spawn, or they will become food.', 63);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_bioships_3', 'Faster Growth Cycles', 'Expediting the development of giant space fauna is crucial to our ultimate goal. We will ensure our infrastructure grows in parallel.', 64);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioships_3', 'country', 'starbase_shipyard_build_alloys_cost_mult', '-0.95', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_alloys_cost_mult', 'Ship Alloys Cost', 0);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioships_3', 'country', 'starbase_shipyard_build_speed_mult', '0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_build_speed_mult', 'Ship Build Speed', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_society_3', 'Bio-Engineering Mastery', 'Through rigorous trial and error we have developed our scientific prowess. Now we position ourselves as the galaxy''s most prominent bio-engineers.', 65);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_3', 'country', 'category_biology_research_speed_mult', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_biology_research_speed_mult', 'Research Speed (Biology)', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_society_3', 'country', 'planet_biologists_upkeep_mult', '0.075', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_upkeep_mult', 'Upkeep for Biologists', 0);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_mind_control', 'Deep Thought Shaping', 'Our collective intellect is stirring, longing for something bigger and better. Our ambition knows no bounds.', 66);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_hatchling_2', 'Unbridled Growth', 'The beast is untethered. The creature that was once a mere hatchling is fast becoming a savage, unrelenting force of nature.', 67);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_bioship_4', 'Stronger Organisms', 'Fueled by ravenous hunger and unyielding rage, the behemoths are reaching a chaotic level of power. Their biological weapon is primed, prepared to wreak havoc on foes and bystanders alike.', 68);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_bioship_4', 'country', 'ship_fire_rate_mult', '0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_mutation_research', 'Behemoth Mutations', 'We will rearrange the genetic material of the behemoths as they continue to grow, encouraging the most beneficial physiological traits.', 69);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_mind_control_2', 'Apex Specimen Deployment', 'The pinnacle of genetic perfection will not be confined to our existing borders. It must be shared with the galaxy.', 70);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_mind_meld', 'Mind Meld', 'Our mind to the Behemoth''s mind to ours. Its rage becomes our own. We are willingly consumed, and as the beast gorges itself on our collective consciousness, we feel its fury. It becomes us, and we become beast.', 71);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_primal_roar', 'Primal Roar', 'It courses through us, searing, tearing, burning. A rage, a primal roar. The galaxy will burn in the flames of our fury.', 72);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_ever_hungry', 'Ever Hungry', 'We are in agony, the constant need to feed becoming our sole motivation for existing. There is a pit within us that can never be filled, no matter how much we consume. We require nothing short of a galaxy-sized feast to quell this pain.', 73);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_behemoth_ever_hungry', 'country', 'the_cradle_of_souls_attunement_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('the_cradle_of_souls_attunement_mult', 'Attunement with The Cradle Of Souls', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_behemoth_egg_2', 'Ravenous Progeny', 'Our spawn will gorge on the carcass of the galaxy. Their hunger knows no end. Through the infinity of time, they shall feast.', 74);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_crystals', 'Crystallized Entropy', 'Crystallized Entropy mark a breakthrough in controlled energy destabilization. With this volatile resource at our command, we can reshape the galactic order itself.', 75);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_harnessing', 'Entropy Harnessing', 'Integrating Crystallized Entropy synthesis into our industry allows for more efficient use of this volatile resource, aligning our technical focus with strategic goals.', 76);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_crucible', 'Galactic Crucible', 'This proposed Crucible would serve as a central engine for harnessing stellar entropy. With the ability to crystallize and transport it, the Crucible could become a beacon of our fiery power, spreading it across the stars.', 77);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_conc_entropy', 'Concentrated Entropy', 'Conduits are vital to expanding our power at this stage. Increasing Crucible output will accelerate our march toward a brighter, burning future.', 78);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_radiant', 'Radiant Ambitions', 'Being the spark that ignites the galaxy leaves no time for second-guessing or bureaucracy. We can''t afford to lose time remodelling countless systems. To achieve our goals, we must dramatically increase our construction capacity.', 79);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_radiant', 'country', 'country_megastructure_build_cap_add', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_megastructure_build_cap_add', 'Megastructure Build Capacity', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_ignition', 'Forced Ignition', 'Sometimes, pushing harder isn''t enough. We need to take our technology to the next level and exploit its full potential. It''s time to minimize safeguards and maximize output.', 80);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_cruiser', 'Ember Cruiser', 'Equipped with cutting-edge technology, these vessels convert volatile heat flux into directed annihilation, reducing our enemies to charred cinders.', 81);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_flames', 'Engulfing Flames', 'The utopia we envision leaves no room for opposition to our goals. Any who try to stop us will quickly learn that resistance will be met with a rain of fire upon their homeworlds.', 82);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_flames', 'country', 'ship_orbital_bombardment_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_coronal', 'Coronal Venting', 'Our Conduits currently dissipate massive heat to remain stable. By venting that heat into surrounding space, we could turn the Conduits into devastating weapons against our enemies.', 83);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_coronal', 'country', 'conduit_spawnrate_add', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('conduit_spawnrate_add', 'Conduit Construction Time', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_reactors', 'Heliofusion Reactors', 'Harnessing Crystallized Entropy in military tech unlocks propulsion systems of unparalleled power. Our ships will blaze across the stars like never before.', 84);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_reactors', 'country', 'shipsize_ember_cruiser_speed_mult', '0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_ember_cruiser_speed_mult', 'Sublight Speed (Ember Cruiser)', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_reactors', 'country', 'shipsize_ember_battleship_speed_mult', '0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_ember_battleship_speed_mult', 'Sublight Speed (Ember Battleship)', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_solarflare', 'Artificial Solar Flare', 'There was a period when parts of the galaxy lay beyond our grasp. That illusion is ending. Soon, swarms of our Conduits will saturate the stars, bringing calibrated devastation to all who oppose us.', 85);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_solarflare', 'country', 'conduit_spawnrate_add', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('conduit_spawnrate_add', 'Conduit Construction Time', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_armada', 'Blazing Armada', 'As the galaxy consolidates against us, mobilization becomes imperative. Every citizen must now contribute to sustaining the energy front, fanning the flames of our ascendancy.', 86);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_armada', 'country', 'country_war_exhaustion_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_mult', 'War Exhaustion Gain', 0);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_armada', 'country', 'job_researcher_naval_cap_add', '1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_researcher_naval_cap_add', 'Naval Capacity per 100 Researcher Jobs', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_armada', 'country', 'job_metallurgist_naval_cap_add', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_metallurgist_naval_cap_add', 'Naval Capacity from Metallurgist Jobs', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_battleship', 'Ember Battleship', 'With gun barrels as hot as the firestorm that is about to engulf the galaxy, these large ships will make up the bulk of our defensive forces around the Crucible.', 87);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_critical_mass', 'Critical Mass', 'Increasing the entropic activity in a star''s outer shell causes the star to pour forth a swell of radiation. This is causing entire systems to heat up more rapidly.', 88);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_critical_mass', 'country', 'conduit_spawnrate_add', '-20.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('conduit_spawnrate_add', 'Conduit Construction Time', 1);
+INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_hyperthermia_ammunition', 'Infused Ammunition', 'A refinement in munitions design: standard ordnance is now augmented with micro-scale entropy cores, releasing destabilized thermal surges upon impact. The result is markedly enhanced destruction.', 89);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_ammunition', 'country', 'shipsize_ember_cruiser_weapon_damage', '0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_ember_cruiser_weapon_damage', 'Ship Weapons Damage (Ember Cruiser)', 1);
+INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_ammunition', 'country', 'shipsize_ember_battleship_weapon_damage', '0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipsize_ember_battleship_weapon_damage', 'Ship Weapons Damage (Ember Battleship)', 1);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('energy', 'Energy Credits', 'basic', 1, '100.0', '100.0', '25000.0', '1.5', '500.0', 0);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('energy', 'Energy Credits', 'basic', 1, '100.0', '100.0', '25000.0', '1.5', '500.0', '0.125', 0);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('minerals', 'Minerals', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '1000.0', 1);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('minerals', 'Minerals', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '1000.0', '0.125', 1);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('food', 'Food', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '500.0', 2);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('food', 'Food', 'basic', 1, '100.0', '100.0', '15000.0', '1.0', '500.0', '0.125', 2);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('physics_research', 'Physics Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 3);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('physics_research', 'Physics Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 3);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('society_research', 'Society Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 4);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('society_research', 'Society Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 4);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('engineering_research', 'Engineering Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 5);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('engineering_research', 'Engineering Research', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 5);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('influence', 'Influence', 'other', 0, NULL, NULL, '1000.0', '1.0', NULL, 6);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('influence', 'Influence', 'other', 0, NULL, NULL, '1000.0', '1.0', NULL, NULL, 6);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('unity', 'Unity', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 7);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('unity', 'Unity', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 7);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('trade', 'Trade', 'advanced', 1, NULL, NULL, '50000.0', NULL, NULL, 8);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('trade', 'Trade', 'advanced', 1, NULL, NULL, '50000.0', NULL, NULL, NULL, 8);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('consumer_goods', 'Consumer Goods', 'advanced', 1, '50.0', '100.0', '15000.0', '5.0', '500.0', 9);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('consumer_goods', 'Consumer Goods', 'advanced', 1, '50.0', '100.0', '15000.0', '5.0', '500.0', '0.25', 9);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('alloys', 'Alloys', 'advanced', 1, '25.0', '100.0', '15000.0', '5.0', '500.0', 10);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('alloys', 'Alloys', 'advanced', 1, '25.0', '100.0', '15000.0', '5.0', '500.0', '0.5', 10);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('volatile_motes', 'Volatile Motes', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 11);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('volatile_motes', 'Volatile Motes', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', '1.25', 11);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('exotic_gases', 'Exotic Gases', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 12);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('exotic_gases', 'Exotic Gases', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', '1.25', 12);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('rare_crystals', 'Rare Crystals', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', 13);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('rare_crystals', 'Rare Crystals', 'strategic', 1, '10.0', '100.0', '15000.0', '10.0', '10.0', '1.25', 13);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('sr_living_metal', 'Living Metal', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 14);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('sr_living_metal', 'Living Metal', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', '2.5', 14);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('sr_zro', 'Zro', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 15);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('sr_zro', 'Zro', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', '2.5', 15);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('sr_dark_matter', 'Dark Matter', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', 16);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('sr_dark_matter', 'Dark Matter', 'rare', 1, '5.0', '100.0', '15000.0', '100.0', '5.0', '2.5', 16);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('nanites', 'Nanites', 'rare', 0, NULL, NULL, NULL, '100.0', NULL, 17);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('nanites', 'Nanites', 'rare', 0, NULL, NULL, NULL, '100.0', NULL, '2.5', 17);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('minor_artifacts', 'Minor Artifacts', 'rare', 0, NULL, NULL, '2000.0', '100.0', '5.0', 18);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('minor_artifacts', 'Minor Artifacts', 'rare', 0, NULL, NULL, '2000.0', '100.0', '5.0', '0.5', 18);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('astral_threads', 'Astral Threads', 'rare', 0, NULL, NULL, '500.0', '100.0', '5.0', 19);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('astral_threads', 'Astral Threads', 'rare', 0, NULL, NULL, '500.0', '100.0', '5.0', '0.5', 19);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('biomass', 'Biomass', 'advanced', 0, NULL, NULL, NULL, NULL, NULL, 20);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('biomass', 'Biomass', 'advanced', 0, NULL, NULL, NULL, NULL, NULL, NULL, 20);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('menace', 'Menace', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 21);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('menace', 'Menace', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 21);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('integrity', 'Valor', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 22);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('integrity', 'Valor', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 22);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('advanced_logic', 'Advanced Logic', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 23);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('advanced_logic', 'Advanced Logic', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 23);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('feral_insight', 'Feral Insight', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 24);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('feral_insight', 'Feral Insight', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 24);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
-               market_price, max, ai_weight, ai_wants, sort_order)
-               VALUES ('entropy_crystals', 'Crystallized Entropy', 'other', 0, NULL, NULL, NULL, '1.0', NULL, 25);
+               market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
+               VALUES ('entropy_crystals', 'Crystallized Entropy', 'other', 0, NULL, NULL, NULL, '1.0', NULL, NULL, 25);
 INSERT INTO personality (key, name, trade_willingness) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9');
