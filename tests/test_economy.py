@@ -13,14 +13,14 @@ def parse(text: str) -> dict:
 class TestEconomyHelpers(unittest.TestCase):
     def test_resource_leaves_conditional_factors_out(self):
         r = parse('''consumer_goods = { tradable = yes category = advanced market_amount = 50
-            market_price = 100 max = 15000
+            market_price = 100 max = 15000 deficit_trade_conversion_mult = -0.25
             ai_weight = { weight = 5 modifier = { factor = 0.1 country_uses_consumer_goods = no } }
             ai_wants = { base = 500 modifier = { factor = 0.1 } } }''')['consumer_goods']
-        self.assertEqual(resource_row(r, {}), ('advanced', 1, 50.0, 100.0, 15000.0, 5.0, 500.0))
+        self.assertEqual(resource_row(r, {}), ('advanced', 1, 50.0, 100.0, 15000.0, 5.0, 500.0, 0.25))
 
     def test_resource_off_the_market(self):
         r = parse('unity = { category = abstract max = 50000 }')['unity']
-        self.assertEqual(resource_row(r, {}), ('abstract', 0, None, None, 50000.0, None, None))
+        self.assertEqual(resource_row(r, {}), ('abstract', 0, None, None, 50000.0, None, None, None))
 
     def test_base_value_with_variable_and_flat(self):
         self.assertEqual(base_value(parse('x = { base = @v }')['x'], {'@v': 3.0}), 3.0)

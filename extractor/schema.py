@@ -1313,6 +1313,19 @@ CREATE TABLE starbase_building_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
+-- Planet decisions (common/decisions, `owned_planets_only = yes`): cost tiers, conditions and the
+-- modifiers their effect adds or removes at its top level (empire dashboard: what-ifs).
+DROP TABLE IF EXISTS decision;
+CREATE TABLE decision (
+    key            TEXT PRIMARY KEY,       -- e.g. "decision_planet_luxuries_boost"
+    name           TEXT,
+    cost_json      TEXT,                   -- [{"when": <trigger>|null, "cost": {"consumer_goods": 100}}]
+    potential_json TEXT,                   -- planet scope; `owner = {…}` unwrapped to the country's
+    allow_json     TEXT,
+    adds_json      TEXT,                   -- [{"modifier": "planet_luxuries_boost", "days": 3600}], -1 = for good
+    removes_json   TEXT,                   -- ["bleak_planet"]
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS strategic_resource;
@@ -1326,6 +1339,8 @@ CREATE TABLE strategic_resource (
     max           REAL,                    -- base storage
     ai_weight     REAL,                    -- `ai_weight.weight`, conditions left out
     ai_wants      REAL,                    -- `ai_wants.base`, conditions left out
+    deficit_trade REAL,                    -- trade a month per unit a colony is short of it
+                                           -- (`deficit_trade_conversion_mult`, sign flipped)
     sort_order    INTEGER NOT NULL DEFAULT 0
 );
 -- AI personalities: how good a deal must be for them (1.0 = equal for both sides).
@@ -1777,5 +1792,77 @@ CREATE TABLE deed (
     description TEXT,
     attunement  REAL,                      -- towards its patron (+), away for the opposite (−)
     sort_order  INTEGER NOT NULL DEFAULT 0
+);
+-- Ambitions (the game's keys say "crisis"): the paths an ascension perk starts
+-- (`activate_crisis_progression`), their levels in order with the currency each needs, the
+-- requirements as the game words them and the menace perks granted, and the objectives that earn
+-- the currency. For the dashboard, which reads a country's path and level from saves by key.
+DROP TABLE IF EXISTS crisis_path_level;
+DROP TABLE IF EXISTS crisis_path_objective;
+DROP TABLE IF EXISTS crisis_path_perk;
+DROP TABLE IF EXISTS crisis_path;
+DROP TABLE IF EXISTS crisis_level_perk;
+DROP TABLE IF EXISTS crisis_level;
+DROP TABLE IF EXISTS crisis_objective;
+DROP TABLE IF EXISTS menace_perk_modifier;
+DROP TABLE IF EXISTS menace_perk;
+CREATE TABLE crisis_path (
+    key         TEXT PRIMARY KEY,          -- e.g. "nemesis_path"
+    currency    TEXT,                      -- the resource earned: menace, integrity, feral_insight, …
+    name        TEXT,                      -- "Galactic Nemesis"
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_path_perk (
+    path_key TEXT NOT NULL,
+    perk_key TEXT NOT NULL                 -- the ascension perk that starts it, e.g. "ap_become_the_crisis"
+);
+CREATE TABLE crisis_path_level (
+    path_key   TEXT NOT NULL,
+    level_key  TEXT NOT NULL,              -- crisis_level.key
+    level      INTEGER NOT NULL,           -- 1-based, the order they unlock in
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_path_objective (
+    path_key      TEXT NOT NULL,
+    objective_key TEXT NOT NULL,           -- crisis_objective.key
+    sort_order    INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_level (
+    key               TEXT PRIMARY KEY,    -- e.g. "crisis_level_2"
+    name              TEXT,                -- "Concern"
+    required_currency REAL,                -- the path's currency needed
+    requirements_json TEXT NOT NULL,       -- ["Has completed the first … Special Project"]: the allow's tooltips
+    allow_json        TEXT,                -- `allow`, normalised; NULL = none
+    sort_order        INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_level_perk (
+    level_key  TEXT NOT NULL,
+    perk_key   TEXT NOT NULL,              -- menace_perk.key
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE crisis_objective (
+    key            TEXT PRIMARY KEY,       -- e.g. "crisobj_destroy_empires"
+    name           TEXT,
+    description    TEXT,
+    reward_json    TEXT NOT NULL,          -- steps in file order: [{"op":"base","value":700},
+                                           -- {"op":"subtract","by":"count_playable_country","mult":25},
+                                           -- {"op":"round_to","value":50},{"op":"min","value":100}]
+    recurring      INTEGER NOT NULL DEFAULT 0, -- 0/1: paid again each time (yearly, monthly)
+    potential_json TEXT,                   -- who may pursue it (country scope); NULL = everyone
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE menace_perk (
+    key         TEXT PRIMARY KEY,          -- e.g. "menp_crisis_corvette"
+    name        TEXT,
+    description TEXT,
+    sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE menace_perk_modifier (
+    perk_key       TEXT NOT NULL,
+    scope          TEXT NOT NULL,          -- country, federation
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 """

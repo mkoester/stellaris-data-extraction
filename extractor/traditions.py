@@ -353,6 +353,55 @@ def cost_amounts(block, variables: dict[str, float] | None = None) -> dict[str, 
     return out
 
 
+OWNER_SCOPES = ('owner', 'owner_or_space_owner')
+
+
+def owner_scope(normalize):
+    """A `structured` hook for planet-scoped triggers: `owner = { … }` holds conditions on the
+    country, which the dashboard can answer — kept as their own tree instead of an opaque scope."""
+    def hook(k: str, v):
+        if k in OWNER_SCOPES and isinstance(v, dict):
+            return normalize(v) or {'leaf': 'always', 'value': 'yes'}
+        return None
+    return hook
+
+
+def decision_costs(res, variables: dict[str, float], trig) -> list[dict]:
+    """A decision's `resources.cost` → tiers `[{when, cost}]`, in file order: a tier with a
+    `trigger` applies when it holds (Distribute Luxury Goods: by `pop_amount`), one without always.
+    `trig(block)` normalises a trigger. Multipliers are ignored."""
+    if not isinstance(res, dict):
+        return []
+    tiers = []
+    for b in _as_blocks(res.get('cost')):
+        cost = cost_amounts(b, variables)
+        if cost:
+            tiers.append({'when': trig(b.get('trigger')) if isinstance(b.get('trigger'), dict) else None,
+                          'cost': cost})
+    return tiers
+
+
+def decision_effects(effect) -> tuple[list[dict], list[str]]:
+    """The modifiers a decision's `effect` adds (`add_modifier = { modifier days }`, -1 or none =
+    for good) and removes (`remove_modifier`), at its top level only — those inside `if` blocks or
+    scopes depend on what the effect finds."""
+    added: list[dict] = []
+    removed: list[str] = []
+    for b in _as_blocks(effect):
+        for a in _as_blocks(b.get('add_modifier')):
+            m = a.get('modifier')
+            if isinstance(m, str):
+                try:
+                    days = int(float(str(a.get('days', -1))))
+                except ValueError:
+                    days = -1
+                added.append({'modifier': m.strip('"'), 'days': days})
+        for r in _to_list(b.get('remove_modifier')):
+            if isinstance(r, str):
+                removed.append(r.strip('"'))
+    return added, removed
+
+
 def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
                            static_mods: dict, w: Writer, progress=sys.stderr) -> None:
     common = install_dir / 'common'
@@ -386,6 +435,24 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
              json.dumps(sorted(set(_to_list(data.get('prerequisites'))))) if data.get('prerequisites') else None,
              ctx.tooltip(data, evars), order))
         ctx.modifiers(key, data, evars)
+
+    # Planet decisions (`owned_planets_only = yes`): what they cost and which modifiers they add or
+    # remove — the empire dashboard's what-ifs. Their timers are in action_timer.
+    order = 0
+    for key, (data, dvars, _) in _load(common / 'decisions', scripted_vars).items():
+        if data.get('owned_planets_only') != 'yes':
+            continue
+        def trig(block, v=dvars):
+            return ctx.trig(block, v, owner_scope(lambda b: ctx.trig(b, v)))
+        added, removed = decision_effects(data.get('effect'))
+        tiers = decision_costs(data.get('resources'), dvars, trig)
+        w.execute(
+            """INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
+               adds_json, removes_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, ctx.text(key), json.dumps(tiers, sort_keys=True) if tiers else None,
+             dumps(trig(data.get('potential'))), dumps(trig(data.get('allow'))),
+             json.dumps(added) if added else None, json.dumps(removed) if removed else None, order))
+        order += 1
 
     finish_default = cooldown_default = None
     defines_file = common / 'defines' / '00_defines.txt'
