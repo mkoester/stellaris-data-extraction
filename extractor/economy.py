@@ -41,6 +41,12 @@ def resource_row(data: dict, variables: dict[str, float]) -> tuple:
             -deficit if deficit is not None else None)
 
 
+def category_parent(data) -> str | None:
+    """An economic category's `parent = <category>`; None at the top."""
+    p = data.get('parent') if isinstance(data, dict) else None
+    return p if isinstance(p, str) else None
+
+
 def attitude_trades(data: dict) -> int:
     """An attitude's `behaviour = { trade = yes }`: the AI considers trade deals at all."""
     b = data.get('behaviour')
@@ -73,6 +79,11 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
                market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (key, ctx.text(key), *resource_row(data, rvars), order))
+
+    categories = _load(common / 'economic_categories', scripted_vars)
+    for key in sorted(categories):
+        w.execute("INSERT INTO economic_category (key, parent) VALUES (?, ?)",
+                  (key, category_parent(categories[key][0])))
 
     personalities = _load(common / 'personalities', scripted_vars)
     for key, (data, pvars, _) in personalities.items():
@@ -107,6 +118,7 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
                       (key, kind, ctx.text(f'sm_{key}')))
             n_parts += 1
     w.commit()
-    print(f"  {len(resources)} resources, {len(personalities)} personalities, "
+    print(f"  {len(resources)} resources, {len(categories)} economic categories, "
+          f"{len(personalities)} personalities, "
           f"{len(attitudes)} attitudes, {len(opinions)} opinion modifiers, "
           f"{len(levels)} starbase levels, {n_parts} starbase modules and buildings", file=progress)

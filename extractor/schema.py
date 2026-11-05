@@ -1202,6 +1202,7 @@ CREATE TABLE system_entry_event (
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
+DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;
@@ -1338,7 +1339,16 @@ CREATE TABLE decision (
 );
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
+DROP TABLE IF EXISTS economic_category;
 DROP TABLE IF EXISTS strategic_resource;
+-- Economic categories (common/economic_categories): what a job's, building's or pop's resources
+-- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
+-- category below it, an `_add` one to the category alone (the folder's README); empire dashboard:
+-- which output bonuses reach a job.
+CREATE TABLE economic_category (
+    key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
+    parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"
     name          TEXT,

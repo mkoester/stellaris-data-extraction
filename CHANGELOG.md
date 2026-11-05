@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The format follows
 
 - What each situation stage does (`situation_stage_modifier`): its modifiers while the situation
   is in that stage, e.g. the Nomad Economy's thriving stage: +10 % research speed.
+- The economic categories (`economic_category`): what each job's, building's or pop's resources are
+  booked under, with its parent — which output bonuses reach a job.
 
 ## [0.1.11] - 2026-11-04
 
