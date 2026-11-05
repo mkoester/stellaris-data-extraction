@@ -4,7 +4,7 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import event_ids, outcomes_json, stage_keys
+from extractor.situations import event_ids, outcomes_json, stage_keys, stage_modifiers
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
 ANOMALY = """
@@ -31,6 +31,16 @@ class TestStages(unittest.TestCase):
 
     def test_none(self):
         self.assertEqual(stage_keys({}), [])
+
+    # situation_nomad_economy_stage_3_thriving (14_nomads_situations.txt, 4.5.x)
+    def test_stage_modifiers(self):
+        stage = Parser(tokenize("""s = {
+            section_weight = 25
+            modifier = { planet_stability_add = 10 all_technology_research_speed = @speed }
+        }""")).parse()['s']
+        self.assertEqual(stage_modifiers(stage, {'@speed': 0.1}),
+                         [('planet_stability_add', 10.0), ('all_technology_research_speed', 0.1)])
+        self.assertEqual(stage_modifiers({'end': '1000'}, {}), [])
 
 
 class TestOutcomes(unittest.TestCase):

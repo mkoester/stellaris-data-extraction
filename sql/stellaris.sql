@@ -1223,6 +1223,16 @@ CREATE TABLE situation_stage (
     sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
 );
+-- A situation stage's modifiers while the situation is in it (empire dashboard: research speed
+-- from the Nomad Economy's thriving stage and the like).
+CREATE TABLE situation_stage_modifier (
+    situation_key  TEXT NOT NULL,
+    stage_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, stage_key, modifier_key)
+);
 CREATE TABLE special_project (
     key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
     name          TEXT,
@@ -122198,10 +122208,28 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_gravity_well', 'gravity_well_low', 'Static Limit', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_gravity_well', 'gravity_well_mid', 'Ergosphere', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_mid', 'country_situations_sr_dark_matter_produces_add', '2.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_sr_dark_matter_produces_add', 'Monthly Dark Matter', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_mid', 'country_situations_physics_research_produces_add', '10.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_physics_research_produces_add', 'Monthly Physics Research', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_gravity_well', 'gravity_well_high', 'Accretion Disk', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_high', 'country_situations_sr_dark_matter_produces_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_sr_dark_matter_produces_add', 'Monthly Dark Matter', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_high', 'country_situations_physics_research_produces_add', '15.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_physics_research_produces_add', 'Monthly Physics Research', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_gravity_well', 'gravity_well_no_return', 'Point of No Return', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_no_return', 'country_situations_sr_dark_matter_produces_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_sr_dark_matter_produces_add', 'Monthly Dark Matter', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_no_return', 'country_situations_physics_research_produces_add', '20.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_situations_physics_research_produces_add', 'Monthly Physics Research', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_geomagnetic_storm', 'Geomagnetic Storm', 'An increase in solar activity is weakening ''s magnetosphere, exposing our machines to dangerous levels of ionizing radiation. Invest in radiation hardening techniques to shield our drones against damage until the storm subsides.
 The situation will end in month(s).', 'negative');
@@ -122357,12 +122385,39 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_energy_deficit', 'deficit_approach_cut_science_investment', 'Cut Scientific Investment', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_first', 'diplo_weight_economy_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_first', 'planet_pop_assembly_reduction', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_reduction', 'Mechanical Pop Assembly Speed Reduction', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_second', 'diplo_weight_economy_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_second', 'planet_pop_assembly_reduction', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_reduction', 'Mechanical Pop Assembly Speed Reduction', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_third', 'diplo_weight_economy_mult', '-0.33', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_third', 'planet_pop_assembly_reduction', '0.33', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_reduction', 'Mechanical Pop Assembly Speed Reduction', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_fourth', 'diplo_weight_economy_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_economy_mult', 'Diplomatic Weight From Economy', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_fourth', 'planet_pop_assembly_reduction', '0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_reduction', 'Mechanical Pop Assembly Speed Reduction', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_fourth', 'planet_jobs_produces_mult', '-0.1', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_mineral_deficit', 'Mineral Shortages', 'Our mineral deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122405,12 +122460,36 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_consumer_goods_deficit', 'deficit_approach_cut_investment', 'Cut Investments', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_first', 'pop_happiness', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_first', 'country_unity_produces_mult', '-0.15', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_second', 'pop_happiness', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_second', 'country_unity_produces_mult', '-0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_third', 'pop_happiness', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_third', 'country_unity_produces_mult', '-0.45', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_fourth', 'pop_happiness', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_fourth', 'country_unity_produces_mult', '-0.6', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_alloys_deficit', 'Alloys Shortages', 'Our alloys deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122424,12 +122503,102 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_alloys_deficit', 'deficit_approach_invest_in_alloys_production', 'Invest in our', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'pop_bonus_workforce_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'planet_pop_assembly_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'planet_pop_assemblers_upkeep_mult', '0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'ships_energy_upkeep_mult', '0.1', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_energy_upkeep_mult', 'Ships Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'starbases_energy_upkeep_mult', '0.1', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_energy_upkeep_mult', 'Stations Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_first', 'habitat_stability_add', '-10.0', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_stability_add', 'Stability on Habitats', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'pop_bonus_workforce_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'planet_pop_assembly_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'planet_pop_assemblers_upkeep_mult', '0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'ships_energy_upkeep_mult', '0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_energy_upkeep_mult', 'Ships Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'starbases_energy_upkeep_mult', '0.2', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_energy_upkeep_mult', 'Stations Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'ship_armor_mult', '-0.33', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'ship_fire_rate_mult', '-0.33', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_second', 'habitat_stability_add', '-15.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_stability_add', 'Stability on Habitats', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'pop_bonus_workforce_mult', '-0.3', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'planet_pop_assembly_mult', '-0.75', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'planet_pop_assemblers_upkeep_mult', '0.75', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'ships_energy_upkeep_mult', '0.2', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_energy_upkeep_mult', 'Ships Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'starbases_energy_upkeep_mult', '0.2', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_energy_upkeep_mult', 'Stations Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'ship_armor_mult', '-0.66', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'ship_fire_rate_mult', '-0.66', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_third', 'habitat_stability_add', '-20.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_stability_add', 'Stability on Habitats', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'pop_bonus_workforce_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'planet_pop_assembly_mult', '-1.0', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'planet_pop_assemblers_upkeep_mult', '1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assemblers_upkeep_mult', 'Upkeep for Roboticists', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'ships_energy_upkeep_mult', '0.3', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_energy_upkeep_mult', 'Ships Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'starbases_energy_upkeep_mult', '0.3', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_energy_upkeep_mult', 'Stations Energy Upkeep', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'ship_armor_mult', '-0.99', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'ship_fire_rate_mult', '-0.99', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'habitat_stability_add', '-30.0', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('habitat_stability_add', 'Stability on Habitats', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_rare_crystals_deficit', 'Rare Crystal Shortages', 'Our rare crystals deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122443,12 +122612,48 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_rare_crystals_deficit', 'deficit_approach_invest_in_crystal_producers', 'Invest in Crystal Production', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_first', 'planet_jobs_produces_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_first', 'weapon_type_energy_weapon_damage_mult', '-0.3', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_damage_mult', 'Energy Weapon Damage', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_first', 'ship_sensor_range_add', '-1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_second', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_second', 'weapon_type_energy_weapon_damage_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_damage_mult', 'Energy Weapon Damage', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_second', 'ship_sensor_range_add', '-1.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_third', 'planet_jobs_produces_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_third', 'weapon_type_energy_weapon_damage_mult', '-0.7', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_damage_mult', 'Energy Weapon Damage', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_third', 'ship_sensor_range_add', '-2.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'planet_jobs_produces_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'weapon_type_energy_weapon_damage_mult', '-0.9', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_energy_weapon_damage_mult', 'Energy Weapon Damage', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'ship_sensor_range_add', '-3.0', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_volatile_motes_deficit', 'Volatile Motes Shortages', 'Our volatile motes deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122462,12 +122667,60 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_volatile_motes_deficit', 'deficit_approach_invest_in_mote_producers', 'Invest in Mote Production', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'planet_jobs_produces_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'deposit_blockers_cost_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'planet_clear_blocker_speed_mult', '-0.2', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_first', 'weapon_type_kinetic_weapon_damage_mult', '-0.3', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'deposit_blockers_cost_mult', '0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'planet_clear_blocker_speed_mult', '-0.4', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_second', 'weapon_type_kinetic_weapon_damage_mult', '-0.5', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'planet_jobs_produces_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'deposit_blockers_cost_mult', '0.6', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'planet_clear_blocker_speed_mult', '-0.6', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_third', 'weapon_type_kinetic_weapon_damage_mult', '-0.7', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'planet_jobs_produces_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'deposit_blockers_cost_mult', '0.8', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('deposit_blockers_cost_mult', 'Clear Blocker Cost', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'planet_clear_blocker_speed_mult', '-0.8', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_clear_blocker_speed_mult', 'Clear Blocker Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'weapon_type_kinetic_weapon_damage_mult', '-0.9', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_exotic_gases_deficit', 'Exotic Gas Shortages', 'Our exotic gases deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122481,12 +122734,40 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_exotic_gases_deficit', 'deficit_approach_invest_in_gas_producers', 'Invest in Gas Production', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_first', 'Minor Deficit', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_first', 'planet_jobs_produces_mult', '-0.05', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_first', 'ship_speed_mult', '-0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_first', 'terraform_speed_mult', '-0.2', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_second', 'Major Deficit', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_second', 'planet_jobs_produces_mult', '-0.1', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_second', 'ship_speed_mult', '-0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_second', 'terraform_speed_mult', '-0.4', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_third', 'Severe Deficit', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_third', 'planet_jobs_produces_mult', '-0.15', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_third', 'ship_speed_mult', '-0.6', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_third', 'terraform_speed_mult', '-0.6', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'planet_jobs_produces_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'ship_speed_mult', '-0.8', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'terraform_speed_mult', '-0.8', 2);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_planetary_revolt', 'Planetary Revolt on', NULL, 'negative');
 INSERT OR REPLACE INTO situation_approach
@@ -122523,8 +122804,14 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_machine_uprising', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_machine_uprising', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_machine_uprising', 'stage_2', 'pop_bonus_workforce_mult', '-0.2', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_machine_uprising', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_machine_uprising', 'stage_3', 'pop_bonus_workforce_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_terravore_consume_planet', 'Consume', 'We feast: another world''s soil tasted; our hunger yet unsated.', 'positive');
 INSERT OR REPLACE INTO situation_approach
@@ -122573,14 +122860,26 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_shroud_forged', 'approach_shroud_forged_support', 'Support', 'Monthly Progress: +$@situation_support_progress|0$', 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_shroud_forged', 'stage_shroud_forged_oppressed', 'Oppressed', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_shroud_forged', 'stage_shroud_forged_oppressed', 'stage_shroud_forged_oppressed_modifier', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stage_shroud_forged_oppressed_modifier', 'Oppressed Shroud-Forged', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_shroud_forged', 'stage_shroud_forged_control', 'Controlled', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_shroud_forged', 'stage_shroud_forged_control', 'stage_shroud_forged_control_modifier', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stage_shroud_forged_control_modifier', 'Controlled Shroud-Forged', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_shroud_forged', 'stage_shroud_forged_balanced', 'Balanced', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_shroud_forged', 'stage_shroud_forged_unrestricted', 'Unrestricted', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_shroud_forged', 'stage_shroud_forged_unrestricted', 'stage_shroud_forged_unrestricted_modifier', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stage_shroud_forged_unrestricted_modifier', 'Unrestricted Shroud-Forged', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_shroud_forged', 'stage_shroud_forged_free', 'Liberated', 4);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_shroud_forged', 'stage_shroud_forged_free', 'stage_shroud_forged_free_modifier', '1.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stage_shroud_forged_free_modifier', 'Chaotic Shroud-Forged', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_last_gift', 'The Last Gift', 'The Fevorians have left us with a dreadful parting gift: initial telemetry has revealed that the final shot of their titanic mass driver was aimed at .', NULL);
 INSERT OR REPLACE INTO situation_approach
@@ -122838,10 +123137,28 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('paragon_origin_reformists_struggle', 'situation_paragon_origin_reformists_struggle_accept', 'Call For Negotiations', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_reformists_struggle', 'stage_1', 'Stage I', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_1', 'planet_stability_add', '-2.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_1', 'pop_ethic_egalitarian_attraction_mult', '0.1', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_reformists_struggle', 'stage_2', 'Stage II', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_2', 'planet_stability_add', '-5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_2', 'pop_ethic_egalitarian_attraction_mult', '0.2', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_reformists_struggle', 'stage_3', 'Stage III', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_3', 'planet_stability_add', '-10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_3', 'pop_ethic_egalitarian_attraction_mult', '0.4', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_a_rift_in_space', 'A Rift in Space', 'We have discovered an extraordinary rift in space and time. Perhaps if we take time to study its properties, we can find a way to explore further. We have no way of knowing what may be on the other side.', 'neutral');
 INSERT OR REPLACE INTO situation_approach
@@ -123501,6 +123818,12 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_passenger', 'Deckside Carnivals', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_planetfall', 'Planetfall', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_planetfall', 'pop_cat_cruise_passenger_happiness', '-0.75', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_happiness', 'First Class Passenger Happiness', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_planetfall', 'pop_cat_cruise_passenger_unemployment_happiness', '-0.75', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_cruise_passenger_unemployment_happiness', 'Economy Class Passenger Happiness', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_incensed', 'Passenger Revolt', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
@@ -123548,12 +123871,58 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_harvest_everything', 'Festival', NULL, 0, 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'Critical', 0);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'ship_fire_rate_mult', '-0.5', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'ship_shield_mult', '-0.5', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_mult', 'Shield Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'ship_armor_mult', '-0.5', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'planet_stability_add', '-5.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'country_physics_research_produces_mult', '-0.75', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_research_produces_mult', 'Monthly Physics Research', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'country_society_research_produces_mult', '-0.75', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_research_produces_mult', 'Monthly Society Research', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'country_engineering_research_produces_mult', '-0.75', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_engineering_research_produces_mult', 'Monthly Engineering Research', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'country_unity_produces_mult', '-0.75', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_critical', 'country_alloys_produces_mult', '-0.75', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_alloys_produces_mult', 'Monthly Alloys', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'Low', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'ship_fire_rate_mult', '-0.25', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'ship_shield_mult', '-0.25', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_shield_mult', 'Shield Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'ship_armor_mult', '-0.25', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_armor_mult', 'Armor Hit Points', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_1_struggle', 'planet_stability_add', '-3.0', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_2_stable', 'Medium', 2);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_2_stable', 'planet_stability_add', '5.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_3_thriving', 'High', 3);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_3_thriving', 'planet_stability_add', '10.0', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_3_thriving', 'all_technology_research_speed', '0.1', 1);
 INSERT OR REPLACE INTO situation (key, name, description, category)
                    VALUES ('situation_grand_refurbishment', 'The Grand Refurbishment', 'The structural framework of Arkship has been assessed as overdue for comprehensive renovation. Work will continue by section, taking districts offline in sequence and temporarily displacing inhabitants.
 How the project is managed will determine the quality of the outcome.', 'neutral');

@@ -1228,6 +1228,16 @@ CREATE TABLE situation_stage (
     sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
 );
+-- A situation stage's modifiers while the situation is in it (empire dashboard: research speed
+-- from the Nomad Economy's thriving stage and the like).
+CREATE TABLE situation_stage_modifier (
+    situation_key  TEXT NOT NULL,
+    stage_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, stage_key, modifier_key)
+);
 CREATE TABLE special_project (
     key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
     name          TEXT,
