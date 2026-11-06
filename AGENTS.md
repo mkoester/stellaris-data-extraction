@@ -100,6 +100,12 @@ drops and recreates only the tables `schema.py` names, so the local file keeps t
 every row of that table multi-line in `sql/stellaris.sql` — keep a new statement on one line
 unless its table already uses the multi-line form.
 
+**A new table needs its `DROP TABLE IF EXISTS` in `schema.py`'s list** (children before parents): the
+first run passes, the next stops on "table … already exists" (2026-11-05, `situation_stage_modifier`).
+**`policy_option` is keyed by the option name alone**: `research_policy_no_focus` (General Studies) is
+an option of all three research policies, and only the physics one is kept, its modifier with it —
+the one shared name in 4.5.3; the dashboard reads it with the policy's area (`policyModifiers()`).
+
 Two ways values went missing unnoticed (both fixed 2026-10-31): a value written as an `@variable`
 from `common/scripted_variables` is dropped unless the step passes `scripted_vars` (static
 modifiers lost 174, among them every leader class's governor effect); and a table keyed so that
