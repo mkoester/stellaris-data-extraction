@@ -1485,6 +1485,7 @@ CREATE TABLE tradition_category (
     adopt_key      TEXT NOT NULL,          -- FK to tradition.key
     finish_key     TEXT NOT NULL,          -- FK to tradition.key
     sort_order     INTEGER NOT NULL DEFAULT 0,
+    color          TEXT,                   -- '#rrggbb', the tree's colour in game (its header's hexagons)
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 -- Per-empire-type description variants (`desc = { trigger text }`), first match wins.
@@ -88968,8 +88969,8 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS'
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION_EXP', '1.8');
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0, '#00a0ce');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_adaptability_adopt', 'tradition_adaptability', 'adopt', 'Adaptability Traditions', NULL, NULL, 'agenda_conquer_nature', NULL, 0);
@@ -89139,8 +89140,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_adaptability_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_aptitude', 'Aptitude', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_aptitude_adopt', 'tr_aptitude_finish', 1);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_aptitude', 'Aptitude', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_aptitude_adopt', 'tr_aptitude_finish', 1, '#94740e');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_aptitude', '{"leaf":"is_regular_empire","value":"yes"}', 'Our Empire can truly prosper under the guidance of strong leaders.', 0);
 INSERT INTO tradition_category_desc
@@ -89236,8 +89237,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_aptitude_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_archivism', 'Archivism', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_archivism_adopt', 'tr_archivism_finish', 2);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_archivism', 'Archivism', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_archivism_adopt', 'tr_archivism_finish', 2, '#94740e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_archivism_adopt', 'tradition_archivism', 'adopt', 'Archivism Traditions', NULL, NULL, 'agenda_astute_observation', NULL, 0);
@@ -89336,8 +89337,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_archivism_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_mercantile', 'Commerce', '{"leaf":"is_regular_empire","value":"yes"}', NULL, 'tr_mercantile_adopt', 'tr_mercantile_finish', 3);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_mercantile', 'Commerce', '{"leaf":"is_regular_empire","value":"yes"}', NULL, 'tr_mercantile_adopt', 'tr_mercantile_finish', 3, '#60be20');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_mercantile_adopt', 'tradition_mercantile', 'adopt', 'Commerce Traditions', NULL, NULL, 'agenda_open_markets', NULL, 0);
@@ -89427,8 +89428,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_mercantile_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_diplomacy', 'Diplomacy', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}', NULL, 'tr_diplomacy_adopt', 'tr_diplomacy_finish', 4);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_diplomacy', 'Diplomacy', '{"op":"not","args":[{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_inwards_perfection"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_origin","value":"origin_endbringers"}]}]}', NULL, 'tr_diplomacy_adopt', 'tr_diplomacy_finish', 4, '#389eb2');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_diplomacy_adopt', 'tradition_diplomacy', 'adopt', 'Diplomacy Traditions', NULL, NULL, 'agenda_build_relations', 'Unlocks Edict: Diplomatic Grants', 0);
@@ -89530,8 +89531,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_diplomacy_finish', 'ascension_perks_add', '1.0', NULL, 3);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_discovery', 'Discovery', NULL, NULL, 'tr_discovery_adopt', 'tr_discovery_finish', 5);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_discovery', 'Discovery', NULL, NULL, 'tr_discovery_adopt', 'tr_discovery_finish', 5, '#4080dd');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_discovery', '{"leaf":"is_regular_empire","value":"yes"}', 'Our curiosity about the universe is what got us this far, and there is still so much left to discover.', 0);
 INSERT INTO tradition_category_desc
@@ -89683,8 +89684,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_discovery_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_domestication', 'Domestication', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_domestication_adopt', 'tr_domestication_finish', 6);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_domestication', 'Domestication', '{"leaf":"host_has_dlc","value":"Grand Archive"}', 'Grand Archive', 'tr_domestication_adopt', 'tr_domestication_finish', 6, '#1e904e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_domestication_adopt', 'tradition_domestication', 'adopt', 'Domestication Traditions', NULL, '{"leaf":"has_technology","value":"tech_alien_cloning"}', 'agenda_galactic_trawling', NULL, 0);
@@ -89843,8 +89844,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domestication_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_domination', 'Domination', NULL, NULL, 'tr_domination_adopt', 'tr_domination_finish', 7);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_domination', 'Domination', NULL, NULL, 'tr_domination_adopt', 'tr_domination_finish', 7, '#947e10');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_domination', '{"leaf":"is_regular_empire","value":"yes"}', 'If we do not impose our will on others, they will inevitably impose theirs on us.', 0);
 INSERT INTO tradition_category_desc
@@ -90052,8 +90053,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domination_finish#2', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_enmity', 'Enmity', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}', NULL, 'tr_enmity_adopt', 'tr_enmity_finish', 8);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_enmity', 'Enmity', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"has_valid_civic","value":"civic_machine_assimilator"},{"leaf":"has_valid_civic","value":"civic_inwards_perfection"}]}]}', NULL, 'tr_enmity_adopt', 'tr_enmity_finish', 8, '#da1d20');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_enmity', '{"leaf":"is_machine_empire","value":"no"}', 'never move so fast as when other are setting the pace.', 0);
 INSERT INTO tradition_category_desc
@@ -90181,8 +90182,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_enmity_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_expansion', 'Expansion', NULL, NULL, 'tr_expansion_adopt', 'tr_expansion_finish', 9);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_expansion', 'Expansion', NULL, NULL, 'tr_expansion_adopt', 'tr_expansion_finish', 9, '#2db071');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_expansion', '{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"has_void_dweller_origin","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', 'We must expand our civilization to new systems and planets, or risk eventual extinction.', 0);
 INSERT INTO tradition_category_desc
@@ -90424,8 +90425,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_expansion_finish#1', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_unyielding', 'Fortification', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', NULL, 'tr_unyielding_adopt', 'tr_unyielding_finish', 10);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_unyielding', 'Fortification', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"op":"or","args":[{"leaf":"host_has_dlc","value":"Apocalypse"},{"leaf":"host_has_dlc","value":"Overlord"}]}]}', NULL, 'tr_unyielding_adopt', 'tr_unyielding_finish', 10, '#488dbc');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_unyielding_adopt', 'tradition_unyielding', 'adopt', 'Fortification Traditions', NULL, NULL, 'agenda_impenetrable_border', NULL, 0);
@@ -90649,8 +90650,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_unyielding_finish#0', 'ascension_perks_add', '1.0', NULL, 2);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_harmony', 'Harmony', '{"leaf":"is_gestalt","value":"no"}', NULL, 'tr_harmony_adopt', 'tr_harmony_finish', 11);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_harmony', 'Harmony', '{"leaf":"is_gestalt","value":"no"}', NULL, 'tr_harmony_adopt', 'tr_harmony_finish', 11, '#2db090');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_harmony_adopt', 'tradition_harmony', 'adopt', 'Harmony Traditions', NULL, NULL, 'agenda_inner_stability', NULL, 0);
@@ -90768,8 +90769,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_harmony_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_logistics', 'Logistics', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_logistics_adopt', 'tr_logistics_finish', 12);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_logistics', 'Logistics', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_logistics_adopt', 'tr_logistics_finish', 12, '#60be20');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_logistics_adopt', 'tradition_logistics', 'adopt', 'Logistics Traditions', NULL, NULL, 'agenda_open_markets', NULL, 0);
@@ -90833,8 +90834,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_logistics_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_politics', 'Politics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Federations"},{"leaf":"is_homicidal","value":"no"}]}', 'Federations', 'tr_politics_adopt', 'tr_politics_finish', 13, '#be2062');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_politics_adopt', 'tradition_politics', 'adopt', 'Politics Traditions', NULL, '{"leaf":"is_galactic_community_formed","value":"yes"}', 'agenda_pioneer_politics', '+1 Envoy
@@ -90894,8 +90895,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_prosperity', 'Prosperity', NULL, NULL, 'tr_prosperity_adopt', 'tr_prosperity_finish', 14);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_prosperity', 'Prosperity', NULL, NULL, 'tr_prosperity_adopt', 'tr_prosperity_finish', 14, '#b48400');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_prosperity', '{"leaf":"is_regular_empire","value":"yes"}', 'There is no better indicator of the success or failure of a star nation than the strength of its economy.', 0);
 INSERT INTO tradition_category_desc
@@ -91115,8 +91116,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_prosperity_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_statecraft', 'Statecraft', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_statecraft_adopt', 'tr_statecraft_finish', 15);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_statecraft', 'Statecraft', '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 'Galactic Paragons', 'tr_statecraft_adopt', 'tr_statecraft_finish', 15, '#94740e');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_statecraft', '{"leaf":"is_regular_empire","value":"yes"}', 'A powerful Council allows our empire to be more responsive.', 0);
 INSERT INTO tradition_category_desc
@@ -91177,8 +91178,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_statecraft_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_subterfuge', 'Subterfuge', '{"leaf":"host_has_dlc","value":"Nemesis"}', 'Nemesis', 'tr_subterfuge_adopt', 'tr_subterfuge_finish', 16);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_subterfuge', 'Subterfuge', '{"leaf":"host_has_dlc","value":"Nemesis"}', 'Nemesis', 'tr_subterfuge_adopt', 'tr_subterfuge_finish', 16, '#aa55ff');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_subterfuge_adopt', 'tradition_subterfuge', 'adopt', 'Subterfuge Traditions', NULL, NULL, 'agenda_uncover_secrets', 'Subterfuge-related technologies appear at 5 times the normal rate.', 0);
@@ -91311,8 +91312,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_subterfuge_finish#2', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_supremacy', 'Supremacy', NULL, NULL, 'tr_supremacy_adopt', 'tr_supremacy_finish', 17);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_supremacy', 'Supremacy', NULL, NULL, 'tr_supremacy_adopt', 'tr_supremacy_finish', 17, '#b93014');
 INSERT INTO tradition_category_desc
                    (category_key, trigger_json, description, sort_order) VALUES ('tradition_supremacy', '{"leaf":"is_regular_empire","value":"yes"}', 'The future of this galaxy belongs to those who are strong enough to seize it.', 0);
 INSERT INTO tradition_category_desc
@@ -91427,8 +91428,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_supremacy_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_synchronicity', 'Synchronicity', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_synchronicity_adopt', 'tr_synchronicity_finish', 18);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_synchronicity', 'Synchronicity', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'tr_synchronicity_adopt', 'tr_synchronicity_finish', 18, '#06c7e5');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_synchronicity_adopt', 'tradition_synchronicity', 'adopt', 'Synchronicity Traditions', NULL, NULL, NULL, 'Unlocks Agenda: Growth Revision
@@ -91564,8 +91565,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_synchronicity_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_versatility', 'Versatility', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'tr_versatility_adopt', 'tr_versatility_finish', 19);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_versatility', 'Versatility', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'tr_versatility_adopt', 'tr_versatility_finish', 19, '#069ae5');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_versatility_adopt', 'tradition_versatility', 'adopt', 'Versatility Traditions', NULL, NULL, 'agenda_self_maintenance', NULL, 0);
@@ -91653,8 +91654,8 @@ INSERT INTO tradition_modifier
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_crime_add', 'Crime', 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_cloning', 'Cloning', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_cloning_adopt', 'tr_cloning_finish', 20);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_cloning', 'Cloning', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_cloning_adopt', 'tr_cloning_finish', 20, '#00a0ce');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cloning_adopt', 'tradition_cloning', 'adopt', 'Cloning Traditions', NULL, '{"leaf":"has_country_flag","value":"cloning_tradition_unlocked"}', 'agenda_cloning_replication', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
@@ -91743,8 +91744,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cloning_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_cybernetics', 'Cybernetics', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_cybernetics_adopt', 'tr_cybernetics_finish', 21);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_cybernetics', 'Cybernetics', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_cybernetics_adopt', 'tr_cybernetics_finish', 21, '#94540e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_adopt', 'tradition_cybernetics', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"leaf":"has_origin","value":"origin_unplugged"},{"op":"and","args":[{"leaf":"has_technology","value":"tech_integrated_cybernetics"},{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_the_flesh_is_weak"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"is_cyberized"},{"leaf":"has_country_flag","value":"is_decyberized"}]}]}]}]}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}]},{"op":"and","args":[{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"},{"leaf":"has_origin","value":"origin_unplugged"}]}]}]}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"no"},{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]},{"op":"not","args":[{"leaf":"has_origin","value":"origin_unplugged"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"op":"not","args":[{"leaf":"has_origin","value":"origin_cybernetic_creed"}]}]}]}]}]}', 'agenda_cybernetic_advantage', 'Starts a Situation to grant the founding species the Cybernetic trait', 0);
@@ -91993,8 +91994,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cybernetics_finish#2', 'ascension_perks_add', '1.0', '{"op":"or","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]},{"leaf":"has_country_flag","value":"cybernetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_unplugged"}]}', 2);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_cybernetics_assimilator', 'Cybernetics', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', NULL, 'tr_cybernetics_assimilator_adopt', 'tr_cybernetics_assimilator_finish', 22);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_cybernetics_assimilator', 'Cybernetics', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_assimilator"},{"leaf":"has_synthetic_ascension","value":"no"}]}', NULL, 'tr_cybernetics_assimilator_adopt', 'tr_cybernetics_assimilator_finish', 22, '#94540e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_cybernetics_assimilator_adopt', 'tradition_cybernetics_assimilator', 'adopt', 'Cybernetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_technology","value":"tech_integrated_cybernetics"}]}', 'agenda_cybernetic_advantage_assimilator', 'Assimilating Organic Pops now generates Engineering Research.
@@ -92059,8 +92060,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_cybernetics_assimilator_finish', 'ascension_perks_add', '1.0', NULL, 2);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_genetics', 'Genetics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', NULL, 'tr_genetics_adopt', 'tr_genetics_finish', 23);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_genetics', 'Genetics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"BioGenesis"}]},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}]}]}', NULL, 'tr_genetics_adopt', 'tr_genetics_finish', 23, '#1e904e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_genetics_adopt', 'tradition_genetics', 'adopt', 'Genetic Traditions', NULL, '{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_engineered_evolution"},{"leaf":"has_technology","value":"tech_gene_tailoring"}]}', 'agenda_genetic_pursuit', 'Clone Vats produce an additional +1.5 Monthly Organic Pop Growth, with a corresponding increase in Upkeep.', 0);
@@ -92126,8 +92127,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_genetics_finish#0', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_modularity', 'Modularity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_modularity_adopt', 'tr_modularity_finish', 24);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_modularity', 'Modularity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_modularity_adopt', 'tr_modularity_finish', 24, '#0e9a7e');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_modularity_adopt', 'tradition_modularity', 'adopt', 'Modularity Traditions', NULL, '{"leaf":"has_country_flag","value":"modularity_traditions_unlocked"}', 'agenda_modularity_reshape_form', NULL, 0);
@@ -92234,8 +92235,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_modularity_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_mutation', 'Mutation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"}]}]}]}', 'BioGenesis', 'tr_mutation_adopt', 'tr_mutation_finish', 25);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_mutation', 'Mutation', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"}]}]}]}', 'BioGenesis', 'tr_mutation_adopt', 'tr_mutation_finish', 25, '#2db071');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_mutation_adopt', 'tradition_mutation', 'adopt', 'Mutation Traditions', NULL, '{"leaf":"has_country_flag","value":"mutation_tradition_unlocked"}', 'agenda_mutation_divergence', 'Founder Species gains the Adaptive Mutations Species Trait', 0);
@@ -92302,8 +92303,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_mutation_finish', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_nanotech', 'Nanotech', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_nanotech_adopt', 'tr_nanotech_finish', 26);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_nanotech', 'Nanotech', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_virtuality_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_nanotech_adopt', 'tr_nanotech_finish', 26, '#788d82');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_nanotech_adopt', 'tradition_nanotech', 'adopt', 'Nanotech Traditions', NULL, '{"leaf":"has_country_flag","value":"nanotech_traditions_unlocked"}', 'agenda_nanotech_unstoppable_swarm', 'Available Buildings: Nanite Research Facility
@@ -92365,8 +92366,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_nanotech_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_psionics', 'Psionics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', NULL, 'tr_psionics_adopt', 'tr_psionics_finish', 27);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_psionics', 'Psionics', '{"op":"and","args":[{"op":"not","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"}]},{"leaf":"is_gestalt","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', NULL, 'tr_psionics_adopt', 'tr_psionics_finish', 27, '#8a60ea');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_adopt', 'tradition_psionics', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_country_flag","value":"ratling_country"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy', 'All pops from your primary species will gain the Latent Psionic trait.', 0);
@@ -92427,8 +92428,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_psionics_finish', 'ascension_perks_add', '1.0', NULL, 2);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_psionics_shroud', 'Psionics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', 'Shadows of the Shroud', 'tr_psionics_shroud_adopt', 'tr_psionics_shroud_finish', 28);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_psionics_shroud', 'Psionics', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Shadows of the Shroud"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"},{"leaf":"has_origin","value":"origin_mindwardens"}]}]}]}', 'Shadows of the Shroud', 'tr_psionics_shroud_adopt', 'tr_psionics_shroud_finish', 28, '#8a60ea');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_psionics_shroud_adopt', 'tradition_psionics_shroud', 'adopt', 'Psionic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]},{"leaf":"has_technology","value":"tech_psionic_theory"}]},{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_shroudwalker_apprentice"},{"leaf":"has_origin","value":"origin_endbringers"},{"leaf":"has_country_flag","value":"ratling_country"},{"leaf":"has_country_flag","value":"finish_shroud_forged_liberation_flag"}]}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_mind_over_matter"},{"leaf":"has_technology","value":"tech_psionic_theory"}]}]}]}', 'agenda_psionic_supremacy_shroud', 'Starts a Situation to grant the founding species the Psionic trait.', 0);
@@ -92563,8 +92564,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_psionics_shroud_finish', 'ascension_perks_add', '1.0', NULL, 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_purity', 'Purity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_purity_adopt', 'tr_purity_finish', 29);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_purity', 'Purity', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"BioGenesis"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"has_synthetic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_country_flag","value":"clone_army_full_potential"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', 'BioGenesis', 'tr_purity_adopt', 'tr_purity_finish', 29, '#883724');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_purity_adopt', 'tradition_purity', 'adopt', 'Purity Traditions', NULL, '{"leaf":"has_country_flag","value":"purity_tradition_unlocked"}', 'agenda_purity_perfection', NULL, 0);
@@ -92628,8 +92629,8 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_purity_finish#0', 'ascension_perks_add', '1.0', NULL, 0);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_synthetics', 'Synthetics', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_synthetics_adopt', 'tr_synthetics_finish', 30);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_synthetics', 'Synthetics', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"is_regular_empire","value":"yes"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"op":"not","args":[{"leaf":"host_has_dlc","value":"The Machine Age"}]}]}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_cybernetic_ascension","value":"yes"},{"leaf":"has_genetic_ascension","value":"yes"},{"leaf":"has_psionic_ascension","value":"yes"},{"leaf":"is_natural_design_empire","value":"yes"},{"leaf":"has_purity_ascension","value":"yes"},{"leaf":"has_cloning_ascension","value":"yes"},{"leaf":"has_mutation_ascension","value":"yes"}]}]}]}', NULL, 'tr_synthetics_adopt', 'tr_synthetics_finish', 30, '#069ae5');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_synthetics_adopt', 'tradition_synthetics', 'adopt', 'Synthetic Traditions', NULL, '{"op":"or","args":[{"op":"and","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"has_origin","value":"origin_synthetic_fertility"}]},{"op":"not","args":[{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"leaf":"is_machine_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}]},{"op":"or","args":[{"op":"and","args":[{"leaf":"is_machine_empire","value":"no"},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_evolution"},{"leaf":"has_technology","value":"tech_synthetic_workers"}]}]},{"op":"and","args":[{"op":"not","args":[{"leaf":"is_machine_empire","value":"no"}]},{"op":"and","args":[{"leaf":"has_ascension_perk","value":"ap_synthetic_age"},{"leaf":"has_technology","value":"tech_robomodding_m"}]}]}]}]}]}', 'agenda_synthetic_yield', 'Starts a Situation to transform the founding species into a Mechanical species.', 0);
@@ -92794,8 +92795,8 @@ Mechanical Modification Points: +2
 Modify Species Special Project Cost: -50%
 Ascension Perks Unlocked: +1', 1);
 INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31);
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES ('tradition_virtuality', 'Virtuality', '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]},{"leaf":"is_entropy_drinkers_empire","value":"no"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_tradition","value":"tr_nanotech_adopt"},{"leaf":"has_tradition","value":"tr_modularity_adopt"},{"leaf":"has_ascension_perk","value":"ap_organo_machine_interfacing_assimilator"},{"leaf":"has_psionic_ascension","value":"yes"}]}]}]}', 'The Machine Age', 'tr_virtuality_adopt', 'tr_virtuality_finish', 31, '#4646b3');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_virtuality_adopt', 'tradition_virtuality', 'adopt', 'Virtuality Traditions', NULL, '{"leaf":"has_country_flag","value":"virtuality_traditions_unlocked"}', 'agenda_virtuality_optimized_network', 'Adds Virtual trait to main species

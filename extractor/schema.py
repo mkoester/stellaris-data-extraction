@@ -1490,6 +1490,7 @@ CREATE TABLE tradition_category (
     adopt_key      TEXT NOT NULL,          -- FK to tradition.key
     finish_key     TEXT NOT NULL,          -- FK to tradition.key
     sort_order     INTEGER NOT NULL DEFAULT 0,
+    color          TEXT,                   -- '#rrggbb', the tree's colour in game (its header's hexagons)
     FOREIGN KEY (required_dlc) REFERENCES dlc(name)
 );
 -- Per-empire-type description variants (`desc = { trigger text }`), first match wins.

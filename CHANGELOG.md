@@ -12,6 +12,8 @@ All notable changes to this project are documented here. The format follows
   lines ("Unlocks Megastructure: Dyson Swarm"), its features ("Unlocks Feature: Auto-Research
   Technologies"), and the buildings, districts, component sets, ship sizes and armies that need it.
 - Repeatable techs name the tech they need (`tech_repeatable.prerequisites_json`).
+- Each tradition tree's colour in game (`tradition_category.color`, `#rrggbb`): the hexagons behind
+  its header, e.g. Expansion green, Discovery blue.
 
 ## [0.1.12] - 2026-11-06
 

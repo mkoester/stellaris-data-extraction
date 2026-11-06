@@ -3,7 +3,7 @@
 import struct
 import unittest
 
-from extractor.dds import dds_pixel, dds_size, hex_color
+from extractor.dds import dds_pixel, dds_size, hex_color, opaque_color
 
 # B8G8R8A8, the layout of the game's grid-box icons
 MASKS = (0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000)
@@ -29,6 +29,11 @@ class TestDds(unittest.TestCase):
         self.assertEqual(dds_pixel(self.IMAGE, 1, 0), (0, 255, 0, 255))
         self.assertEqual(dds_pixel(self.IMAGE, 0, 1), (0, 0, 255, 255))
         self.assertEqual(dds_pixel(self.IMAGE, 1, 1), (255, 255, 255, 128))
+
+    def test_opaque_color_averages_the_most_opaque_pixels(self):
+        # two opaque greens average out; the fainter red does not count
+        image = dds(3, 1, [0x7300C800, 0x73006400, 0x40FF0000])
+        self.assertEqual(opaque_color(image), (0, 150, 0, 0x73))
 
     def test_hex(self):
         self.assertEqual(hex_color((65, 170, 36, 255)), '#41aa24')
