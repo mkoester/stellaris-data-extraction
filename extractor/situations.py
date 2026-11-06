@@ -7,7 +7,8 @@ import re
 import sys
 from .clausewitz import parse_file
 from .localisation import _clean_loc
-from .values import _as_blocks
+from .modifiers import _block_modifier_values, _write_modifier_label
+from .values import _as_blocks, _resolve_modifier_float
 from .writer import Writer
 
 
@@ -54,6 +55,12 @@ def stage_keys(data: dict) -> list[str]:
     return [k for k, v in stages.items() if isinstance(v, dict)] if isinstance(stages, dict) else []
 
 
+def stage_modifiers(stage: dict, variables: dict[str, float]) -> list[tuple[str, float]]:
+    """A stage's `modifier = { … }` block as [(key, value)], `@variables` resolved."""
+    block = stage.get('modifier')
+    return _block_modifier_values(block, variables) if isinstance(block, dict) else []
+
+
 def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
@@ -68,11 +75,18 @@ def _files(d: Path) -> list[Path]:
 
 
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
-                       progress=sys.stderr) -> None:
+                       progress=sys.stderr, scripted_vars: dict[str, float] | None = None) -> None:
     common = install_dir / 'common'
-    n_sit = n_appr = n_stage = 0
+    n_sit = n_appr = n_stage = n_mod = 0
     for f in _files(common / 'situations'):
-        for key, data in parse_file(f).items():
+        parsed = parse_file(f)
+        variables = dict(scripted_vars or {})
+        for k, v in parsed.items():
+            if k.startswith('@'):
+                fv = _resolve_modifier_float(v)
+                if fv is not None:
+                    variables[k] = fv
+        for key, data in parsed.items():
             if key.startswith('@') or not isinstance(data, dict):
                 continue
             w.execute(
@@ -97,6 +111,12 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        VALUES (?, ?, ?, ?)""",
                     (key, stage, _text(loc, stage), order))
                 n_stage += 1
+                for m_order, (mk, mv) in enumerate(stage_modifiers(data['stages'][stage], variables)):
+                    w.execute(
+                        "INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES (?, ?, ?, ?, ?)",
+                        (key, stage, mk, mv, m_order))
+                    _write_modifier_label(w, loc, mk)
+                    n_mod += 1
 
     n_proj = 0
     for f in _files(common / 'special_projects'):
@@ -116,6 +136,7 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                  _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc)))
             n_proj += 1
 
-    print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages, {n_proj} special projects",
+    print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages ({n_mod} modifiers), "
+          f"{n_proj} special projects",
           file=progress)
     w.commit()

@@ -1202,6 +1202,7 @@ CREATE TABLE system_entry_event (
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
+DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
 DROP TABLE IF EXISTS situation;
@@ -1227,6 +1228,16 @@ CREATE TABLE situation_stage (
     name          TEXT,                    -- e.g. "Medium"
     sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
+);
+-- A situation stage's modifiers while the situation is in it (empire dashboard: research speed
+-- from the Nomad Economy's thriving stage and the like).
+CREATE TABLE situation_stage_modifier (
+    situation_key  TEXT NOT NULL,
+    stage_key      TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (situation_key, stage_key, modifier_key)
 );
 CREATE TABLE special_project (
     key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
@@ -1328,7 +1339,16 @@ CREATE TABLE decision (
 );
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
+DROP TABLE IF EXISTS economic_category;
 DROP TABLE IF EXISTS strategic_resource;
+-- Economic categories (common/economic_categories): what a job's, building's or pop's resources
+-- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
+-- category below it, an `_add` one to the category alone (the folder's README); empire dashboard:
+-- which output bonuses reach a job.
+CREATE TABLE economic_category (
+    key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
+    parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"
     name          TEXT,

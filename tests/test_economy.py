@@ -3,11 +3,20 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.economy import attitude_trades, base_value, opinion_row, resource_row, slot_count
+from extractor.economy import (attitude_trades, base_value, category_parent, opinion_row,
+                               resource_row, slot_count)
 
 
 def parse(text: str) -> dict:
     return Parser(tokenize(text)).parse()
+
+
+class TestEconomicCategory(unittest.TestCase):
+    # planet_physicists (common/economic_categories/01_job_categories.txt, 4.5.x)
+    def test_parent(self):
+        self.assertEqual(category_parent({'modifier_category': 'colony', 'parent': 'planet_researchers'}),
+                         'planet_researchers')
+        self.assertIsNone(category_parent({'generate_mult_modifiers': {}}))
 
 
 class TestEconomyHelpers(unittest.TestCase):

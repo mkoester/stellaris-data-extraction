@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.12] - 2026-11-06
+
+### Added
+
+- What each situation stage does (`situation_stage_modifier`): its modifiers while the situation
+  is in that stage, e.g. the Nomad Economy's thriving stage: +10 % research speed.
+- The economic categories (`economic_category`): what each job's, building's or pop's resources are
+  booked under, with its parent — which output bonuses reach a job.
+
 ## [0.1.11] - 2026-11-04
 
 ### Added

@@ -495,7 +495,7 @@ Examples:
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
-    extract_situations(install_dir, loc, w, progress)
+    extract_situations(install_dir, loc, w, progress, scripted_vars)
     print(f"\n[system entry events] {install_dir / 'common' / 'on_actions'}", file=progress)
     extract_system_entry_events(install_dir, loc, w, progress)
     print(f"\n[action timers] decisions, artifact and astral actions, relics, diplomatic actions, federation laws, enclave deals", file=progress)
