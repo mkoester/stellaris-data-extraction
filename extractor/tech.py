@@ -214,7 +214,10 @@ def extract_repeatable_techs(
     scripted_vars: dict[str, float],
     w: Writer,
     verbose: bool,
+    prerequisite_blocks: dict[str, list[tuple]] | None = None,
 ) -> None:
+    """Repeatable techs with their levels, modifiers and what they need researched first
+    (`prerequisite_blocks`, as for the other techs; the planner's repeatables page names them)."""
     entries: list[tuple] = []
     for key, data in technologies.items():
         if not isinstance(data, dict) or not _is_repeatable(data):
@@ -236,11 +239,13 @@ def extract_repeatable_techs(
     for sort_order, entry in enumerate(entries):
         (area, category, key, label, description,
          area_label, category_label, levels, data) = entry
+        all_of, any_of = prerequisites((prerequisite_blocks or {}).get(key, []))
         w.execute(
             """INSERT OR REPLACE INTO tech_repeatable
-               (key, label, description, area, area_label, category, category_label, levels, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (key, label, description, area, area_label, category, category_label, levels, sort_order),
+               (key, label, description, area, area_label, category, category_label, levels, sort_order, prerequisites_json, prerequisites_any_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (key, label, description, area, area_label, category, category_label, levels, sort_order,
+             json.dumps(all_of), json.dumps(any_of)),
         )
 
         _write_tech_modifiers(w, loc, 'tech_repeatable_modifier', key, data, scripted_vars, verbose)

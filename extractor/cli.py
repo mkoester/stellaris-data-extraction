@@ -33,6 +33,7 @@ from .situations import extract_situations
 from .system_events import extract_system_entry_events
 from .steam import release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
+from .tech_unlocks import extract_tech_unlocks
 from .tech import (extract_fallen_empire_techs, extract_repeatable_techs, extract_techs,
                    prerequisite_blocks)
 from .traditions import extract_edicts_agendas, extract_traditions
@@ -457,9 +458,21 @@ Examples:
     extract_techs(technologies, loc, scripted_vars, w, args.verbose,
                   dlc_trigger_map(_scripted_trigger_index(install_dir)), prereq_blocks)
 
+    # --- what each tech unlocks (the research card's lines) ---
+    print(f"\n[tech-unlocks] {technology_dir}", file=progress)
+    unlock_dirs = {'building': [buildings_dir], 'district': [install_dir / 'common' / 'districts'],
+                   'component': [install_dir / 'common' / 'component_templates'],
+                   'ship': [install_dir / 'common' / 'ship_sizes'],
+                   'army': [install_dir / 'common' / 'armies']}
+    # per file: component templates repeat one top-level key in every file, which a merge loses
+    unlock_sources = {kind: [data for d in dirs if d.exists()
+                             for _, data in _iter_parsed(sorted(d.glob('*.txt')), progress)]
+                      for kind, dirs in unlock_dirs.items()}
+    extract_tech_unlocks(technologies, unlock_sources, loc, w, args.verbose)
+
     # --- repeatable technologies ---
     print(f"\n[repeatable-techs] {technology_dir}", file=progress)
-    extract_repeatable_techs(technologies, loc, scripted_vars, w, args.verbose)
+    extract_repeatable_techs(technologies, loc, scripted_vars, w, args.verbose, prereq_blocks)
 
     # --- fallen empire technologies ---
     # Build a raw-loc mapping (before $KEY$ resolution) for the fallen empire loc file so

@@ -1400,6 +1400,17 @@ CREATE TABLE game_start_script (
     key          TEXT PRIMARY KEY,         -- "generate_start_buildings_and_districts" | "void_dweller_home_planet_setup"
     effects_json TEXT NOT NULL
 );
+-- What a tech unlocks, as the game's research card lists it (dashboard and planner tech tooltips).
+DROP TABLE IF EXISTS technology_unlock;
+CREATE TABLE technology_unlock (
+    tech_key   TEXT NOT NULL,
+    kind       TEXT NOT NULL,   -- derived from `prerequisites`: building, district, component (a component set), ship (a ship size), army; line: the tech's own `prereqfor_desc` lines, their label prefixed; feature (`feature_flags`)
+    item_key   TEXT NOT NULL,   -- the object's key; for an own line its title's loc key
+    label      TEXT,            -- the object's name; an own line's title carries its prefix ("Unlocks Megastructure: Dyson Swarm")
+    detail     TEXT,            -- an own line's or a feature's description
+    sort_order INTEGER NOT NULL, -- per tech: own lines first, then derived ones by kind and name
+    PRIMARY KEY (tech_key, kind, item_key)
+);
 -- What researching a tech needs (empire dashboard: techs within reach).
 DROP TABLE IF EXISTS technology_requirement;
 CREATE TABLE technology_requirement (
@@ -1442,7 +1453,9 @@ CREATE TABLE tech_repeatable (
     category     TEXT,                   -- field key, e.g. "industry"
     category_label TEXT,                 -- localised, e.g. "Industry"
     levels       INTEGER,                -- -1 = unlimited
-    sort_order   INTEGER NOT NULL DEFAULT 0
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    prerequisites_json     TEXT NOT NULL DEFAULT '[]', -- as technology_requirement: all researched first
+    prerequisites_any_json TEXT NOT NULL DEFAULT '[]'  -- one of each group researched first
 );
 CREATE TABLE tech_repeatable_modifier (
     tech_key       TEXT NOT NULL,
