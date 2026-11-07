@@ -1242,6 +1242,16 @@ CREATE TABLE special_project (
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
     outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );
+-- Nomads contracts (common/missions, those whose mission category has is_contract = yes), for
+-- the empire dashboard's contracts tab. A save's `missions.<id>.mission` is the key.
+DROP TABLE IF EXISTS contract;
+CREATE TABLE contract (
+    key              TEXT PRIMARY KEY,     -- e.g. "contract_harvest_minerals"
+    name             TEXT,                 -- e.g. "Remote Physics Research"
+    category         TEXT NOT NULL,        -- e.g. "resource_contract", "science_contract_internal"
+    time_to_accept   INTEGER,              -- days an offer stays open; NULL = no limit
+    time_to_complete INTEGER               -- days to finish once accepted; NULL = no limit
+);
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
 CREATE TABLE district (
@@ -126814,6 +126824,79 @@ INSERT OR REPLACE INTO special_project
 INSERT OR REPLACE INTO special_project
                    (key, name, description, days, department, outcomes_json)
                    VALUES ('STAR_CROSSED_SURVIVOR_POD_PROJECT', 'Scan the Survivor Pod', 'We must fly to the indicated system and scan the pod to determine whether its occupant still lives.', 180, 'physics_technology', '[{"event": "arkship.1395", "name": "Last Survivor"}]');
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_minerals', 'Harvest: Minerals', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_energy', 'Harvest: Energy', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_consumer_goods', 'Harvest: Consumer Goods', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_alloys', 'Harvest: Alloys', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_volatile_motes', 'Harvest: Volatile Motes', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_exotic_gases', 'Harvest: Exotic Gases', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_rare_crystals', 'Harvest: Rare Crystals', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_sr_living_metal', 'Harvest: Living Metal', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_harvest_nanites', 'Harvest: Nanites', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support', 'Espionage Support', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_2', 'Espionage Support', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_3', 'Espionage Support', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_4', 'Espionage Support', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_deep_scan', 'Deep Scan', 'science_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_raid_planet_small', 'Raid Planet', 'military_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_megastructure_support', 'Megastructure Support', 'science_contract', 360, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_diplomatic_support', 'Diplomatic Support', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_scan_debris', 'Scan Debris', 'science_contract', 360, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_clear_blockers', 'Clear Blockers', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_build_waystation', 'Build Waystation', 'science_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_pest_control', 'Pest Control', 'military_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_prisoner_disposal', 'Prisoner Disposal', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_physics_research', 'Remote Physics Research', 'science_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_society_research', 'Remote Society Research', 'science_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_engineering_research', 'Remote Engineering Research', 'science_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_minerals_resource', 'Remote Mineral Assessment', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_energy_resource', 'Remote Energy Modeling', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_onboard_food_resource', 'Remote Food Evaluation', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_sightseeing_tour', 'Sightseeing Tour', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_join_war', 'Join Wars', 'military_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_colony_startup', 'Colony Startup', 'diplomacy_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_stellar_ignition', 'Stellar Ignition', 'resource_contract', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_find_resources_energy_internal', 'Energy Cache', 'resource_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_find_resources_minerals_internal', 'Mineral Cache', 'resource_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_find_resources_alloys_internal', 'Alloy Cache', 'resource_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_scientific_observation_physics_research_internal', 'Scientific Physics Observation', 'science_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_scientific_observation_engineering_research_internal', 'Scientific Engineering Observation', 'science_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_passenger_1', 'Sun Trip', 'passenger_science_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_passenger_2', 'Stellar Observatory', 'passenger_science_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_passenger_3', 'Sunside Regatta', 'passenger_science_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_passenger_4', 'Solar Spa Retreat', 'passenger_science_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_passenger_5', 'Starlight Gala', 'passenger_science_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_crew_1', 'Generator Maintenance', 'crew_resource_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_crew_2', 'Hull Recalibration', 'crew_resource_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_crew_3', 'Coolant Flush', 'crew_resource_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_crew_4', 'Sensor Calibration', 'crew_resource_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_suntrip_crew_5', 'Water Reclamation Cycle', 'crew_resource_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_passenger_1', 'Port of Call', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_passenger_2', 'Local Flavors', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_passenger_3', 'Cultural Excursion', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_passenger_4', 'Bazaar Day', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_passenger_5', 'Wildlife Encounter', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_crew_1', 'Shore Leave', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_crew_2', 'Lucky Break', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_crew_3', 'Supply Run', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_crew_4', 'Tech Exchange', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_shoreleave_crew_5', 'Crew Showcase', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_passenger_1', 'Espionage Theater', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_passenger_2', 'The Informant', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_passenger_3', 'Dead Drop', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_passenger_4', 'The Mole Hunt', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_passenger_5', 'Signal Intercept', 'passenger_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_crew_1', 'System Recon', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_crew_2', 'Diplomatic Audit', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_crew_3', 'Route Security', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_crew_4', 'Trade Leverage', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_espionage_support_crew_5', 'Threat Assessment', 'crew_diplomacy_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_eternal_chorus', 'Eternal Chorus', 'science_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_intercept_raid_heirs', 'Intercept Raid', 'heirs_military_contract_special', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_destroy_station_heirs', 'Raze Station', 'heirs_military_contract_special', 1800, 1800);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_destroy_station_heirs_start', 'Raze Station', 'heirs_military_contract_special', 1800, 1800);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_arkship_diplomatic_envoy', 'Diplomatic Overture', 'diplomacy_contract_internal', 1800, NULL);
+INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES ('contract_host_cfl_tournament', 'Nominate System for CFL Tournament', 'diplomacy_contract_special', 100, NULL);
 INSERT INTO system_entry_event (event_id, on_action, title, description, star_flags_json, any_star_flags_json, not_star_flags_json, once_flag, sort_order) VALUES ('graygoo.160', 'on_entering_system_first_time', 'Incoming Transmission', '!
 Your ships have entered …, a star system in the L-Cluster that is off-limits to all non-Dessanu.
 We must insist that you withdraw from this system immediately. Failure to do so in a timely manner would... seriously compromise our relationship.', '["graygoo_factory_system"]', NULL, NULL, 'gate_builders_hostility', 0);

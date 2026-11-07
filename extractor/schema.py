@@ -1247,6 +1247,16 @@ CREATE TABLE special_project (
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
     outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );
+-- Nomads contracts (common/missions, those whose mission category has is_contract = yes), for
+-- the empire dashboard's contracts tab. A save's `missions.<id>.mission` is the key.
+DROP TABLE IF EXISTS contract;
+CREATE TABLE contract (
+    key              TEXT PRIMARY KEY,     -- e.g. "contract_harvest_minerals"
+    name             TEXT,                 -- e.g. "Remote Physics Research"
+    category         TEXT NOT NULL,        -- e.g. "resource_contract", "science_contract_internal"
+    time_to_accept   INTEGER,              -- days an offer stays open; NULL = no limit
+    time_to_complete INTEGER               -- days to finish once accepted; NULL = no limit
+);
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
 CREATE TABLE district (

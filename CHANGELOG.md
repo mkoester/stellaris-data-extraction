@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Nomads contracts (`contract`): every mission that is a contract, with its name, category and
+  how long an offer stays open — for the empire dashboard's contracts tab.
+
 ## [0.1.13] - 2026-11-07
 
 ### Added

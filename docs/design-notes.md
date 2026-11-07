@@ -512,6 +512,15 @@ ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_e
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
+## Contracts (contracts.py)
+
+`common/missions/missions` → `contract`: every mission whose category
+(`common/missions/mission_categories`) has `is_contract = yes` — the rest are situation-log
+missions (star journals, checklists). Category and `time_to_accept` mostly come from a top-level
+`inline_script = contracts/…` (`with_inline`; nested inline scripts in triggers are not merged),
+times as `@variables` (`@contract_time_base` = 1800). 4.5.2: 73 contracts, 21 categories. The
+empire dashboard joins a save's `missions.<id>.mission` on `key`; a mod's contracts are not in it.
+
 ## System entry events (system_events.py)
 
 `system_entry_event`: the popups entering a system fires — the events of

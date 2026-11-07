@@ -30,6 +30,7 @@ from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
 from .rights import extract_species_rights
 from .situations import extract_situations
+from .contracts import extract_contracts
 from .system_events import extract_system_entry_events
 from .steam import release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
@@ -509,6 +510,8 @@ Examples:
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress, scripted_vars)
+    print(f"\n[contracts] {install_dir / 'common' / 'missions'}", file=progress)
+    extract_contracts(install_dir, loc, script_loader(inline_scripts_dir), w, progress, scripted_vars)
     print(f"\n[system entry events] {install_dir / 'common' / 'on_actions'}", file=progress)
     extract_system_entry_events(install_dir, loc, w, progress)
     print(f"\n[action timers] decisions, artifact and astral actions, relics, diplomatic actions, federation laws, enclave deals", file=progress)
