@@ -4,12 +4,23 @@ import unittest
 
 from extractor.clausewitz import Parser, tokenize
 from extractor.traditions import (cost_amounts, decision_costs, decision_effects, owner_scope,
-                                  pick_defines, prereqs, required_dlc, tooltip_keys, unlock_keys)
+                                  pick_defines, prereqs, required_dlc, tooltip_keys, tree_textures,
+                                  unlock_keys)
 from extractor.triggers import normalize_trigger
 
 
 def block(text: str):
     return Parser(tokenize(f"x = {{ {text} }}")).parse()['x']
+
+
+class TestTreeTextures(unittest.TestCase):
+    def test_header_strips_by_tree(self):
+        gfx = Parser(tokenize('''spriteTypes = {
+            spriteType = { name = "GFX_tradition_hex_bg_blue" textureFile = "a.dds" }
+            spriteType = { name = "GFX_tradition_hex_bg_tradition_expansion" textureFile = "b.dds" }
+            spriteType = { name = "GFX_tradition_category_bg_tradition_expansion" textureFile = "c.dds" }
+        }''')).parse()
+        self.assertEqual(tree_textures(gfx), {'blue': 'a.dds', 'tradition_expansion': 'b.dds'})
 
 
 class TestPickDefines(unittest.TestCase):

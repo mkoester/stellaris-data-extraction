@@ -2,6 +2,7 @@
 
 The game's district grid-box icons (`gfx/interface/icons/districts/grid_box/*.dds`) are flat
 colour swatches stored as uncompressed 32-bit RGBA; that colour is the district's colour in game.
+A tradition tree's colour is the hexagon strip behind its header (`opaque_color`).
 Compressed formats (DXT/BC) are not supported and raise ValueError.
 """
 import struct
@@ -35,6 +36,17 @@ def dds_pixel(data: bytes, x: int, y: int) -> tuple[int, int, int, int]:
     channel = lambda mask: (value & mask) >> _shift(mask)
     alpha = channel(amask) if flags & _DDPF_ALPHAPIXELS and amask else 255
     return channel(rmask), channel(gmask), channel(bmask), alpha
+
+
+def opaque_color(data: bytes) -> tuple[int, int, int, int]:
+    """Mean (r, g, b) of the most opaque pixels, with that alpha: the colour of a texture that fades
+    out, such as a tradition tree's hexagon strip (`gfx/interface/traditions/tradition_hex_bg_*.dds`)."""
+    width, height = dds_size(data)
+    pixels = [dds_pixel(data, x, y) for y in range(height) for x in range(width)]
+    alpha = max(p[3] for p in pixels)
+    top = [p for p in pixels if p[3] == alpha]
+    r, g, b = (round(sum(p[i] for p in top) / len(top)) for i in range(3))
+    return r, g, b, alpha
 
 
 def hex_color(rgba: tuple[int, int, int, int]) -> str:

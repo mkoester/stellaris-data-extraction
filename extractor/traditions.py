@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import sys
 from .clausewitz import parse_file
+from .dds import hex_color, opaque_color
 from .localisation import _clean_loc, join_texts
 from .modifiers import _block_modifier_values, _write_modifier_label
 from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
@@ -207,6 +208,21 @@ def dumps(tree) -> str | None:
     return json.dumps(tree, separators=(',', ':')) if tree is not None else None
 
 
+def tree_textures(gfx: dict) -> dict[str, str]:
+    """traditions.gfx → tree key → its header strip's texture (`GFX_tradition_hex_bg_<tree>`)."""
+    prefix = 'GFX_tradition_hex_bg_'
+    sprites = (gfx.get('spriteTypes') or {}).get('spriteType') or []
+    return {s['name'][len(prefix):]: s['textureFile']
+            for s in (sprites if isinstance(sprites, list) else [sprites])
+            if isinstance(s, dict) and str(s.get('name', '')).startswith(prefix)
+            and isinstance(s.get('textureFile'), str)}
+
+
+def _tree_color(install_dir: Path, textures: dict[str, str], key: str) -> str | None:
+    path = install_dir / textures[key] if key in textures else None
+    return hex_color(opaque_color(path.read_bytes())) if path and path.exists() else None
+
+
 def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
                        w: Writer, verbose: bool, progress=sys.stderr) -> None:
     common = install_dir / 'common'
@@ -221,6 +237,8 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
     # Tradition trees
     categories = _load(common / 'tradition_categories', scripted_vars)
     traditions = _load(common / 'traditions', scripted_vars)
+    gfx_file = install_dir / 'interface' / 'traditions.gfx'
+    textures = tree_textures(parse_file(gfx_file)) if gfx_file.exists() else {}
     n_trad = n_swap = 0
     for cat_order, (ckey, (cdata, cvars, _)) in enumerate(categories.items()):
         potential = ctx.trig(cdata.get('potential'), cvars)
@@ -230,10 +248,10 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
         members = [x for x in _to_list(cdata.get('traditions')) if isinstance(x, str)]
         w.execute(
             """INSERT INTO tradition_category
-               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (ckey, ctx.text(ckey), dumps(potential), required_dlc(potential), adopt, finish,
-             cat_order))
+             cat_order, _tree_color(install_dir, textures, ckey)))
         desc_order = 0
         descs = cdata.get('desc')
         for d in descs if isinstance(descs, list) else [descs]:
