@@ -229,10 +229,12 @@ def extract_traditions(install_dir: Path, loc: dict[str, str], scripted_vars: di
     ctx = _Ctx(loc, dlc_trigger_map(_scripted_trigger_index(install_dir)), w)
 
     # Defines
-    defines_file = common / 'defines' / '00_defines.txt'
-    if defines_file.exists():
-        for k, v in sorted(pick_defines(parse_file(defines_file)).items()):
-            w.execute("INSERT OR REPLACE INTO game_define (key, value) VALUES (?, ?)", (k, v))
+    # every file, in load order: a mod sets its defines in a file of its own, the later value wins
+    picked: dict[str, float] = {}
+    for f in sorted((common / 'defines').glob('*.txt')):
+        picked.update(pick_defines(parse_file(f)))
+    for k, v in sorted(picked.items()):
+        w.execute("INSERT OR REPLACE INTO game_define (key, value) VALUES (?, ?)", (k, v))
 
     # Tradition trees
     categories = _load(common / 'tradition_categories', scripted_vars)

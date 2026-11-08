@@ -44,6 +44,19 @@ v0.1.5's code on 4.5.2 files, and that comparison is what showed nothing was los
 
 **All code is English** — names, comments and output — even when the session is in German.
 
+## Mods (`--mod DIR`, 2026-11-08)
+
+`--mod <folder>` (repeat, in load order; the folder a descriptor's `path` names) extracts the game
+with those mods: `extractor/mods.py` builds a merged copy of the install folder in a temp dir
+(links, filtered copies where a definition is overridden) and the readers run on it unchanged. The
+game's rules: a file replaces the file at the same path; in a `common/` folder a key defined in two
+files takes the later file's (`zzz_` prefixes), in `scripted_variables` the first (`!!`);
+`on_actions`, `defines` (every file now merged, later value wins) and `inline_scripts` are left to
+merge; English localisation outside `english/` is moved in, `replace/` keys win. `meta.mods` lists
+name, version, folder and how many definitions each overrode. **Refused for `sql/stellaris.sql` and
+`sqlite/stellaris.sqlite`** — the release outputs are the unmodded game's. Without `--mod` the dump
+is byte-identical to before (checked 2026-11-08). The empire dashboard passes its playset's mods.
+
 ## ⚠ Determinism
 
 Output must be **byte-identical between runs**. Set iteration order varies with Python's hash seed,

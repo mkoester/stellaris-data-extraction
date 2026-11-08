@@ -48,3 +48,11 @@ if __name__ == '__main__':
     found = steam_branch(Path(sys.argv[1]).expanduser())
     print(found or 'unknown (no Steam manifest)')
     sys.exit(0 if found == 'public' else 1)
+
+
+def mod_output_refusal(targets) -> str | None:
+    """Why writing these targets with mods is refused, or None: the release outputs hold the
+    game's own data, never a playset's."""
+    hits = [t for t in targets if t and Path(t).resolve() in RELEASE_OUTPUTS]
+    return (f"refusing to write {', '.join(map(str, hits))} with --mod: the release outputs hold "
+            f"the unmodded game's data. Write elsewhere (--sqlite $TMPDIR/modded.sqlite).") if hits else None

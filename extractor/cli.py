@@ -5,6 +5,7 @@ import argparse
 import json
 import sqlite3
 import sys
+import tempfile
 from . import __version__
 from .buildings import (extract_anomaly_levels, script_loader, extract_buildings_ref, extract_district_zone_names,
                         extract_resources)
@@ -23,6 +24,7 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
+from .mods import descriptor, overlay
 from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys,
                    extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
@@ -32,7 +34,7 @@ from .rights import extract_species_rights
 from .situations import extract_situations
 from .contracts import extract_contracts
 from .system_events import extract_system_entry_events
-from .steam import release_output_refusal, steam_branch
+from .steam import mod_output_refusal, release_output_refusal, steam_branch
 from .species import _ROBOT_BASE_TRAIT, extract_portrait_sets, extract_species_archetypes, extract_species_classes
 from .tech_unlocks import extract_tech_unlocks
 from .tech import (extract_fallen_empire_techs, extract_repeatable_techs, extract_techs,
@@ -91,6 +93,8 @@ Examples:
                     help='Write SQL statements to this file')
     ap.add_argument('--sqlite', metavar='FILE', default=None,
                     help='Write directly to this SQLite database')
+    ap.add_argument('--mod', action='append', default=[], metavar='DIR',
+                    help="A mod's folder (its descriptor's path), loaded over the game; repeat in load order")
     ap.add_argument('--verbose', '-v', action='store_true',
                     help='Verbose output')
     ap.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
@@ -101,6 +105,41 @@ Examples:
         print(f"ERROR: directory not found: {install_dir}", file=sys.stderr)
         sys.exit(1)
 
+    species_dir = install_dir / 'common' / 'species_classes'
+    if not species_dir.exists():
+        print(f"ERROR: {species_dir} not found -- is this really the Stellaris directory?",
+              file=sys.stderr)
+        sys.exit(1)
+
+    sql_path    = args.out
+    sqlite_path = args.sqlite
+    stdout_mode = not sql_path and not sqlite_path
+
+    branch = steam_branch(install_dir)
+    refusal = (release_output_refusal((sql_path, sqlite_path), branch)
+               or (mod_output_refusal((sql_path, sqlite_path)) if args.mod else None))
+    if refusal:
+        print(f"ERROR: {refusal}", file=sys.stderr)
+        sys.exit(1)
+
+    mods = [Path(m) for m in args.mod]
+    missing = [m for m in mods if not m.is_dir()]
+    if missing:
+        print(f"ERROR: mod folder not found: {', '.join(map(str, missing))}", file=sys.stderr)
+        sys.exit(1)
+    if mods:
+        with tempfile.TemporaryDirectory(prefix='stellaris-mods-') as merged:
+            overrides = overlay(install_dir, mods, Path(merged))
+            mod_meta = json.dumps([{'name': str(descriptor(m).get('name') or m.name).strip('"'),
+                                    'version': str(descriptor(m).get('version') or '').strip('"') or None,
+                                    'path': str(m), 'overrides': overrides[str(m)]} for m in mods],
+                                  separators=(',', ':'), ensure_ascii=False)
+            _extract(Path(merged), args, sql_path, sqlite_path, stdout_mode, branch, mod_meta)
+    else:
+        _extract(install_dir, args, sql_path, sqlite_path, stdout_mode, branch, None)
+
+
+def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch, mod_meta):
     dlc_info       = install_dir / 'dlc_metadata' / 'dlc_info.txt'
     species_dir    = install_dir / 'common' / 'species_classes'
     archetypes_dir = install_dir / 'common' / 'species_archetypes'
@@ -122,21 +161,6 @@ Examples:
     planet_class_dir = install_dir / 'common' / 'planet_classes'
     prescripted_dir = install_dir / 'prescripted_countries'
     loc_dir        = install_dir / 'localisation' / 'english'
-
-    if not species_dir.exists():
-        print(f"ERROR: {species_dir} not found -- is this really the Stellaris directory?",
-              file=sys.stderr)
-        sys.exit(1)
-
-    sql_path    = args.out
-    sqlite_path = args.sqlite
-    stdout_mode = not sql_path and not sqlite_path
-
-    branch = steam_branch(install_dir)
-    refusal = release_output_refusal((sql_path, sqlite_path), branch)
-    if refusal:
-        print(f"ERROR: {refusal}", file=sys.stderr)
-        sys.exit(1)
 
     # In stdout mode progress goes to stderr so SQL output stays clean
     progress = sys.stderr if stdout_mode else sys.stdout
@@ -164,6 +188,10 @@ Examples:
     if branch:
         w.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", ('steam_branch', branch))
         w.commit()
+    if mod_meta:
+        w.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", ('mods', mod_meta))
+        w.commit()
+        print(f"  Mods: {mod_meta}", file=progress)
         print(f"  Steam branch: {branch}", file=progress)
 
     # --- DLC metadata ---
