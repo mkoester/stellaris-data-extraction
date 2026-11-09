@@ -25,7 +25,7 @@ from .government import _custom_empire_initializers, compute_ascension_restricti
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
-from .mods import descriptor, overlay
+from .mods import descriptor, overlay, unpack
 from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys,
                    extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
@@ -95,7 +95,8 @@ Examples:
     ap.add_argument('--sqlite', metavar='FILE', default=None,
                     help='Write directly to this SQLite database')
     ap.add_argument('--mod', action='append', default=[], metavar='DIR',
-                    help="A mod's folder (its descriptor's path), loaded over the game; repeat in load order")
+                    help="A mod's folder (its descriptor's path) or zip (an older mod's archive), loaded "
+                         "over the game; repeat in load order")
     ap.add_argument('--cache', metavar='DIR', default=None,
                     help='Keep parsed game and mod files in this folder: a later run parses only '
                          'files it has not seen (another set of mods, a mod update)')
@@ -128,18 +129,24 @@ Examples:
 
     use_cache(Path(args.cache) if args.cache else None)
     mods = [Path(m) for m in args.mod]
-    missing = [m for m in mods if not m.is_dir()]
+    missing = [m for m in mods if not (m.is_dir() or (m.is_file() and m.suffix.lower() == '.zip'))]
     if missing:
-        print(f"ERROR: mod folder not found: {', '.join(map(str, missing))}", file=sys.stderr)
+        print(f"ERROR: mod folder or zip not found: {', '.join(map(str, missing))}", file=sys.stderr)
         sys.exit(1)
     if mods:
-        with tempfile.TemporaryDirectory(prefix='stellaris-mods-') as merged:
-            overrides = overlay(install_dir, mods, Path(merged))
-            mod_meta = json.dumps([{'name': str(descriptor(m).get('name') or m.name).strip('"'),
-                                    'version': str(descriptor(m).get('version') or '').strip('"') or None,
-                                    'path': str(m), 'overrides': overrides[str(m)]} for m in mods],
+        with tempfile.TemporaryDirectory(prefix='stellaris-mods-') as work:
+            # a zipped mod is read from a folder of its own; meta names the zip
+            folders = [unpack(m, Path(work, 'zips', str(i))) if m.is_file() else m
+                       for i, m in enumerate(mods)]
+            merged = Path(work, 'merged')
+            merged.mkdir()
+            overrides = overlay(install_dir, folders, merged)
+            mod_meta = json.dumps([{'name': str(descriptor(f).get('name') or (m.name if m.is_dir() else m.stem)).strip('"'),
+                                    'version': str(descriptor(f).get('version') or '').strip('"') or None,
+                                    'path': str(m), 'overrides': overrides[str(f)]}
+                                   for m, f in zip(mods, folders)],
                                   separators=(',', ':'), ensure_ascii=False)
-            _extract(Path(merged), args, sql_path, sqlite_path, stdout_mode, branch, mod_meta)
+            _extract(merged, args, sql_path, sqlite_path, stdout_mode, branch, mod_meta)
     else:
         _extract(install_dir, args, sql_path, sqlite_path, stdout_mode, branch, None)
     prune_cache()

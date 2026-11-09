@@ -46,7 +46,8 @@ v0.1.5's code on 4.5.2 files, and that comparison is what showed nothing was los
 
 ## Mods (`--mod DIR`, 2026-11-08)
 
-`--mod <folder>` (repeat, in load order; the folder a descriptor's `path` names) extracts the game
+`--mod <folder>` (repeat, in load order; the folder a descriptor's `path` names, or the zip an older
+mod's `archive` names — `unpack()` refuses entries outside the mod, 2026-11-09) extracts the game
 with those mods: `extractor/mods.py` builds a merged copy of the install folder in a temp dir
 (links, filtered copies where a definition is overridden) and the readers run on it unchanged. The
 game's rules: a file replaces the file at the same path; in a `common/` folder a key defined in two
