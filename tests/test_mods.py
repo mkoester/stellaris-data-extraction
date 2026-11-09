@@ -18,6 +18,10 @@ class TestTopLevelSpans(unittest.TestCase):
         self.assertEqual(text[a[1]:a[2]], 'a = { x = "}" # }\n }')
         self.assertEqual(text[spans[3][1]:spans[3][2]], 'c = rgb { 1 2 3 }')
 
+    def test_braces_in_strings_and_comments(self):
+        text = 'a = { s = "}" # }\n b = { } }\nc = 1\n'
+        self.assertEqual([k for k, _, _ in top_level_spans(text)], ['a', 'c'])
+
     def test_quoted_key_and_block_without_equals(self):
         spans = top_level_spans('"q" = 1\nnamespace = x\n')
         self.assertEqual([k for k, _, _ in spans], ['q', 'namespace'])

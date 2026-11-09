@@ -9,7 +9,7 @@ import tempfile
 from . import __version__
 from .buildings import (extract_anomaly_levels, script_loader, extract_buildings_ref, extract_district_zone_names,
                         extract_resources)
-from .clausewitz import parse_file
+from .clausewitz import parse_file, prune_cache, use_cache
 from .colony_types import extract_colony_types
 from .cooldowns import extract_action_timers
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
@@ -96,6 +96,9 @@ Examples:
                     help='Write directly to this SQLite database')
     ap.add_argument('--mod', action='append', default=[], metavar='DIR',
                     help="A mod's folder (its descriptor's path), loaded over the game; repeat in load order")
+    ap.add_argument('--cache', metavar='DIR', default=None,
+                    help='Keep parsed game and mod files in this folder: a later run parses only '
+                         'files it has not seen (another set of mods, a mod update)')
     ap.add_argument('--verbose', '-v', action='store_true',
                     help='Verbose output')
     ap.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
@@ -123,6 +126,7 @@ Examples:
         print(f"ERROR: {refusal}", file=sys.stderr)
         sys.exit(1)
 
+    use_cache(Path(args.cache) if args.cache else None)
     mods = [Path(m) for m in args.mod]
     missing = [m for m in mods if not m.is_dir()]
     if missing:
@@ -138,6 +142,7 @@ Examples:
             _extract(Path(merged), args, sql_path, sqlite_path, stdout_mode, branch, mod_meta)
     else:
         _extract(install_dir, args, sql_path, sqlite_path, stdout_mode, branch, None)
+    prune_cache()
 
 
 def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch, mod_meta):

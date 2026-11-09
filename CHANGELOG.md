@@ -10,6 +10,13 @@ All notable changes to this project are documented here. The format follows
 
 - Nomads contracts (`contract`): every mission that is a contract, with its name, category and
   how long an offer stays open — for the empire dashboard's contracts tab.
+- `--cache DIR` keeps each parsed file, by its content: a later run parses only the files it has
+  not seen — another set of mods, a mod update. Entries unused for 60 days are removed.
+
+### Changed
+
+- Extracting with mods is about three times faster (45 mods: 34 s → 14 s; 10 s with a warm
+  `--cache`; the game alone 9 s → 6 s). The output is unchanged.
 
 ## [0.1.13] - 2026-11-07
 

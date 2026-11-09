@@ -17,8 +17,10 @@ Localisation: a mod's English files outside `localisation/english/` (older layou
 `replace/` folder win (`localisation.load_localisation`).
 """
 
+from collections import Counter
 from pathlib import Path
 import os
+import re
 import shutil
 
 from .clausewitz import parse_file
@@ -31,6 +33,7 @@ MERGED = {'on_actions', 'defines', 'inline_scripts'}
 FIRST_WINS = {'scripted_variables'}
 COLOR_TAGS = {'rgb', 'hsv', 'hsv360', 'hex'}
 _DELIM = set(' \t\r\n={}<>!?#"')
+_BLOCK_STOP = re.compile(r'["#{}]')
 
 
 def descriptor(mod_dir: Path) -> dict:
@@ -75,19 +78,19 @@ def _files(root: Path, mod: bool) -> dict[str, Path]:
     return out
 
 
-def merged_files(game_dir: Path, mods: list[Path]) -> tuple[dict[str, Path], set[str]]:
-    """Relative path → source file after all mods, and the paths a mod supplied."""
+def merged_files(game_dir: Path, mods: list[Path]) -> tuple[dict[str, Path], dict[str, str]]:
+    """Relative path → source file after all mods, and for each path a mod supplied, that mod."""
     files = _files(game_dir, mod=False)
-    from_mods: set[str] = set()
+    from_mods: dict[str, str] = {}
     for mod in mods:
         for folder in _list(descriptor(mod).get('replace_path')):
             folder = folder.strip('/')
             for rel in [r for r in files if r.rsplit('/', 1)[0] == folder]:
                 del files[rel]
-                from_mods.discard(rel)
+                from_mods.pop(rel, None)
         own = _files(mod, mod=True)
         files.update(own)
-        from_mods |= set(own)
+        from_mods.update(dict.fromkeys(own, str(mod)))
     return files, from_mods
 
 
@@ -121,24 +124,22 @@ def _token(text: str, i: int) -> tuple[str, int]:
 def _skip_block(text: str, i: int) -> int:
     """From a `{` to just past its matching `}` (strings and comments respected)."""
     depth, n = 0, len(text)
-    while i < n:
-        c = text[i]
+    while True:
+        m = _BLOCK_STOP.search(text, i)
+        if not m:
+            return n
+        i, c = m.start(), m.group()
         if c == '"':
             j = text.find('"', i + 1)
             i = n if j < 0 else j + 1
-            continue
-        if c == '#':
+        elif c == '#':
             j = text.find('\n', i)
             i = n if j < 0 else j + 1
-            continue
-        if c == '{':
-            depth += 1
-        elif c == '}':
-            depth -= 1
+        else:
+            depth += 1 if c == '{' else -1
+            i += 1
             if depth == 0:
-                return i + 1
-        i += 1
-    return n
+                return i
 
 
 def top_level_spans(text: str) -> list[tuple[str, int, int]]:
@@ -179,15 +180,17 @@ def _keyed(folder: str, key: str) -> bool:
     return key.startswith('@') == (folder in FIRST_WINS)
 
 
-def losing_spans(folder: str, texts: list[tuple[str, str]]) -> dict[str, list[tuple[str, int, int]]]:
+def losing_spans(folder: str, texts: list[tuple[str, str]],
+                 spans: dict[str, list[tuple[str, int, int]]] | None = None
+                 ) -> dict[str, list[tuple[str, int, int]]]:
     """Per file name, the definitions another file of the folder overrides. `texts` in load
     order (file name); a key defined twice in one file is a wrapper (`defined_text = {…}`), not
-    an id, and is never cut."""
-    spans = {name: top_level_spans(text) for name, text in texts}
+    an id, and is never cut. `spans`: each file's `top_level_spans`, when already known."""
+    if spans is None:
+        spans = {name: top_level_spans(text) for name, text in texts}
     wrappers: set[str] = set()
     for found in spans.values():
-        keys = [k for k, _, _ in found]
-        wrappers |= {k for k in keys if keys.count(k) > 1}
+        wrappers |= {k for k, c in Counter(k for k, _, _ in found).items() if c > 1}
     owner: dict[str, str] = {}
     for name, _ in texts:
         for key, _, _ in spans[name]:
@@ -245,8 +248,6 @@ def overlay(game_dir: Path, mods: list[Path], out: Path) -> dict[str, int]:
         _link(src, dst)
 
     overrides: dict[str, int] = {str(m): 0 for m in mods}
-    owner_of = {rel: next((str(m) for m in reversed(mods) if files[rel].is_relative_to(m)), None)
-                for rel in from_mods}
     folders = {rel.rsplit('/', 1)[0] for rel in from_mods if rel.startswith('common/')}
     for folder in sorted(folders):
         name = folder.split('/')[1] if '/' in folder else ''
@@ -256,13 +257,15 @@ def overlay(game_dir: Path, mods: list[Path], out: Path) -> dict[str, int]:
         texts = [(n, (out / folder / n).read_text(encoding='utf-8-sig', errors='replace'))
                  for n in names]
         by_name = dict(texts)
-        for fname, lost in losing_spans(name, texts).items():
+        spans = {n: top_level_spans(t) for n, t in texts}
+        keys = {n: {k for k, _, _ in found} for n, found in spans.items()}
+        for fname, lost in losing_spans(name, texts, spans).items():
             dst = out / folder / fname
             dst.unlink()
             dst.write_text(cut(by_name[fname], lost), encoding='utf-8')
             winners = {k for k, _, _ in lost}
-            for other, text in texts:
-                mod = owner_of.get(f'{folder}/{other}')
+            for other, _ in texts:
+                mod = from_mods.get(f'{folder}/{other}')
                 if mod and other != fname:
-                    overrides[mod] += len(winners & {k for k, _, _ in top_level_spans(text)})
+                    overrides[mod] += len(winners & keys[other])
     return overrides

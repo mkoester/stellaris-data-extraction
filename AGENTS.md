@@ -57,6 +57,14 @@ name, version, folder and how many definitions each overrode. **Refused for `sql
 `sqlite/stellaris.sqlite`** — the release outputs are the unmodded game's. Without `--mod` the dump
 is byte-identical to before (checked 2026-11-08). The empire dashboard passes its playset's mods.
 
+**`--cache DIR`** (2026-11-09) pickles each `parse_file` result under the hash of the file's bytes
+plus the parser's own code (`clausewitz.py`), so files `overlay` cut get their own entry, vanilla
+files hit for any mod set, and a parser change misses everything. Entries unused for 60 days are
+pruned at the end of a run. Measured with 45 mods (Linux, 4.5.3): 34 s before → 14 s cold, 10 s
+warm; the game alone 9 s → 6 s warm; every dump byte-identical to the uncached one. What is left of
+a warm run is the overlay's span scan (`top_level_spans` over every `common/` folder a mod
+touches) and localisation cleaning, not parsing.
+
 ## ⚠ Determinism
 
 Output must be **byte-identical between runs**. Set iteration order varies with Python's hash seed,
