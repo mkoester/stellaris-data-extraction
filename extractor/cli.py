@@ -18,6 +18,7 @@ from .federations import extract_federations
 from .shroud import extract_shroud
 from .ambitions import extract_ambitions
 from .economy import extract_economy
+from .ships import extract_ship_designs, extract_starbase_parts
 from .focus import extract_focus
 from .game_start import extract_game_start
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
@@ -554,6 +555,10 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     extract_ambitions(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
     extract_economy(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[starbase parts] {install_dir / 'common' / 'starbase_modules'}, starbase_buildings", file=progress)
+    extract_starbase_parts(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[ship designs] {install_dir / 'common' / 'ship_sizes'}, section_templates, component_templates", file=progress)
+    extract_ship_designs(install_dir, loc, scripted_vars, w, progress)
 
     w.close()
 

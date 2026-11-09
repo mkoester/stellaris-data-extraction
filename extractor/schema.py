@@ -1302,12 +1302,76 @@ CREATE TABLE ship_size_resource (
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
 );
--- Starbase modules and buildings (empire dashboard: what a system cost). Names from `sm_<key>`.
+-- Starbase modules and buildings (empire dashboard: what a system cost, the starbase planner).
+-- Names from `sm_<key>`; category, potential and possible from the part's own block (ships.py).
+DROP TABLE IF EXISTS starbase_part_modifier;
 DROP TABLE IF EXISTS starbase_part;
 CREATE TABLE starbase_part (
-    key   TEXT PRIMARY KEY,                -- e.g. "solar_panel_network", "hydroponics_bay"
-    kind  TEXT NOT NULL,                   -- 'module' | 'building'
-    name  TEXT
+    key            TEXT PRIMARY KEY,       -- e.g. "solar_panel_network", "hydroponics_bay"
+    kind           TEXT NOT NULL,          -- 'module' | 'building'
+    name           TEXT,
+    category       TEXT,                   -- e.g. "sm_colony_cat", "sm_military_cat"
+    potential_json TEXT,                   -- normalised trigger tree (starbase scope), NULL = none
+    possible_json  TEXT
+);
+-- A starbase part's modifiers per scope: `<scope>_modifier` and `triggered_<scope>_modifier`
+-- (the latter with its `potential` as trigger_json). Scopes: station (the starbase itself),
+-- system (every colony and station in the system: the Transit Hub's resettlement), planet
+-- (an orbital ring's planet), country, orbit, ship, defense_platform, waystation_network_*.
+CREATE TABLE starbase_part_modifier (
+    key          TEXT NOT NULL,
+    scope        TEXT NOT NULL,
+    modifier_key TEXT NOT NULL,            -- e.g. "planet_resettlement_unemployed_mult"
+    value        REAL NOT NULL,
+    trigger_json TEXT,                     -- NULL = always
+    sort_order   INTEGER NOT NULL,
+    PRIMARY KEY (key, sort_order),
+    FOREIGN KEY (key) REFERENCES starbase_part(key)
+);
+-- Ship designs' parts (empire dashboard: a design's base stats; empire modifiers not applied).
+-- A ship size (common/ship_sizes): base hull and speed, its section slots, the component sets it
+-- needs, the `modifier` block (evasion, armor, …) as {key: value}, resources {kind: {res: n}}.
+DROP TABLE IF EXISTS ship_size;
+CREATE TABLE ship_size (
+    key                TEXT PRIMARY KEY,   -- e.g. "corvette", "starbase_starport"
+    name               TEXT,
+    class              TEXT,               -- e.g. "shipclass_military"
+    hitpoints          REAL,
+    speed              REAL,
+    size_multiplier    REAL,               -- naval capacity used / command points
+    is_station         INTEGER NOT NULL DEFAULT 0,
+    section_slots_json TEXT,               -- ["mid"], ["bow", "mid", "stern"]
+    required_sets_json TEXT,               -- ["power_core", "ftl_components", …]
+    modifiers_json     TEXT,
+    resources_json     TEXT
+);
+-- A section template (common/section_templates): its weapon slots in order and utility slots.
+DROP TABLE IF EXISTS section_template;
+CREATE TABLE section_template (
+    key                  TEXT PRIMARY KEY, -- e.g. "CORVETTE_MID_S2PD1"
+    ship_size            TEXT,
+    slot                 TEXT,             -- `fits_on_slot`: "mid", "bow", …
+    component_slots_json TEXT,             -- [{"name": "SMALL_GUN_01", "template": "small_turret"}]
+    utility_slots_json   TEXT,             -- {"small": 3, "aux": 1}
+    modifiers_json       TEXT,
+    resources_json       TEXT
+);
+-- A component (common/component_templates): utility, weapon or strike craft; its `modifier`
+-- block (armor, shields, reactor output as power, speed, …) and, for weapons, the stats the
+-- game reads from component_templates/*.csv (damage, cooldown, range, accuracy, tracking, …).
+DROP TABLE IF EXISTS component_template;
+CREATE TABLE component_template (
+    key            TEXT PRIMARY KEY,       -- e.g. "SMALL_MASS_DRIVER_1"
+    name           TEXT,
+    kind           TEXT NOT NULL,          -- 'utility' | 'weapon' | 'strike_craft'
+    size           TEXT,                   -- small, medium, large, aux, …
+    component_set  TEXT,                   -- e.g. "power_core", "MASS_DRIVER_1"
+    type           TEXT,                   -- a weapon's: instant, missile, point_defence, …
+    power          REAL,                   -- negative: drawn, positive: a reactor's output
+    tags_json      TEXT,                   -- e.g. ["weapon_type_kinetic", "s_slot"]
+    modifiers_json TEXT,
+    weapon_json    TEXT,                   -- {"min_damage": 5, "max_damage": 16, "cooldown": 20, …}
+    resources_json TEXT
 );
 -- Starbase levels: how many modules and buildings each holds; cost and upkeep are its ship size's.
 DROP TABLE IF EXISTS starbase_level;

@@ -1,7 +1,7 @@
 """Extraction: what the empire dashboard needs to value resources and predict the AI's trades —
 the strategic resources' market lots and AI weights, the AI personalities' trade willingness,
 which attitudes trade at all, opinion modifiers (a gift's "Favorable Trade Deal"), and the names
-of starbase modules and buildings (their costs go to `starbase_*_resource`)."""
+of starbase levels (parts: ships.py; their costs go to `starbase_*_resource`)."""
 
 from pathlib import Path
 import sys
@@ -111,14 +111,8 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
              data.get('next_level') if isinstance(data.get('next_level'), str) else None,
              slot_count(data.get('module_slots')), slot_count(data.get('building_slots'))))
 
-    n_parts = 0
-    for kind, folder in (('module', 'starbase_modules'), ('building', 'starbase_buildings')):
-        for key in _load(common / folder, scripted_vars):
-            w.execute("INSERT OR REPLACE INTO starbase_part (key, kind, name) VALUES (?, ?, ?)",
-                      (key, kind, ctx.text(f'sm_{key}')))
-            n_parts += 1
     w.commit()
     print(f"  {len(resources)} resources, {len(categories)} economic categories, "
           f"{len(personalities)} personalities, "
           f"{len(attitudes)} attitudes, {len(opinions)} opinion modifiers, "
-          f"{len(levels)} starbase levels, {n_parts} starbase modules and buildings", file=progress)
+          f"{len(levels)} starbase levels", file=progress)
