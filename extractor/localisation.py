@@ -245,21 +245,27 @@ def load_localisation(loc_dir: Path) -> dict[str, str]:
     """
     Parse all .yml localisation files, returning {key: label}.
     When the same key appears multiple times, the entry with the lowest
-    version number wins (e.g. :0 beats :1). Single-token $KEY$ references
+    version number wins (e.g. :0 beats :1), and a key in a `replace/` folder (a
+    mod's override) wins over all. Single-token $KEY$ references
     are resolved through chains of them (4.5.2 `tr_psionics_shroud_psi_corps` →
     `$tr_psionics_psi_corps$` → `$building_psi_corps$` → "Psi Corps"); unresolvable ones — a
     missing key, a cycle — are dropped (NULL).
     """
     best: dict[str, tuple[int, str]] = {}  # key → (version, label)
+    replaced: set[str] = set()  # keys a `replace/` file set: they win over every other file
     for f in sorted(loc_dir.rglob('*.yml')):
         try:
             text = f.read_text(encoding='utf-8-sig', errors='replace')
         except Exception:
             continue
+        replace = 'replace' in f.relative_to(loc_dir).parts[:-1]
         for m in _LOC_ENTRY.finditer(text):
             key, ver_str, label = m.group(1), m.group(2), m.group(3)
             ver = int(ver_str) if ver_str else 0
-            if key not in best or ver < best[key][0]:
+            if replace and key not in replaced:
+                best[key] = (ver, label)
+                replaced.add(key)
+            elif key not in replaced and (key not in best or ver < best[key][0]):
                 best[key] = (ver, label)
     raw = {k: lbl for k, (_, lbl) in best.items()}
 

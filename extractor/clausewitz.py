@@ -2,7 +2,12 @@
 
 from pathlib import Path
 from typing import NamedTuple
+import hashlib
+import os
+import pickle
 import re
+import tempfile
+import time
 
 
 class Cmp(NamedTuple):
@@ -130,7 +135,69 @@ class Parser:
         return result
 
 
-def parse_file(path: Path) -> dict:
+def _parse_path(path: Path) -> dict:
     text = path.read_text(encoding='utf-8-sig', errors='replace')
     tokens = tokenize(text)
     return Parser(tokens).parse()
+
+
+# ---------------------------------------------------------------------------
+# Parse cache: a parsed file by its content, so a run with another set of mods (or a mod update)
+# parses only the files it has not seen. Off unless `use_cache` names a folder.
+# ---------------------------------------------------------------------------
+
+_cache: Path | None = None
+# the parser's own code is part of each key: a parser change misses every old entry
+_PARSER = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:16]
+CACHE_DAYS = 60  # entries unused this long are pruned
+
+
+def use_cache(folder: Path | None) -> None:
+    """Cache parsed files in `folder` from now on (None: no cache)."""
+    global _cache
+    _cache = folder
+    if folder:
+        folder.mkdir(parents=True, exist_ok=True)
+
+
+def _cache_file(raw: bytes) -> Path:
+    key = hashlib.sha256(raw + _PARSER.encode()).hexdigest()
+    return _cache / key[:2] / f'{key}.pickle'
+
+
+def parse_file(path: Path) -> dict:
+    if _cache is None:
+        return _parse_path(path)
+    entry = _cache_file(path.read_bytes())
+    try:
+        with entry.open('rb') as f:
+            data = pickle.load(f)
+        os.utime(entry)  # in use: kept by `prune_cache`
+        return data
+    except Exception:
+        pass  # a miss, or an unreadable entry: parse again
+    data = _parse_path(path)
+    try:
+        entry.parent.mkdir(exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=entry.parent, suffix='.tmp')
+        with os.fdopen(fd, 'wb') as f:
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, entry)
+    except OSError:
+        pass  # a cache that cannot be written only costs time
+    return data
+
+
+def prune_cache(days: int = CACHE_DAYS) -> int:
+    """Delete cache entries unused for `days` days (and leftover temp files); how many."""
+    if _cache is None:
+        return 0
+    cutoff, n = time.time() - days * 86400, 0
+    for f in _cache.glob('*/*'):
+        try:
+            if f.suffix == '.tmp' or f.stat().st_mtime < cutoff:
+                f.unlink()
+                n += 1
+        except OSError:
+            pass
+    return n

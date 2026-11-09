@@ -44,6 +44,27 @@ v0.1.5's code on 4.5.2 files, and that comparison is what showed nothing was los
 
 **All code is English** — names, comments and output — even when the session is in German.
 
+## Mods (`--mod DIR`, 2026-11-08)
+
+`--mod <folder>` (repeat, in load order; the folder a descriptor's `path` names) extracts the game
+with those mods: `extractor/mods.py` builds a merged copy of the install folder in a temp dir
+(links, filtered copies where a definition is overridden) and the readers run on it unchanged. The
+game's rules: a file replaces the file at the same path; in a `common/` folder a key defined in two
+files takes the later file's (`zzz_` prefixes), in `scripted_variables` the first (`!!`);
+`on_actions`, `defines` (every file now merged, later value wins) and `inline_scripts` are left to
+merge; English localisation outside `english/` is moved in, `replace/` keys win. `meta.mods` lists
+name, version, folder and how many definitions each overrode. **Refused for `sql/stellaris.sql` and
+`sqlite/stellaris.sqlite`** — the release outputs are the unmodded game's. Without `--mod` the dump
+is byte-identical to before (checked 2026-11-08). The empire dashboard passes its playset's mods.
+
+**`--cache DIR`** (2026-11-09) pickles each `parse_file` result under the hash of the file's bytes
+plus the parser's own code (`clausewitz.py`), so files `overlay` cut get their own entry, vanilla
+files hit for any mod set, and a parser change misses everything. Entries unused for 60 days are
+pruned at the end of a run. Measured with 45 mods (Linux, 4.5.3): 34 s before → 14 s cold, 10 s
+warm; the game alone 9 s → 6 s warm; every dump byte-identical to the uncached one. What is left of
+a warm run is the overlay's span scan (`top_level_spans` over every `common/` folder a mod
+touches) and localisation cleaning, not parsing.
+
 ## ⚠ Determinism
 
 Output must be **byte-identical between runs**. Set iteration order varies with Python's hash seed,
@@ -74,6 +95,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
   `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
+- **A quoted key keeps its quotes** — `section_slots = { "mid" = { … } }` gives the key `'"mid"'`,
+  while quoted values are stripped. Strip keys you read as data (`size_row` in ships.py,
+  2026-11-09).
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys
   unreachable — which reads as the game not defining them.
