@@ -87,6 +87,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
   `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
+- **A quoted key keeps its quotes** — `section_slots = { "mid" = { … } }` gives the key `'"mid"'`,
+  while quoted values are stripped. Strip keys you read as data (`size_row` in ships.py,
+  2026-11-09).
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys
   unreachable — which reads as the game not defining them.
