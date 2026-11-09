@@ -12,16 +12,20 @@ are applied while building it:
   every reader — `parse_file` or raw text — sees one. Folders whose files merge rather than
   replace (`MERGED`) are left alone.
 
+Older mods come as a zip (`archive=` in their registration file instead of `path=`): `unpack()` puts
+one in a folder of its own first, and from there it is a mod like any other.
+
 Localisation: a mod's English files outside `localisation/english/` (older layout,
 `localisation/<x>_l_english.yml`) are moved under it; other languages are dropped. Keys under a
 `replace/` folder win (`localisation.load_localisation`).
 """
 
 from collections import Counter
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import os
 import re
 import shutil
+import zipfile
 
 from .clausewitz import parse_file
 
@@ -43,6 +47,18 @@ def descriptor(mod_dir: Path) -> dict:
         return parse_file(f) if f.exists() else {}
     except Exception:
         return {}
+
+
+def unpack(archive: Path, dest: Path) -> Path:
+    """An archived mod (`archive=`, a zip) unpacked into the empty folder `dest`. Refuses an entry
+    that would land outside it (an absolute path or `..`), as a zip from the Workshop is not ours."""
+    with zipfile.ZipFile(archive) as z:
+        for info in z.infolist():
+            rel = PurePosixPath(info.filename.replace('\\', '/'))
+            if rel.is_absolute() or '..' in rel.parts:
+                raise ValueError(f'{archive}: refusing entry outside the mod: {info.filename}')
+        z.extractall(dest)
+    return dest
 
 
 def _list(v) -> list[str]:

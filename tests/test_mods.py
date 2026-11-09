@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Unit tests for the mod overlay: which definition wins, and the merged folder."""
 import tempfile
+import zipfile
 import unittest
 from pathlib import Path
 
 from extractor.clausewitz import parse_file
 from extractor.localisation import load_localisation
-from extractor.mods import _localisation_target, cut, losing_spans, overlay, top_level_spans
+from extractor.mods import _localisation_target, cut, losing_spans, overlay, top_level_spans, unpack
 
 
 class TestTopLevelSpans(unittest.TestCase):
@@ -104,6 +105,36 @@ class TestOverlay(unittest.TestCase):
             # the game's own folder is untouched
             self.assertIn('col_a = { v = 1 }',
                           (game / 'common/colony_types/00_colony_types.txt').read_text())
+
+
+
+class TestUnpack(unittest.TestCase):
+    def test_a_zipped_mod_overlays_like_a_folder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            game, out = root / 'game', root / 'out'
+            write(game / 'common/defines/00_defines.txt', 'NGameplay = { NUM_TECH_ALTERNATIVES = 3 }')
+            archive = root / 'research.zip'
+            with zipfile.ZipFile(archive, 'w') as z:
+                z.writestr('descriptor.mod', 'name="Research options+"')
+                z.writestr('common/defines/research.txt', 'NGameplay = { NUM_TECH_ALTERNATIVES = 6 }')
+            folder = unpack(archive, root / 'unpacked')
+            out.mkdir()
+            overlay(game, [folder], out)
+            self.assertEqual(parse_file(out / 'common/defines/research.txt'),
+                             {'NGameplay': {'NUM_TECH_ALTERNATIVES': '6'}})
+            self.assertTrue((out / 'common/defines/00_defines.txt').exists())  # defines merge
+
+    def test_refuses_entries_outside_the_mod(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for bad in ('../escape.txt', '/abs.txt', 'common/../../escape.txt', '..\\win.txt'):
+                archive = root / 'bad.zip'
+                with zipfile.ZipFile(archive, 'w') as z:
+                    z.writestr(bad, 'x')
+                with self.assertRaises(ValueError, msg=bad):
+                    unpack(archive, root / 'out')
+            self.assertFalse((root / 'escape.txt').exists())
 
 
 if __name__ == '__main__':

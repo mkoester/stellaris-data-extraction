@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.15] - 2026-11-09
+
+### Added
+
+- `--mod` takes an older mod's zip too (`archive=` in its registration file instead of `path=`):
+  it is unpacked and then read like a folder; `meta.mods` names the zip.
+
 ## [0.1.14] - 2026-11-09
 
 ### Added
