@@ -107,6 +107,10 @@ class TestDecisions(unittest.TestCase):
         self.assertEqual(decision_effects(self.d['effect']),
                          ([{'modifier': 'planet_luxuries_boost', 'days': 3600}], ['bleak_planet']))
 
+    def test_effect_days_from_a_variable(self):
+        effect = Parser(tokenize('e = { add_modifier = { modifier = m days = @dur } }')).parse()['e']
+        self.assertEqual(decision_effects(effect, {'@dur': 3600.0})[0], [{'modifier': 'm', 'days': 3600}])
+
     def test_owner_scope_unwrapped(self):
         t = self.trig(self.d['potential'])
         self.assertIn({'leaf': 'is_regular_empire', 'value': 'yes'}, t['args'])

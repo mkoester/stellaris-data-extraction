@@ -1409,6 +1409,7 @@ CREATE TABLE decision (
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS economic_category;
+DROP TABLE IF EXISTS pop_category_automation;
 DROP TABLE IF EXISTS strategic_resource;
 -- Economic categories (common/economic_categories): what a job's, building's or pop's resources
 -- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
@@ -1417,6 +1418,16 @@ DROP TABLE IF EXISTS strategic_resource;
 CREATE TABLE economic_category (
     key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
     parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
+-- What one automated job costs a month, by its stratum (common/pop_categories,
+-- `automation_resources.upkeep`; booked under `planet_automated_jobs`, scaled by
+-- `planet_automated_jobs_upkeep_mult`). A job's stratum is `job.category`. Empire dashboard: the
+-- district automation what-if (automated workforce / 100 × amount).
+CREATE TABLE pop_category_automation (
+    category TEXT NOT NULL,              -- e.g. "worker", "simple_drone"
+    resource TEXT NOT NULL,              -- e.g. "energy"
+    amount   REAL NOT NULL,              -- e.g. 4 per automated job a month
+    PRIMARY KEY (category, resource)
 );
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"
@@ -1536,6 +1547,12 @@ CREATE TABLE tech_repeatable_modifier (
 );
 -- Whitelisted values from common/defines (tradition cost formula, slot limits).
 DROP TABLE IF EXISTS game_define;
+DROP TABLE IF EXISTS setup_scenario;
+CREATE TABLE setup_scenario (
+    key           TEXT PRIMARY KEY,        -- the galaxy size, e.g. "medium" (the save's galaxy.template)
+    num_stars     REAL,
+    defaults_json TEXT                     -- {"num_empires": 9, "num_nomad_empires": 2, …}: save key → default
+);
 CREATE TABLE game_define (
     key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
     value REAL NOT NULL
@@ -1785,6 +1802,9 @@ CREATE TABLE federation_law (
 DROP TABLE IF EXISTS resolution;
 DROP TABLE IF EXISTS resolution_category;
 DROP TABLE IF EXISTS resolution_group;
+DROP TABLE IF EXISTS specialist_perk;
+DROP TABLE IF EXISTS specialist_level;
+DROP TABLE IF EXISTS specialist_type;
 DROP TABLE IF EXISTS agreement_term_value;
 DROP TABLE IF EXISTS agreement_term;
 DROP TABLE IF EXISTS agreement_preset;
@@ -1826,6 +1846,30 @@ CREATE TABLE agreement_term_value (
     term_key   TEXT,
     name       TEXT,                       -- "Integration Prohibited"
     sort_order INTEGER NOT NULL DEFAULT 0
+);
+-- Subject specialisations (`common/specialist_subject_types`, `…_perks`): each type's levels, the
+-- experience to the next one and the perks it brings — the empire dashboard's subjects tab.
+CREATE TABLE specialist_type (
+    key             TEXT PRIMARY KEY,      -- e.g. "specialist_bulwark"
+    name            TEXT,                  -- "Bulwark"
+    preferred_ethic TEXT,                  -- "ethic_militarist": converts faster
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE specialist_level (
+    type_key   TEXT NOT NULL,
+    level      INTEGER NOT NULL,           -- 1, 2, 3
+    xp_next    REAL,                       -- experience needed for the next level; NULL at the top
+    perks_json TEXT,                       -- ["bulwark_1_modifier", …]
+    PRIMARY KEY (type_key, level)
+);
+CREATE TABLE specialist_perk (
+    key            TEXT PRIMARY KEY,       -- e.g. "bulwark_1_overlord_modifier"
+    name           TEXT,                   -- "Bulwark Advisory"
+    description    TEXT,                   -- `<key>_desc`, when the localisation has one
+    main_perk      INTEGER NOT NULL DEFAULT 0,
+    subject_json   TEXT,                   -- subject_modifier: {"ship_armor_hardening_add": 0.05}
+    overlord_json  TEXT,                   -- overlord_modifier (and overlord_relay_network_modifier)
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_preset (
     key        TEXT PRIMARY KEY,           -- e.g. "preset_protectorate"
@@ -1971,8 +2015,8 @@ CREATE TABLE menace_perk_modifier (
 
 -- Data
 
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.3 (4e91)');
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.3');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.4 (1b4f)');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.4');
 INSERT OR REPLACE INTO meta (key, value) VALUES ('steam_branch', 'public');
 INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
                                        host_checks)
@@ -88960,6 +89004,9 @@ INSERT OR REPLACE INTO tech_fallen_empire
 INSERT OR REPLACE INTO tech_fallen_empire
                (key, label, description, area, area_label, category, category_label, building_key, sort_order)
                VALUES ('tech_dark_matter_propulsion', 'Dark Matter Propulsion', 'These ship thrusters utilize Dark Matter technology to generate propulsion in a manner that appears to defy numerous laws of physics.', 'engineering', 'Engineering', 'propulsion', 'Propulsion', NULL, 34);
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('AGREEMENT_CHANGE_COOLDOWN_MONTHS', '60.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('AGREEMENT_LOYALTY_DELTA_MULT', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('AGREEMENT_PROPOSE_INFLUENCE_COST', '50.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('ASCENSION_PERKS_SLOTS', '8.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_HAPPINESS', '0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('BASE_PLANET_STABILITY', '50.0');
@@ -88972,6 +89019,26 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_DISTANCE', '
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_MAX', '1000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_MONTHLY_GROWTH', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_POPS_REQUIRED', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMAND_LIMIT_MULT_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_DEVASTATION_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '4.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '14.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '10.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '6.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_SPAWN_CHANCE_SCALE_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_SPAWN_COOLDOWN_SCALE_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('CUTHOLOIDS_SCALING_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY', '0.001');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FLOOR', '50.0');
@@ -88982,14 +89049,17 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FROM_POPS',
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FROM_SYSTEMS', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TECH_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('END_GAME_START_DEFAULT', '200.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_BASE', '75.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_DISTANCE', '75.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_MAX', '1000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('FALLEN_EMPIRE_STRENGTH_SCALE_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_BASE_ETHICS', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_ETHICS_PENALTY', '-0.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_OPPOSING_ETHICS_PENALTY', '-0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_DEFAULT', '0.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_MAGNITUDE_OFFSET', '10000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('GUARANTEED_COLONIES_DEFAULT', '2.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_OPPOSITE_PLANET', '0.4');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_WRONG_PLANET', '0.7');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HIGH_HAPPINESS', '0.6');
@@ -88999,6 +89069,8 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_BASE_SKILL_CAP',
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', '300.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_POOL_REFRESH_TIME', '1800.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTICS_FLEET_UPKEEP_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTICS_PLANET_DEFICIT_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_CEILING_DEFAULT', '5.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_FLOOR', '0.1');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_LOWER_THRESHOLD', '0.0');
@@ -89014,11 +89086,13 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_AMENITIES', 
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_CRIME', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_STABILITY', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TRADE_DEAL_LENGTH_YEARS', '30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MID_GAME_START_DEFAULT', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_GIFT_SIZE', '25.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_AMENITIES', '0.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_STABILITY', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_TRADE_DEAL_LENGTH_YEARS', '10.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_WILLINGNESS_TO_OFFER_TRADE', '0.75');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('NAVAL_CAPACITY_MULT_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_ACCEPTANCE_ATTITUDE', '-1000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_MIN_RESOURCE_THRESHOLD', '0.8');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_DECLINE_THRESHOLD', '1.25');
@@ -89027,6 +89101,11 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_ASSEMBL
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_GROWTH_THRESHOLD', '1.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('POP_CRIME', '0.02');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('STARBASE_CAPACITY_BASE', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MAX', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MIN', '-100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_MONTHLY_LOYALTY_OPINION_MULTIPLIER', '0.01');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_XP_LOYALTY_MULTIPLIER', '0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DIFFICULTY_SCALE_MULT', '0.025');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MAX_RESOURCE_PERCENT', '0.3');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_DELTA', '10.0');
@@ -89040,8 +89119,11 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_IN
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_MONTHLY_MULT', '0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION_EXP', '1.8');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('VICTORY_YEAR_DEFAULT', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('VOIDWORMS_SCALING_DEFAULT', '1.0');
 INSERT INTO tradition_category
                (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
                VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0, '#00a0ce');
@@ -96099,11 +96181,11 @@ INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
                adds_json, removes_json, sort_order) VALUES ('decision_baol_life_seed_artificial', 'Nu-Baol Life-Seeding', NULL, '{"op":"and","args":[{"leaf":"is_artificial","value":"yes"},{"leaf":"exists","value":"owner"},{"leaf":"has_country_flag","value":"relic_last_baol_activated"},{"leaf":"has_country_flag","value":"not_activated_baol"}]}', NULL, NULL, NULL, 56);
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
-               adds_json, removes_json, sort_order) VALUES ('decision_museum_exhibits', 'Send Artifacts to Museum Exhibits', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"is_megacorp","value":"no"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_modifier","value":"planet_museum_exhibits"}]},{"leaf":"num_assigned_jobs","value":"scope"}]}', '[{"modifier": "planet_museum_exhibits", "days": -1}]', NULL, 57);
+               adds_json, removes_json, sort_order) VALUES ('decision_museum_exhibits', 'Send Artifacts to Museum Exhibits', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"is_megacorp","value":"no"},{"leaf":"is_worker_coop_empire","value":"yes"}]}]},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"and","args":[{"op":"not","args":[{"leaf":"has_modifier","value":"planet_museum_exhibits"}]},{"leaf":"num_assigned_jobs","value":"scope"}]}', '[{"modifier": "planet_museum_exhibits", "days": 3600}]', NULL, 57);
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
-               adds_json, removes_json, sort_order) VALUES ('decision_manager_awards', 'Initiate Performance Competition', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"is_worker_coop_empire","value":"no"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_manager_awards"}]}', '[{"modifier": "planet_manager_awards", "days": -1}]', NULL, 58);
+               adds_json, removes_json, sort_order) VALUES ('decision_manager_awards', 'Initiate Performance Competition', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"op":"and","args":[{"leaf":"is_megacorp","value":"yes"},{"leaf":"is_worker_coop_empire","value":"no"}]},{"op":"not","args":[{"leaf":"is_planet_class","value":"pc_nanotech"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_manager_awards"}]}', '[{"modifier": "planet_manager_awards", "days": 3600}]', NULL, 58);
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
-               adds_json, removes_json, sort_order) VALUES ('decision_sanctuary_exhibits', 'Send Artifacts to Organic Sanctuaries', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_sanctuary_exhibits"}]}', '[{"modifier": "planet_sanctuary_exhibits", "days": -1}]', NULL, 59);
+               adds_json, removes_json, sort_order) VALUES ('decision_sanctuary_exhibits', 'Send Artifacts to Organic Sanctuaries', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"has_civic","value":"civic_machine_servitor"},{"op":"not","args":[{"leaf":"has_designation","value":"col_nanotech_world"}]}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_sanctuary_exhibits"}]}', '[{"modifier": "planet_sanctuary_exhibits", "days": 3600}]', NULL, 59);
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
                adds_json, removes_json, sort_order) VALUES ('decision_artifact_relays_hivemind', 'Incorporate Artifact Relays', '[{"cost": {"minor_artifacts": 100.0}, "when": null}]', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"op":"not","args":[{"leaf":"has_modifier","value":"planet_artifact_relays_hivemind"}]}', NULL, NULL, 60);
 INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
@@ -109511,7 +109593,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_enclave_country', '
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_enslaved', '{"op":"or","args":[{"leaf":"is_pop_category","value":"slave_unemployment"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_citizenship_type","value":"scope"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_entropy_drinkers_empire', '{"op":"or","args":[{"leaf":"has_civic","value":"civic_entropy_drinkers"},{"leaf":"has_civic","value":"civic_entropy_drinkers_machine"},{"leaf":"has_civic","value":"civic_entropy_drinkers_hive_mind"},{"leaf":"has_civic","value":"civic_entropy_drinkers_corporate"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_environmental_architects_empire', '{"op":"or","args":[{"leaf":"has_civic","value":"civic_environmental_architects"},{"leaf":"has_civic","value":"civic_environmental_architects_hive"},{"leaf":"has_civic","value":"civic_environmental_architects_machine"},{"leaf":"has_civic","value":"civic_environmental_architects_megacorp"}]}');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_expellable_nomad_fleet', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_ship_class","value":"shipclass_mining_station"},{"leaf":"is_ship_class","value":"shipclass_research_station"},{"leaf":"is_ship_class","value":"shipclass_observation_station"}]}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_expellable_nomad_fleet', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_ship_class","value":"shipclass_mining_station"},{"leaf":"is_ship_class","value":"shipclass_research_station"},{"leaf":"is_ship_class","value":"shipclass_observation_station"},{"leaf":"is_waystation_ship","value":"yes"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_exploring_astral_rift', '{"leaf":"exists","value":"astral_rift"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_faction_allowed', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"years_passed","cmp":">","value":"10"},{"leaf":"has_encountered_other_species","value":"yes"}]},{"op":"and","args":[{"leaf":"days_passed","cmp":">","value":"30"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_parliamentary_system"},{"leaf":"has_valid_civic","value":"civic_media_conglomerate"},{"leaf":"has_valid_civic","value":"civic_crowdsourcing"},{"leaf":"has_valid_civic","value":"civic_corporate_crowdsourcing"}]}]},{"op":"and","args":[{"leaf":"days_passed","cmp":">","value":"350"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_broken_shackles"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_unplugged"},{"leaf":"has_country_flag","value":"unplugged_faction_allowed"}]}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_country_flag","value":"suppress_vanilla_factions"}]}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_fallen_empire', '{"op":"or","args":[{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"}]}');
@@ -130949,6 +131031,134 @@ INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_sub
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_balanced', NULL, 53);
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_payback_subsidiary_benevolent', NULL, 54);
 INSERT INTO agreement_preset (key, name, sort_order) VALUES ('preset_luminarium', 'Luminarium', 55);
+INSERT INTO specialist_type (key, name, preferred_ethic, sort_order) VALUES ('specialist_bulwark', 'Bulwark', 'ethic_militarist', 0);
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_bulwark', 1, '1200.0', '["bulwark_1_modifier", "bulwark_1_penalties", "bulwark_1_bulwark_insight", "bulwark_1_overlord_modifier", "bulwark_1_neighbor_bonuses", "bulwark_1_bulwark_array"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_bulwark', 2, '3600.0', '["bulwark_2_modifier", "bulwark_2_penalties", "bulwark_2_bulwark_insight", "bulwark_2_traits", "bulwark_2_leaders"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_bulwark', 3, NULL, '["bulwark_3_modifier", "bulwark_3_penalties", "bulwark_3_bulwark_insight", "bulwark_3_battlewright", "bulwark_3_disintegrator_field"]');
+INSERT INTO specialist_type (key, name, preferred_ethic, sort_order) VALUES ('specialist_scholarium', 'Scholarium', 'ethic_materialist', 1);
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_scholarium', 1, '1200.0', '["scholarium_1_modifier", "scholarium_1_penalties", "scholarium_1_discovery", "scholarium_1_overlord_modifier", "scholarium_1_neighbor_bonuses", "scholarium_1_planetary_sensors"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_scholarium', 2, '3600.0', '["scholarium_2_modifier", "scholarium_2_penalties", "scholarium_2_discovery", "scholarium_2_traits", "scholarium_2_leaders"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_scholarium', 3, NULL, '["scholarium_3_modifier", "scholarium_3_penalties", "scholarium_3_discovery", "scholarium_3_arctrellis"]');
+INSERT INTO specialist_type (key, name, preferred_ethic, sort_order) VALUES ('specialist_prospectorium', 'Prospectorium', 'ethic_pacifist', 2);
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_prospectorium', 1, '1200.0', '["prospectorium_1_modifier", "prospectorium_1_penalties", "prospectorium_1_deposits", "prospectorium_1_overlord_modifier", "prospectorium_1_neighbor_bonuses"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_prospectorium', 2, '3600.0', '["prospectorium_2_modifier", "prospectorium_2_penalties", "prospectorium_2_deposits", "prospectorium_2_mining_tech", "prospectorium_2_traits", "prospectorium_2_leaders"]');
+INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES ('specialist_prospectorium', 3, NULL, '["prospectorium_3_modifier", "prospectorium_3_penalties", "prospectorium_3_deposits", "prospectorium_3_mining_tech", "prospectorium_3_strip_mining"]');
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_modifier', 'Bulwark Bonuses I', NULL, 1, '{"shipclass_military_station_damage_mult": 0.5, "shipclass_military_station_hull_mult": 0.5, "starbase_defense_platform_capacity_add": 2.0, "shipclass_starbase_damage_mult": 0.5, "shipclass_starbase_hull_mult": 0.5, "ship_shield_hardening_add": 0.05, "ship_armor_hardening_add": 0.05}', NULL, 0);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_penalties', 'Bulwark Penalties I', NULL, 1, '{"country_energy_produces_mult": -0.2, "country_minerals_produces_mult": -0.2, "country_food_produces_mult": -0.2}', NULL, 1);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_overlord_modifier', 'Bulwark Advisory', NULL, 0, NULL, '{"starbase_upgrade_cost_mult": -0.2, "starbase_upgrade_speed_mult": 0.2}', 2);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_neighbor_bonuses', 'Bulwark Watch', 'The Overlord''s Relay Network will project the following effects if connected to the Subject''s capital:', 0, NULL, '{"specialist_bulwark_neighbor": 1.0}', 3);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_bulwark_array', 'Bulwark Shield Magnifier', 'Friendly Ships in Owned Systems: Shield Hit Points: +100%', 0, NULL, NULL, 4);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_1_bulwark_insight', 'Bulwark Insight I', 'Gain Technology: Physics FTL Inhibition
+Add to Researchable Technologies: Engineering Starhold, Physics Planetary Shields', 0, NULL, NULL, 5);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_2_modifier', 'Bulwark Bonuses II', NULL, 1, '{"shipclass_military_station_damage_mult": 0.75, "shipclass_military_station_hull_mult": 0.75, "starbase_defense_platform_capacity_add": 5.0, "shipclass_starbase_damage_mult": 0.5, "shipclass_starbase_hull_mult": 0.5, "ship_shield_hardening_add": 0.15, "ship_armor_hardening_add": 0.15}', NULL, 6);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_2_penalties', 'Bulwark Penalties II', NULL, 1, '{"country_energy_produces_mult": -0.35, "country_minerals_produces_mult": -0.35, "country_food_produces_mult": -0.35}', NULL, 7);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_2_bulwark_insight', 'Bulwark Insight II', 'Add to Researchable Technologies: Modular Engineering, Engineering Star Fortress', 0, NULL, NULL, 8);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_2_leaders', 'Bulwark Commanders', 'Transfer Leader: Commanders with a Bulwark trait can be traded with the Overlord.', 0, '{"country_commander_cap_add": 1.0, "commander_initial_skill": 1.0}', NULL, 9);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_2_traits', 'Bulwark Traits', 'Commanders gain one random trait: Bulwark Watcher, Evasion Chance in Friendly Systems: +15%, Tracking in Friendly Systems: +15%, Bulwark Retaliator, Ship Fire Rate in Friendly Systems: +30%, Bulwark Sentinel, Shield Hit Pts in Friendly Systems: +30%', 0, NULL, NULL, 10);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_3_modifier', 'Bulwark Bonuses III', NULL, 1, '{"shipclass_military_station_damage_mult": 1.0, "shipclass_military_station_hull_mult": 1.0, "starbase_defense_platform_capacity_add": 8.0, "shipclass_starbase_damage_mult": 0.75, "shipclass_starbase_hull_mult": 0.75, "ship_shield_hardening_add": 0.25, "ship_armor_hardening_add": 0.25}', NULL, 11);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_3_penalties', 'Bulwark Penalties III', NULL, 1, '{"country_energy_produces_mult": -0.5, "country_minerals_produces_mult": -0.5, "country_food_produces_mult": -0.5}', NULL, 12);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_3_bulwark_insight', 'Bulwark Insight III', 'Add to Researchable Technologies: Engineering Citadel', 0, NULL, NULL, 13);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_3_battlewright', 'Bulwark Battlewright', 'Add Ship Design: Construction Ship Bulwark Battlewright, All Friendly Ships in System: Daily Hull Regen: +0.25%, Ship Hull Points: +50%, Armor Hit Points: +50%', 0, NULL, NULL, 14);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('bulwark_3_disintegrator_field', 'Bulwark Disintegrator Field', 'Hostile Ships in Owned Systems: Daily Hull Regen: -0.3%, Fortification Tradition Tree Completed: Additional Daily Hull Regen: -0.2%', 0, NULL, NULL, 15);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_modifier', 'Scholarium Bonuses I', 'Monthly Scientific Research: +20%
+Research Alternatives: +1', 1, '{"country_society_research_produces_mult": 0.2, "country_physics_research_produces_mult": 0.2, "country_engineering_research_produces_mult": 0.2, "num_tech_alternatives_add": 1.0}', NULL, 16);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_penalties', 'Scholarium Penalties I', NULL, 1, '{"country_naval_cap_mult": -0.3, "ship_military_cost_mult": 0.3, "ship_military_upkeep_mult": 0.3}', NULL, 17);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_overlord_modifier', 'Scholarium Advisory', 'Monthly Scientific Research: +10%', 0, NULL, '{"country_society_research_produces_mult": 0.1, "country_physics_research_produces_mult": 0.1, "country_engineering_research_produces_mult": 0.1}', 18);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_neighbor_bonuses', 'Scholarium Tutelage', 'The Overlord''s Relay Network will project the following effects if connected to the Subject''s capital:', 0, NULL, '{"specialist_scholarium_neighbor": 1.0}', 19);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_planetary_sensors', 'Scholarium Planetary Sensors', 'Planets Within Border Every Year: Chance for Research Cache: 20%', 0, NULL, NULL, 20);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_1_discovery', 'Scholarium Discovery I', 'Planetary Sensors May Yield: Physics Cache, Physics Research: +2000, Engineering Cache, Engineering Research: +2000, Society Cache, Society Research: +2000', 0, NULL, NULL, 21);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_2_modifier', 'Scholarium Bonuses II', 'Monthly Scientific Research: +30%
+Research Alternatives: +1', 1, '{"country_society_research_produces_mult": 0.3, "country_physics_research_produces_mult": 0.3, "country_engineering_research_produces_mult": 0.3, "num_tech_alternatives_add": 1.0}', NULL, 22);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_2_penalties', 'Scholarium Penalties II', NULL, 1, '{"country_naval_cap_mult": -0.4, "ship_military_cost_mult": 0.4, "ship_military_upkeep_mult": 0.4}', NULL, 23);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_2_leaders', 'Scholarium Scientists', 'Transfer Leader: Scientists with a Scholarium trait can be traded with the Overlord.', 0, '{"country_scientist_cap_add": 1.0, "scientist_initial_skill": 1.0}', NULL, 24);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_2_traits', 'Scholarium Traits', 'Scientists gain one random trait: Scholarium Investigator, Research Speed: +10%, Scholarium Explorer, Survey Speed: +20%, Scholarium Observer, Anomaly Research Speed: +25%, Anomaly Discovery Chance: +5%', 0, NULL, NULL, 25);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_2_discovery', 'Scholarium Discovery II', 'Planetary Sensors Reward: Research Points in Caches: +1000', 0, NULL, NULL, 26);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_3_modifier', 'Scholarium Bonuses III', 'Monthly Scientific Research: +40%
+Research Alternatives: +1', 1, '{"country_society_research_produces_mult": 0.4, "country_physics_research_produces_mult": 0.4, "country_engineering_research_produces_mult": 0.4, "num_tech_alternatives_add": 1.0}', NULL, 27);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_3_penalties', 'Scholarium Penalties III', NULL, 1, '{"country_naval_cap_mult": -0.5, "ship_military_cost_mult": 0.5, "ship_military_upkeep_mult": 0.5}', NULL, 28);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_3_discovery', 'Scholarium Discovery III', 'Planetary Sensors Reward: Discovery Tradition Tree Completed: Research Points in Caches: +1000
+Planetary Sensors May Yield: Rare Cache, Add to Researchable Technologies: Physics Engineering Society Random Technology', 0, NULL, NULL, 29);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('scholarium_3_arctrellis', 'Scholarium Arctrellis', 'Add Ship Design: Science Ship Scholarium Arctrellis, Any Ship in System Piloted by AI: Accuracy: -25%, Ship Fire Rate: -25%, Base Ship Speed: -25%', 0, NULL, NULL, 30);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_1_modifier', 'Prospectorium Bonuses I', 'Mining Station Build Cost: -10%
+Monthly Energy Credits: +10%
+Monthly Minerals: +10%
+Monthly Alloys: +10%
+Monthly Strategic Resources: +10%', 1, '{"station_gatherers_cost_mult": -0.1, "country_energy_produces_mult": 0.1, "country_minerals_produces_mult": 0.1, "country_alloys_produces_mult": 0.1, "country_exotic_gases_produces_mult": 0.1, "country_rare_crystals_produces_mult": 0.1, "country_volatile_motes_produces_mult": 0.1}', NULL, 31);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_1_penalties', 'Prospectorium Penalties I', 'Monthly Scientific Research: -30%', 1, '{"country_physics_research_produces_mult": -0.3, "country_society_research_produces_mult": -0.3, "country_engineering_research_produces_mult": -0.3}', NULL, 32);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_1_overlord_modifier', 'Prospectorium Advisory', NULL, 0, NULL, '{"station_gatherers_cost_mult": -0.2, "shipclass_mining_station_build_speed_mult": 0.2}', 33);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_1_neighbor_bonuses', 'Prospectorium Supply', 'The Overlord''s Relay Network will project the following effects if connected to the Subject''s capital:', 0, NULL, '{"specialist_prospectorium_neighbor": 1.0}', 34);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_1_deposits', 'Prospectorium Deposits I', 'Planets Within Border Every Year: Chance for Resource Discovery: 20%, Energy Credits, Minerals', 0, NULL, NULL, 35);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_modifier', 'Prospectorium Bonuses II', 'Mining Station Build Cost: -25%
+Monthly Energy Credits: +20%
+Monthly Minerals: +20%
+Monthly Alloys: +20%
+Monthly Strategic Resources: +20%', 1, '{"station_gatherers_cost_mult": -0.25, "country_energy_produces_mult": 0.2, "country_minerals_produces_mult": 0.2, "country_alloys_produces_mult": 0.2, "country_exotic_gases_produces_mult": 0.2, "country_rare_crystals_produces_mult": 0.2, "country_volatile_motes_produces_mult": 0.2}', NULL, 36);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_penalties', 'Prospectorium Penalties II', 'Monthly Scientific Research: -40%', 1, '{"country_physics_research_produces_mult": -0.4, "country_society_research_produces_mult": -0.4, "country_engineering_research_produces_mult": -0.4}', NULL, 37);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_leaders', 'Prospectorium Officials', 'Transfer Leader: Officials with a Prospectorium trait can be traded with the Overlord.', 0, '{"country_official_cap_add": 1.0, "official_initial_skill": 1.0}', NULL, 38);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_traits', 'Prospectorium Traits', 'Officials gain one random trait: Prospectorium Extractor, Energy Credits from Jobs: +20%, Minerals from Jobs: +20%, Alloys from Jobs: +20%, Prospectorium Optimizer, Upkeep from Jobs: -15%, Prospectorium Refiner, Volatile Motes Produced from Chemists: +25%, Exotic Gases Produced from Gas Refiners: +25%, Rare Crystals Produced from Translucers: +25%', 0, NULL, NULL, 39);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_mining_tech', 'Prospectorium Mining Tech I', 'Add to Researchable Technologies: Engineering Rare Crystal Mining, Physics Mote Stabilization, Engineering Exotic Gas Extraction', 0, NULL, NULL, 40);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_2_deposits', 'Prospectorium Deposits II', 'Resource Discovery can now give one of the following resources: Alloys, Rare Crystals, Volatile Motes, Exotic Gases', 0, NULL, NULL, 41);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_3_modifier', 'Prospectorium Bonuses III', 'Mining Station Build Cost: -50%
+Monthly Energy Credits: +30%
+Monthly Minerals: +30%
+Monthly Alloys: +30%
+Monthly Strategic Resources: +30%', 1, '{"station_gatherers_cost_mult": -0.5, "country_energy_produces_mult": 0.3, "country_minerals_produces_mult": 0.3, "country_alloys_produces_mult": 0.3, "country_exotic_gases_produces_mult": 0.3, "country_rare_crystals_produces_mult": 0.3, "country_volatile_motes_produces_mult": 0.3}', NULL, 42);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_3_penalties', 'Prospectorium Penalties III', 'Monthly Scientific Research: -50%', 1, '{"country_physics_research_produces_mult": -0.5, "country_society_research_produces_mult": -0.5, "country_engineering_research_produces_mult": -0.5}', NULL, 43);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_3_mining_tech', 'Prospectorium Mining Tech II', 'Add to Researchable Technologies: Society Zro Distillation, Physics Dark Matter Drawing, Engineering Living Metal', 0, NULL, NULL, 44);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_3_deposits', 'Prospectorium Deposits III', 'Resource Discovery can now give one of the following resources: Zro, Dark Matter, Living Metal', 0, NULL, NULL, 45);
+INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES ('prospectorium_3_strip_mining', 'Prospectorium Strip Mining', 'Add Colony Decision: Strip Mining, Remove Random Agricultural Feature, Add Strip Mine Feature, Max Mining Districts: +2', 0, NULL, NULL, 46);
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('huge', '1000.0', '{"num_empires": 15.0, "num_fallen_empires": 4.0, "num_marauder_empires": 3.0, "num_nomad_empires": 3.0, "num_advanced_empires": 4.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.5, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('large', '800.0', '{"num_empires": 12.0, "num_fallen_empires": 3.0, "num_marauder_empires": 2.0, "num_nomad_empires": 2.0, "num_advanced_empires": 3.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.25, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('medium', '600.0', '{"num_empires": 9.0, "num_fallen_empires": 2.0, "num_marauder_empires": 2.0, "num_nomad_empires": 2.0, "num_advanced_empires": 2.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.0, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('small', '400.0', '{"num_empires": 6.0, "num_fallen_empires": 1.0, "num_marauder_empires": 1.0, "num_nomad_empires": 1.0, "num_advanced_empires": 1.0, "habitability": 1.0, "primitive": 1.0, "crises": 0.75, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('tiny', '200.0', '{"num_empires": 3.0, "num_fallen_empires": 0.0, "num_marauder_empires": 1.0, "num_nomad_empires": 0.0, "num_advanced_empires": 0.0, "habitability": 1.0, "primitive": 1.0, "crises": 0.5, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
 INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
                sort_order) VALUES ('the_eater_of_worlds', 'Eater of Worlds', 'major_patron', '-1.0', '0.0', '#f35a7c', 'Covenant of the Eater', 'Our Covenant with the Eater of Worlds fills us with an insatiable appetite for conquest and destruction.', 0);
 INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)
@@ -132445,6 +132655,16 @@ INSERT INTO economic_category (key, parent) VALUES ('traditions', 'country');
 INSERT INTO economic_category (key, parent) VALUES ('unemployment_resources', 'planet_pops');
 INSERT INTO economic_category (key, parent) VALUES ('vivarium', 'country');
 INSERT INTO economic_category (key, parent) VALUES ('waystation_pacts', 'diplomacy');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('ruler', 'energy', '12.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('specialist', 'energy', '8.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('worker', 'energy', '4.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('complex_drone', 'energy', '8.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('simple_drone', 'energy', '4.0');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9');

@@ -1414,6 +1414,7 @@ CREATE TABLE decision (
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS economic_category;
+DROP TABLE IF EXISTS pop_category_automation;
 DROP TABLE IF EXISTS strategic_resource;
 -- Economic categories (common/economic_categories): what a job's, building's or pop's resources
 -- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
@@ -1422,6 +1423,16 @@ DROP TABLE IF EXISTS strategic_resource;
 CREATE TABLE economic_category (
     key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
     parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
+-- What one automated job costs a month, by its stratum (common/pop_categories,
+-- `automation_resources.upkeep`; booked under `planet_automated_jobs`, scaled by
+-- `planet_automated_jobs_upkeep_mult`). A job's stratum is `job.category`. Empire dashboard: the
+-- district automation what-if (automated workforce / 100 × amount).
+CREATE TABLE pop_category_automation (
+    category TEXT NOT NULL,              -- e.g. "worker", "simple_drone"
+    resource TEXT NOT NULL,              -- e.g. "energy"
+    amount   REAL NOT NULL,              -- e.g. 4 per automated job a month
+    PRIMARY KEY (category, resource)
 );
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"
@@ -1541,6 +1552,12 @@ CREATE TABLE tech_repeatable_modifier (
 );
 -- Whitelisted values from common/defines (tradition cost formula, slot limits).
 DROP TABLE IF EXISTS game_define;
+DROP TABLE IF EXISTS setup_scenario;
+CREATE TABLE setup_scenario (
+    key           TEXT PRIMARY KEY,        -- the galaxy size, e.g. "medium" (the save's galaxy.template)
+    num_stars     REAL,
+    defaults_json TEXT                     -- {"num_empires": 9, "num_nomad_empires": 2, …}: save key → default
+);
 CREATE TABLE game_define (
     key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
     value REAL NOT NULL
@@ -1790,6 +1807,9 @@ CREATE TABLE federation_law (
 DROP TABLE IF EXISTS resolution;
 DROP TABLE IF EXISTS resolution_category;
 DROP TABLE IF EXISTS resolution_group;
+DROP TABLE IF EXISTS specialist_perk;
+DROP TABLE IF EXISTS specialist_level;
+DROP TABLE IF EXISTS specialist_type;
 DROP TABLE IF EXISTS agreement_term_value;
 DROP TABLE IF EXISTS agreement_term;
 DROP TABLE IF EXISTS agreement_preset;
@@ -1831,6 +1851,30 @@ CREATE TABLE agreement_term_value (
     term_key   TEXT,
     name       TEXT,                       -- "Integration Prohibited"
     sort_order INTEGER NOT NULL DEFAULT 0
+);
+-- Subject specialisations (`common/specialist_subject_types`, `…_perks`): each type's levels, the
+-- experience to the next one and the perks it brings — the empire dashboard's subjects tab.
+CREATE TABLE specialist_type (
+    key             TEXT PRIMARY KEY,      -- e.g. "specialist_bulwark"
+    name            TEXT,                  -- "Bulwark"
+    preferred_ethic TEXT,                  -- "ethic_militarist": converts faster
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE specialist_level (
+    type_key   TEXT NOT NULL,
+    level      INTEGER NOT NULL,           -- 1, 2, 3
+    xp_next    REAL,                       -- experience needed for the next level; NULL at the top
+    perks_json TEXT,                       -- ["bulwark_1_modifier", …]
+    PRIMARY KEY (type_key, level)
+);
+CREATE TABLE specialist_perk (
+    key            TEXT PRIMARY KEY,       -- e.g. "bulwark_1_overlord_modifier"
+    name           TEXT,                   -- "Bulwark Advisory"
+    description    TEXT,                   -- `<key>_desc`, when the localisation has one
+    main_perk      INTEGER NOT NULL DEFAULT 0,
+    subject_json   TEXT,                   -- subject_modifier: {"ship_armor_hardening_add": 0.05}
+    overlord_json  TEXT,                   -- overlord_modifier (and overlord_relay_network_modifier)
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_preset (
     key        TEXT PRIMARY KEY,           -- e.g. "preset_protectorate"

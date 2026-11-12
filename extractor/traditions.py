@@ -16,6 +16,18 @@ from .writer import Writer
 DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_COST_TRADITION_EXP',
                'EMPIRE_SIZE_TRADITION_COST_PENALTY', 'EMPIRE_SIZE_BASE',
                'TRADITION_CATEGORIES_MAX', 'ASCENSION_PERKS_SLOTS',
+               # the empire dashboard's subjects tab: renegotiation, loyalty and specialist XP
+               'AGREEMENT_CHANGE_COOLDOWN_MONTHS', 'AGREEMENT_PROPOSE_INFLUENCE_COST',
+               'AGREEMENT_LOYALTY_DELTA_MULT', 'SUBJECT_MONTHLY_LOYALTY_OPINION_MULTIPLIER',
+               'SUBJECT_XP_LOYALTY_MULTIPLIER', 'SUBJECT_LOYALTY_MAX', 'SUBJECT_LOYALTY_MIN',
+               # … and its galaxy tab: the setup screen's defaults (per size: setup_scenario)
+               'MID_GAME_START_DEFAULT', 'END_GAME_START_DEFAULT', 'VICTORY_YEAR_DEFAULT',
+               'GUARANTEED_COLONIES_DEFAULT', 'TECH_COST_DEFAULT', 'TRADITION_COST_DEFAULT',
+               'NAVAL_CAPACITY_MULT_DEFAULT', 'COMMAND_LIMIT_MULT_DEFAULT', 'LOGISTIC_CEILING_DEFAULT',
+               'GROWTH_SCALE_DEFAULT', 'LOGISTICS_FLEET_UPKEEP_DEFAULT', 'LOGISTICS_PLANET_DEFICIT_DEFAULT',
+               'COSMIC_STORM_SPAWN_CHANCE_SCALE_DEFAULT', 'COSMIC_STORM_SPAWN_COOLDOWN_SCALE_DEFAULT',
+               'COSMIC_STORM_DEVASTATION_DEFAULT', 'VOIDWORMS_SCALING_DEFAULT',
+               'FALLEN_EMPIRE_STRENGTH_SCALE_DEFAULT', 'CUTHOLOIDS_SCALING_DEFAULT',
                # the empire dashboard's due dates for research and council agendas
                'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY',
                'TECH_COST_DIFFICULTY_SCALE_MULT',
@@ -55,6 +67,10 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                # … when the recruitable leaders are replaced, and when a leader levels up
                'LEADER_POOL_REFRESH_TIME', 'LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE',
                'LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', 'LEADER_BASE_SKILL_CAP')
+# the cosmic storms' maximum per game stage, a default per galaxy size
+DEFINE_KEYS += tuple(f'COSMIC_STORM_{stage}_GAME_SPAWN_MAX_CAP_DEFAULT_{size}_GALAXY'
+                     for size in ('TINY', 'SMALL', 'MEDIUM', 'LARGE', 'HUGE')
+                     for stage in ('EARLY', 'MID', 'LATE'))
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────
@@ -401,10 +417,11 @@ def decision_costs(res, variables: dict[str, float], trig) -> list[dict]:
     return tiers
 
 
-def decision_effects(effect) -> tuple[list[dict], list[str]]:
+def decision_effects(effect, variables: dict[str, float] | None = None) -> tuple[list[dict], list[str]]:
     """The modifiers a decision's `effect` adds (`add_modifier = { modifier days }`, -1 or none =
     for good) and removes (`remove_modifier`), at its top level only — those inside `if` blocks or
-    scopes depend on what the effect finds."""
+    scopes depend on what the effect finds. `days` may be an @variable (the minor artifact
+    decisions' `@minor_artifact_decision_duration`, 3600)."""
     added: list[dict] = []
     removed: list[str] = []
     for b in _as_blocks(effect):
@@ -412,7 +429,8 @@ def decision_effects(effect) -> tuple[list[dict], list[str]]:
             m = a.get('modifier')
             if isinstance(m, str):
                 try:
-                    days = int(float(str(a.get('days', -1))))
+                    raw = a.get('days', -1)
+                    days = int(float(str((variables or {}).get(raw, raw))))
                 except ValueError:
                     days = -1
                 added.append({'modifier': m.strip('"'), 'days': days})
@@ -464,7 +482,7 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
             continue
         def trig(block, v=dvars):
             return ctx.trig(block, v, owner_scope(lambda b: ctx.trig(b, v)))
-        added, removed = decision_effects(data.get('effect'))
+        added, removed = decision_effects(data.get('effect'), dvars)
         tiers = decision_costs(data.get('resources'), dvars, trig)
         w.execute(
             """INSERT INTO decision (key, name, cost_json, potential_json, allow_json,

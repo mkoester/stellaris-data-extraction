@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.economy import (attitude_trades, base_value, category_parent, opinion_row,
+from extractor.economy import (attitude_trades, automation_upkeep, base_value, category_parent, opinion_row,
                                resource_row, slot_count)
 
 
@@ -34,6 +34,13 @@ class TestEconomyHelpers(unittest.TestCase):
     def test_base_value_with_variable_and_flat(self):
         self.assertEqual(base_value(parse('x = { base = @v }')['x'], {'@v': 3.0}), 3.0)
         self.assertEqual(base_value('2', {}), 2.0)
+
+    def test_automation_upkeep(self):
+        # worker (common/pop_categories/00_social_classes.txt, 4.5.4)
+        w = parse('''worker = { rank = 1 automation_resources = { category = planet_automated_jobs
+            upkeep = { energy = @automation_upkeep_worker } } }''')['worker']
+        self.assertEqual(automation_upkeep(w, {'@automation_upkeep_worker': 4.0}), {'energy': 4.0})
+        self.assertEqual(automation_upkeep(parse('purge = { rank = 0 }')['purge'], {}), {})
 
     def test_attitude_trades(self):
         self.assertEqual(attitude_trades(parse('a = { behaviour = { trade = yes coexist = yes } }')['a']), 1)
