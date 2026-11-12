@@ -1547,6 +1547,12 @@ CREATE TABLE tech_repeatable_modifier (
 );
 -- Whitelisted values from common/defines (tradition cost formula, slot limits).
 DROP TABLE IF EXISTS game_define;
+DROP TABLE IF EXISTS setup_scenario;
+CREATE TABLE setup_scenario (
+    key           TEXT PRIMARY KEY,        -- the galaxy size, e.g. "medium" (the save's galaxy.template)
+    num_stars     REAL,
+    defaults_json TEXT                     -- {"num_empires": 9, "num_nomad_empires": 2, …}: save key → default
+);
 CREATE TABLE game_define (
     key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
     value REAL NOT NULL
@@ -89013,6 +89019,26 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_DISTANCE', '
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_MAX', '1000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_MONTHLY_GROWTH', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_POPS_REQUIRED', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMAND_LIMIT_MULT_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_DEVASTATION_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '4.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '14.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '10.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_LATE_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '8.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '6.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_MEDIUM_GALAXY', '5.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_SMALL_GALAXY', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_MID_GAME_SPAWN_MAX_CAP_DEFAULT_TINY_GALAXY', '2.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_SPAWN_CHANCE_SCALE_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_SPAWN_COOLDOWN_SCALE_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('CUTHOLOIDS_SCALING_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_BASE', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY', '0.001');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FLOOR', '50.0');
@@ -89023,14 +89049,17 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FROM_POPS',
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_FROM_SYSTEMS', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TECH_COST_PENALTY', '0.002');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EMPIRE_SIZE_TRADITION_COST_PENALTY', '0.002');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('END_GAME_START_DEFAULT', '200.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_BASE', '75.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_DISTANCE', '75.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('EXPANSION_COST_MAX', '1000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('FALLEN_EMPIRE_STRENGTH_SCALE_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_BASE_ETHICS', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_ETHICS_PENALTY', '-0.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('FEDERATION_OPPOSING_ETHICS_PENALTY', '-0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_DEFAULT', '0.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('GROWTH_SCALE_MAGNITUDE_OFFSET', '10000.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('GUARANTEED_COLONIES_DEFAULT', '2.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_OPPOSITE_PLANET', '0.4');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HABITABILITY_WRONG_PLANET', '0.7');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('HIGH_HAPPINESS', '0.6');
@@ -89040,6 +89069,8 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_BASE_SKILL_CAP',
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', '300.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LEADER_POOL_REFRESH_TIME', '1800.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTICS_FLEET_UPKEEP_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTICS_PLANET_DEFICIT_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_CEILING_DEFAULT', '5.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_FLOOR', '0.1');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('LOGISTIC_POP_GROWTH_LOWER_THRESHOLD', '0.0');
@@ -89055,11 +89086,13 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_AMENITIES', 
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_CRIME', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_STABILITY', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TRADE_DEAL_LENGTH_YEARS', '30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MID_GAME_START_DEFAULT', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_GIFT_SIZE', '25.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_AMENITIES', '0.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_PLANET_STABILITY', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_TRADE_DEAL_LENGTH_YEARS', '10.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_WILLINGNESS_TO_OFFER_TRADE', '0.75');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('NAVAL_CAPACITY_MULT_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_ACCEPTANCE_ATTITUDE', '-1000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_MIN_RESOURCE_THRESHOLD', '0.8');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_DECLINE_THRESHOLD', '1.25');
@@ -89072,6 +89105,7 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MAX', '
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MIN', '-100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_MONTHLY_LOYALTY_OPINION_MULTIPLIER', '0.01');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_XP_LOYALTY_MULTIPLIER', '0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DIFFICULTY_SCALE_MULT', '0.025');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MAX_RESOURCE_PERCENT', '0.3');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_DELTA', '10.0');
@@ -89085,8 +89119,11 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_IN
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_VALUE_RESOURCE_MONTHLY_MULT', '0.5');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_CATEGORIES_MAX', '7.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_AMOUNTS', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION', '8.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADITION_COST_TRADITION_EXP', '1.8');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('VICTORY_YEAR_DEFAULT', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('VOIDWORMS_SCALING_DEFAULT', '1.0');
 INSERT INTO tradition_category
                (key, name, potential_json, required_dlc, adopt_key, finish_key, sort_order, color)
                VALUES ('tradition_adaptability', 'Adaptability', '{"leaf":"is_machine_empire","value":"no"}', NULL, 'tr_adaptability_adopt', 'tr_adaptability_finish', 0, '#00a0ce');
@@ -131117,6 +131154,11 @@ INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
                overlord_json, sort_order) VALUES ('prospectorium_3_deposits', 'Prospectorium Deposits III', 'Resource Discovery can now give one of the following resources: Zro, Dark Matter, Living Metal', 0, NULL, NULL, 45);
 INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
                overlord_json, sort_order) VALUES ('prospectorium_3_strip_mining', 'Prospectorium Strip Mining', 'Add Colony Decision: Strip Mining, Remove Random Agricultural Feature, Add Strip Mine Feature, Max Mining Districts: +2', 0, NULL, NULL, 46);
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('huge', '1000.0', '{"num_empires": 15.0, "num_fallen_empires": 4.0, "num_marauder_empires": 3.0, "num_nomad_empires": 3.0, "num_advanced_empires": 4.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.5, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('large', '800.0', '{"num_empires": 12.0, "num_fallen_empires": 3.0, "num_marauder_empires": 2.0, "num_nomad_empires": 2.0, "num_advanced_empires": 3.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.25, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('medium', '600.0', '{"num_empires": 9.0, "num_fallen_empires": 2.0, "num_marauder_empires": 2.0, "num_nomad_empires": 2.0, "num_advanced_empires": 2.0, "habitability": 1.0, "primitive": 1.0, "crises": 1.0, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('small', '400.0', '{"num_empires": 6.0, "num_fallen_empires": 1.0, "num_marauder_empires": 1.0, "num_nomad_empires": 1.0, "num_advanced_empires": 1.0, "habitability": 1.0, "primitive": 1.0, "crises": 0.75, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
+INSERT OR REPLACE INTO setup_scenario (key, num_stars, defaults_json) VALUES ('tiny', '200.0', '{"num_empires": 3.0, "num_fallen_empires": 0.0, "num_marauder_empires": 1.0, "num_nomad_empires": 0.0, "num_advanced_empires": 0.0, "habitability": 1.0, "primitive": 1.0, "crises": 0.5, "num_wormhole_pairs": 1.0, "num_gateways": 1.0, "num_hyperlanes": 1.0}');
 INSERT INTO patron (key, name, category, x, y, color, covenant, covenant_desc,
                sort_order) VALUES ('the_eater_of_worlds', 'Eater of Worlds', 'major_patron', '-1.0', '0.0', '#f35a7c', 'Covenant of the Eater', 'Our Covenant with the Eater of Worlds fills us with an insatiable appetite for conquest and destruction.', 0);
 INSERT INTO patron_accord (patron_key, kind, key, name, sort_order)

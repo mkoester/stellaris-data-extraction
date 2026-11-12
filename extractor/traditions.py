@@ -20,6 +20,14 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                'AGREEMENT_CHANGE_COOLDOWN_MONTHS', 'AGREEMENT_PROPOSE_INFLUENCE_COST',
                'AGREEMENT_LOYALTY_DELTA_MULT', 'SUBJECT_MONTHLY_LOYALTY_OPINION_MULTIPLIER',
                'SUBJECT_XP_LOYALTY_MULTIPLIER', 'SUBJECT_LOYALTY_MAX', 'SUBJECT_LOYALTY_MIN',
+               # … and its galaxy tab: the setup screen's defaults (per size: setup_scenario)
+               'MID_GAME_START_DEFAULT', 'END_GAME_START_DEFAULT', 'VICTORY_YEAR_DEFAULT',
+               'GUARANTEED_COLONIES_DEFAULT', 'TECH_COST_DEFAULT', 'TRADITION_COST_DEFAULT',
+               'NAVAL_CAPACITY_MULT_DEFAULT', 'COMMAND_LIMIT_MULT_DEFAULT', 'LOGISTIC_CEILING_DEFAULT',
+               'GROWTH_SCALE_DEFAULT', 'LOGISTICS_FLEET_UPKEEP_DEFAULT', 'LOGISTICS_PLANET_DEFICIT_DEFAULT',
+               'COSMIC_STORM_SPAWN_CHANCE_SCALE_DEFAULT', 'COSMIC_STORM_SPAWN_COOLDOWN_SCALE_DEFAULT',
+               'COSMIC_STORM_DEVASTATION_DEFAULT', 'VOIDWORMS_SCALING_DEFAULT',
+               'FALLEN_EMPIRE_STRENGTH_SCALE_DEFAULT', 'CUTHOLOIDS_SCALING_DEFAULT',
                # the empire dashboard's due dates for research and council agendas
                'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY',
                'TECH_COST_DIFFICULTY_SCALE_MULT',
@@ -59,6 +67,10 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                # … when the recruitable leaders are replaced, and when a leader levels up
                'LEADER_POOL_REFRESH_TIME', 'LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE',
                'LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', 'LEADER_BASE_SKILL_CAP')
+# the cosmic storms' maximum per game stage, a default per galaxy size
+DEFINE_KEYS += tuple(f'COSMIC_STORM_{stage}_GAME_SPAWN_MAX_CAP_DEFAULT_{size}_GALAXY'
+                     for size in ('TINY', 'SMALL', 'MEDIUM', 'LARGE', 'HUGE')
+                     for stage in ('EARLY', 'MID', 'LATE'))
 
 
 # ── Pure helpers ───────────────────────────────────────────────────────────────

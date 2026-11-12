@@ -12,6 +12,10 @@ All notable changes to this project are documented here. The format follows
   type's levels, the XP to the next and the perks they bring, with what the subject and the
   overlord get; the subject defines (renegotiation cooldown and cost, loyalty from opinion,
   specialist XP) in `game_define`. For the empire dashboard's subjects tab.
+- `setup_scenario`: each galaxy size's setup defaults (empire counts, wormholes, gateways,
+  hyperlanes, planet odds, crisis strength) from `map/setup_scenarios`, and the setup screen's
+  `*_DEFAULT` defines (game length, sliders, cosmic storm caps per size) in `game_define` — for
+  the dashboard's galaxy tab.
 
 - `pop_category_automation`: what one automated job costs a month by its stratum
   (`automation_resources` in `common/pop_categories`) — for the empire dashboard's district

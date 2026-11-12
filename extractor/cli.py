@@ -14,6 +14,7 @@ from .colony_types import extract_colony_types
 from .cooldowns import extract_action_timers
 from .empires import extract_flag_assets, extract_flag_colors, extract_initializers, extract_prescripted_empires, extract_rooms
 from .diplomacy import extract_diplomacy
+from .setup import extract_setup_scenarios
 from .federations import extract_federations
 from .shroud import extract_shroud
 from .ambitions import extract_ambitions
@@ -561,6 +562,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     extract_federations(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[resolutions + agreement terms] {install_dir / 'common' / 'resolutions'}", file=progress)
     extract_diplomacy(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[setup scenarios] {install_dir / 'map' / 'setup_scenarios'}", file=progress)
+    extract_setup_scenarios(install_dir, w, progress)
     print(f"\n[shroud] {install_dir / 'common' / 'patrons'}", file=progress)
     extract_shroud(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[ambitions] {install_dir / 'common' / 'crisis_paths'}", file=progress)

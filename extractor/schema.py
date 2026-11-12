@@ -1552,6 +1552,12 @@ CREATE TABLE tech_repeatable_modifier (
 );
 -- Whitelisted values from common/defines (tradition cost formula, slot limits).
 DROP TABLE IF EXISTS game_define;
+DROP TABLE IF EXISTS setup_scenario;
+CREATE TABLE setup_scenario (
+    key           TEXT PRIMARY KEY,        -- the galaxy size, e.g. "medium" (the save's galaxy.template)
+    num_stars     REAL,
+    defaults_json TEXT                     -- {"num_empires": 9, "num_nomad_empires": 2, …}: save key → default
+);
 CREATE TABLE game_define (
     key   TEXT PRIMARY KEY,                -- e.g. "TRADITION_COST_TRADITION_EXP"
     value REAL NOT NULL
