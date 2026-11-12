@@ -401,10 +401,11 @@ def decision_costs(res, variables: dict[str, float], trig) -> list[dict]:
     return tiers
 
 
-def decision_effects(effect) -> tuple[list[dict], list[str]]:
+def decision_effects(effect, variables: dict[str, float] | None = None) -> tuple[list[dict], list[str]]:
     """The modifiers a decision's `effect` adds (`add_modifier = { modifier days }`, -1 or none =
     for good) and removes (`remove_modifier`), at its top level only — those inside `if` blocks or
-    scopes depend on what the effect finds."""
+    scopes depend on what the effect finds. `days` may be an @variable (the minor artifact
+    decisions' `@minor_artifact_decision_duration`, 3600)."""
     added: list[dict] = []
     removed: list[str] = []
     for b in _as_blocks(effect):
@@ -412,7 +413,8 @@ def decision_effects(effect) -> tuple[list[dict], list[str]]:
             m = a.get('modifier')
             if isinstance(m, str):
                 try:
-                    days = int(float(str(a.get('days', -1))))
+                    raw = a.get('days', -1)
+                    days = int(float(str((variables or {}).get(raw, raw))))
                 except ValueError:
                     days = -1
                 added.append({'modifier': m.strip('"'), 'days': days})
@@ -464,7 +466,7 @@ def extract_edicts_agendas(install_dir: Path, loc: dict[str, str], scripted_vars
             continue
         def trig(block, v=dvars):
             return ctx.trig(block, v, owner_scope(lambda b: ctx.trig(b, v)))
-        added, removed = decision_effects(data.get('effect'))
+        added, removed = decision_effects(data.get('effect'), dvars)
         tiers = decision_costs(data.get('resources'), dvars, trig)
         w.execute(
             """INSERT INTO decision (key, name, cost_json, potential_json, allow_json,
