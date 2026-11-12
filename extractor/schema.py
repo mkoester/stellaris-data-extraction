@@ -1414,6 +1414,7 @@ CREATE TABLE decision (
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS economic_category;
+DROP TABLE IF EXISTS pop_category_automation;
 DROP TABLE IF EXISTS strategic_resource;
 -- Economic categories (common/economic_categories): what a job's, building's or pop's resources
 -- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
@@ -1422,6 +1423,16 @@ DROP TABLE IF EXISTS strategic_resource;
 CREATE TABLE economic_category (
     key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
     parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
+-- What one automated job costs a month, by its stratum (common/pop_categories,
+-- `automation_resources.upkeep`; booked under `planet_automated_jobs`, scaled by
+-- `planet_automated_jobs_upkeep_mult`). A job's stratum is `job.category`. Empire dashboard: the
+-- district automation what-if (automated workforce / 100 × amount).
+CREATE TABLE pop_category_automation (
+    category TEXT NOT NULL,              -- e.g. "worker", "simple_drone"
+    resource TEXT NOT NULL,              -- e.g. "energy"
+    amount   REAL NOT NULL,              -- e.g. 4 per automated job a month
+    PRIMARY KEY (category, resource)
 );
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"

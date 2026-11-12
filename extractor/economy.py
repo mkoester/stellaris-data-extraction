@@ -47,6 +47,17 @@ def category_parent(data) -> str | None:
     return p if isinstance(p, str) else None
 
 
+def automation_upkeep(data, variables: dict[str, float]) -> dict[str, float]:
+    """A pop category's `automation_resources = { upkeep = { energy = @v } }` → {"energy": 4.0}:
+    what one automated job (100 workforce) of that stratum costs a month; {} where it has none."""
+    a = data.get('automation_resources') if isinstance(data, dict) else None
+    up = a.get('upkeep') if isinstance(a, dict) else None
+    if not isinstance(up, dict):
+        return {}
+    out = {k: _resolve_var(v, variables) for k, v in up.items() if isinstance(v, str)}
+    return {k: v for k, v in out.items() if v is not None}
+
+
 def attitude_trades(data: dict) -> int:
     """An attitude's `behaviour = { trade = yes }`: the AI considers trade deals at all."""
     b = data.get('behaviour')
@@ -85,6 +96,14 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
         w.execute("INSERT INTO economic_category (key, parent) VALUES (?, ?)",
                   (key, category_parent(categories[key][0])))
 
+    pop_categories = _load(common / 'pop_categories', scripted_vars)
+    automated = 0
+    for key, (data, pvars, _) in pop_categories.items():
+        for resource, amount in automation_upkeep(data, pvars).items():
+            automated += 1
+            w.execute("""INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES (?, ?, ?)""", (key, resource, amount))
+
     personalities = _load(common / 'personalities', scripted_vars)
     for key, (data, pvars, _) in personalities.items():
         w.execute("INSERT INTO personality (key, name, trade_willingness) VALUES (?, ?, ?)",
@@ -115,4 +134,4 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
     print(f"  {len(resources)} resources, {len(categories)} economic categories, "
           f"{len(personalities)} personalities, "
           f"{len(attitudes)} attitudes, {len(opinions)} opinion modifiers, "
-          f"{len(levels)} starbase levels", file=progress)
+          f"{len(levels)} starbase levels, {automated} automated job upkeeps", file=progress)

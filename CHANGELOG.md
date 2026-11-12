@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `pop_category_automation`: what one automated job costs a month by its stratum
+  (`automation_resources` in `common/pop_categories`) — for the empire dashboard's district
+  automation what-if.
+
+### Changed
+
+- The dump is 4.5.4's (one change: `is_expellable_nomad_fleet` leaves waystation ships out).
+
 ## [0.1.15] - 2026-11-09
 
 ### Added

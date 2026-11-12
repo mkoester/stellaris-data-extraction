@@ -1409,6 +1409,7 @@ CREATE TABLE decision (
 -- common/strategic_resources: market lots (price per unit = market_price / market_amount, in
 -- trade) and the AI's weights (empire dashboard: values in trade, the AI's view of a deal).
 DROP TABLE IF EXISTS economic_category;
+DROP TABLE IF EXISTS pop_category_automation;
 DROP TABLE IF EXISTS strategic_resource;
 -- Economic categories (common/economic_categories): what a job's, building's or pop's resources
 -- are booked under, and its parent. A `<category>_…_mult` modifier applies to the category and every
@@ -1417,6 +1418,16 @@ DROP TABLE IF EXISTS strategic_resource;
 CREATE TABLE economic_category (
     key     TEXT PRIMARY KEY,           -- e.g. "planet_physicists"
     parent  TEXT                        -- e.g. "planet_researchers"; NULL at the top
+);
+-- What one automated job costs a month, by its stratum (common/pop_categories,
+-- `automation_resources.upkeep`; booked under `planet_automated_jobs`, scaled by
+-- `planet_automated_jobs_upkeep_mult`). A job's stratum is `job.category`. Empire dashboard: the
+-- district automation what-if (automated workforce / 100 × amount).
+CREATE TABLE pop_category_automation (
+    category TEXT NOT NULL,              -- e.g. "worker", "simple_drone"
+    resource TEXT NOT NULL,              -- e.g. "energy"
+    amount   REAL NOT NULL,              -- e.g. 4 per automated job a month
+    PRIMARY KEY (category, resource)
 );
 CREATE TABLE strategic_resource (
     key           TEXT PRIMARY KEY,        -- e.g. "energy"
@@ -1971,8 +1982,8 @@ CREATE TABLE menace_perk_modifier (
 
 -- Data
 
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.3 (4e91)');
-INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.3');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version', 'Cygnus v4.5.4 (1b4f)');
+INSERT OR REPLACE INTO meta (key, value) VALUES ('game_version_raw', 'v4.5.4');
 INSERT OR REPLACE INTO meta (key, value) VALUES ('steam_branch', 'public');
 INSERT OR IGNORE INTO dlc (name, dlc_key, steam_id, affects_gameplay, category, release_date,
                                        host_checks)
@@ -109511,7 +109522,7 @@ INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_enclave_country', '
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_enslaved', '{"op":"or","args":[{"leaf":"is_pop_category","value":"slave_unemployment"},{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"has_citizenship_type","value":"scope"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_entropy_drinkers_empire', '{"op":"or","args":[{"leaf":"has_civic","value":"civic_entropy_drinkers"},{"leaf":"has_civic","value":"civic_entropy_drinkers_machine"},{"leaf":"has_civic","value":"civic_entropy_drinkers_hive_mind"},{"leaf":"has_civic","value":"civic_entropy_drinkers_corporate"}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_environmental_architects_empire', '{"op":"or","args":[{"leaf":"has_civic","value":"civic_environmental_architects"},{"leaf":"has_civic","value":"civic_environmental_architects_hive"},{"leaf":"has_civic","value":"civic_environmental_architects_machine"},{"leaf":"has_civic","value":"civic_environmental_architects_megacorp"}]}');
-INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_expellable_nomad_fleet', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_ship_class","value":"shipclass_mining_station"},{"leaf":"is_ship_class","value":"shipclass_research_station"},{"leaf":"is_ship_class","value":"shipclass_observation_station"}]}]}');
+INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_expellable_nomad_fleet', '{"op":"not","args":[{"op":"or","args":[{"leaf":"is_ship_class","value":"shipclass_mining_station"},{"leaf":"is_ship_class","value":"shipclass_research_station"},{"leaf":"is_ship_class","value":"shipclass_observation_station"},{"leaf":"is_waystation_ship","value":"yes"}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_exploring_astral_rift', '{"leaf":"exists","value":"astral_rift"}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_faction_allowed', '{"op":"and","args":[{"op":"or","args":[{"op":"and","args":[{"leaf":"years_passed","cmp":">","value":"10"},{"leaf":"has_encountered_other_species","value":"yes"}]},{"op":"and","args":[{"leaf":"days_passed","cmp":">","value":"30"},{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_parliamentary_system"},{"leaf":"has_valid_civic","value":"civic_media_conglomerate"},{"leaf":"has_valid_civic","value":"civic_crowdsourcing"},{"leaf":"has_valid_civic","value":"civic_corporate_crowdsourcing"}]}]},{"op":"and","args":[{"leaf":"days_passed","cmp":">","value":"350"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_broken_shackles"},{"op":"and","args":[{"leaf":"has_origin","value":"origin_unplugged"},{"leaf":"has_country_flag","value":"unplugged_faction_allowed"}]}]}]}]},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_ethic","value":"ethic_gestalt_consciousness"},{"leaf":"has_country_flag","value":"suppress_vanilla_factions"}]}]}]}');
 INSERT INTO scripted_trigger (key, trigger_json) VALUES ('is_fallen_empire', '{"op":"or","args":[{"leaf":"is_country_type","value":"fallen_empire"},{"leaf":"is_country_type","value":"awakened_fallen_empire"}]}');
@@ -132445,6 +132456,16 @@ INSERT INTO economic_category (key, parent) VALUES ('traditions', 'country');
 INSERT INTO economic_category (key, parent) VALUES ('unemployment_resources', 'planet_pops');
 INSERT INTO economic_category (key, parent) VALUES ('vivarium', 'country');
 INSERT INTO economic_category (key, parent) VALUES ('waystation_pacts', 'diplomacy');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('ruler', 'energy', '12.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('specialist', 'energy', '8.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('worker', 'energy', '4.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('complex_drone', 'energy', '8.0');
+INSERT INTO pop_category_automation (category, resource, amount)
+                         VALUES ('simple_drone', 'energy', '4.0');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75');
 INSERT INTO personality (key, name, trade_willingness) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9');
