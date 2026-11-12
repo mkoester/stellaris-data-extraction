@@ -101,7 +101,10 @@ The game's script format has quirks that produce silently wrong trees rather tha
   2026-11-09).
 - **Anonymous sub-blocks** (`{ key = X }` inside a list) consume the `{` as a key and recurse. This
   was a bug fix: previously the stray `}` terminated the **wrong outer block**, making later keys
-  unreachable — which reads as the game not defining them.
+  unreachable — which reads as the game not defining them. **Their content is discarded**: a block
+  of nothing but anonymous blocks parses as `{}`. Where the data lives there (a specialist type's
+  `levels = { { … } { … } }`), key them at the token level before parsing, as `keyed_levels()` in
+  `diplomacy.py` does — not by changing the parser, which every table reads through (2026-11-12).
 - **`@variable` references resolve per file**, from that file's top-level `@key = value` entries.
 - **Comparisons** (`num_ascension_perks > 2`) parse as `Cmp(op, value)`. This was a bug fix: a
   comparison used to turn its block into a token list, silently dropping the block's other keys.
