@@ -3,12 +3,27 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.diplomacy import ai_weight_model, category_members, influence_cost
+from extractor.diplomacy import (ai_weight_model, category_members, flat_modifiers, influence_cost,
+                                 keyed_levels, specialist_levels)
 from extractor.triggers import normalize_trigger
 
 
 def parse(text: str) -> dict:
     return Parser(tokenize(text)).parse()
+
+
+class TestSpecialists(unittest.TestCase):
+    def test_levels_numbered_with_their_xp_and_perks(self):
+        d = Parser(keyed_levels(tokenize(
+            't = { levels = { { experience_needed_for_next_level = @l2 perks = { a b } } '
+            '{ perks = { c } } } other = { { x = 1 } } }'))).parse()['t']
+        self.assertEqual(specialist_levels(d, {'@l2': 1200.0}), [
+            {'level': 1, 'xp_next': 1200.0, 'perks': ['a', 'b']},
+            {'level': 2, 'xp_next': None, 'perks': ['c']}])
+
+    def test_flat_modifiers_skip_nested_blocks(self):
+        m = parse('m = { starbase_upgrade_cost_mult = -0.2 x = @v nested = { y = 1 } }')['m']
+        self.assertEqual(flat_modifiers(m, {'@v': 2.0}), {'starbase_upgrade_cost_mult': -0.2, 'x': 2.0})
 
 
 class TestCategoryMembers(unittest.TestCase):

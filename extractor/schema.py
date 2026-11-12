@@ -1801,6 +1801,9 @@ CREATE TABLE federation_law (
 DROP TABLE IF EXISTS resolution;
 DROP TABLE IF EXISTS resolution_category;
 DROP TABLE IF EXISTS resolution_group;
+DROP TABLE IF EXISTS specialist_perk;
+DROP TABLE IF EXISTS specialist_level;
+DROP TABLE IF EXISTS specialist_type;
 DROP TABLE IF EXISTS agreement_term_value;
 DROP TABLE IF EXISTS agreement_term;
 DROP TABLE IF EXISTS agreement_preset;
@@ -1842,6 +1845,30 @@ CREATE TABLE agreement_term_value (
     term_key   TEXT,
     name       TEXT,                       -- "Integration Prohibited"
     sort_order INTEGER NOT NULL DEFAULT 0
+);
+-- Subject specialisations (`common/specialist_subject_types`, `…_perks`): each type's levels, the
+-- experience to the next one and the perks it brings — the empire dashboard's subjects tab.
+CREATE TABLE specialist_type (
+    key             TEXT PRIMARY KEY,      -- e.g. "specialist_bulwark"
+    name            TEXT,                  -- "Bulwark"
+    preferred_ethic TEXT,                  -- "ethic_militarist": converts faster
+    sort_order      INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE specialist_level (
+    type_key   TEXT NOT NULL,
+    level      INTEGER NOT NULL,           -- 1, 2, 3
+    xp_next    REAL,                       -- experience needed for the next level; NULL at the top
+    perks_json TEXT,                       -- ["bulwark_1_modifier", …]
+    PRIMARY KEY (type_key, level)
+);
+CREATE TABLE specialist_perk (
+    key            TEXT PRIMARY KEY,       -- e.g. "bulwark_1_overlord_modifier"
+    name           TEXT,                   -- "Bulwark Advisory"
+    description    TEXT,                   -- `<key>_desc`, when the localisation has one
+    main_perk      INTEGER NOT NULL DEFAULT 0,
+    subject_json   TEXT,                   -- subject_modifier: {"ship_armor_hardening_add": 0.05}
+    overlord_json  TEXT,                   -- overlord_modifier (and overlord_relay_network_modifier)
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE agreement_preset (
     key        TEXT PRIMARY KEY,           -- e.g. "preset_protectorate"

@@ -2,8 +2,10 @@
 subject agreement terms, term values and presets. A resolution's effects are the static modifier
 of the same key (`static_modifier`)."""
 
+import json
 from pathlib import Path
 import sys
+from .clausewitz import Parser, tokenize
 from .traditions import _Ctx, _load, dumps
 from .triggers import _scripted_trigger_index, dlc_trigger_map
 from .values import _as_blocks, _resolve_var, _to_list
@@ -54,6 +56,51 @@ def ai_weight_model(data: dict, variables: dict[str, float], trig) -> dict | Non
 
 def yes(v) -> int:
     return 1 if v == 'yes' else 0
+
+
+def flat_modifiers(block, variables: dict[str, float]) -> dict[str, float]:
+    """A modifier block's numeric entries (@variables resolved); nested blocks are left out."""
+    out: dict[str, float] = {}
+    for b in _as_blocks(block):
+        for k, v in b.items():
+            if isinstance(v, (str, int, float)):
+                x = _resolve_var(v, variables)
+                if x is not None:
+                    out[k] = float(x)
+    return out
+
+
+def keyed_levels(tokens: list[str]) -> list[str]:
+    """`levels = { { … } { … } }` with each anonymous block keyed `level = { … }`: the parser
+    drops anonymous blocks (`clausewitz.Parser`), and a specialist type's levels are nothing else."""
+    out: list[str] = []
+    depth = 0
+    inside = None  # the depth of an open `levels` block's content
+    for i, t in enumerate(tokens):
+        if t == '{':
+            if inside is not None and depth == inside:
+                out += ['level', '=']
+            if inside is None and i >= 2 and tokens[i - 2] == 'levels' and tokens[i - 1] == '=':
+                inside = depth + 1
+            depth += 1
+        elif t == '}':
+            depth -= 1
+            if inside is not None and depth == inside - 1:
+                inside = None
+        out.append(t)
+    return out
+
+
+def specialist_levels(data: dict, variables: dict[str, float]) -> list[dict]:
+    """A specialist type's `levels = { level = { experience_needed_for_next_level perks } … }`
+    (anonymous blocks keyed by `keyed_levels`) → one dict per level, numbered from 1."""
+    out = []
+    levels = data.get('levels') if isinstance(data.get('levels'), dict) else {}
+    for n, lvl in enumerate(_as_blocks(levels.get('level')), start=1):
+        xp = _resolve_var(lvl.get('experience_needed_for_next_level'), variables)
+        out.append({'level': n, 'xp_next': float(xp) if xp is not None else None,
+                    'perks': [p for p in _to_list(lvl.get('perks')) if isinstance(p, str)]})
+    return out
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────
@@ -112,6 +159,37 @@ def extract_diplomacy(install_dir: Path, loc: dict[str, str], scripted_vars: dic
         w.execute("INSERT INTO agreement_preset (key, name, sort_order) VALUES (?, ?, ?)",
                   (key, ctx.text(key), order))
 
+    # --- subject specialisations: types, levels and perks ---
+    types: dict = {}
+    for f in sorted((common / 'specialist_subject_types').glob('*.txt')):
+        parsed = Parser(keyed_levels(tokenize(f.read_text(encoding='utf-8-sig', errors='replace')))).parse()
+        local = {k: float(v) for k, v in parsed.items() if k.startswith('@') and _resolve_var(v, {}) is not None}
+        for k, v in parsed.items():
+            if not k.startswith('@'):
+                types[k] = (v, {**scripted_vars, **local}, f.name)
+    n_types = 0
+    for key, (data, tvars, _) in types.items():
+        if key == 'any' or not isinstance(data, dict) or not data.get('levels'):
+            continue
+        ethic = data.get('preferred_ethic') if isinstance(data.get('preferred_ethic'), str) else None
+        w.execute("INSERT INTO specialist_type (key, name, preferred_ethic, sort_order) VALUES (?, ?, ?, ?)",
+                  (key, ctx.text(key), ethic, n_types))
+        for lvl in specialist_levels(data, tvars):
+            w.execute("INSERT INTO specialist_level (type_key, level, xp_next, perks_json) VALUES (?, ?, ?, ?)",
+                      (key, lvl['level'], lvl['xp_next'], json.dumps(lvl['perks'])))
+        n_types += 1
+    perks = _load(common / 'specialist_subject_perks', scripted_vars)
+    for order, (key, (data, pvars, _)) in enumerate(perks.items()):
+        sub = flat_modifiers(data.get('subject_modifier'), pvars)
+        over = {**flat_modifiers(data.get('overlord_modifier'), pvars),
+                **flat_modifiers(data.get('overlord_relay_network_modifier'), pvars)}
+        w.execute(
+            """INSERT INTO specialist_perk (key, name, description, main_perk, subject_json,
+               overlord_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (key, ctx.text(key), ctx.text(f'{key}_desc', True, pvars), yes(data.get('main_perk')),
+             json.dumps(sub) if sub else None, json.dumps(over) if over else None, order))
+
     print(f"  {len(resolutions)} resolutions in {len(cats)} categories, {len(terms)} agreement "
-          f"terms, {len(values)} term values, {len(presets)} presets", file=progress)
+          f"terms, {len(values)} term values, {len(presets)} presets, {n_types} specialist types",
+          file=progress)
     w.commit()

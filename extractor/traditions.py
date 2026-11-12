@@ -16,6 +16,10 @@ from .writer import Writer
 DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_COST_TRADITION_EXP',
                'EMPIRE_SIZE_TRADITION_COST_PENALTY', 'EMPIRE_SIZE_BASE',
                'TRADITION_CATEGORIES_MAX', 'ASCENSION_PERKS_SLOTS',
+               # the empire dashboard's subjects tab: renegotiation, loyalty and specialist XP
+               'AGREEMENT_CHANGE_COOLDOWN_MONTHS', 'AGREEMENT_PROPOSE_INFLUENCE_COST',
+               'AGREEMENT_LOYALTY_DELTA_MULT', 'SUBJECT_MONTHLY_LOYALTY_OPINION_MULTIPLIER',
+               'SUBJECT_XP_LOYALTY_MULTIPLIER', 'SUBJECT_LOYALTY_MAX', 'SUBJECT_LOYALTY_MIN',
                # the empire dashboard's due dates for research and council agendas
                'EMPIRE_SIZE_TECH_COST_PENALTY', 'EMPIRE_SIZE_COUNCIL_AGENDA_COST_PENALTY',
                'TECH_COST_DIFFICULTY_SCALE_MULT',

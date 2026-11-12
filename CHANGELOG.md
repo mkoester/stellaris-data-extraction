@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Subject specialisations (`specialist_type`, `specialist_level`, `specialist_perk`): each
+  type's levels, the XP to the next and the perks they bring, with what the subject and the
+  overlord get; the subject defines (renegotiation cooldown and cost, loyalty from opinion,
+  specialist XP) in `game_define`. For the empire dashboard's subjects tab.
+
 - `pop_category_automation`: what one automated job costs a month by its stratum
   (`automation_resources` in `common/pop_categories`) — for the empire dashboard's district
   automation what-if.
