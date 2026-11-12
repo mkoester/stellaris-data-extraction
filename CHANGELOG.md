@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.16] - 2026-11-12
 
 ### Added
 
@@ -15,6 +15,11 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - The dump is 4.5.4's (one change: `is_expellable_nomad_fleet` leaves waystation ships out).
+
+### Fixed
+
+- `decision.adds_json`: a modifier's `days` given as an @variable (the minor artifact decisions'
+  `@minor_artifact_decision_duration`, 3600) read as -1, "for good"; three decisions affected.
 
 ## [0.1.15] - 2026-11-09
 
