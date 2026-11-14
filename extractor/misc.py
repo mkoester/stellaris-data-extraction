@@ -147,20 +147,25 @@ def extract_planet_classes(data: dict, loc: dict[str, str], w: Writer, verbose: 
 # Extraction: prescripted names
 # ---------------------------------------------------------------------------
 
-_SHIP_NAME = re.compile(r'^[A-Za-z0-9]+_(?:SHIP|FLEET|ARMY)_(.+)$')
+_SHIP_NAME = re.compile(r'^[A-Za-z0-9]+_(SHIP|FLEET|ARMY|PLANET)_(.+)$')
 
 
 def _ship_name(key: str, text: str) -> bool:
-    """A name list's ship, fleet or army name whose text is more than its key's tail
+    """A name list's ship, fleet, army or planet name whose text is more than its key's tail
     (`HUM1_SHIP_PeshnabtheFaithful` = "Peshnab the Faithful", `NECROID1_FLEET_MaelstromFleet` =
-    "Maelstrom Fleet"): a save names them, a nomad's arkship colony among them, by key."""
+    "Maelstrom Fleet", `HUMAN1_PLANET_StPomeroy` = "St. Pomeroy"): a save names them, a nomad's
+    arkship colony and a colony named from the list among them, by key."""
     m = _SHIP_NAME.match(key)
-    return bool(m) and m.group(1) != text
+    if not m or m.group(2) == text:
+        return False
+    # a planet name's tail is mixed case; an all-caps one is a text key
+    # (`ADD_PLANET_DEVASTATION_EFFECT`) — ship names may be all caps (`CUTHOLOID_SHIP_COMMON_1`)
+    return m.group(1) != 'PLANET' or m.group(2) != m.group(2).upper()
 
 
 def prescripted_names(loc: dict[str, str], name_keys: set[str] = frozenset()) -> list[tuple[str, str]]:
     """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key, of the `name_keys` (random-name
-    entries that are localisation keys) and of ship, fleet and army names that differ from their
+    entries that are localisation keys) and of ship, fleet, army and planet names that differ from their
     key, sorted (determinism)."""
     return sorted((k, _clean_loc(v, loc)) for k, v in loc.items()
                   if (k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) or k in name_keys
