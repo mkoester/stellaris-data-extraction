@@ -58,6 +58,13 @@ class TestPrescriptedNames(unittest.TestCase):
         self.assertEqual(prescripted_names(loc),
                          [('HUM1_SHIP_PeshnabtheFaithful', 'Peshnab the Faithful')])
 
+    def test_planet_names_that_differ_from_their_key(self):
+        # 4.5.4 localisation/english/name_lists: a colony named from the list
+        loc = {'HUMAN1_PLANET_StPomeroy': 'St. Pomeroy', 'HUMAN1_PLANET_SanLucas': 'San Lucas',
+               'HUMAN1_PLANET_Hope': 'Hope', 'ADD_PLANET_DEVASTATION_EFFECT': 'Add $VALUE$ Devastation'}
+        self.assertEqual(prescripted_names(loc), [('HUMAN1_PLANET_SanLucas', 'San Lucas'),
+                                                  ('HUMAN1_PLANET_StPomeroy', 'St. Pomeroy')])
+
     def test_fleet_and_army_names_too(self):
         # 4.5.3 name_list_NEC1_l_english.yml: a fleet a save names by key
         loc = {'NECROID1_FLEET_MaelstromFleet': 'Maelstrom Fleet', 'NECROID1_FLEET_Vanguard': 'Vanguard',

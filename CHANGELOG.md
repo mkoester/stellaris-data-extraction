@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.17] - 2026-11-14
+
+### Fixed
+
+- `prescripted_name` holds name-list planet names that differ from their key
+  (`HUMAN1_PLANET_StPomeroy` = "St. Pomeroy", 1556 on 4.5.4): a save names a colony named from
+  the list by that key.
+
 ## [0.1.16] - 2026-11-12
 
 ### Added
