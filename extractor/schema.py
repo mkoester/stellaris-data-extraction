@@ -1247,6 +1247,24 @@ CREATE TABLE special_project (
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
     outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );
+-- What anomaly categories, special projects and dig sites lead to: their events followed down to
+-- the effects (extractor/outcomes.py documents the node kinds), for the empire dashboard.
+DROP TABLE IF EXISTS outcome;
+CREATE TABLE outcome (
+    kind      TEXT NOT NULL,               -- anomaly / project / dig_site
+    key       TEXT NOT NULL,               -- anomaly_category.key, special_project.key, dig_site.key
+    tree_json TEXT NOT NULL,               -- [{"t":"event","id":"anomaly.2010","o":[…]}, …]
+    PRIMARY KEY (kind, key)
+);
+-- Archaeological site types (common/archaeological_site_types); a save's
+-- `archaeological_sites.sites.<id>.type` is the key.
+DROP TABLE IF EXISTS dig_site;
+CREATE TABLE dig_site (
+    key         TEXT PRIMARY KEY,          -- e.g. "site_star_petal"
+    name        TEXT,                      -- e.g. "Gas Giant Structure"
+    description TEXT,
+    stages      INTEGER NOT NULL           -- chapters
+);
 -- Nomads contracts (common/missions, those whose mission category has is_contract = yes), for
 -- the empire dashboard's contracts tab. A save's `missions.<id>.mission` is the key.
 DROP TABLE IF EXISTS contract;

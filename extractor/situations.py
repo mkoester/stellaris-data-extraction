@@ -36,12 +36,14 @@ def event_ids(block) -> list[str]:
     return out
 
 
-def outcomes_json(block, loc: dict[str, str]) -> str | None:
-    """The events an outcome block fires, with their titles (`<id>.name`) where they have one."""
+def outcomes_json(block, loc: dict[str, str], title=None) -> str | None:
+    """The events an outcome block fires, with their titles where they have one: `title(id)`
+    (the event's own `title` key, `Outcomes.title`), else `<id>.name`."""
     ids = event_ids(block)
     if not ids:
         return None
-    return json.dumps([{'event': i, 'name': _text(loc, f'{i}.name') or None} for i in ids])
+    return json.dumps([{'event': i, 'name': (title(i) if title else None) or _text(loc, f'{i}.name') or None}
+                       for i in ids])
 
 
 def _text(loc: dict[str, str], key: str | None, newlines: bool = False) -> str | None:
@@ -75,7 +77,8 @@ def _files(d: Path) -> list[Path]:
 
 
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
-                       progress=sys.stderr, scripted_vars: dict[str, float] | None = None) -> None:
+                       progress=sys.stderr, scripted_vars: dict[str, float] | None = None,
+                       title=None) -> None:
     common = install_dir / 'common'
     n_sit = n_appr = n_stage = n_mod = 0
     for f in _files(common / 'situations'):
@@ -133,7 +136,7 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                    (key, name, description, days, department, outcomes_json)
                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (key, _text(loc, key), _text(loc, f'{key}_DESC', True), days,
-                 _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc)))
+                 _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc, title)))
             n_proj += 1
 
     print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages ({n_mod} modifiers), "

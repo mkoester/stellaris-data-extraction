@@ -425,7 +425,8 @@ def extract_district_zone_names(install_dir: Path, districts: dict, zones: dict,
     w.commit()
 
 
-def extract_anomaly_levels(categories: dict, loc: dict[str, str], w: Writer, verbose: bool) -> None:
+def extract_anomaly_levels(categories: dict, loc: dict[str, str], w: Writer, verbose: bool,
+                           title=None) -> None:
     """Anomaly categories (common/anomalies) with their `level` (with the scientist's level it picks
     the research time from SCIENCE_SHIP_ANOMALY_RESEARCH_DAYS), name and outcome events — for the
     empire dashboard."""
@@ -442,7 +443,7 @@ def extract_anomaly_levels(categories: dict, loc: dict[str, str], w: Writer, ver
                VALUES (?, ?, ?, ?, ?)""",
             (key, level, _clean_loc(raw_name, loc) if raw_name else None,
              _clean_loc(raw_desc, loc, keep_newlines=True) if raw_desc else None,
-             outcomes_json(cat.get('on_success'), loc)))
+             outcomes_json(cat.get('on_success'), loc, title)))
         if verbose:
             print(f"  anomaly_category: {key} level={level}")
     w.commit()
