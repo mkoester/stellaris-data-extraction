@@ -53,6 +53,12 @@ class TestOutcomes(unittest.TestCase):
         out = json.loads(outcomes_json(block['on_success'], {'anomaly.2501.name': 'Space Whale'}))
         self.assertEqual(out, [{'event': 'anomaly.2501', 'name': 'Space Whale'}])
 
+    def test_title_from_the_event_itself(self):
+        # extreme_frontiers.445's title key is `.title`, not `.name`: named by the event's own key
+        block = Parser(tokenize('on_success = { ship_event = { id = extreme_frontiers.445 } }')).parse()
+        out = json.loads(outcomes_json(block['on_success'], {}, lambda i: 'Orbital Slingshot Advancements'))
+        self.assertEqual(out, [{'event': 'extreme_frontiers.445', 'name': 'Orbital Slingshot Advancements'}])
+
     def test_no_events_is_none(self):
         self.assertIsNone(outcomes_json({'add_resource': {'energy': '100'}}, {}))
 

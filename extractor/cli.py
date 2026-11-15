@@ -34,6 +34,7 @@ from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
 from .rights import extract_species_rights
 from .situations import extract_situations
+from .outcomes import extract_outcomes, load_outcomes
 from .contracts import extract_contracts
 from .system_events import extract_system_entry_events
 from .steam import mod_output_refusal, release_output_refusal, steam_branch
@@ -487,7 +488,9 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
         print(f"\n[{folder}] {install_dir / 'common' / folder}", file=progress)
         extract_resources(install_dir / 'common' / folder, table, scripted_vars,
                           inline_scripts_dir, w, args.verbose)
-    extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose)
+    outcomes = load_outcomes(install_dir, loc, scripted_vars, script_loader(inline_scripts_dir))
+    extract_anomaly_levels(_merge_dir(install_dir / 'common' / 'anomalies', progress), loc, w, args.verbose,
+                           outcomes.title)
     print(f"\n[static-modifiers] {static_mod_dir}", file=progress)
     extract_static_modifiers(static_mods, loc, w, args.verbose, scripted_vars)
     print(f"\n[job-swaps] {install_dir / 'common' / 'pop_jobs'}", file=progress)
@@ -551,7 +554,9 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
-    extract_situations(install_dir, loc, w, progress, scripted_vars)
+    extract_situations(install_dir, loc, w, progress, scripted_vars, outcomes.title)
+    print(f"\n[outcomes] anomalies, special projects, dig sites → events → effects", file=progress)
+    extract_outcomes(install_dir, outcomes, w, progress)
     print(f"\n[contracts] {install_dir / 'common' / 'missions'}", file=progress)
     extract_contracts(install_dir, loc, script_loader(inline_scripts_dir), w, progress, scripted_vars)
     print(f"\n[system entry events] {install_dir / 'common' / 'on_actions'}", file=progress)

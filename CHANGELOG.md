@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `outcome`: what each anomaly category, special project and dig site leads to, its events
+  followed through options, random lists, conditions, scripted effects and follow-up events down
+  to the effects (resources, months of income, tech progress, deposits, modifiers, traits,
+  specimens, relics, further projects), as a JSON tree per key.
+- `dig_site`: archaeological site types with their name, description and number of chapters.
+
+### Fixed
+
+- `outcomes_json` names an event by its own `title` key: events titled `<id>.title`
+  (extreme_frontiers.445 "Orbital Slingshot Advancements") were unnamed.
+
 ## [0.1.17] - 2026-11-14
 
 ### Fixed

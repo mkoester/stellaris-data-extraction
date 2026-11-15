@@ -508,9 +508,34 @@ the demands added by `pop_faction_types/demand_*` inline scripts (their `$PARAM$
 `special_project = {…}` blocks, `key`) → `special_project`. Anomaly categories
 (`extract_anomaly_levels`) carry name, description and `outcomes_json`, as projects do: the event
 ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_event = …`,
-`ship_event = { id = … }`), with each event's title from `<id>.name`. Event loc keys contain dots,
+`ship_event = { id = … }`), each named by the event's own `title` key (`Outcomes.title`; before
+2026-11-15 `<id>.name`, which missed every event titled `<id>.title` — extreme_frontiers.445,
+166 projects' outcomes). Event loc keys contain dots,
 so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dotted key was
 missing). The dashboard shows outcomes only behind a spoiler setting.
+
+**What they lead to (outcomes.py, 2026-11-15)** → `outcome` (kind `anomaly` / `project` /
+`dig_site`, key, `tree_json`) and `dig_site` (`common/archaeological_site_types`: name,
+description, chapters). Each `on_success` (a dig site: each `stage`'s event) is followed through
+events (options, `immediate`, `after`), `random_list` / `locked_random_list` / `random = { chance }`,
+`if` chains, scripted effects (parameters filled in), inline scripts and follow-up events, down to
+the effects a player gets; the module docstring lists the node kinds. Parsed with
+`parse_ordered()`: weights and duplicate options need file order. Rules that keep the trees
+readable, each from a case:
+- A **visible event fired from ≥ 10 places** (`SHARED_REFS`, counting `id =` across `events/` and
+  `common/`) is a side event — story.5, the first-contact catalogue, 175 — and stays a `ref`
+  marked `shared` (the Mineral Cluster's tree shrank from 26 KB to 1.6 KB). Hidden ones are
+  expanded: ancrel.15055 (57 references) adds a dig site's artifact deposits.
+- `tutorial.*` events below the root are left out (small_artifact_reward fires tutorial.1337).
+- An `if` chain whose branches end up equal collapses; options alike in name, condition and
+  effect appear once (distar.3057's ten "Excellent.", told apart only by `exclusive_trigger`).
+- A weighted anomaly outcome with `modifier = { add = N }` gets `w_if` (weight + adds): the
+  Mineral Cluster's are `0`, 1 for a scientist without the trait.
+- Depth 10 and 60 events per root; a cycle or the limit is a `ref`. Projects are not inlined —
+  the dashboard looks up their own trees.
+- Not modelled: what a trigger tests (a condition is only `cond`/`if`), `modifier`'s `factor`,
+  and whether a fleet is hostile beyond its `set_owner` naming root/owner/prev/this/from.
+On 4.5.4: 327 anomaly categories, 578 projects, 123 dig sites, 1.6 MB of JSON.
 
 ## Contracts (contracts.py)
 
