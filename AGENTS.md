@@ -113,6 +113,11 @@ The game's script format has quirks that produce silently wrong trees rather tha
   for that reason (`flag_colors()` in `empires.py`).
 - **`if` values are `IfBlock`s** whose `.chain` keeps their own `else_if`/`else` — duplicate-key
   promotion loses that pairing once a block has several `if`s.
+- **A trigger keeps a scope block opaque** (`triggers.py` `normalize_trigger`, `owner = { … }`
+  aside): `solar_system = { … }` becomes `{"leaf": "solar_system", "value": "scope"}`, its content
+  gone. One part may hold several such blocks that ask different things (the waystation Research
+  Observatory's: a pre-FTL planet, or a trade pact with it); a consumer answers them per part and
+  modifier (the dashboard's `#lib/waylines.ts` `SOLAR_SYSTEM`).
 
 ## ⚠ After a game update: diff the data, not only the run
 
