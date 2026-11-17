@@ -517,11 +517,15 @@ so `_LOC_ENTRY` accepts `.` in keys (before 2026-10-18 it did not, and every dot
 missing). The dashboard shows outcomes only behind a spoiler setting.
 
 **What they lead to (outcomes.py, 2026-11-15)** → `outcome` (kind `anomaly` / `project` /
-`dig_site`, key, `tree_json`) and `dig_site` (`common/archaeological_site_types`: name,
+`dig_site`, key, `tree_json`, `flags_json`) and `dig_site` (`common/archaeological_site_types`: name,
 description, chapters). Each `on_success` (a dig site: each `stage`'s event) is followed through
 events (options, `immediate`, `after`), `random_list` / `locked_random_list` / `random = { chance }`,
 `if` chains, scripted effects (parameters filled in), inline scripts and follow-up events, down to
-the effects a player gets; the module docstring lists the node kinds. Parsed with
+the effects a player gets; the module docstring lists the node kinds. `flags_json` (2026-11-17)
+lists the country flags set on the way in our empire's scope (`set_country_flag` under `owner`
+or in a country event; not another country's, not a `$param$`, not inside a shared `ref`), with a
+dig site's chapter as `ch`: the dashboard reads a flag only one source sets, present in a save,
+as that source finished. Parsed with
 `parse_ordered()`: weights and duplicate options need file order. Rules that keep the trees
 readable, each from a case:
 - A **visible event fired from ≥ 10 places** (`SHARED_REFS`, counting `id =` across `events/` and

@@ -1255,6 +1255,7 @@ CREATE TABLE outcome (
     kind      TEXT NOT NULL,               -- anomaly / project / dig_site
     key       TEXT NOT NULL,               -- anomaly_category.key, special_project.key, dig_site.key
     tree_json TEXT NOT NULL,               -- [{"t":"event","id":"anomaly.2010","o":[…]}, …]
+    flags_json TEXT,                       -- country flags set on the way: [{"k":"found_voyager"}, {"k":…,"ch":2}] (ch: dig-site chapter); NULL: none
     PRIMARY KEY (kind, key)
 );
 -- Archaeological site types (common/archaeological_site_types); a save's
