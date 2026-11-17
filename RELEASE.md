@@ -13,7 +13,8 @@ Two things depend on a release here: the planner's deployment builds its DB from
    dashboard's release workflow runs it again on the tag it bundles. **It catches schema drift
    only** (tables differing from `schema.py`, and the branch): a code change that alters values
    but no table — v0.1.10's localisation fix — passes with a stale dump. So also regenerate into
-   `$TMPDIR` and `cmp` it with `sql/stellaris.sql` (identical for v0.1.10, 2026-11-01). In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit).
+   `$TMPDIR` and `cmp` it with `sql/stellaris.sql` (identical for v0.1.10, 2026-11-01). In `CHANGELOG.md`, turn `Unreleased` into `## [X.Y.Z] - <date>` (own commit),
+   first writing what is missing from `git log vX.Y.Z-1..develop` (0.1.20 had no `Unreleased`).
 2. `git checkout main && git merge --no-ff develop -m "Release vX.Y.Z (merge develop)"`, then
    `git tag vX.Y.Z`.
 3. `git checkout develop`, bump the patch of `__version__`, commit `chore: version bump (vX.Y.Z+1)`.
