@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `outcome` trees carry the conditions on the player's empire (`c`): an event's own `trigger`, an
+  option's conditions, an `if` chain's limits, a weighted branch's modifier. Only what asks
+  something of the empire: in a ship or fleet event, only the `owner = { … }` part.
+
 ## [0.1.18] - 2026-11-15
 
 ### Added
