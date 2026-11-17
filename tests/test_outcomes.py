@@ -9,6 +9,17 @@ from extractor.outcomes import Outcomes, _Ctx, definition_index, event_index
 EVENTS = """
 @tier1researchreward = 12
 ship_event = {
+    id = flags.1
+    title = "flags.1.name"
+    immediate = { set_country_flag = not_ours }
+    option = {
+        name = OK
+        owner = { set_country_flag = found_thing set_country_flag = $NAME$ set_country_flag = found_thing }
+        owner = { set_country_flag = { flag = timed_thing days = 360 } }
+        from = { set_country_flag = their_flag }
+    }
+}
+ship_event = {
     id = anomaly.2010
     title = "anomaly.2010.name"
     immediate = { from = { clear_deposits = yes } }
@@ -183,6 +194,25 @@ class TestOutcomes(unittest.TestCase):
 
     def test_title_from_title_key(self):
         self.assertEqual(make().title('anomaly.2015'), 'Special Project Completed')
+
+
+
+class TestFlags(unittest.TestCase):
+    def test_country_flags_in_our_scope_once(self):
+        oc = make()
+        on_success = block('x = { ship_event = { id = flags.1 } }')
+        tree, flags = oc.collect(lambda: oc.root(on_success, 'anomaly'))
+        self.assertEqual(tree[0]['id'], 'flags.1')
+        # the owner's flags, once; not the ship's, a $param$, or another country's
+        self.assertEqual(flags, [{'k': 'found_thing'}, {'k': 'timed_thing'}])
+        self.assertIsNone(oc.flags)
+
+    def test_chapter_and_nothing_outside_collect(self):
+        oc = make()
+        _, flags = oc.collect(lambda: oc.root('flags.1', 'anomaly'), 2)
+        self.assertEqual(flags[0], {'k': 'found_thing', 'ch': 2})
+        oc.root('flags.1', 'anomaly')   # no collector: nothing to record into
+        self.assertIsNone(oc.flags)
 
 
 if __name__ == '__main__':

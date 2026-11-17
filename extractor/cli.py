@@ -25,9 +25,10 @@ from .game_start import extract_game_start
 from .government import _custom_empire_initializers, compute_ascension_restrictions, extract_authorities, extract_civics, extract_council_positions, extract_ethics, extract_government_types, extract_origins, extract_policy_restrictions
 from .jobs import extract_job_swaps, extract_jobs
 from .leaders import extract_leader_traits
+from .megastructures import extract_megastructures
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .mods import descriptor, overlay, unpack
-from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys,
+from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys, set_name_keys,
                    extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
@@ -483,6 +484,9 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     print(f"\n[ship-sizes] {install_dir / 'common' / 'ship_sizes'}", file=progress)
     extract_resources(install_dir / 'common' / 'ship_sizes', 'ship_size_resource', scripted_vars,
                       inline_scripts_dir, w, args.verbose)
+    print(f"\n[megastructures] {install_dir / 'common' / 'megastructures'}", file=progress)
+    extract_megastructures(install_dir / 'common' / 'megastructures', scripted_vars,
+                           inline_scripts_dir, w, args.verbose)
     for folder, table in (('starbase_modules', 'starbase_module_resource'),
                           ('starbase_buildings', 'starbase_building_resource')):
         print(f"\n[{folder}] {install_dir / 'common' / folder}", file=progress)
@@ -545,6 +549,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     name_keys: set[str] = set()
     for f in sorted((install_dir / 'common' / 'random_names').rglob('*.txt')):
         name_keys |= random_name_keys(f.read_text(encoding='utf-8-sig', errors='replace'))
+    for f in sorted([*(install_dir / 'events').glob('*.txt'), *(install_dir / 'common').rglob('*.txt')]):
+        name_keys |= set_name_keys(f.read_text(encoding='utf-8-sig', errors='replace'))
     extract_prescripted_names(loc, name_keys, w)
     extract_scripted_triggers(install_dir, w)
     print(f"\n[species rights] {install_dir / 'common' / 'species_rights'}", file=progress)

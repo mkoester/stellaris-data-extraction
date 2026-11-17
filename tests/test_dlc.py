@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.misc import _dlc_rows, host_checks, prescripted_names, random_name_keys
+from extractor.misc import _dlc_rows, host_checks, prescripted_names, random_name_keys, set_name_keys
 
 # Shaped like dlc_metadata/dlc_info.txt (note the missing `=` the real file has once).
 INFO = """
@@ -51,6 +51,15 @@ class TestPrescriptedNames(unittest.TestCase):
         keys = random_name_keys('voidworm_star_names = {\n\t\t"VOIDWORM_SYSTEM_12"\n\t\t"Achernar"\n\t}')
         loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
+
+    def test_set_name_keys(self):
+        text = ('immediate = { set_name = grand_archive.2800.name }\n'
+                'set_name = "QUOTED_NAME"\n'
+                'set_name = { key = NAME_Homeworld_Two variable_string = "[x]" }')
+        self.assertEqual(set_name_keys(text), {'grand_archive.2800.name', 'QUOTED_NAME'})
+        loc = {'grand_archive.2800.name': 'False Asteroid'}
+        self.assertEqual(prescripted_names(loc, set_name_keys(text)),
+                         [('grand_archive.2800.name', 'False Asteroid')])
 
     def test_ship_names_that_differ_from_their_key(self):
         # 4.5.2 localisation/english/name_lists/name_list_HUM1_l_english.yml; a nomad's arkship

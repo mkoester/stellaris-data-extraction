@@ -222,6 +222,28 @@ class Outcomes:
         self.variables = dict(variables or {})
         self.load_inline = load_inline or (lambda name: None)
         self._parsed: dict[str, list] = {}
+        # the country flags our empire gets on the way (`set_country_flag` in country scope), for
+        # telling a finished anomaly, project or dig site from a lost one; `collect()` sets both
+        self.flags: list[dict] | None = None
+        self.chapter: int | None = None
+
+    def collect(self, fn, chapter: int | None = None) -> tuple:
+        """`fn()` and the country flags it sets, `{k, ch?}` each once (`ch`: a dig site's chapter)."""
+        prev, self.flags, self.chapter = (self.flags, self.chapter), [], chapter
+        try:
+            return fn(), self.flags
+        finally:
+            self.flags, self.chapter = prev
+
+    def _flag(self, value) -> None:
+        f = _get(value, 'flag') if _is_block(value) else value
+        if self.flags is None or self.scope != 'country' or not isinstance(f, str) or '$' in f or '@' in f:
+            return
+        mark = {'k': f.strip('"')}
+        if self.chapter is not None:
+            mark['ch'] = self.chapter
+        if mark not in self.flags:
+            self.flags.append(mark)
 
     # names ---------------------------------------------------------------------------------
 
@@ -389,6 +411,9 @@ class Outcomes:
 
     def effect(self, key: str, value, depth: int, ctx: '_Ctx', sdepth: int) -> list[dict]:
         if key in _TRIGGERS:
+            return []
+        if key == 'set_country_flag':
+            self._flag(value)
             return []
         if key in _EVENT_KEYS:
             if isinstance(value, str):
@@ -652,16 +677,16 @@ def extract_outcomes(install_dir: Path, oc: Outcomes, w, progress=sys.stderr) ->
     common = install_dir / 'common'
     counts = {'anomaly': 0, 'project': 0, 'dig_site': 0}
 
-    def put(kind, key, tree):
+    def put(kind, key, tree, flags):
         j = tree_json(tree)
         if j:
-            w.execute("INSERT OR REPLACE INTO outcome (kind, key, tree_json) VALUES (?, ?, ?)",
-                      (kind, key, j))
+            w.execute("INSERT OR REPLACE INTO outcome (kind, key, tree_json, flags_json) VALUES (?, ?, ?, ?)",
+                      (kind, key, j, tree_json(flags)))
             counts[kind] += 1
 
     for key, cat in sorted(_ordered_definitions(common / 'anomalies').items()):
         if not key.startswith('@'):
-            put('anomaly', key, oc.root(_get(cat, 'on_success'), 'anomaly'))
+            put('anomaly', key, *oc.collect(lambda: oc.root(_get(cat, 'on_success'), 'anomaly')))
 
     projects: dict[str, list] = {}
     d = common / 'special_projects'
@@ -673,24 +698,27 @@ def extract_outcomes(install_dir: Path, oc: Outcomes, w, progress=sys.stderr) ->
                     projects[pk.strip('"')] = v
     for key, p in sorted(projects.items()):
         scope = _EVENT_SCOPES.get(str(_get(p, 'event_scope') or ''))
-        put('project', key, oc.root(_get(p, 'on_success') or [], scope=scope))
+        put('project', key, *oc.collect(lambda: oc.root(_get(p, 'on_success') or [], scope=scope)))
 
     for key, site in sorted(_ordered_definitions(common / 'archaeological_site_types').items()):
         if key.startswith('@'):
             continue
-        chapters = []
+        chapters, flags = [], []
         for k, _, v in site:
             if k == 'stage' and _is_block(v):
                 ev = _get(v, 'event')
                 diff = oc.value(_get(v, 'difficulty'))
-                chapters.append({'t': 'chapter', 'n': len(chapters) + 1,
+                n = len(chapters) + 1
+                e, f = oc.collect(lambda: oc.follow(ev, 0, _Ctx()) if isinstance(ev, str) else [], n)
+                flags += f
+                chapters.append({'t': 'chapter', 'n': n,
                                  'difficulty': _int_or_float(diff) if diff is not None else None,
-                                 'e': oc.follow(ev, 0, _Ctx()) if isinstance(ev, str) else []})
+                                 'e': e})
         desc = _get(site, 'desc')
         w.execute("INSERT OR REPLACE INTO dig_site (key, name, description, stages) VALUES (?, ?, ?, ?)",
                   (key, oc.text(key), _clean_loc(oc.loc[desc.strip('"')], oc.loc, keep_newlines=True)
                    if isinstance(desc, str) and desc.strip('"') in oc.loc else None, len(chapters)))
-        put('dig_site', key, chapters)
+        put('dig_site', key, chapters, flags)
 
     print(f"  outcomes: {counts['anomaly']} anomaly categories, {counts['project']} special projects, "
           f"{counts['dig_site']} dig sites", file=progress)

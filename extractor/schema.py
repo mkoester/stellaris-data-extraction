@@ -1255,6 +1255,7 @@ CREATE TABLE outcome (
     kind      TEXT NOT NULL,               -- anomaly / project / dig_site
     key       TEXT NOT NULL,               -- anomaly_category.key, special_project.key, dig_site.key
     tree_json TEXT NOT NULL,               -- [{"t":"event","id":"anomaly.2010","o":[…]}, …]
+    flags_json TEXT,                       -- country flags set on the way: [{"k":"found_voyager"}, {"k":…,"ch":2}] (ch: dig-site chapter); NULL: none
     PRIMARY KEY (kind, key)
 );
 -- Archaeological site types (common/archaeological_site_types); a save's
@@ -1307,7 +1308,27 @@ CREATE TABLE district_job (
     amount REAL NOT NULL,                  -- positions, in pops (the save's job positions' unit)
     PRIMARY KEY (key, job)
 );
--- base_buildtime of districts, ship sizes and buildings, days before modifiers (stations have none).
+-- Megastructure stages (empire dashboard: what a planned one costs). One row per stage it is
+-- upgraded from, NULL for a first stage (dyson_sphere_1 ← dyson_sphere_0; dyson_sphere_2 ←
+-- dyson_sphere_1 and dyson_swarm_3).
+DROP TABLE IF EXISTS megastructure_resource;
+DROP TABLE IF EXISTS megastructure;
+CREATE TABLE megastructure (
+    key          TEXT NOT NULL,            -- e.g. "dyson_sphere_1", "civilian_arkship_megastructure"
+    upgrade_from TEXT
+);
+-- A stage's cost and upkeep, before modifiers. ships: 'any' | 'bio' | 'regular' — the
+-- `country_uses_bio_ships` variant a block is gated on (bio empires pay part in food).
+CREATE TABLE megastructure_resource (
+    key      TEXT NOT NULL,
+    kind     TEXT NOT NULL,                -- 'cost' | 'upkeep'
+    resource TEXT NOT NULL,
+    ships    TEXT NOT NULL,
+    amount   REAL NOT NULL,
+    PRIMARY KEY (key, kind, resource, ships)
+);
+-- base_buildtime of districts, ship sizes and buildings, megastructures' build_time, days before
+-- modifiers (stations have none).
 DROP TABLE IF EXISTS build_time;
 CREATE TABLE build_time (
     key  TEXT PRIMARY KEY,

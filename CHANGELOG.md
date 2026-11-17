@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.20] - 2026-11-17
+
+### Added
+
+- `megastructure` and `megastructure_resource`: every megastructure stage, which stage it is
+  upgraded from, and its cost and upkeep before modifiers — split by `ships` (`any`, `regular`,
+  `bio`) where a bio-ship empire pays differently. `build_time` gains each stage's build time.
+- `outcome.flags_json`: the country flags an outcome sets in our empire's scope, with a dig
+  site's chapter (`ch`).
+- Names an event gives with a plain `set_name = <key>` in `events/` and `common/` (110 more rows
+  in 4.5): a save names what an event renamed by that key.
+
 ## [0.1.19] - 2026-11-17
 
 ### Added
