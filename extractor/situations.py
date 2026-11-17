@@ -57,6 +57,20 @@ def stage_keys(data: dict) -> list[str]:
     return [k for k, v in stages.items() if isinstance(v, dict)] if isinstance(stages, dict) else []
 
 
+def project_number(v, variables: dict[str, float]) -> float | None:
+    """A special project's `days_to_research` or `cost`: a number, an `@variable`, or a block's
+    `base` (`cost = { base = 2000 modifier = {…} }`, the modifiers left out). Pure."""
+    if isinstance(v, dict):
+        v = v.get('base')
+    s = str(v).strip() if v is not None else ''
+    if s.startswith('@'):
+        return variables.get(s)
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
 def stage_modifiers(stage: dict, variables: dict[str, float]) -> list[tuple[str, float]]:
     """A stage's `modifier = { … }` block as [(key, value)], `@variables` resolved."""
     block = stage.get('modifier')
@@ -123,19 +137,22 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
 
     n_proj = 0
     for f in _files(common / 'special_projects'):
-        for p in _as_blocks(parse_file(f).get('special_project')):
+        parsed = parse_file(f)
+        variables = dict(scripted_vars or {})
+        for k, v in parsed.items():
+            if k.startswith('@') and (fv := _resolve_modifier_float(v)) is not None:
+                variables[k] = fv
+        for p in _as_blocks(parsed.get('special_project')):
             key = _key(p.get('key'))
             if not key:
                 continue
-            try:
-                days = int(float(str(p.get('days_to_research'))))
-            except ValueError:
-                days = None
+            days = project_number(p.get('days_to_research'), variables)
             w.execute(
                 """INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (key, _text(loc, key), _text(loc, f'{key}_DESC', True), days,
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (key, _text(loc, key), _text(loc, f'{key}_DESC', True),
+                 None if days is None else int(days), project_number(p.get('cost'), variables),
                  _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc, title)))
             n_proj += 1
 

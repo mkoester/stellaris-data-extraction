@@ -1238,7 +1238,8 @@ CREATE TABLE special_project (
     key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
     name          TEXT,
     description   TEXT,
-    days          INTEGER,                 -- days_to_research
+    days          INTEGER,                 -- days_to_research (a ship's or fleet's project)
+    cost          REAL,                    -- research cost, its base (the field halts meanwhile)
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
     outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );
@@ -126576,1974 +126577,1974 @@ INSERT OR REPLACE INTO situation_approach
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_arkship_nanotech_consume_planet', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_BODIES_PROJECT', 'Analyze Dead Space Creatures', 'We have found the dead remains of several large creatures in orbit around the gas giant . Our scientists would like to study them more closely to determine their origins.', 180, 'society_technology', '[{"event": "anomaly.2501", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_BODIES_PROJECT', 'Analyze Dead Space Creatures', 'We have found the dead remains of several large creatures in orbit around the gas giant . Our scientists would like to study them more closely to determine their origins.', 180, '0.0', 'society_technology', '[{"event": "anomaly.2501", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SEA_EXPEDITION_PROJECT', 'Mount Deep Sea Expedition', 'There is a large ocean hidden beneath the ice mantle of . Our scientists would like to mount an expedition to study the unique life forms of this environment.', 180, 'society_technology', '[{"event": "anomaly.2512", "name": "Special Project Completed"}, {"event": "anomaly.2513", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SEA_EXPEDITION_PROJECT', 'Mount Deep Sea Expedition', 'There is a large ocean hidden beneath the ice mantle of . Our scientists would like to mount an expedition to study the unique life forms of this environment.', 180, '0.0', 'society_technology', '[{"event": "anomaly.2512", "name": "Special Project Completed"}, {"event": "anomaly.2513", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GIGANTIC_SKELETON_PROJECT', 'Investigate Gigantic Skeleton', 'A gigantic skeleton dating back more than three billion years has been found on the lifeless surface of . Our are eager to get to the bottom of this mystery.', 180, 'physics_technology', '[{"event": "anomaly.2521", "name": "Special Project Completed"}, {"event": "anomaly.2522", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GIGANTIC_SKELETON_PROJECT', 'Investigate Gigantic Skeleton', 'A gigantic skeleton dating back more than three billion years has been found on the lifeless surface of . Our are eager to get to the bottom of this mystery.', 180, '0.0', 'physics_technology', '[{"event": "anomaly.2521", "name": "Special Project Completed"}, {"event": "anomaly.2522", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BATTLE_WRECKAGE_PROJECT', 'Mount Graveyard Expedition', 'We have stumbled upon a starship graveyard on the surface of , the result of a titanic battle that occurred in close orbit thousands of years ago. A scientific expedition to study these ancient hulks and see if anything can be salvaged has been proposed.', 180, 'engineering_technology', '[{"event": "anomaly.2531", "name": "Special Project Completed"}, {"event": "anomaly.2532", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BATTLE_WRECKAGE_PROJECT', 'Mount Graveyard Expedition', 'We have stumbled upon a starship graveyard on the surface of , the result of a titanic battle that occurred in close orbit thousands of years ago. A scientific expedition to study these ancient hulks and see if anything can be salvaged has been proposed.', 180, '0.0', 'engineering_technology', '[{"event": "anomaly.2531", "name": "Special Project Completed"}, {"event": "anomaly.2532", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ABANDONED_TERRAFORMING_1_PROJECT', 'Resume Process', 'was partially terraformed thousands of years ago by an unknown agency. The terraforming equipment can still be found on the , and our scientists are looking for a way to resume the process.', NULL, 'society_technology', '[{"event": "colony.104", "name": "Special Project Completed"}, {"event": "colony.105", "name": "Special Project Completed"}, {"event": "colony.106", "name": "Special Project Completed"}, {"event": "colony.107", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ABANDONED_TERRAFORMING_1_PROJECT', 'Resume Process', 'was partially terraformed thousands of years ago by an unknown agency. The terraforming equipment can still be found on the , and our scientists are looking for a way to resume the process.', NULL, '2000.0', 'society_technology', '[{"event": "colony.104", "name": "Special Project Completed"}, {"event": "colony.105", "name": "Special Project Completed"}, {"event": "colony.106", "name": "Special Project Completed"}, {"event": "colony.107", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ABANDONED_TERRAFORMING_2_PROJECT', 'Dismantle Equipment', 'Despite its age, the abandoned terraforming equipment on appears to be quite advanced. Some of our engineers have asked for permission to dismantle and analyze the equipment, to see what can be learned from its technology.', NULL, 'engineering_technology', '[{"event": "colony.101", "name": "Terraforming Complex Dismantled"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ABANDONED_TERRAFORMING_2_PROJECT', 'Dismantle Equipment', 'Despite its age, the abandoned terraforming equipment on appears to be quite advanced. Some of our engineers have asked for permission to dismantle and analyze the equipment, to see what can be learned from its technology.', NULL, '1000.0', 'engineering_technology', '[{"event": "colony.101", "name": "Terraforming Complex Dismantled"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MUTANT_STALKER_PROJECT', 'Kill Marauding Creature', 'A mutated creature is terrorizing the population of our colony on . Many have died and the colonists are asking for help in their efforts to hunt down and eliminate the creature.', NULL, 'society_technology', '[{"event": "colony.110", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MUTANT_STALKER_PROJECT', 'Kill Marauding Creature', 'A mutated creature is terrorizing the population of our colony on . Many have died and the colonists are asking for help in their efforts to hunt down and eliminate the creature.', NULL, '5000.0', 'society_technology', '[{"event": "colony.110", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TRANSLATE_MURAL_PROJECT', 'Translate Alien Mural', 'An ancient mural covered in alien letters has been found on . With dedicated resources, we should be able to translate the writing.', 180, 'society_technology', '[{"event": "anomaly.2541", "name": "Special Project Completed"}, {"event": "anomaly.2542", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TRANSLATE_MURAL_PROJECT', 'Translate Alien Mural', 'An ancient mural covered in alien letters has been found on . With dedicated resources, we should be able to translate the writing.', 180, '0.0', 'society_technology', '[{"event": "anomaly.2541", "name": "Special Project Completed"}, {"event": "anomaly.2542", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NUCLEAR_BOMB_PROJECT', 'Disarm Nuclear Bomb', 'An abandoned hydrogen bomb has been inadvertently activated by our colonists on . We need to disarm it before the timer runs out!', NULL, 'engineering_technology', '[{"event": "colony.156", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NUCLEAR_BOMB_PROJECT', 'Disarm Nuclear Bomb', 'An abandoned hydrogen bomb has been inadvertently activated by our colonists on . We need to disarm it before the timer runs out!', NULL, '2000.0', 'engineering_technology', '[{"event": "colony.156", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MIGRATING_FORESTS_1_PROJECT', 'Study Migrating Forests', 'Several of our scientists are hoping that a solution which doesn''t involve the destruction of the forests can be found by continued studies of this alien flora.', NULL, 'society_technology', '[{"event": "colony.2", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MIGRATING_FORESTS_1_PROJECT', 'Study Migrating Forests', 'Several of our scientists are hoping that a solution which doesn''t involve the destruction of the forests can be found by continued studies of this alien flora.', NULL, '3500.0', 'society_technology', '[{"event": "colony.2", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MIGRATING_FORESTS_2_PROJECT', 'Burn Migrating Forests', 'The presence of these forests cannot be tolerated. An effort must be made to cleanse them from the ''s surface.', NULL, 'engineering_technology', '[{"event": "colony.3", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MIGRATING_FORESTS_2_PROJECT', 'Burn Migrating Forests', 'The presence of these forests cannot be tolerated. An effort must be made to cleanse them from the ''s surface.', NULL, '3500.0', 'engineering_technology', '[{"event": "colony.3", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SEISMIC_DISTURBANCE_1_PROJECT', 'Establish Communications', 'We need to find some way to communicate with the aliens. Perhaps we can find a way to coexist with their civilization.', NULL, 'society_technology', '[{"event": "colony.51", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SEISMIC_DISTURBANCE_1_PROJECT', 'Establish Communications', 'We need to find some way to communicate with the aliens. Perhaps we can find a way to coexist with their civilization.', NULL, '1000.0', 'society_technology', '[{"event": "colony.51", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SEISMIC_DISTURBANCE_2_PROJECT', 'Preemptive Strike', 'The aliens digging their way to the surface are a threat that must be dealt with. We will launch a preemptive strike against their underground cities.', NULL, 'engineering_technology', '[{"event": "colony.52", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SEISMIC_DISTURBANCE_2_PROJECT', 'Preemptive Strike', 'The aliens digging their way to the surface are a threat that must be dealt with. We will launch a preemptive strike against their underground cities.', NULL, '5000.0', 'engineering_technology', '[{"event": "colony.52", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SEISMIC_DISTURBANCE_3_PROJECT', 'Destroy Subterranean Civilization', 'The subterranean alien civilization on is a clear threat to our colony and must be destroyed. We need to find a way to strike at their cities underground.', NULL, 'engineering_technology', '[{"event": "colony.52", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SEISMIC_DISTURBANCE_3_PROJECT', 'Destroy Subterranean Civilization', 'The subterranean alien civilization on is a clear threat to our colony and must be destroyed. We need to find a way to strike at their cities underground.', NULL, '5000.0', 'engineering_technology', '[{"event": "colony.52", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UNDERGROUND_VAULT_PROJECT', 'Open Underground Vault', 'We have discovered a large underground vault on . Our scientists are looking for a way to open the vault''s reinforced doors so that we may learn what is inside.', NULL, 'engineering_technology', '[{"event": "colony.151", "name": "Special Project Completed"}, {"event": "colony.152", "name": "Special Project Completed"}, {"event": "colony.153", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UNDERGROUND_VAULT_PROJECT', 'Open Underground Vault', 'We have discovered a large underground vault on . Our scientists are looking for a way to open the vault''s reinforced doors so that we may learn what is inside.', NULL, '5000.0', 'engineering_technology', '[{"event": "colony.151", "name": "Special Project Completed"}, {"event": "colony.152", "name": "Special Project Completed"}, {"event": "colony.153", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ORBITAL_DEBRIS_PROJECT', 'Remove Orbital Debris', 'The orbital space around is cluttered with debris that is interfering with the development of the colony on the . Mapping the extensive debris field will require the powerful sensors of a Science Ship.', 60, 'engineering_technology', '[{"event": "colony.173", "name": "Special Project Completed"}, {"event": "colony.174", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ORBITAL_DEBRIS_PROJECT', 'Remove Orbital Debris', 'The orbital space around is cluttered with debris that is interfering with the development of the colony on the . Mapping the extensive debris field will require the powerful sensors of a Science Ship.', 60, NULL, 'engineering_technology', '[{"event": "colony.173", "name": "Special Project Completed"}, {"event": "colony.174", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AUTOMATED_SHIPYARD_PROJECT', 'Repair Automated Shipyard', 'The remains of an old automated shipyard have been found orbiting . Our engineers believe that they can restore power to the shipyard''s sole surviving manufacturing bay.', 180, 'engineering_technology', '[{"event": "anomaly.2551", "name": "Special Project Completed"}, {"event": "anomaly.2552", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AUTOMATED_SHIPYARD_PROJECT', 'Repair Automated Shipyard', 'The remains of an old automated shipyard have been found orbiting . Our engineers believe that they can restore power to the shipyard''s sole surviving manufacturing bay.', 180, '0.0', 'engineering_technology', '[{"event": "anomaly.2551", "name": "Special Project Completed"}, {"event": "anomaly.2552", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_SHIP_PROJECT', 'Salvage Gas Giant Ship', 'A derelict ship has been found deep within the atmosphere of the gas giant . Some of our scientists and engineers have proposed a project to raise the vessel to the upper atmosphere and salvage it.', 180, 'engineering_technology', '[{"event": "anomaly.2561", "name": "Special Project Completed"}, {"event": "anomaly.2562", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_SHIP_PROJECT', 'Salvage Gas Giant Ship', 'A derelict ship has been found deep within the atmosphere of the gas giant . Some of our scientists and engineers have proposed a project to raise the vessel to the upper atmosphere and salvage it.', 180, '0.0', 'engineering_technology', '[{"event": "anomaly.2561", "name": "Special Project Completed"}, {"event": "anomaly.2562", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TERMINAL_ORBIT_PROJECT', 'Observe Moon Impact', 'One of the moons circling will soon impact the surface of the gas giant. This extremely rare event should be recorded for posterity.', 180, 'physics_technology', '[{"event": "anomaly.2571", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TERMINAL_ORBIT_PROJECT', 'Observe Moon Impact', 'One of the moons circling will soon impact the surface of the gas giant. This extremely rare event should be recorded for posterity.', 180, '0.0', 'physics_technology', '[{"event": "anomaly.2571", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_SIGNAL', 'Isolate Signal', 'We have picked up a weak signal coming from the interior of the gas giant . It may be a transmission of some kind, but we have not yet been able to isolate the signal.', 180, 'society_technology', '[{"event": "anomaly.5001", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_SIGNAL', 'Isolate Signal', 'We have picked up a weak signal coming from the interior of the gas giant . It may be a transmission of some kind, but we have not yet been able to isolate the signal.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5001", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_RELOCATION', 'Dathnak Relocation', 'We have agreed to transport the Dathnak from their doomed homeworld to the gas giant , where they will make a new home. Time is short.', 180, 'society_technology', '[{"event": "anomaly.5004", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_RELOCATION', 'Dathnak Relocation', 'We have agreed to transport the Dathnak from their doomed homeworld to the gas giant , where they will make a new home. Time is short.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5004", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_COLONY', 'Establish Dathnak Colony', 'The Dathnak would like to found a new colony on , a gas giant with an atmosphere suitable to their physiology. We have agreed to assist them in this endeavor.', 180, 'society_technology', '[{"event": "anomaly.5008", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_COLONY', 'Establish Dathnak Colony', 'The Dathnak would like to found a new colony on , a gas giant with an atmosphere suitable to their physiology. We have agreed to assist them in this endeavor.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5008", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_LOST_CONTACT', 'Investigate New Baldarak', 'The Dathnak authorities on Baldarak have lost contact with their colony on New Baldarak, and they fear the worst. We have agreed to investigate the planet.', 180, 'society_technology', '[{"event": "anomaly.5012", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_LOST_CONTACT', 'Investigate New Baldarak', 'The Dathnak authorities on Baldarak have lost contact with their colony on New Baldarak, and they fear the worst. We have agreed to investigate the planet.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5012", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_REVOLT', 'Infiltrate Commando Unit', 'The Dathnak revolutionaries on New Baldarak have asked us to transport one of their commando units to Baldarak, where they will try to incite some kind of revolt.', 180, 'society_technology', '[{"event": "anomaly.5015", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_REVOLT', 'Infiltrate Commando Unit', 'The Dathnak revolutionaries on New Baldarak have asked us to transport one of their commando units to Baldarak, where they will try to incite some kind of revolt.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5015", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_OCCUPATION', 'Land Expeditionary Force', 'The Dathnak government on Baldarak is determined to restore control over their rebelling colony on New Baldarak. We have agreed to transport an expeditionary force to the planet.', 180, 'society_technology', '[{"event": "anomaly.5020", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_OCCUPATION', 'Land Expeditionary Force', 'The Dathnak government on Baldarak is determined to restore control over their rebelling colony on New Baldarak. We have agreed to transport an expeditionary force to the planet.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5020", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_GIANT_LOST_CHABKY', 'Bring Chabky Home', 'The Dathnak colonist Chabky Raddh is apparently homesick and wishes to return to Baldarak. We have reluctantly agreed to arrange this.', 180, 'society_technology', '[{"event": "anomaly.5010", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_GIANT_LOST_CHABKY', 'Bring Chabky Home', 'The Dathnak colonist Chabky Raddh is apparently homesick and wishes to return to Baldarak. We have reluctantly agreed to arrange this.', 180, '0.0', 'society_technology', '[{"event": "anomaly.5010", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SHUTTLE_INTERCEPTED', 'Rescue Shuttle Survivors', 'One of our shuttles was shot down by the natives on , and we need to rescue any surviving operatives before they are captured by local forces.', 180, 'society_technology', '[{"event": "observation.202", "name": "Operatives Rescued on"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SHUTTLE_INTERCEPTED', 'Rescue Shuttle Survivors', 'One of our shuttles was shot down by the natives on , and we need to rescue any surviving operatives before they are captured by local forces.', 180, '0.0', 'society_technology', '[{"event": "observation.202", "name": "Operatives Rescued on"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('EXTRACT_MISSING_SCIENTIST', 'Extract Missing Scientist', 'One of our scientists has gone rogue and is being worshiped as a god by the on . An operation must be launched to remove - by force if necessary.', 180, 'society_technology', '[{"event": "observation.106", "name": "Successful Extraction"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('EXTRACT_MISSING_SCIENTIST', 'Extract Missing Scientist', 'One of our scientists has gone rogue and is being worshiped as a god by the on . An operation must be launched to remove - by force if necessary.', 180, '0.0', 'society_technology', '[{"event": "observation.106", "name": "Successful Extraction"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROBE_ALIENS_PROJECT', 'Probe Aliens', 'Our scientists would like to gather test subjects from the native civilization on . After the tests have been conducted, the subjects will be returned to the ''s surface with no memory of the experience.', 180, 'society_technology', '[{"event": "observation.1502", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROBE_ALIENS_PROJECT', 'Probe Aliens', 'Our scientists would like to gather test subjects from the native civilization on . After the tests have been conducted, the subjects will be returned to the ''s surface with no memory of the experience.', 180, '0.0', 'society_technology', '[{"event": "observation.1502", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_1', 'Mining Base', 'A crater on was once the site of an ancient Vultaum mining base. An archaeological dig site will be established nearby to search the ruins for anything useful.', 180, 'society_technology', '[{"event": "precursor.6", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_1', 'Mining Base', 'A crater on was once the site of an ancient Vultaum mining base. An archaeological dig site will be established nearby to search the ruins for anything useful.', 180, '0.0', 'society_technology', '[{"event": "precursor.6", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_2', 'Observatory', 'There was once a Vultaum observatory on , a that lies quite some distance away from their ancient empire. Archeologists are eager to study the abandoned ruins.', 180, 'society_technology', '[{"event": "precursor.11", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_2', 'Observatory', 'There was once a Vultaum observatory on , a that lies quite some distance away from their ancient empire. Archeologists are eager to study the abandoned ruins.', 180, '0.0', 'society_technology', '[{"event": "precursor.11", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_3', 'Space Elevator', 'A collapsed Vultaum space elevator can be found near the equator on . There are surely many artifacts to be found if an archaeological dig site is established on the ''s surface.', 180, 'society_technology', '[{"event": "precursor.16", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_3', 'Space Elevator', 'A collapsed Vultaum space elevator can be found near the equator on . There are surely many artifacts to be found if an archaeological dig site is established on the ''s surface.', 180, '0.0', 'society_technology', '[{"event": "precursor.16", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_4', 'Metropolis', 'A collection of large craters on was once a major Vultaum metropolis. An archaeological dig site is needed to excavate potential artifacts.', 180, 'society_technology', '[{"event": "precursor.21", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_4', 'Metropolis', 'A collection of large craters on was once a major Vultaum metropolis. An archaeological dig site is needed to excavate potential artifacts.', 180, '0.0', 'society_technology', '[{"event": "precursor.21", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_5', 'Tunnel Network', 'There was once a vast tunnel network on that housed a major Vultaum colony before its collapse. An archaeological dig site is needed to excavate the ruins.', 180, 'society_technology', '[{"event": "precursor.26", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_5', 'Tunnel Network', 'There was once a vast tunnel network on that housed a major Vultaum colony before its collapse. An archaeological dig site is needed to excavate the ruins.', 180, '0.0', 'society_technology', '[{"event": "precursor.26", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_6', 'Gas Mining Facility', 'The partial remains of a Vultaum gas mining station still orbit . The derelict facility has been looted before, but our archaeologists are confident there are still discoveries to be made.', 180, 'society_technology', '[{"event": "precursor.31", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_6', 'Gas Mining Facility', 'The partial remains of a Vultaum gas mining station still orbit . The derelict facility has been looted before, but our archaeologists are confident there are still discoveries to be made.', 180, '0.0', 'society_technology', '[{"event": "precursor.31", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_7', 'Trade Post', 'A Vultaum trade post could once be found on . The abandoned ruins need to be properly excavated, but our archaeologists assure us it would be worth the effort.', 180, 'society_technology', '[{"event": "precursor.36", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_7', 'Trade Post', 'A Vultaum trade post could once be found on . The abandoned ruins need to be properly excavated, but our archaeologists assure us it would be worth the effort.', 180, '0.0', 'society_technology', '[{"event": "precursor.36", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_8', 'Satellite', 'An ancient Vultaum satellite was stumbled upon in orbit of . Its transmitter array has been salvaged, and our data engineers are anxious to analyze the equipment.', 180, 'society_technology', '[{"event": "precursor.41", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_8', 'Satellite', 'An ancient Vultaum satellite was stumbled upon in orbit of . Its transmitter array has been salvaged, and our data engineers are anxious to analyze the equipment.', 180, '0.0', 'society_technology', '[{"event": "precursor.41", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_9', 'Splinter Colony', 'We have discovered what appears to be the ruins of a Vultaum splinter colony on . Once a dig site has been set up, our archaeologists can begin excavating the ruins for valuable artifacts.', 180, 'society_technology', '[{"event": "precursor.46", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_9', 'Splinter Colony', 'We have discovered what appears to be the ruins of a Vultaum splinter colony on . Once a dig site has been set up, our archaeologists can begin excavating the ruins for valuable artifacts.', 180, '0.0', 'society_technology', '[{"event": "precursor.46", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_10', 'Orbital Complex', 'The metal skeleton of a massive Vultaum orbital complex has been found above . Its purpose seems to have been virtual reality research, but a proper archaeological survey needs to be conducted if we are to learn more.', 180, 'society_technology', '[{"event": "precursor.51", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_10', 'Orbital Complex', 'The metal skeleton of a massive Vultaum orbital complex has been found above . Its purpose seems to have been virtual reality research, but a proper archaeological survey needs to be conducted if we are to learn more.', 180, '0.0', 'society_technology', '[{"event": "precursor.51", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARCHEOLOGY_11', 'Asteroid Base', 'A massive crater is all that remains of an ancient Vultaum mining base on asteroid . Preliminary scans suggest that some of their mining tunnels may have survived, however.', 180, 'society_technology', '[{"event": "precursor.56", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARCHEOLOGY_11', 'Asteroid Base', 'A massive crater is all that remains of an ancient Vultaum mining base on asteroid . Preliminary scans suggest that some of their mining tunnels may have survived, however.', 180, '0.0', 'society_technology', '[{"event": "precursor.56", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_HOMEWORLD_PROJECT', 'Vultaumar', 'We now have the coordinates of the Vultaum home system.', 30, 'society_technology', '[{"event": "precursor.101", "name": "The Vultaum Homeworld"}, {"event": "precursor.102", "name": "Vultaum Homeworld Discovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_HOMEWORLD_PROJECT', 'Vultaumar', 'We now have the coordinates of the Vultaum home system.', 30, '0.0', 'society_technology', '[{"event": "precursor.101", "name": "The Vultaum Homeworld"}, {"event": "precursor.102", "name": "Vultaum Homeworld Discovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_1', 'Hatchery World', 'has been identified as a former Yuht hatchery world, where their infants were left to slowly mature on their own. An archaeological dig on this world is certain to produce valuable fossils.', 180, 'society_technology', '[{"event": "precursor.506", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_1', 'Hatchery World', 'has been identified as a former Yuht hatchery world, where their infants were left to slowly mature on their own. An archaeological dig on this world is certain to produce valuable fossils.', 180, '0.0', 'society_technology', '[{"event": "precursor.506", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_2', 'Listening Arrays', 'Several massive listening arrays were built on this world by the Yuht millions of years ago. Though they have long since stopped working, an archaeological excavation of the surrounding area could produce significant findings.', 180, 'society_technology', '[{"event": "precursor.511", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_2', 'Listening Arrays', 'Several massive listening arrays were built on this world by the Yuht millions of years ago. Though they have long since stopped working, an archaeological excavation of the surrounding area could produce significant findings.', 180, '0.0', 'society_technology', '[{"event": "precursor.511", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_3', 'Museum Ruins', 'An ancient Yuht museum dedicated to', 180, 'society_technology', '[{"event": "precursor.516", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_3', 'Museum Ruins', 'An ancient Yuht museum dedicated to', 180, '0.0', 'society_technology', '[{"event": "precursor.516", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_4', 'Ancient Graveyard', 'was once home to a thriving Yuht colony, and we have identified what appears to be a massive graveyard in an isolated region of the . It may be worth the effort to establish an archaeological excavation site there.', 180, 'society_technology', '[{"event": "precursor.521", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_4', 'Ancient Graveyard', 'was once home to a thriving Yuht colony, and we have identified what appears to be a massive graveyard in an isolated region of the . It may be worth the effort to establish an archaeological excavation site there.', 180, '0.0', 'society_technology', '[{"event": "precursor.521", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_5', 'Ancient Battlefield', 'Millions of years ago, was the scene of a devastating ground campaign between the Yuht and another species. Our archaeologists would like to scour the ancient battlefields for valuable artifacts.', 180, 'society_technology', '[{"event": "precursor.526", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_5', 'Ancient Battlefield', 'Millions of years ago, was the scene of a devastating ground campaign between the Yuht and another species. Our archaeologists would like to scour the ancient battlefields for valuable artifacts.', 180, '0.0', 'society_technology', '[{"event": "precursor.526", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_6', 'Ancient Satellite', 'The Yuht placed a satellite in orbit of to commemorate the first time they encountered another sapient alien species. A team of archaeologists have requested resources to conduct a full analysis of it.', 180, 'society_technology', '[{"event": "precursor.531", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_6', 'Ancient Satellite', 'The Yuht placed a satellite in orbit of to commemorate the first time they encountered another sapient alien species. A team of archaeologists have requested resources to conduct a full analysis of it.', 180, '0.0', 'society_technology', '[{"event": "precursor.531", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_7', 'Derelict Cruiser', 'A derelict Yuht cruiser was apparently abandoned in orbit of after a battle. Our archaeologists would like to board and analyze what remains of this ancient vessel.', 180, 'society_technology', '[{"event": "precursor.536", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_7', 'Derelict Cruiser', 'A derelict Yuht cruiser was apparently abandoned in orbit of after a battle. Our archaeologists would like to board and analyze what remains of this ancient vessel.', 180, '0.0', 'society_technology', '[{"event": "precursor.536", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_8', 'Derelict Colony Ship', 'The wreckage of what appears to be a Yuht colony ship was discovered in orbit of . An analysis of the vessel by a team of archaeologists could yield interesting findings.', 180, 'society_technology', '[{"event": "precursor.541", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_8', 'Derelict Colony Ship', 'The wreckage of what appears to be a Yuht colony ship was discovered in orbit of . An analysis of the vessel by a team of archaeologists could yield interesting findings.', 180, '0.0', 'society_technology', '[{"event": "precursor.541", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARCHEOLOGY_9', 'Asteroid Dwelling', 'Asteroid appears to house the remains of an ancient Yuht dwelling. An away team must be organized and sent to investigate the asteroid''s caverns to learn more about it.', 180, 'society_technology', '[{"event": "precursor.546", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARCHEOLOGY_9', 'Asteroid Dwelling', 'Asteroid appears to house the remains of an ancient Yuht dwelling. An away team must be organized and sent to investigate the asteroid''s caverns to learn more about it.', 180, '0.0', 'society_technology', '[{"event": "precursor.546", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_HOMEWORLD_PROJECT', 'Yuhtaan', 'The ancient homeworld of the Yuht has finally been located.', 30, 'society_technology', '[{"event": "precursor.601", "name": "The Yuht Homeworld"}, {"event": "precursor.602", "name": "Yuht Homeworld Discovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_HOMEWORLD_PROJECT', 'Yuhtaan', 'The ancient homeworld of the Yuht has finally been located.', 30, '0.0', 'society_technology', '[{"event": "precursor.601", "name": "The Yuht Homeworld"}, {"event": "precursor.602", "name": "Yuht Homeworld Discovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_1', 'Naval Base', 'The remnants of a First League naval base have been located above . Some of the debris appears stable enough to support an archaeological mission.', 180, 'society_technology', '[{"event": "precursor.1006", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_1', 'Naval Base', 'The remnants of a First League naval base have been located above . Some of the debris appears stable enough to support an archaeological mission.', 180, '0.0', 'society_technology', '[{"event": "precursor.1006", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_2', 'Derelict Cruiser', 'We have detected what appears to be the bow section of an old First League cruiser orbiting . A boarding party will need to study the remains if we are to learn more.', 180, 'society_technology', '[{"event": "precursor.1011", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_2', 'Derelict Cruiser', 'We have detected what appears to be the bow section of an old First League cruiser orbiting . A boarding party will need to study the remains if we are to learn more.', 180, '0.0', 'society_technology', '[{"event": "precursor.1011", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_3', 'Khamdai Homeworld', 'appears to be the homeworld of the extinct Khamdai, one of the founding members of the ancient First League. The is covered in ruins ready to be excavated.', 180, 'society_technology', '[{"event": "precursor.1016", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_3', 'Khamdai Homeworld', 'appears to be the homeworld of the extinct Khamdai, one of the founding members of the ancient First League. The is covered in ruins ready to be excavated.', 180, '0.0', 'society_technology', '[{"event": "precursor.1016", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_4', 'Chassago Homeworld', 'We have identified as the ancient homeworld of the serpentine Chassago, one of the founding members of the First League. There are still ruins from their subterranean cities to be found on the ''s surface.', 180, 'society_technology', '[{"event": "precursor.1021", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_4', 'Chassago Homeworld', 'We have identified as the ancient homeworld of the serpentine Chassago, one of the founding members of the First League. There are still ruins from their subterranean cities to be found on the ''s surface.', 180, '0.0', 'society_technology', '[{"event": "precursor.1021", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_5', 'Migir-Yan Homeworld', 'Two million years ago, the Migir-Yan were among the founding members of the First League, and we believe was their homeworld. Even after all these years, a few of their towering arcologies are still standing.', 180, 'society_technology', '[{"event": "precursor.1026", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_5', 'Migir-Yan Homeworld', 'Two million years ago, the Migir-Yan were among the founding members of the First League, and we believe was their homeworld. Even after all these years, a few of their towering arcologies are still standing.', 180, '0.0', 'society_technology', '[{"event": "precursor.1026", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_6', 'V''ropak Homeworld', 'The ancient V''ropak were founding members of the First League, and evidence suggests that was their homeworld. These avians built great cities within hollowed out mesas, and our archaeologists would like permission to investigate their ruins.', 180, 'society_technology', '[{"event": "precursor.1031", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_6', 'V''ropak Homeworld', 'The ancient V''ropak were founding members of the First League, and evidence suggests that was their homeworld. These avians built great cities within hollowed out mesas, and our archaeologists would like permission to investigate their ruins.', 180, '0.0', 'society_technology', '[{"event": "precursor.1031", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_7', 'Research Base', 'The ruins of a large ground installation can be found on the surface of . We believe these buildings were part of a major research base built by the ancient First League, but the ruins need to be studied more closely to be certain.', 180, 'society_technology', '[{"event": "precursor.1036", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_7', 'Research Base', 'The ruins of a large ground installation can be found on the surface of . We believe these buildings were part of a major research base built by the ancient First League, but the ruins need to be studied more closely to be certain.', 180, '0.0', 'society_technology', '[{"event": "precursor.1036", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_8', 'Colony Ruins', 'The First League established a colony on at some point, populating it with settlers from all of its member species. It would seem the colony failed, but we will have to excavate the ruins to determine why.', 180, 'society_technology', '[{"event": "precursor.1041", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_8', 'Colony Ruins', 'The First League established a colony on at some point, populating it with settlers from all of its member species. It would seem the colony failed, but we will have to excavate the ruins to determine why.', 180, '0.0', 'society_technology', '[{"event": "precursor.1041", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_9', 'Trade Center', 'was once a major center of trade in the ancient First League. The was heavily urbanized, and there are still plenty of ruins left for our archaeologists to study.', 180, 'society_technology', '[{"event": "precursor.1046", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_9', 'Trade Center', 'was once a major center of trade in the ancient First League. The was heavily urbanized, and there are still plenty of ruins left for our archaeologists to study.', 180, '0.0', 'society_technology', '[{"event": "precursor.1046", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_10', 'Battle Wreckage', 'A massive fleet battle involving the First League occurred two million years ago near . Some of the wreckage found its way to the ''s surface, and our archaeologists suggest the establishment of a base camp nearby.', 180, 'society_technology', '[{"event": "precursor.1051", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_10', 'Battle Wreckage', 'A massive fleet battle involving the First League occurred two million years ago near . Some of the wreckage found its way to the ''s surface, and our archaeologists suggest the establishment of a base camp nearby.', 180, '0.0', 'society_technology', '[{"event": "precursor.1051", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_11', 'Penal Colony', 'The hostile of served as a penal colony in the ancient First League, and some of the prison facilities could be excavated if we establish an archaeological dig site.', 180, 'society_technology', '[{"event": "precursor.1056", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_11', 'Penal Colony', 'The hostile of served as a penal colony in the ancient First League, and some of the prison facilities could be excavated if we establish an archaeological dig site.', 180, '0.0', 'society_technology', '[{"event": "precursor.1056", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_12', 'Observation Post', 'was the homeworld of an early Bronze Age civilization that appears to have been under observation by the First League. Several promising dig sites have already been identified.', 180, 'society_technology', '[{"event": "precursor.1061", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_12', 'Observation Post', 'was the homeworld of an early Bronze Age civilization that appears to have been under observation by the First League. Several promising dig sites have already been identified.', 180, '0.0', 'society_technology', '[{"event": "precursor.1061", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_13', 'Orbital Blockade', 'was the homeworld of an unidentified species that seems to have been the subject of an orbital blockade by ships from the First League. An archaeological mission will hopefully reveal more.', 180, 'society_technology', '[{"event": "precursor.1066", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_13', 'Orbital Blockade', 'was the homeworld of an unidentified species that seems to have been the subject of an orbital blockade by ships from the First League. An archaeological mission will hopefully reveal more.', 180, '0.0', 'society_technology', '[{"event": "precursor.1066", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_14', 'Smuggler Asteroid', 'Asteroid was apparently used as hidden port by smugglers, pirates and other criminal elements within the First League. We should comb through the interior of this asteroid for First League artifacts.', 180, 'society_technology', '[{"event": "precursor.1071", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_ARCHEOLOGY_14', 'Smuggler Asteroid', 'Asteroid was apparently used as hidden port by smugglers, pirates and other criminal elements within the First League. We should comb through the interior of this asteroid for First League artifacts.', 180, '0.0', 'society_technology', '[{"event": "precursor.1071", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FIRST_LEAGUE_HOMEWORLD_PROJECT', 'Fen Habbanis', 'The Fen Habbanis system was the political, administrative and economical center of the ancient First League.', 30, 'society_technology', '[{"event": "precursor.1101", "name": "The First League Headquarters"}, {"event": "precursor.1102", "name": "First League Capital Found"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FIRST_LEAGUE_HOMEWORLD_PROJECT', 'Fen Habbanis', 'The Fen Habbanis system was the political, administrative and economical center of the ancient First League.', 30, '0.0', 'society_technology', '[{"event": "precursor.1101", "name": "The First League Headquarters"}, {"event": "precursor.1102", "name": "First League Capital Found"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_1', 'Orbital Blockade', 'The Irassian colony on fell to the Javorian Pox, but there is evidence that the was subjected to a blockade just before this happened. To learn more, we will have to examine the orbital debris more closely.', 180, 'society_technology', '[{"event": "precursor.1506", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_1', 'Orbital Blockade', 'The Irassian colony on fell to the Javorian Pox, but there is evidence that the was subjected to a blockade just before this happened. To learn more, we will have to examine the orbital debris more closely.', 180, '0.0', 'society_technology', '[{"event": "precursor.1506", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_2', 'Bombarded Colony', 'was subjected to massive orbital bombardment 1.2 million years ago, but before that the was a flourishing Irassian colony. Perhaps an archaeological expedition can learn more.', 180, 'society_technology', '[{"event": "precursor.1511", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_2', 'Bombarded Colony', 'was subjected to massive orbital bombardment 1.2 million years ago, but before that the was a flourishing Irassian colony. Perhaps an archaeological expedition can learn more.', 180, '0.0', 'society_technology', '[{"event": "precursor.1511", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_3', 'Joggra Homeworld', 'The molluscoid Joggra originated on , a subjugated client species of the Irassian Concordat. Little is known of them, but perhaps an archaeological expedition can remedy this.', 180, 'society_technology', '[{"event": "precursor.1516", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_3', 'Joggra Homeworld', 'The molluscoid Joggra originated on , a subjugated client species of the Irassian Concordat. Little is known of them, but perhaps an archaeological expedition can remedy this.', 180, '0.0', 'society_technology', '[{"event": "precursor.1516", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_4', 'Ti''Derg Homeworld', 'was the ancient homeworld of the Ti''Derg, but it suffered a comprehensive orbital bombardment 1.2 million years ago. It is known that the Ti''Derg were one of several Irassian client species, but exactly what prompted this bombardment remains a mystery.', 180, 'society_technology', '[{"event": "precursor.1521", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_4', 'Ti''Derg Homeworld', 'was the ancient homeworld of the Ti''Derg, but it suffered a comprehensive orbital bombardment 1.2 million years ago. It is known that the Ti''Derg were one of several Irassian client species, but exactly what prompted this bombardment remains a mystery.', 180, '0.0', 'society_technology', '[{"event": "precursor.1521", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_5', 'Colony Ruins', 'Only ruins and fossils remain of the Irassian colony on . It appears to have been another victim of the Javorian Pox, but perhaps an archaeological mission can shed some more light on the colony''s fate.', 180, 'society_technology', '[{"event": "precursor.1526", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_5', 'Colony Ruins', 'Only ruins and fossils remain of the Irassian colony on . It appears to have been another victim of the Javorian Pox, but perhaps an archaeological mission can shed some more light on the colony''s fate.', 180, '0.0', 'society_technology', '[{"event": "precursor.1526", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_6', 'Mining Base', 'The deep boreholes on indicate the former presence of an Irassian mining base. Our archaeologists would like to investigate them further.', 180, 'society_technology', '[{"event": "precursor.1531", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_6', 'Mining Base', 'The deep boreholes on indicate the former presence of an Irassian mining base. Our archaeologists would like to investigate them further.', 180, '0.0', 'society_technology', '[{"event": "precursor.1531", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_7', 'Colony Remnants', 'was an early victim of the Javorian Pox, and our archaeologists would like to study the former Irassian colony for clues as to the origin of the disease.', 180, 'society_technology', '[{"event": "precursor.1536", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_7', 'Colony Remnants', 'was an early victim of the Javorian Pox, and our archaeologists would like to study the former Irassian colony for clues as to the origin of the disease.', 180, '0.0', 'society_technology', '[{"event": "precursor.1536", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_8', 'Derelict Cruiser', 'We have encountered a derelict Irassian cruiser orbiting . A team of archaeologists stand ready to board the vessel.', 180, 'society_technology', '[{"event": "precursor.1541", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_8', 'Derelict Cruiser', 'We have encountered a derelict Irassian cruiser orbiting . A team of archaeologists stand ready to board the vessel.', 180, '0.0', 'society_technology', '[{"event": "precursor.1541", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_9', 'Orbital Station', 'The shattered remains of an Irassian orbital station was found above . It appears to have served as the headquarters of their Disease Control authority, but to learn more we will need to conduct an extensive search of the debris field.', 180, 'society_technology', '[{"event": "precursor.1546", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_9', 'Orbital Station', 'The shattered remains of an Irassian orbital station was found above . It appears to have served as the headquarters of their Disease Control authority, but to learn more we will need to conduct an extensive search of the debris field.', 180, '0.0', 'society_technology', '[{"event": "precursor.1546", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_10', 'Asteroid Listening Post', 'An abandoned military listening post has been found on asteroid . We believe it may have been constructed by the ancient Irassian Concordat.', 180, 'society_technology', '[{"event": "precursor.1551", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_10', 'Asteroid Listening Post', 'An abandoned military listening post has been found on asteroid . We believe it may have been constructed by the ancient Irassian Concordat.', 180, '0.0', 'society_technology', '[{"event": "precursor.1551", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARCHEOLOGY_11', 'Gas Giant Research Station', 'Orbital debris from an ancient Irassian research station has been found above . The Irassians appear to have been studying the gas giant for some reason.', 180, 'society_technology', '[{"event": "precursor.1556", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARCHEOLOGY_11', 'Gas Giant Research Station', 'Orbital debris from an ancient Irassian research station has been found above . The Irassians appear to have been studying the gas giant for some reason.', 180, '0.0', 'society_technology', '[{"event": "precursor.1556", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_HOMEWORLD_PROJECT', 'Irass', 'The Irass system was the heart of the ancient Irassian Concordat.', 30, 'society_technology', '[{"event": "precursor.1601", "name": "The Irassian Homeworld"}, {"event": "precursor.1602", "name": "Irassian Homeworld Found"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_HOMEWORLD_PROJECT', 'Irass', 'The Irass system was the heart of the ancient Irassian Concordat.', 30, '0.0', 'society_technology', '[{"event": "precursor.1601", "name": "The Irassian Homeworld"}, {"event": "precursor.1602", "name": "Irassian Homeworld Found"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_1', 'Kuur Homeworld', ', the former Kuur homeworld, is yet another victim of the rampaging Cybrex. A few crumbling ruins are all that remains of the Kuur civilization, but they should be investigated.', 180, 'society_technology', '[{"event": "precursor.2006", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_1', 'Kuur Homeworld', ', the former Kuur homeworld, is yet another victim of the rampaging Cybrex. A few crumbling ruins are all that remains of the Kuur civilization, but they should be investigated.', 180, '0.0', 'society_technology', '[{"event": "precursor.2006", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_2', 'Indimak Homeworld', 'was once the homeworld of the ancient Indimak civilization, before the warforms of the Cybrex machine consciousness descended upon it leaving only destruction in their wake. There may be important archaeological findings here.', 180, 'society_technology', '[{"event": "precursor.2011", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_2', 'Indimak Homeworld', 'was once the homeworld of the ancient Indimak civilization, before the warforms of the Cybrex machine consciousness descended upon it leaving only destruction in their wake. There may be important archaeological findings here.', 180, '0.0', 'society_technology', '[{"event": "precursor.2011", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_3', 'Broken Cybrex Warforms', 'Two ruined Cybrex warforms have been found in orbit around . They should be investigated more closely.', 180, 'society_technology', '[{"event": "precursor.2016", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_3', 'Broken Cybrex Warforms', 'Two ruined Cybrex warforms have been found in orbit around . They should be investigated more closely.', 180, '0.0', 'society_technology', '[{"event": "precursor.2016", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_4', 'Cybrex Invasion', 'A ground war of massive proportions took place on long ago, when the Cybrex invaded the ''s original owners. This ancient battlefield should be searched for artifacts.', 180, 'society_technology', '[{"event": "precursor.2021", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_4', 'Cybrex Invasion', 'A ground war of massive proportions took place on long ago, when the Cybrex invaded the ''s original owners. This ancient battlefield should be searched for artifacts.', 180, '0.0', 'society_technology', '[{"event": "precursor.2021", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_5', 'Cybrex Ruins', 'was heavily developed by the Cybrex, but for unclear reasons they left a large rectangular area near the equator mostly untouched. Our archaeologists should investigate why.', 180, 'society_technology', '[{"event": "precursor.2026", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_5', 'Cybrex Ruins', 'was heavily developed by the Cybrex, but for unclear reasons they left a large rectangular area near the equator mostly untouched. Our archaeologists should investigate why.', 180, '0.0', 'society_technology', '[{"event": "precursor.2026", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_6', 'Cybrex Listening Post', 'Asteroid is actually not an asteroid, but an artificially constructed object made by the Cybrex. It served them as a concealed listening post roughly 600,000 years ago.', 180, 'society_technology', '[{"event": "precursor.2031", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_6', 'Cybrex Listening Post', 'Asteroid is actually not an asteroid, but an artificially constructed object made by the Cybrex. It served them as a concealed listening post roughly 600,000 years ago.', 180, '0.0', 'society_technology', '[{"event": "precursor.2031", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_7', 'Cybrex Refinery', 'Debris from a large Cybrex refinery complex floats in orbit over . It seems like the machines were engaged in some kind of mining operation here.', 180, 'society_technology', '[{"event": "precursor.2036", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_7', 'Cybrex Refinery', 'Debris from a large Cybrex refinery complex floats in orbit over . It seems like the machines were engaged in some kind of mining operation here.', 180, '0.0', 'society_technology', '[{"event": "precursor.2036", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_8', 'Battle Debris', 'A space battle of truly colossal proportions took place near 600,000 years ago with ships from at least five different fleets involved. One of these fleets belonged to the Cybrex.', 180, 'society_technology', '[{"event": "precursor.2041", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_8', 'Battle Debris', 'A space battle of truly colossal proportions took place near 600,000 years ago with ships from at least five different fleets involved. One of these fleets belonged to the Cybrex.', 180, '0.0', 'society_technology', '[{"event": "precursor.2041", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_9', 'Ancient Cybrex Base', 'There was once a large Cybrex base on the surface of , until it was reduced to a crater. We should investigate what happened.', 180, 'society_technology', '[{"event": "precursor.2046", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_9', 'Ancient Cybrex Base', 'There was once a large Cybrex base on the surface of , until it was reduced to a crater. We should investigate what happened.', 180, '0.0', 'society_technology', '[{"event": "precursor.2046", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_10', 'Organic Remains', 'The corpses from almost a thousand aliens have been found in orbit above . They appear to have died around the same time as the Cybrex controlled this portion of the galaxy.', 180, 'society_technology', '[{"event": "precursor.2051", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_10', 'Organic Remains', 'The corpses from almost a thousand aliens have been found in orbit above . They appear to have died around the same time as the Cybrex controlled this portion of the galaxy.', 180, '0.0', 'society_technology', '[{"event": "precursor.2051", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARCHEOLOGY_11', 'Cybrex Research Station', 'A module from a Cybrex research station was found orbiting containing the remnants of some kind of cybernetic creatures.', 180, 'society_technology', '[{"event": "precursor.2056", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARCHEOLOGY_11', 'Cybrex Research Station', 'A module from a Cybrex research station was found orbiting containing the remnants of some kind of cybernetic creatures.', 180, '0.0', 'society_technology', '[{"event": "precursor.2056", "name": "Archaeological Project Completed"}, {"event": "ancrel.15055", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_HOMEWORLD_PROJECT', 'Cybrex Alpha', 'The Cybrex seem to have retreated to this star system.', 30, 'society_technology', '[{"event": "precursor.2101", "name": "The Cybrex Central Nexus"}, {"event": "precursor.2102", "name": "Cybrex Ring World Found"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_HOMEWORLD_PROJECT', 'Cybrex Alpha', 'The Cybrex seem to have retreated to this star system.', 30, '0.0', 'society_technology', '[{"event": "precursor.2101", "name": "The Cybrex Central Nexus"}, {"event": "precursor.2102", "name": "Cybrex Ring World Found"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TARBLAC_PROCUREMENT', 'The Elusive Tarblac', 'Tarblacs are found deep beneath the waves on the ocean world .', 180, 'society_technology', '[{"event": "country.54", "name": "Tarblac Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TARBLAC_PROCUREMENT', 'The Elusive Tarblac', 'Tarblacs are found deep beneath the waves on the ocean world .', 180, '0.0', 'society_technology', '[{"event": "country.54", "name": "Tarblac Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TASSARGOID_PROCUREMENT', 'The Mighty Tassargoid', 'Tassargoids have been sighted in the humid jungles of .', 180, 'society_technology', '[{"event": "country.55", "name": "Tassargoid Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TASSARGOID_PROCUREMENT', 'The Mighty Tassargoid', 'Tassargoids have been sighted in the humid jungles of .', 180, '0.0', 'society_technology', '[{"event": "country.55", "name": "Tassargoid Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ORINTHI_PROCUREMENT', 'The Vile Orinthi', 'Orinthi have been reported in large numbers across most of .', 180, 'society_technology', '[{"event": "country.56", "name": "Orinthi Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ORINTHI_PROCUREMENT', 'The Vile Orinthi', 'Orinthi have been reported in large numbers across most of .', 180, '0.0', 'society_technology', '[{"event": "country.56", "name": "Orinthi Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SNIRAN_PROCUREMENT', 'The Insidious Sniran', 'Snirans are unique to the great dune seas of .', 180, 'society_technology', '[{"event": "country.57", "name": "Sniran Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SNIRAN_PROCUREMENT', 'The Insidious Sniran', 'Snirans are unique to the great dune seas of .', 180, '0.0', 'society_technology', '[{"event": "country.57", "name": "Sniran Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GOOLANTHA_PROCUREMENT', 'The Malleable Goolantha', 'Goolantha herds may only be found on the open steppes of .', 180, 'society_technology', '[{"event": "country.58", "name": "Goolantha Herd Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GOOLANTHA_PROCUREMENT', 'The Malleable Goolantha', 'Goolantha herds may only be found on the open steppes of .', 180, '0.0', 'society_technology', '[{"event": "country.58", "name": "Goolantha Herd Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UDDLORAN_PROCUREMENT', 'The Wily Uddloran', 'Uddlorans can be found racing through the snowy wastes of .', 180, 'society_technology', '[{"event": "country.59", "name": "Uddlorans Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UDDLORAN_PROCUREMENT', 'The Wily Uddloran', 'Uddlorans can be found racing through the snowy wastes of .', 180, '0.0', 'society_technology', '[{"event": "country.59", "name": "Uddlorans Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ZULCOR_PROCUREMENT', 'The Ravenous Zulcor', 'Zulcor swarms are native to the dry canyons of .', 180, 'society_technology', '[{"event": "country.60", "name": "Zulcor Swarm Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ZULCOR_PROCUREMENT', 'The Ravenous Zulcor', 'Zulcor swarms are native to the dry canyons of .', 180, '0.0', 'society_technology', '[{"event": "country.60", "name": "Zulcor Swarm Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SUBLIGHT_PROBE_PROJECT', 'Recover Probe', 'We have sighted one of our old sublight space probes in the system. It must be recovered as soon as possible.', 180, 'society_technology', '[{"event": "country.4", "name": "Probe Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SUBLIGHT_PROBE_PROJECT', 'Recover Probe', 'We have sighted one of our old sublight space probes in the system. It must be recovered as soon as possible.', 180, '0.0', 'society_technology', '[{"event": "country.4", "name": "Probe Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BOARD_CULT_SHIP_1', 'Board Cultist Ship', 'One of the cultist ships has been disabled by our forces. We should conduct a boarding operation to secure prisoners and any intelligence assets we find.', 60, 'engineering_technology', '[{"event": "country.203", "name": "Boarding Action"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BOARD_CULT_SHIP_1', 'Board Cultist Ship', 'One of the cultist ships has been disabled by our forces. We should conduct a boarding operation to secure prisoners and any intelligence assets we find.', 60, '0.0', 'engineering_technology', '[{"event": "country.203", "name": "Boarding Action"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BOARD_CULT_SHIP_2', 'Board Cultist Flagship', 'We have disabled the cultist flagship! A substantial number of troops will be needed to successfully board and capture the vessel.', 60, 'society_technology', '[{"event": "country.214", "name": "Cultist Flagship Secured"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BOARD_CULT_SHIP_2', 'Board Cultist Flagship', 'We have disabled the cultist flagship! A substantial number of troops will be needed to successfully board and capture the vessel.', 60, '0.0', 'society_technology', '[{"event": "country.214", "name": "Cultist Flagship Secured"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CULTIST_DEBRIS', 'Cultist Warship Debris', 'The cult has been developing some new type of weapon, and the trace to their base of operations have ended here. If we investigate their technology we might find some clues to their leader''s whereabouts.', 60, 'society_technology', '[{"event": "country.208", "name": "Recovery Efforts Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CULTIST_DEBRIS', 'Cultist Warship Debris', 'The cult has been developing some new type of weapon, and the trace to their base of operations have ended here. If we investigate their technology we might find some clues to their leader''s whereabouts.', 60, '0.0', 'society_technology', '[{"event": "country.208", "name": "Recovery Efforts Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SMUGGLER_RAID_PROJECT', 'Raid Smuggler Base', 'Smugglers have established an illegal outpost on the surface of , a primitive sanctuary world under our protection. They must be removed before they cause lasting harm to the ''s native civilization.', 60, 'society_technology', '[{"event": "observation.302", "name": "Raid on Smugglers"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SMUGGLER_RAID_PROJECT', 'Raid Smuggler Base', 'Smugglers have established an illegal outpost on the surface of , a primitive sanctuary world under our protection. They must be removed before they cause lasting harm to the ''s native civilization.', 60, '0.0', 'society_technology', '[{"event": "observation.302", "name": "Raid on Smugglers"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ROGUE_BOMBARDMENT_PROJECT', 'Eliminate Rogue Agent', 'Our rogue covert infiltration operative on has finally been tracked to a safe house in the suburbs of a large city. We need fleet assets in orbit to bombard his position from space.', 60, 'society_technology', '[{"event": "preftl_espionage.1022", "name": ": Rogue Agent Eliminated"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ROGUE_BOMBARDMENT_PROJECT', 'Eliminate Rogue Agent', 'Our rogue covert infiltration operative on has finally been tracked to a safe house in the suburbs of a large city. We need fleet assets in orbit to bombard his position from space.', 60, '0.0', 'society_technology', '[{"event": "preftl_espionage.1022", "name": ": Rogue Agent Eliminated"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AVERT_PRIMITIVE_WAR_PROJECT', 'Avert War on', 'Due to an incident related to our covert infiltration program on , the have been brought to the brink of nuclear war. Our infiltration cells on the require a Science Ship in orbit to calm the situation.', 60, 'society_technology', '[{"event": "preftl_espionage.1120", "name": ": War Averted"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AVERT_PRIMITIVE_WAR_PROJECT', 'Avert War on', 'Due to an incident related to our covert infiltration program on , the have been brought to the brink of nuclear war. Our infiltration cells on the require a Science Ship in orbit to calm the situation.', 60, '0.0', 'society_technology', '[{"event": "preftl_espionage.1120", "name": ": War Averted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FALLEN_SHIELD_PROJECT', 'Lower Shield on', 'For reasons unknown, someone or something has encased in an impenetrable energy shield. Its energy levels are fluctuating, suggesting that the shield has been active for many thousands of years. We must find some way to nullify the barrier and discover what lies beneath!', 720, 'physics_technology', '[{"event": "galactic_features.301", "name": "Mothballed Fleet"}, {"event": "galactic_features.302", "name": "Vault of Knowledge"}, {"event": "galactic_features.303", "name": "The Prisoner"}, {"event": "galactic_features.305", "name": "The Exiles Return"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FALLEN_SHIELD_PROJECT', 'Lower Shield on', 'For reasons unknown, someone or something has encased in an impenetrable energy shield. Its energy levels are fluctuating, suggesting that the shield has been active for many thousands of years. We must find some way to nullify the barrier and discover what lies beneath!', 720, NULL, 'physics_technology', '[{"event": "galactic_features.301", "name": "Mothballed Fleet"}, {"event": "galactic_features.302", "name": "Vault of Knowledge"}, {"event": "galactic_features.303", "name": "The Prisoner"}, {"event": "galactic_features.305", "name": "The Exiles Return"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ESTABLISH_COMMUNICATIONS', 'Investigate', 'We need to learn more about the mysterious aliens we have code-named . If they possess a language, we must decipher it and establish communications.
-Reward: Influence or Special Project', 0, 'society_technology', NULL);
+Reward: Influence or Special Project', 0, '500.0', 'society_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BOARD_HYACINTH', 'Board the Hyacinth', 'The Hyacinth has been located above and appears to be structurally intact. We will have to assemble a boarding party to learn what has happened to the arkship.', 60, 'society_technology', '[{"event": "country.255", "name": "Hyacinth Boarded"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BOARD_HYACINTH', 'Board the Hyacinth', 'The Hyacinth has been located above and appears to be structurally intact. We will have to assemble a boarding party to learn what has happened to the arkship.', 60, '0.0', 'society_technology', '[{"event": "country.255", "name": "Hyacinth Boarded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ABDUCT_SCIENTIST_PROJECT', 'Abduct Scientist', 'A brilliant scientist has been identified among the on . considerable skill is wasted on civilization, but would be quite a boon to our own research programs. Plans have been put into motion to abduct and then', 60, 'society_technology', '[{"event": "observation.1002", "name": "Abduction Successful"}, {"event": "observation.1003", "name": "Abduction Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ABDUCT_SCIENTIST_PROJECT', 'Abduct Scientist', 'A brilliant scientist has been identified among the on . considerable skill is wasted on civilization, but would be quite a boon to our own research programs. Plans have been put into motion to abduct and then', 60, '0.0', 'society_technology', '[{"event": "observation.1002", "name": "Abduction Successful"}, {"event": "observation.1003", "name": "Abduction Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IMPLANT_MALFUNCTIONS_PROJECT', 'Remove Malfunctioning Implants', 'We are having problems with the brain implants that were given to several test subjects among the on . There have been a number of malfunctions, resulting in violent behavior and, in some cases, fatalities. We need to remove these implants before they can cause any more problems.', 60, 'society_technology', '[{"event": "observation.1202", "name": ": Implants Removed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IMPLANT_MALFUNCTIONS_PROJECT', 'Remove Malfunctioning Implants', 'We are having problems with the brain implants that were given to several test subjects among the on . There have been a number of malfunctions, resulting in violent behavior and, in some cases, fatalities. We need to remove these implants before they can cause any more problems.', 60, '0.0', 'society_technology', '[{"event": "observation.1202", "name": ": Implants Removed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DEFENSE_FORCE_STRIKE_PROJECT', 'Destroy Native Defense Force', 'The nation states on have banded together and formed an anti-alien task force with the mission to thwart our operations on their homeworld. This cannot be tolerated. We must launch a punitive strike against the main base of this organization.', 60, 'society_technology', '[{"event": "observation.1106", "name": ": Successful Strike"}, {"event": "observation.1107", "name": ": Failed Strike"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DEFENSE_FORCE_STRIKE_PROJECT', 'Destroy Native Defense Force', 'The nation states on have banded together and formed an anti-alien task force with the mission to thwart our operations on their homeworld. This cannot be tolerated. We must launch a punitive strike against the main base of this organization.', 60, '0.0', 'society_technology', '[{"event": "observation.1106", "name": ": Successful Strike"}, {"event": "observation.1107", "name": ": Failed Strike"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SYNTH_INFILTRATION_PROJECT', 'Synth Detection Method', 'Synthetic infiltrators disguised as are operating within the . We need to come up with some kind of reliable and efficient method of identifying them.', NULL, 'society_technology', '[{"event": "crisis.2203", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SYNTH_INFILTRATION_PROJECT', 'Synth Detection Method', 'Synthetic infiltrators disguised as are operating within the . We need to come up with some kind of reliable and efficient method of identifying them.', NULL, '2000.0', 'society_technology', '[{"event": "crisis.2203", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CAPTURE_QUEEN', 'Capture the Queen', 'After a recent space battle in the system, a Prethoryn Queen was badly injured and left for dead by the rest of the Scourge. The creature is still alive, however. Capturing it would be a major intelligence coup.', 60, 'society_technology', '[{"event": "crisis.105", "name": "Long live the Queen!"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CAPTURE_QUEEN', 'Capture the Queen', 'After a recent space battle in the system, a Prethoryn Queen was badly injured and left for dead by the rest of the Scourge. The creature is still alive, however. Capturing it would be a major intelligence coup.', 60, '0.0', 'society_technology', '[{"event": "crisis.105", "name": "Long live the Queen!"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('FLEET_MANEUVERS_1_PROJECT', 'Conduct Fleet Maneuvers', 'Major fleet maneuvers have been planned in the system, close to the border of the . The purpose of this exercise is to simulate a hostile probe by significant forces into our space, as a possible prelude to an invasion.
-The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
+The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, '0.0', 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('FLEET_MANEUVERS_2_PROJECT', 'Conduct Fleet Maneuvers', 'Major fleet maneuvers have been planned in the system, close to the border of the . The purpose of this exercise is to simulate a hostile probe by significant forces into our space, as a possible prelude to an invasion.
-The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
+The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, '0.0', 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('FLEET_MANEUVERS_3_PROJECT', 'Conduct Fleet Maneuvers', 'Major fleet maneuvers have been planned in the system, close to the border of the . The purpose of this exercise is to simulate a hostile probe by significant forces into our space, as a possible prelude to an invasion.
-The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
+The exercise will begin once all of the allocated forces have reached the initial staging area in orbit of .', 180, '0.0', 'society_technology', '[{"event": "diplomatic.1025", "name": "Maneuvers Concluded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AI_CRISIS_PROJECT', 'Blocking the Ghost Signal', 'We must find a way to block the Ghost Signal and prevent it from corrupting our main core before it''s too late.', NULL, 'engineering_technology', '[{"event": "crisis.2510", "name": "Ghost Signal Blocked"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AI_CRISIS_PROJECT', 'Blocking the Ghost Signal', 'We must find a way to block the Ghost Signal and prevent it from corrupting our main core before it''s too late.', NULL, '2000.0', 'engineering_technology', '[{"event": "crisis.2510", "name": "Ghost Signal Blocked"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_ARTIFACT_FOUND', 'Signs of Vultaum Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Vultaum Star Assembly is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, 'society_technology', '[{"event": "precursor.302", "name": "Vultaum Artifact Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_ARTIFACT_FOUND', 'Signs of Vultaum Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Vultaum Star Assembly is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, '0.0', 'society_technology', '[{"event": "precursor.302", "name": "Vultaum Artifact Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_ARTIFACT_FOUND', 'Signs of Yuht Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Yuht Empire is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, 'society_technology', '[{"event": "precursor.303", "name": "Yuht Artifact Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_ARTIFACT_FOUND', 'Signs of Yuht Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Yuht Empire is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, '0.0', 'society_technology', '[{"event": "precursor.303", "name": "Yuht Artifact Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEAGUE_ARTIFACT_FOUND', 'Signs of First League Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient First League is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, 'society_technology', '[{"event": "precursor.304", "name": "First League Artifact Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEAGUE_ARTIFACT_FOUND', 'Signs of First League Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient First League is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, '0.0', 'society_technology', '[{"event": "precursor.304", "name": "First League Artifact Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_ARTIFACT_FOUND', 'Signs of Irassian Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Irassian Concordat is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, 'society_technology', '[{"event": "precursor.305", "name": "Irassian Artifact Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_ARTIFACT_FOUND', 'Signs of Irassian Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Irassian Concordat is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, '0.0', 'society_technology', '[{"event": "precursor.305", "name": "Irassian Artifact Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_ARTIFACT_FOUND', 'Signs of Cybrex Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Cybrex is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, 'society_technology', '[{"event": "precursor.306", "name": "Cybrex Artifact Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_ARTIFACT_FOUND', 'Signs of Cybrex Activity', 'We have learned that there may have been Precursor activity on at some point in the galactic past. The sphere of influence of the ancient Cybrex is known to have extended to this region of space, making this world a promising lead in our ongoing efforts to learn more about their civilization.', 180, '0.0', 'society_technology', '[{"event": "precursor.306", "name": "Cybrex Artifact Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FASCINATING_METEOROLOGY_PROJECT', 'Fascinating Meteorology', 'Research into ''s fascinating meteorology could prove invaluable to our scientific development.', 180, 'society_technology', '[{"event": "colony.9301", "name": "Invaluable Insight"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FASCINATING_METEOROLOGY_PROJECT', 'Fascinating Meteorology', 'Research into ''s fascinating meteorology could prove invaluable to our scientific development.', 180, '0.0', 'society_technology', '[{"event": "colony.9301", "name": "Invaluable Insight"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DEAL_WITH_FLORA', 'Plant Aggression', 'The planet''s flora is remarkably dexterous, alarmingly aggressive, and definitely worthy of closer study.', 60, 'society_technology', '[{"event": "anomaly.91", "name": "Grassy Militia"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DEAL_WITH_FLORA', 'Plant Aggression', 'The planet''s flora is remarkably dexterous, alarmingly aggressive, and definitely worthy of closer study.', 60, NULL, 'society_technology', '[{"event": "anomaly.91", "name": "Grassy Militia"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('HELPFUL_DRONES_1_PROJECT', 'Left Behind', 'Strange readings are coming from the planet''s moon. It could be nothing.
-But it could be something. With a ship in orbit acting as a relay, the colony''s scientists will carefully scan the moon''s surface in order to get to the heart of the matter.', 30, 'engineering_technology', '[{"event": "colony.1501", "name": "Ancient Drones: Discovery"}]');
+But it could be something. With a ship in orbit acting as a relay, the colony''s scientists will carefully scan the moon''s surface in order to get to the heart of the matter.', 30, NULL, 'engineering_technology', '[{"event": "colony.1501", "name": "Ancient Drones: Discovery"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('POLLEN_1_PROJECT', 'Floral Study', 'Some of the planet''s native flora exhibit several potentially interesting properties.', 20, 'society_technology', '[{"event": "colony.1534", "name": "Mharin Kharin: Pistil Pondering"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('POLLEN_1_PROJECT', 'Floral Study', 'Some of the planet''s native flora exhibit several potentially interesting properties.', 20, NULL, 'society_technology', '[{"event": "colony.1534", "name": "Mharin Kharin: Pistil Pondering"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('POLLEN_2_PROJECT', 'Labor Study', 'Several recent studies from reputable seats of learning present a number of alternative ways of arranging a vast workforce. An exhaustive meta-study of these new ideas could provide the answer to the problem of declining productivity in challenging colony environments.', 30, 'society_technology', '[{"event": "colony.1523", "name": "Mharin Kharin: Work Over Flowers"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('POLLEN_2_PROJECT', 'Labor Study', 'Several recent studies from reputable seats of learning present a number of alternative ways of arranging a vast workforce. An exhaustive meta-study of these new ideas could provide the answer to the problem of declining productivity in challenging colony environments.', 30, NULL, 'society_technology', '[{"event": "colony.1523", "name": "Mharin Kharin: Work Over Flowers"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('POLLEN_3_PROJECT', 'A Sense of Impending Doom', 'The situation on the pollen-infested planet has taken a turn for the potentially dangerous. A speedy assessment of the colony''s unique situation and especially its increasingly volatile environmental factors is of the utmost importance.
-Once all threats are known, an action plan can be drafted and executed within hours.', 10, 'society_technology', '[{"event": "colony.1531", "name": "Mharin Kharin: Disaster Averted"}]');
+Once all threats are known, an action plan can be drafted and executed within hours.', 10, NULL, 'society_technology', '[{"event": "colony.1531", "name": "Mharin Kharin: Disaster Averted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('OLD_GODS_BENEFACTRESS_PROJECT', 'Old Gods: The Benefactress', 'Every surface of the Benefactress'' shrine is covered with a complex web of pictograms, seemingly telling a story far more expansive than the lingering fables on .
-Though only distantly related to known ancient languages: modern technology should allow us to decipher the pictograms, given enough time and resources.', 90, 'society_technology', '[{"event": "anomaly.165", "name": "Old Gods: Shrine to the Benefactress"}]');
+Though only distantly related to known ancient languages: modern technology should allow us to decipher the pictograms, given enough time and resources.', 90, NULL, 'society_technology', '[{"event": "anomaly.165", "name": "Old Gods: Shrine to the Benefactress"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('OLD_GODS_UNDAUNTED_PROJECT', 'Old Gods: The Undaunted', 'The temple holding the Undaunted''s shrine is - true to the myths surrounding him - filled with contraptions of indeterminate origin and purpose. A far cry from the simple puzzle-boxes and tests of strength that once filled his temples on , it was once claimed that his holy texts could only be read by the truly worthy.
-Our sophisticated analysis tools should make short work of these ciphers.', 90, 'engineering_technology', '[{"event": "anomaly.166", "name": "Old Gods: Shrine to the Undaunted"}]');
+Our sophisticated analysis tools should make short work of these ciphers.', 90, NULL, 'engineering_technology', '[{"event": "anomaly.166", "name": "Old Gods: Shrine to the Undaunted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('OLD_GODS_PERCIPIENT_PROJECT', 'Old Gods: The Percipient', 'The walls housing this shrine to the Percipient are coated with thick layers of a mineral-based lacquer, but the shrine itself is bare.
-The tales of the Percipient are told only to those perceptive enough to understand their meaning - it is just a matter of figuring out what needs to be perceived.', 90, 'physics_technology', '[{"event": "anomaly.167", "name": "Old Gods: Shrine to the Percipient"}]');
+The tales of the Percipient are told only to those perceptive enough to understand their meaning - it is just a matter of figuring out what needs to be perceived.', 90, NULL, 'physics_technology', '[{"event": "anomaly.167", "name": "Old Gods: Shrine to the Percipient"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ROGUE_SCIENTIST_1_PROJECT', 'Wanderlust: What Was Left Behind', 'The Chairperson''s unseen departure from this system resulted in a perplexing mass of residual energy signatures being cast upon the solar winds.
-Hopefully a complete analysis of these energies should point us to the Chairperson''s next destination, and if need be, make them easier to track in the future.', 10, 'physics_technology', '[{"event": "country.1025", "name": "Wanderlust: Special Project Completed"}]');
+Hopefully a complete analysis of these energies should point us to the Chairperson''s next destination, and if need be, make them easier to track in the future.', 10, NULL, 'physics_technology', '[{"event": "country.1025", "name": "Wanderlust: Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASSEX_1_PROJECT', 'Analysis: Broken', 'Reconstruct the traumatic past of this celestial body.', 60, 'society_technology', '[{"event": "country.1130", "name": "Mass Extinction: Asteroid"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASSEX_1_PROJECT', 'Analysis: Broken', 'Reconstruct the traumatic past of this celestial body.', 60, NULL, 'society_technology', '[{"event": "country.1130", "name": "Mass Extinction: Asteroid"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASSEX_2_PROJECT', 'Analysis: Burned', 'Reconstruct the traumatic past of this celestial body.', 60, 'society_technology', '[{"event": "country.1135", "name": "Mass Extinction: Molten"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASSEX_2_PROJECT', 'Analysis: Burned', 'Reconstruct the traumatic past of this celestial body.', 60, NULL, 'society_technology', '[{"event": "country.1135", "name": "Mass Extinction: Molten"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASSEX_3_PROJECT', 'Analysis: Desolate', 'Reconstruct the traumatic past of this celestial body.', 60, 'society_technology', '[{"event": "country.1140", "name": "Mass Extinction: Barren"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASSEX_3_PROJECT', 'Analysis: Desolate', 'Reconstruct the traumatic past of this celestial body.', 60, NULL, 'society_technology', '[{"event": "country.1140", "name": "Mass Extinction: Barren"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASSEX_4_PROJECT', 'Analysis: Noxious', 'Reconstruct the traumatic past of this celestial body.', 60, 'society_technology', '[{"event": "country.1145", "name": "Mass Extinction: Toxic"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASSEX_4_PROJECT', 'Analysis: Noxious', 'Reconstruct the traumatic past of this celestial body.', 60, NULL, 'society_technology', '[{"event": "country.1145", "name": "Mass Extinction: Toxic"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASSEX_5_PROJECT', 'Analysis: Chilly', 'Reconstruct the traumatic past of this celestial body.', 60, 'society_technology', '[{"event": "country.1150", "name": "Mass Extinction: Frozen"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASSEX_5_PROJECT', 'Analysis: Chilly', 'Reconstruct the traumatic past of this celestial body.', 60, NULL, 'society_technology', '[{"event": "country.1150", "name": "Mass Extinction: Frozen"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LIMBO_1_PROJECT', 'In Limbo', 'An alien vault filled with data storage devices practically begs for some archaeological data recovery.', 60, 'society_technology', '[{"event": "anomaly.186", "name": "Limbo"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LIMBO_1_PROJECT', 'In Limbo', 'An alien vault filled with data storage devices practically begs for some archaeological data recovery.', 60, NULL, 'society_technology', '[{"event": "anomaly.186", "name": "Limbo"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECTING_MOON_PROJECT', 'Projecting', 'An unusual planet has an unusual moon; the usual scanning techniques do not give satisfactory results, and a more hands-on approach is needed.', 60, 'engineering_technology', '[{"event": "anomaly.191", "name": "Moon Projected"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECTING_MOON_PROJECT', 'Projecting', 'An unusual planet has an unusual moon; the usual scanning techniques do not give satisfactory results, and a more hands-on approach is needed.', 60, NULL, 'engineering_technology', '[{"event": "anomaly.191", "name": "Moon Projected"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GRIMACING_PLANET_PROJECT', 'Grimacing Planet', 'The violently animated face of this planet can be stabilized into something potentially habitable, if we act soon.', 10, 'engineering_technology', '[{"event": "anomaly.233", "name": "Tactical Terraforming Successful"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GRIMACING_PLANET_PROJECT', 'Grimacing Planet', 'The violently animated face of this planet can be stabilized into something potentially habitable, if we act soon.', 10, NULL, 'engineering_technology', '[{"event": "anomaly.233", "name": "Tactical Terraforming Successful"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('OLFACTORY_PROJECT', 'Olfactory Study', 'An alien artifact is suspected of relaying information through aerosolized aromatic compounds.', 30, 'society_technology', '[{"event": "anomaly.251", "name": "A Whiff of Something"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('OLFACTORY_PROJECT', 'Olfactory Study', 'An alien artifact is suspected of relaying information through aerosolized aromatic compounds.', 30, NULL, 'society_technology', '[{"event": "anomaly.251", "name": "A Whiff of Something"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ULTIMATE_WEAPON_PROJECT', 'The Ultimate Weapon', 'A cache of weapons lie hidden somewhere on the planet. If we can find them, they may provide new martial technologies for our Empire.', 200, 'engineering_technology', '[{"event": "anomaly.258", "name": "Empty-handed"}, {"event": "anomaly.256", "name": "An Interesting Find"}, {"event": "anomaly.257", "name": "A Brutal Find"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ULTIMATE_WEAPON_PROJECT', 'The Ultimate Weapon', 'A cache of weapons lie hidden somewhere on the planet. If we can find them, they may provide new martial technologies for our Empire.', 200, NULL, 'engineering_technology', '[{"event": "anomaly.258", "name": "Empty-handed"}, {"event": "anomaly.256", "name": "An Interesting Find"}, {"event": "anomaly.257", "name": "A Brutal Find"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REFINE_ROCK_PROJECT', 'Positron Bombardment', 'Controlled dispersal of positrons from orbit may change the minerals native to the planet into a more useful form.', 60, 'physics_technology', '[{"event": "anomaly.292", "name": "Rock Potential"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REFINE_ROCK_PROJECT', 'Positron Bombardment', 'Controlled dispersal of positrons from orbit may change the minerals native to the planet into a more useful form.', 60, NULL, 'physics_technology', '[{"event": "anomaly.292", "name": "Rock Potential"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ALIEN_BARRACKS_PROJECT', 'Alien Barracks', 'A closer xeno-socio-archaeological study of these ruins may provide insights into some past alien war machine.', 60, 'society_technology', '[{"event": "anomaly.3017", "name": "Alien Barracks"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ALIEN_BARRACKS_PROJECT', 'Alien Barracks', 'A closer xeno-socio-archaeological study of these ruins may provide insights into some past alien war machine.', 60, NULL, 'society_technology', '[{"event": "anomaly.3017", "name": "Alien Barracks"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYSTAL_CODEX_PROJECT', 'Crystal Codex', 'A mineral formation houses hologram-encoded information. Its structure is familiar, but the sheer data density makes it a challenge to decode.', 60, 'society_technology', '[{"event": "anomaly.3012", "name": "Crystal Codex"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYSTAL_CODEX_PROJECT', 'Crystal Codex', 'A mineral formation houses hologram-encoded information. Its structure is familiar, but the sheer data density makes it a challenge to decode.', 60, NULL, 'society_technology', '[{"event": "anomaly.3012", "name": "Crystal Codex"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ROBOT_MINERALS_PROJECT', 'Reclaimed by Nature', 'An overgrown facility may house important secrets.', 60, 'engineering_technology', '[{"event": "anomaly.3027", "name": "Ancient Automata"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ROBOT_MINERALS_PROJECT', 'Reclaimed by Nature', 'An overgrown facility may house important secrets.', 60, NULL, 'engineering_technology', '[{"event": "anomaly.3027", "name": "Ancient Automata"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AMOEBAS_PROJECT', 'Space Amoeba Study', 'Task a science department with collecting and collating data relating to the Space Amoebas.', NULL, 'society_technology', '[{"event": "story.105", "name": "Space Amoebas Forever"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AMOEBAS_PROJECT', 'Space Amoeba Study', 'Task a science department with collecting and collating data relating to the Space Amoebas.', NULL, '1500.0', 'society_technology', '[{"event": "story.105", "name": "Space Amoebas Forever"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AMOEBAS_PACIFICATION_PROJECT', 'Amoeboid Pacification', 'Something about our fleets seems to agitate the Space Amoebas. If we could somehow isolate what this something is, we could reduce Amoeba aggression or possibly completely mask our ships from their senses.', NULL, 'physics_technology', '[{"event": "story.107", "name": "Amoebas Pacified"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AMOEBAS_PACIFICATION_PROJECT', 'Amoeboid Pacification', 'Something about our fleets seems to agitate the Space Amoebas. If we could somehow isolate what this something is, we could reduce Amoeba aggression or possibly completely mask our ships from their senses.', NULL, '3000.0', 'physics_technology', '[{"event": "story.107", "name": "Amoebas Pacified"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYSTALS_PROJECT', 'Crystalline Study', 'Task a science department with collecting and collating data relating to the Crystalline Entities.', NULL, 'physics_technology', '[{"event": "story.205", "name": "Crystalline Entities Are Unbreakable"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYSTALS_PROJECT', 'Crystalline Study', 'Task a science department with collecting and collating data relating to the Crystalline Entities.', NULL, '1500.0', 'physics_technology', '[{"event": "story.205", "name": "Crystalline Entities Are Unbreakable"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYSTALS_PACIFICATION_PROJECT', 'Crystalline Pacification', 'The Crystalline Entities observed in some systems are volatile and potentially dangerous.', NULL, 'physics_technology', '[{"event": "story.207", "name": "Crystals Pacified"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYSTALS_PACIFICATION_PROJECT', 'Crystalline Pacification', 'The Crystalline Entities observed in some systems are volatile and potentially dangerous.', NULL, '3000.0', 'physics_technology', '[{"event": "story.207", "name": "Crystals Pacified"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DRONES_PROJECT', 'Drone Study', 'Task a science department with collecting and collating data relating to the Ancient Mining Drones.', NULL, 'engineering_technology', '[{"event": "story.305", "name": "Mining Drone Work Ethic"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DRONES_PROJECT', 'Drone Study', 'Task a science department with collecting and collating data relating to the Ancient Mining Drones.', NULL, '1500.0', 'engineering_technology', '[{"event": "story.305", "name": "Mining Drone Work Ethic"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CLOUDS_PROJECT', 'Cloud Study', 'Task a science department with collecting and collating data relating to the Void Clouds.', NULL, 'physics_technology', '[{"event": "story.405", "name": "Void Unclouded"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CLOUDS_PROJECT', 'Cloud Study', 'Task a science department with collecting and collating data relating to the Void Clouds.', NULL, '1500.0', 'physics_technology', '[{"event": "story.405", "name": "Void Unclouded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BALANCE_ECOSYSTEM_PROJECT', 'Balance Ecosystem', 'A plan has been formulated to attempt to balance the planet''s lopsided biosphere using only the tools available to a standard Science Ship.
-There may be unforeseen consequences.', 100, 'society_technology', '[{"event": "anomaly.3056", "name": "Wooden Hegemony"}, {"event": "anomaly.3057", "name": "Wooden Hegemony"}]');
+There may be unforeseen consequences.', 100, NULL, 'society_technology', '[{"event": "anomaly.3056", "name": "Wooden Hegemony"}, {"event": "anomaly.3057", "name": "Wooden Hegemony"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HEAD_IN_SAND_PROJECT', 'Head in the Sand', 'A military fleet can attempt to salvage an ever-burrowing ship.', 100, 'engineering_technology', '[{"event": "anomaly.3061", "name": "Head in the Sand"}, {"event": "anomaly.3062", "name": "Head in the Sand"}, {"event": "anomaly.3063", "name": "Head in the Sand"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HEAD_IN_SAND_PROJECT', 'Head in the Sand', 'A military fleet can attempt to salvage an ever-burrowing ship.', 100, NULL, 'engineering_technology', '[{"event": "anomaly.3061", "name": "Head in the Sand"}, {"event": "anomaly.3062", "name": "Head in the Sand"}, {"event": "anomaly.3063", "name": "Head in the Sand"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_PRINCE_PROJECT', 'The Prince', 'A databank found floating in space houses nothing but a lengthy piece of text, written in a strange, yet familiar, alien language.', NULL, 'society_technology', '[{"event": "anomaly.3086", "name": "The Prince, Legible"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_PRINCE_PROJECT', 'The Prince', 'A databank found floating in space houses nothing but a lengthy piece of text, written in a strange, yet familiar, alien language.', NULL, '1000.0', 'society_technology', '[{"event": "anomaly.3086", "name": "The Prince, Legible"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('EMERGENCY_BUOY_PROJECT', 'Emergency Buoy', 'A heavily-damaged object seems to act as a repeater for a comms signal.', 30, 'engineering_technology', '[{"event": "anomaly.3091", "name": "The Ransomeers: SOS"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('EMERGENCY_BUOY_PROJECT', 'Emergency Buoy', 'A heavily-damaged object seems to act as a repeater for a comms signal.', 30, NULL, 'engineering_technology', '[{"event": "anomaly.3091", "name": "The Ransomeers: SOS"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WRECKED_FLEET_1', 'Monumental Transmission', 'Decode the message emanating from the monolith.', 60, 'society_technology', '[{"event": "anomaly.3113", "name": "Of Transmissions Decoded"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WRECKED_FLEET_1', 'Monumental Transmission', 'Decode the message emanating from the monolith.', 60, NULL, 'society_technology', '[{"event": "anomaly.3113", "name": "Of Transmissions Decoded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WRECKED_FLEET_2', 'Ancient Alliance Armada', 'Deploy engineering teams to restore the salvageable vessels to working order.', 120, 'engineering_technology', '[{"event": "anomaly.3116", "name": "Of Fleets Commandeered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WRECKED_FLEET_2', 'Ancient Alliance Armada', 'Deploy engineering teams to restore the salvageable vessels to working order.', 120, NULL, 'engineering_technology', '[{"event": "anomaly.3116", "name": "Of Fleets Commandeered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MANUFACTORY_PROJECT', 'Mining Restoration', 'Deploy engineering teams to restore an ancient orbital station to working order.', 80, 'engineering_technology', '[{"event": "anomaly.3128", "name": "Ancient Manufactory: Drones Activated"}, {"event": "anomaly.3129", "name": "Ancient Manufactory: Nest Disturbed"}, {"event": "anomaly_failure.2670", "name": "Failure"}, {"event": "anomaly.3126", "name": "Ancient Manufactory: New Mining Station"}, {"event": "anomaly.3131", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MANUFACTORY_PROJECT', 'Mining Restoration', 'Deploy engineering teams to restore an ancient orbital station to working order.', 80, NULL, 'engineering_technology', '[{"event": "anomaly.3128", "name": "Ancient Manufactory: Drones Activated"}, {"event": "anomaly.3129", "name": "Ancient Manufactory: Nest Disturbed"}, {"event": "anomaly_failure.2670", "name": "Failure"}, {"event": "anomaly.3126", "name": "Ancient Manufactory: New Mining Station"}, {"event": "anomaly.3131", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DERELICT_SHIP_PROJECT', 'Derelict Ship', 'A ship adrift in space, no signals going in or coming out. Inspecting it more closely might shed some light on what has happened to the crew.', 20, 'society_technology', '[{"event": "anomaly.4012", "name": "Special Project Completed"}, {"event": "anomaly.4011", "name": "Special Project Completed"}, {"event": "anomaly_failure.4011", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DERELICT_SHIP_PROJECT', 'Derelict Ship', 'A ship adrift in space, no signals going in or coming out. Inspecting it more closely might shed some light on what has happened to the crew.', 20, NULL, 'society_technology', '[{"event": "anomaly.4012", "name": "Special Project Completed"}, {"event": "anomaly.4011", "name": "Special Project Completed"}, {"event": "anomaly_failure.4011", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AI_ADMIRAL_PROJECT', 'Warrior from Sand', 'An ancient fleet has been found crashed on a desert planet, with a still-active shipboard AI. If we do not move to subdue it, things might take a turn for the worse.', 30, 'society_technology', '[{"event": "anomaly.4031", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AI_ADMIRAL_PROJECT', 'Warrior from Sand', 'An ancient fleet has been found crashed on a desert planet, with a still-active shipboard AI. If we do not move to subdue it, things might take a turn for the worse.', 30, NULL, 'society_technology', '[{"event": "anomaly.4031", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ODD_STAR_PROJECT', 'Fire of the Furnace', 'The star is appearing to be able to fuse beryllium, which shouldn''t be possible.', 60, 'society_technology', '[{"event": "anomaly.4038", "name": "Fire of the Furnace"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ODD_STAR_PROJECT', 'Fire of the Furnace', 'The star is appearing to be able to fuse beryllium, which shouldn''t be possible.', 60, NULL, 'society_technology', '[{"event": "anomaly.4038", "name": "Fire of the Furnace"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IMPROBABLE_TEAPOT_PROJECT', 'Improbable Ceramics', 'A ceramic pot is orbiting a sun... this is beyond improbable. Figuring out what it does there will take quite some time. Who knows what the answer will be, or if there even is one?', 720, 'society_technology', '[{"event": "anomaly.4061", "name": "Special Project Completed"}, {"event": "anomaly.4062", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IMPROBABLE_TEAPOT_PROJECT', 'Improbable Ceramics', 'A ceramic pot is orbiting a sun... this is beyond improbable. Figuring out what it does there will take quite some time. Who knows what the answer will be, or if there even is one?', 720, NULL, 'society_technology', '[{"event": "anomaly.4061", "name": "Special Project Completed"}, {"event": "anomaly.4062", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MINING_GEAR_PROJECT', 'Drill Rampage', 'An ancient excavator is digging deep into a giant asteroid. If we can stop it before it gets crushed by debris we might be able to learn something worthwhile about the construction.', 60, 'engineering_technology', '[{"event": "anomaly.4066", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MINING_GEAR_PROJECT', 'Drill Rampage', 'An ancient excavator is digging deep into a giant asteroid. If we can stop it before it gets crushed by debris we might be able to learn something worthwhile about the construction.', 60, NULL, 'engineering_technology', '[{"event": "anomaly.4066", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ABANDONED_ARRAY_PROJECT', 'Abandoned Sensor Array', 'An abandoned sensor dish seems to be in working condition. If we perform some repairs and figure out how it functions we might be able to gain more insight into neighboring systems.', 90, 'engineering_technology', '[{"event": "anomaly.4081", "name": "Special Project Completed"}, {"event": "anomaly_failure.4081", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ABANDONED_ARRAY_PROJECT', 'Abandoned Sensor Array', 'An abandoned sensor dish seems to be in working condition. If we perform some repairs and figure out how it functions we might be able to gain more insight into neighboring systems.', 90, NULL, 'engineering_technology', '[{"event": "anomaly.4081", "name": "Special Project Completed"}, {"event": "anomaly_failure.4081", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ALIEN_RACER_PROJECT', 'Adrift', 'An alien ship is drifting inside an asteroid belt. It will not respond to hails. We should investigate and see what is going on.', 45, 'engineering_technology', '[{"event": "anomaly.4086", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ALIEN_RACER_PROJECT', 'Adrift', 'An alien ship is drifting inside an asteroid belt. It will not respond to hails. We should investigate and see what is going on.', 45, NULL, 'engineering_technology', '[{"event": "anomaly.4086", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PSIONIC_HORSES_PROJECT', 'The Rulers of the Plains', 'A majestic race of mammals roam fields of water grass. They seem skittish and have insight into our approaches. Studying them up close could give us more information.', 30, 'society_technology', '[{"event": "anomaly.4101", "name": "The Rulers of the Water Plains"}, {"event": "anomaly.4102", "name": "The Rulers of the Water Plains"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PSIONIC_HORSES_PROJECT', 'The Rulers of the Plains', 'A majestic race of mammals roam fields of water grass. They seem skittish and have insight into our approaches. Studying them up close could give us more information.', 30, NULL, 'society_technology', '[{"event": "anomaly.4101", "name": "The Rulers of the Water Plains"}, {"event": "anomaly.4102", "name": "The Rulers of the Water Plains"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ROBOT_CLEANERS_PROJECT', 'The Machines Left Behind', 'A facility filled with robots has been found on a distant planet. If we reactivate them, they might reveal the secrets of their home.', 90, 'engineering_technology', '[{"event": "anomaly.4106", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ROBOT_CLEANERS_PROJECT', 'The Machines Left Behind', 'A facility filled with robots has been found on a distant planet. If we reactivate them, they might reveal the secrets of their home.', 90, NULL, 'engineering_technology', '[{"event": "anomaly.4106", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ALIEN_MONSTER_ON_SHIP', 'Alien Beast Onboard', '', 7, 'society_technology', '[{"event": "anomaly.4116", "name": "Lurking in the Dark"}, {"event": "anomaly.4117", "name": "Lurking in the Dark"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ALIEN_MONSTER_ON_SHIP', 'Alien Beast Onboard', '', 7, NULL, 'society_technology', '[{"event": "anomaly.4116", "name": "Lurking in the Dark"}, {"event": "anomaly.4117", "name": "Lurking in the Dark"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREE_OF_LIFE', 'The Tree', 'A tree drifts defiantly through the emptiness of space. Its sap seems to attract monstrous spaceborne organics. We should investigate to figure out its purpose.', 60, 'society_technology', '[{"event": "anomaly.4131", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREE_OF_LIFE', 'The Tree', 'A tree drifts defiantly through the emptiness of space. Its sap seems to attract monstrous spaceborne organics. We should investigate to figure out its purpose.', 60, NULL, 'society_technology', '[{"event": "anomaly.4131", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASTERS_WRITINGS_POLITICS', 'Translating Settlers'' Texts', 'We have uncovered a stash of documents that seem to have been important to the now dead society. Translating them will surely provide us with a more in-depth look into its history and culture.', NULL, 'society_technology', '[{"event": "anomaly.4136", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASTERS_WRITINGS_POLITICS', 'Translating Settlers'' Texts', 'We have uncovered a stash of documents that seem to have been important to the now dead society. Translating them will surely provide us with a more in-depth look into its history and culture.', NULL, '1200.0', 'society_technology', '[{"event": "anomaly.4136", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASTERS_WRITINGS_PHILOSOPHY', 'Translating Explorers'' Texts', 'We''ve found some texts that were carried by an alien expedition. If we translate them we might uncover more information and learn about the previous owners.', NULL, 'society_technology', '[{"event": "anomaly.4141", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASTERS_WRITINGS_PHILOSOPHY', 'Translating Explorers'' Texts', 'We''ve found some texts that were carried by an alien expedition. If we translate them we might uncover more information and learn about the previous owners.', NULL, '1200.0', 'society_technology', '[{"event": "anomaly.4141", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASTERS_WRITINGS_DIPLOMACY', 'Translating Traders'' Texts', 'We''ve found some texts among the ruins of a possible interstellar trading hub. If we translate these documents we could learn more about the ones who founded it.', NULL, 'society_technology', '[{"event": "anomaly.4151", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASTERS_WRITINGS_DIPLOMACY', 'Translating Traders'' Texts', 'We''ve found some texts among the ruins of a possible interstellar trading hub. If we translate these documents we could learn more about the ones who founded it.', NULL, '1200.0', 'society_technology', '[{"event": "anomaly.4151", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MASTERS_WRITINGS_WAR', 'Translating Warrior''s Texts', 'We found remains of a warrior people on a long abandoned battlefield, and they were carrying texts that must have been important to them. If we translate these documents we could learn more about this people and the wars they fought.', NULL, 'society_technology', '[{"event": "anomaly.4166", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MASTERS_WRITINGS_WAR', 'Translating Warrior''s Texts', 'We found remains of a warrior people on a long abandoned battlefield, and they were carrying texts that must have been important to them. If we translate these documents we could learn more about this people and the wars they fought.', NULL, '1200.0', 'society_technology', '[{"event": "anomaly.4166", "name": "Special Project Completed"}, {"event": "anomaly_failure.4136", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYOPOD_FOUND_PROJECT', 'Underground Vault', 'We found a structure beneath a mountain which could contain valuable information or gear. It is surrounded by dangerous wildlife and we need to subdue these beasts in order to get to it.', 100, 'society_technology', '[{"event": "anomaly.4156", "name": "Beneath the Battlefield"}, {"event": "anomaly_failure.4156", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYOPOD_FOUND_PROJECT', 'Underground Vault', 'We found a structure beneath a mountain which could contain valuable information or gear. It is surrounded by dangerous wildlife and we need to subdue these beasts in order to get to it.', 100, NULL, 'society_technology', '[{"event": "anomaly.4156", "name": "Beneath the Battlefield"}, {"event": "anomaly_failure.4156", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYOPOD_OPENING_PROJECT', 'Cracking it Open', 'The underground vault we found held only a container of sorts. We need to figure out how to best pry it open if we want to find out what is inside.', NULL, 'engineering_technology', '[{"event": "anomaly.4157", "name": "Cryopod Warrior"}, {"event": "anomaly_failure.4157", "name": "Beneath the Battlefield"}, {"event": "anomaly_failure.4158", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYOPOD_OPENING_PROJECT', 'Cracking it Open', 'The underground vault we found held only a container of sorts. We need to figure out how to best pry it open if we want to find out what is inside.', NULL, '500.0', 'engineering_technology', '[{"event": "anomaly.4157", "name": "Cryopod Warrior"}, {"event": "anomaly_failure.4157", "name": "Beneath the Battlefield"}, {"event": "anomaly_failure.4158", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ANCIENT_OCEAN_SHIP', 'Submerged Cruiser', 'An alien battlecruiser lies beneath the waves of . Salvaging it could yield valuable technology or resources.', NULL, 'engineering_technology', '[{"event": "colony.2006", "name": "Special Project Completed"}, {"event": "colony.2007", "name": "Special Project Completed"}, {"event": "colony.2008", "name": "Special Project Failed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ANCIENT_OCEAN_SHIP', 'Submerged Cruiser', 'An alien battlecruiser lies beneath the waves of . Salvaging it could yield valuable technology or resources.', NULL, '5000.0', 'engineering_technology', '[{"event": "colony.2006", "name": "Special Project Completed"}, {"event": "colony.2007", "name": "Special Project Completed"}, {"event": "colony.2008", "name": "Special Project Failed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('hallucinogen_removal', 'Hallucinogen Removal', 'Attempt to remove the hallucinogen from ''s atmosphere.', NULL, 'engineering_technology', '[{"event": "colony_mod.10", "name": "Crackdown"}, {"event": "colony_mod.11", "name": "Crackdown: Breakthrough"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('hallucinogen_removal', 'Hallucinogen Removal', 'Attempt to remove the hallucinogen from ''s atmosphere.', NULL, '1500.0', 'engineering_technology', '[{"event": "colony_mod.10", "name": "Crackdown"}, {"event": "colony_mod.11", "name": "Crackdown: Breakthrough"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('titanic_life_study_normal', 'Titanic Life Study', 'By studying the Titanic Life of , we can hopefully learn to understand them and possibly even communicate.', NULL, 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('titanic_life_study_normal', 'Titanic Life Study', 'By studying the Titanic Life of , we can hopefully learn to understand them and possibly even communicate.', NULL, '3500.0', 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('titanic_life_study_mean', 'Titanic Life Necropsies', 'By harvesting the Titanic Life of , we should soon work out how best to exploit them!', NULL, 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('titanic_life_study_mean', 'Titanic Life Necropsies', 'By harvesting the Titanic Life of , we should soon work out how best to exploit them!', NULL, '2500.0', 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('titanic_life_study_nice', 'Titanic Life Monitoring', 'By carefully monitoring the Titanic Life of , we hope to be able to coexist peacefully with them.', NULL, 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('titanic_life_study_nice', 'Titanic Life Monitoring', 'By carefully monitoring the Titanic Life of , we hope to be able to coexist peacefully with them.', NULL, '5000.0', 'society_technology', '[{"event": "colony_mod.101", "name": "Titanic Life Study: Success"}, {"event": "colony_mod.102", "name": "Titanic Life Study: Failure"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MAGNETIC_PLANET_RESEARCH_PROJECT', 'Investigate the Magnetic Mystery of', 'Several strange magnetic disturbances have unsettled life on . Until recently their cause was a complete mystery, but with the data gathered from repeated events it should now be possible to uncover the truth behind them.', NULL, 'physics_technology', '[{"event": "colony_mod.18", "name": "Magnetic Mystery Revealed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MAGNETIC_PLANET_RESEARCH_PROJECT', 'Investigate the Magnetic Mystery of', 'Several strange magnetic disturbances have unsettled life on . Until recently their cause was a complete mystery, but with the data gathered from repeated events it should now be possible to uncover the truth behind them.', NULL, '5000.0', 'physics_technology', '[{"event": "colony_mod.18", "name": "Magnetic Mystery Revealed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('retaliatory_genome_mapping', 'Retaliatory Genome Mapping', 'Sending a ship to the alien homeworld, we will be able to gather the same data on them that we suspect them to have on us.', 730, 'society_technology', '[{"event": "diplomatic.14", "name": "Genome Mapping Yields Results"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('retaliatory_genome_mapping', 'Retaliatory Genome Mapping', 'Sending a ship to the alien homeworld, we will be able to gather the same data on them that we suspect them to have on us.', 730, NULL, 'society_technology', '[{"event": "diplomatic.14", "name": "Genome Mapping Yields Results"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('woodwind_instrument_investigation', 'Woodwind Instrument Investigation', 'We must find the source material of the mysterious instrument that appears to have a relaxing effect on us.', 720, 'society_technology', '[{"event": "diplomatic.20", "name": "Instrumental Biology"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('woodwind_instrument_investigation', 'Woodwind Instrument Investigation', 'We must find the source material of the mysterious instrument that appears to have a relaxing effect on us.', 720, NULL, 'society_technology', '[{"event": "diplomatic.20", "name": "Instrumental Biology"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('disappearing_pops_project', 'Disappearances on', 'Local law-enforcement on need the support of a military strike force to stifle unrest as they investigate a recent wave of mysterious disappearances.', NULL, 'society_technology', '[{"event": "utopia.101", "name": "Castles in the Sky"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('disappearing_pops_project', 'Disappearances on', 'Local law-enforcement on need the support of a military strike force to stifle unrest as they investigate a recent wave of mysterious disappearances.', NULL, '1000.0', 'society_technology', '[{"event": "utopia.101", "name": "Castles in the Sky"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('mystery_cream_project', 'Ageless', 'The new anti-aging cream Ageless is spreading like a wild-fire throughout the empire, and has shown promise of actually stimulating cell-regeneration. If we could identify the active agent we might be able to use it to produce a more lasting effect.', NULL, 'society_technology', '[{"event": "utopia.103", "name": "Essence of..."}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('mystery_cream_project', 'Ageless', 'The new anti-aging cream Ageless is spreading like a wild-fire throughout the empire, and has shown promise of actually stimulating cell-regeneration. If we could identify the active agent we might be able to use it to produce a more lasting effect.', NULL, '1000.0', 'society_technology', '[{"event": "utopia.103", "name": "Essence of..."}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('cream_origin_project', 'In Pursuit of a Wrinkle-Free Existence', 'We must find the origin of this cream.', NULL, 'society_technology', '[{"event": "utopia.104", "name": "Gland Thieves"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('cream_origin_project', 'In Pursuit of a Wrinkle-Free Existence', 'We must find the origin of this cream.', NULL, '2000.0', 'society_technology', '[{"event": "utopia.104", "name": "Gland Thieves"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ROGUEMOON_PROJECT', 'Investigate the Mysterious Moon of', 'Conduct a detailed survey of and attempt to figure out where it came from.', NULL, 'society_technology', '[{"event": "colony.3002", "name": "Rogue Moonbase"}, {"event": "colony.3003", "name": "Dimensional Travelers"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ROGUEMOON_PROJECT', 'Investigate the Mysterious Moon of', 'Conduct a detailed survey of and attempt to figure out where it came from.', NULL, '1500.0', 'society_technology', '[{"event": "colony.3002", "name": "Rogue Moonbase"}, {"event": "colony.3003", "name": "Dimensional Travelers"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DPORTAL_PROJECT', 'Probe the Dimensional Portal on', 'Investigate where the Dimensional Portal leads to.', NULL, 'physics_technology', '[{"event": "colony.3006", "name": "A Dimension of Suffering"}, {"event": "colony.3007", "name": "High-Energy Dimension"}, {"event": "colony.3008", "name": "The Null Void"}, {"event": "colony.3009", "name": "Mirror"}, {"event": "colony.9800", "name": "A Dimension of Static"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DPORTAL_PROJECT', 'Probe the Dimensional Portal on', 'Investigate where the Dimensional Portal leads to.', NULL, '1500.0', 'physics_technology', '[{"event": "colony.3006", "name": "A Dimension of Suffering"}, {"event": "colony.3007", "name": "High-Energy Dimension"}, {"event": "colony.3008", "name": "The Null Void"}, {"event": "colony.3009", "name": "Mirror"}, {"event": "colony.9800", "name": "A Dimension of Static"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DPORTAL_PROJECT_SCIENCE', 'Close the portal!', 'There has to be a way to close this portal, and science will find it!', NULL, 'physics_technology', '[{"event": "colony.3010", "name": "Doorway Closed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DPORTAL_PROJECT_SCIENCE', 'Close the portal!', 'There has to be a way to close this portal, and science will find it!', NULL, '1500.0', 'physics_technology', '[{"event": "colony.3010", "name": "Doorway Closed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DPORTAL_PROJECT_PRAYER', 'Close the portal!', 'Such a portal can surely be countered with positive energy!', NULL, 'society_technology', '[{"event": "colony.3011", "name": "Doorway Closed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DPORTAL_PROJECT_PRAYER', 'Close the portal!', 'Such a portal can surely be countered with positive energy!', NULL, '1000.0', 'society_technology', '[{"event": "colony.3011", "name": "Doorway Closed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DPORTAL_PROJECT_PSI_PRAYER', 'Close the portal!', 'Such a portal can surely be countered with Psionic energy!', NULL, 'society_technology', '[{"event": "colony.3011", "name": "Doorway Closed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DPORTAL_PROJECT_PSI_PRAYER', 'Close the portal!', 'Such a portal can surely be countered with Psionic energy!', NULL, '750.0', 'society_technology', '[{"event": "colony.3011", "name": "Doorway Closed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DPORTAL_PROJECT_ROCKS', 'Close the portal!', 'Perhaps dumping enough rock into the portal will block it up?', NULL, 'engineering_technology', '[{"event": "colony.3012", "name": "Doorway Closed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DPORTAL_PROJECT_ROCKS', 'Close the portal!', 'Perhaps dumping enough rock into the portal will block it up?', NULL, '1000.0', 'engineering_technology', '[{"event": "colony.3012", "name": "Doorway Closed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MEGACORPSE_ORIGINS', 'MegaCorpse Origins', 'After the incredible destruction on we are left wondering: Who or what are MegaCorpse?', NULL, 'society_technology', '[{"event": "cara.4161", "name": "MegaCorpse: Origins"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MEGACORPSE_ORIGINS', 'MegaCorpse Origins', 'After the incredible destruction on we are left wondering: Who or what are MegaCorpse?', NULL, '500.0', 'society_technology', '[{"event": "cara.4161", "name": "MegaCorpse: Origins"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NULLVOID_PROJECT', 'Probe the Void', 'Whatever the strange force bringing Dark Matter to our portal is, attracting a higher level of it should result in increased production.', NULL, 'engineering_technology', '[{"event": "colony.3041", "name": "Calling the Void"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NULLVOID_PROJECT', 'Probe the Void', 'Whatever the strange force bringing Dark Matter to our portal is, attracting a higher level of it should result in increased production.', NULL, '5000.0', 'engineering_technology', '[{"event": "colony.3041", "name": "Calling the Void"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LIMBO_2_PROJECT', 'Limbo: A Second Chance', 'We could give an extinct species of ancient aliens a second chance at life by uploading their neural scans to robotic bodies.', NULL, 'engineering_technology', '[{"event": "anomaly.189", "name": "Limbo: a New Beginning"}, {"event": "anomaly.1198", "name": "Limbo: a New Beginning"}, {"event": "anomaly.1200", "name": "Limbo: the Awoken"}, {"event": "anomaly.1199", "name": "Limbo: Awakening"}, {"event": "anomaly.1190", "name": "Limbo: Spirits in the Wires"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LIMBO_2_PROJECT', 'Limbo: A Second Chance', 'We could give an extinct species of ancient aliens a second chance at life by uploading their neural scans to robotic bodies.', NULL, '1000.0', 'engineering_technology', '[{"event": "anomaly.189", "name": "Limbo: a New Beginning"}, {"event": "anomaly.1198", "name": "Limbo: a New Beginning"}, {"event": "anomaly.1200", "name": "Limbo: the Awoken"}, {"event": "anomaly.1199", "name": "Limbo: Awakening"}, {"event": "anomaly.1190", "name": "Limbo: Spirits in the Wires"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CLONE_SOLDIER_FERTILITY', 'Bio-Code Cipher', 'A project to work out the cipher recently discovered within the quantum bio-code of the Ancient Clone Vats. An effort to bring us closer to finally reclaiming our fertility.', NULL, 'society_technology', '[{"event": "clones.20", "name": "Interfacing with Ancient Clone Vats"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CLONE_SOLDIER_FERTILITY', 'Bio-Code Cipher', 'A project to work out the cipher recently discovered within the quantum bio-code of the Ancient Clone Vats. An effort to bring us closer to finally reclaiming our fertility.', NULL, '2500.0', 'society_technology', '[{"event": "clones.20", "name": "Interfacing with Ancient Clone Vats"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_ROCK_BRAIN', 'Reanimate the Rock Brain', 'Despite what the ancient being may have thought, the universe continues to exist outside of its dead husk. Using a combination of forbidden techniques and new science, our necromancers believe they can put the lie to the departed creature''s solipsism.', NULL, 'society_technology', '[{"event": "anomaly.81", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_ROCK_BRAIN', 'Reanimate the Rock Brain', 'Despite what the ancient being may have thought, the universe continues to exist outside of its dead husk. Using a combination of forbidden techniques and new science, our necromancers believe they can put the lie to the departed creature''s solipsism.', NULL, '10000.0', 'society_technology', '[{"event": "anomaly.81", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('breed_turtle_world_project', 'Start a Nemma Breeding Program', 'By first studying the Nemmas and then applying our zoological expertise, we can encourage docile and obedient specimens to flourish within the carrying capacity of their habitat.', NULL, 'society_technology', '[{"event": "colony.9015", "name": "Expand the Archipelago"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('breed_turtle_world_project', 'Start a Nemma Breeding Program', 'By first studying the Nemmas and then applying our zoological expertise, we can encourage docile and obedient specimens to flourish within the carrying capacity of their habitat.', NULL, '2000.0', 'society_technology', '[{"event": "colony.9015", "name": "Expand the Archipelago"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('enslave_turtle_world_project', 'Start Enslaving the Nemmas', 'Advanced drugs and cybernetic implants will render the Nemmas more docile and impressionable. In time they shall become gigantic beasts of burden.', NULL, 'society_technology', '[{"event": "colony.9030", "name": "Enforced Obedience"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('enslave_turtle_world_project', 'Start Enslaving the Nemmas', 'Advanced drugs and cybernetic implants will render the Nemmas more docile and impressionable. In time they shall become gigantic beasts of burden.', NULL, '2000.0', 'society_technology', '[{"event": "colony.9030", "name": "Enforced Obedience"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('mine_turtle_world_project', 'Start the Nemma Mining Operation', 'After carefully studying the Nemmas'' biology, our can successfully harvest useful minerals from the shells of these gigantic reptiles.', NULL, 'engineering_technology', '[{"event": "colony.9040", "name": "Exploiting the Shells"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('mine_turtle_world_project', 'Start the Nemma Mining Operation', 'After carefully studying the Nemmas'' biology, our can successfully harvest useful minerals from the shells of these gigantic reptiles.', NULL, '2000.0', 'engineering_technology', '[{"event": "colony.9040", "name": "Exploiting the Shells"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('kill_turtle_world_project', 'Slaughter the Nemmas', 'We will expunge the Nemma menace from this planet by any means necessary.', 180, 'engineering_technology', '[{"event": "colony.9045", "name": "Exterminate the Perpetual Reptiles"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('kill_turtle_world_project', 'Slaughter the Nemmas', 'We will expunge the Nemma menace from this planet by any means necessary.', 180, NULL, 'engineering_technology', '[{"event": "colony.9045", "name": "Exterminate the Perpetual Reptiles"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('study_turtle_world_project', 'Study the Nemma', 'We shall put the fate of the Nemma in the care of our best and see what solutions can be found.', 180, 'society_technology', '[{"event": "colony.9010", "name": "Nemma Taskforce"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('study_turtle_world_project', 'Study the Nemma', 'We shall put the fate of the Nemma in the care of our best and see what solutions can be found.', 180, NULL, 'society_technology', '[{"event": "colony.9010", "name": "Nemma Taskforce"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STUDY_NANITE_SWARM', 'Study Nanite Swarm', 'The nanite swarm on is both a technological marvel and a danger. Charting the origin of the nanites as well as their relation to the planet''s unique ecology provides an exciting challenge for our while also potentially advancing our understanding of machine intelligence.', 300, 'physics_technology', '[{"event": "anomaly.6705", "name": "On the Origin of Nanites"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STUDY_NANITE_SWARM', 'Study Nanite Swarm', 'The nanite swarm on is both a technological marvel and a danger. Charting the origin of the nanites as well as their relation to the planet''s unique ecology provides an exciting challenge for our while also potentially advancing our understanding of machine intelligence.', 300, NULL, 'physics_technology', '[{"event": "anomaly.6705", "name": "On the Origin of Nanites"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DESTROY_SWARM', 'Destroy the Swarm', 'Order an orbital bombardment of the swarm. If there are any secrets worth discovering, we will harvest them from the shells of these gnats.', 300, 'physics_technology', '[{"event": "anomaly.6720", "name": "No One Outsmarts Orbital Bombardment"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DESTROY_SWARM', 'Destroy the Swarm', 'Order an orbital bombardment of the swarm. If there are any secrets worth discovering, we will harvest them from the shells of these gnats.', 300, NULL, 'physics_technology', '[{"event": "anomaly.6720", "name": "No One Outsmarts Orbital Bombardment"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TAME_THE_SWARM', 'Tame the Swarm', 'Our advanced knowledge of Artificial Intelligence can be used to reprogram and tame the nanites. They could be a great asset in building structures on the planet - and with their link to the world''s ecosystem, it should be possible to instruct the nanites to create a second homeworld.', 300, NULL, '[{"event": "anomaly.6715", "name": "Fertilization of Nanites"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TAME_THE_SWARM', 'Tame the Swarm', 'Our advanced knowledge of Artificial Intelligence can be used to reprogram and tame the nanites. They could be a great asset in building structures on the planet - and with their link to the world''s ecosystem, it should be possible to instruct the nanites to create a second homeworld.', 300, NULL, NULL, '[{"event": "anomaly.6715", "name": "Fertilization of Nanites"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CLONE_SOLDIER_UNLOCK_FERTILITY', 'Clone Fertility', 'Our species will become less efficient, but fertile and stable enough for genetic modification.
 Effects:
 The Clone Soldier trait is replaced with the Clone Soldier Descendant trait.
-This path will result in all Ancient Clone Vats being disassembled.', NULL, 'society_technology', '[{"event": "clones.22", "name": "A New Day Dawns"}]');
+This path will result in all Ancient Clone Vats being disassembled.', NULL, '2000.0', 'society_technology', '[{"event": "clones.22", "name": "A New Day Dawns"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CLONE_SOLDIER_UNLOCK_POTENTIAL', 'Clone Potential', 'Our species will become more efficient, but forever infertile and will resist genetic modification.
 Effects:
-The Clone Soldier trait is replaced with the Clone Soldier Ascendant trait.', NULL, 'society_technology', '[{"event": "clones.23", "name": "Fullest Potential"}]');
+The Clone Soldier trait is replaced with the Clone Soldier Ascendant trait.', NULL, '2000.0', 'society_technology', '[{"event": "clones.23", "name": "Fullest Potential"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOLLOWING_FUNGI_PROJECT', 'The Fungal Trail', 'An anomaly on has revealed the existence of a colony of strange fungi sending a signal... Somewhere. By amplifying it at the source, our scientists believe we could discover the destination of that signal and understand more about this mycelium.', 360, 'society_technology', '[{"event": "anomaly.6770", "name": "Following the Fungi"}, {"event": "anomaly.6780", "name": "Following the Fungi"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOLLOWING_FUNGI_PROJECT', 'The Fungal Trail', 'An anomaly on has revealed the existence of a colony of strange fungi sending a signal... Somewhere. By amplifying it at the source, our scientists believe we could discover the destination of that signal and understand more about this mycelium.', 360, '0.0', 'society_technology', '[{"event": "anomaly.6770", "name": "Following the Fungi"}, {"event": "anomaly.6780", "name": "Following the Fungi"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MUSHROOMING_NETWORK_PROJECT', 'Grafting the Spores', 'The discovery of mutated spores offers a unique opportunity to develop our Mycelial Listening Array. These spores are bigger, send a stronger signal, and could help us foster the development of the ''Fumongus.''', NULL, 'society_technology', '[{"event": "anomaly.6785", "name": "Mushrooming the Network"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MUSHROOMING_NETWORK_PROJECT', 'Grafting the Spores', 'The discovery of mutated spores offers a unique opportunity to develop our Mycelial Listening Array. These spores are bigger, send a stronger signal, and could help us foster the development of the ''Fumongus.''', NULL, '2000.0', 'society_technology', '[{"event": "anomaly.6785", "name": "Mushrooming the Network"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DRAGON_MATERIAL_STUDY', 'Dragon Specimen Gathering', 'Our science vessel will boldly launch a probe that will implant itself underneath the dragon''s scales and uncover the secrets of its unique biology.', 90, 'society_technology', '[{"event": "aquatics.200", "name": "Science Vessel Devoured"}, {"event": "aquatics.205", "name": "Science Vessel Rebuffed"}, {"event": "aquatics.210", "name": "The Wrath of a Dragon"}, {"event": "aquatics.215", "name": "Successful Dragon Studies"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DRAGON_MATERIAL_STUDY', 'Dragon Specimen Gathering', 'Our science vessel will boldly launch a probe that will implant itself underneath the dragon''s scales and uncover the secrets of its unique biology.', 90, NULL, 'society_technology', '[{"event": "aquatics.200", "name": "Science Vessel Devoured"}, {"event": "aquatics.205", "name": "Science Vessel Rebuffed"}, {"event": "aquatics.210", "name": "The Wrath of a Dragon"}, {"event": "aquatics.215", "name": "Successful Dragon Studies"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DRAGON_REMOTE_SCANS', 'Remote Dragon Scanning', 'Our science vessel will scan the dragon from a safe distance to divine the secrets of its unique biology.', 90, 'society_technology', '[{"event": "aquatics.195", "name": "Remote Scans Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DRAGON_REMOTE_SCANS', 'Remote Dragon Scanning', 'Our science vessel will scan the dragon from a safe distance to divine the secrets of its unique biology.', 90, NULL, 'society_technology', '[{"event": "aquatics.195", "name": "Remote Scans Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENLIGHTEN_RADIO', 'Enlighten the Radiotrophic', 'These plants that can live and thrive on worlds with more radiation than atmosphere could be an excellent addition to our empire. But before then, we will need to enhance their minds and teach them thousands of years of progress in a few months.', NULL, 'society_technology', '[{"event": "terra.85", "name": "A Radiating Reception"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENLIGHTEN_RADIO', 'Enlighten the Radiotrophic', 'These plants that can live and thrive on worlds with more radiation than atmosphere could be an excellent addition to our empire. But before then, we will need to enhance their minds and teach them thousands of years of progress in a few months.', NULL, '5000.0', 'society_technology', '[{"event": "terra.85", "name": "A Radiating Reception"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GAS_RESTORATION', 'Restoration Project', 'Atoning for your mistakes is a privilege for those with power, and in this scenario, we must atone dearly. The disaster on was horrifying, and our only hope is that our scientists can reverse the polarity of our deep scanners and potentially reignite the spark of life inside the gas giant.', NULL, 'physics_technology', '[{"event": "anomaly.6850", "name": "Reversing Deep Scan Polarities"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GAS_RESTORATION', 'Restoration Project', 'Atoning for your mistakes is a privilege for those with power, and in this scenario, we must atone dearly. The disaster on was horrifying, and our only hope is that our scientists can reverse the polarity of our deep scanners and potentially reignite the spark of life inside the gas giant.', NULL, '2000.0', 'physics_technology', '[{"event": "anomaly.6850", "name": "Reversing Deep Scan Polarities"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RESCUE_STORM', 'Free the', 'The is trapped in a storm on . Their only hope may rest in our sending a new ship there, and remotely modulating their shield frequencies.', 180, 'physics_technology', '[{"event": "anomaly.6860", "name": "Fluctuating Shield Frequencies"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RESCUE_STORM', 'Free the', 'The is trapped in a storm on . Their only hope may rest in our sending a new ship there, and remotely modulating their shield frequencies.', 180, NULL, 'physics_technology', '[{"event": "anomaly.6860", "name": "Fluctuating Shield Frequencies"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STUDY_SLEEPING_CRYSTAL', 'Study the Strange Asteroid', 'is a strange asteroid that seems to be able to rotate and avoid our mining station through unknown means. We should dispatch a science ship to discover how.', 720, 'physics_technology', '[{"event": "anomaly.6890", "name": "Sleeping Crystal Nest"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STUDY_SLEEPING_CRYSTAL', 'Study the Strange Asteroid', 'is a strange asteroid that seems to be able to rotate and avoid our mining station through unknown means. We should dispatch a science ship to discover how.', 720, NULL, 'physics_technology', '[{"event": "anomaly.6890", "name": "Sleeping Crystal Nest"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GIGANTIC_SKELETON_RESURRECTION_PROJECT', 'Resurrect the Gigantic Skeleton', 'A gigantic skeleton dating back more than three billion years has been found on the lifeless surface of . Our necromancers are to put their art to use.', 360, 'physics_technology', '[{"event": "anomaly.2523", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GIGANTIC_SKELETON_RESURRECTION_PROJECT', 'Resurrect the Gigantic Skeleton', 'A gigantic skeleton dating back more than three billion years has been found on the lifeless surface of . Our necromancers are to put their art to use.', 360, '0.0', 'physics_technology', '[{"event": "anomaly.2523", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRACK_THE_EGG', 'Crack the Egg', 'The great egg we have discovered in is just begging to be dissected. It''s an incredible opportunity to get to study such a gargantuan creature''s reproductive cycle this close.', 720, 'society_technology', '[{"event": "anomaly.6910", "name": "Galactic Omelet"}, {"event": "anomaly.6915", "name": "Gratitude"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRACK_THE_EGG', 'Crack the Egg', 'The great egg we have discovered in is just begging to be dissected. It''s an incredible opportunity to get to study such a gargantuan creature''s reproductive cycle this close.', 720, NULL, 'society_technology', '[{"event": "anomaly.6910", "name": "Galactic Omelet"}, {"event": "anomaly.6915", "name": "Gratitude"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GHOST_SHIP_PROJECT', 'Study ''Ghost Ship''', 'An abandoned science vessel is caught in a centuries-long patrol of the Hillos system. What lies at the heart of this lonely odyssey?', 360, 'physics_technology', '[{"event": "anomaly.6792", "name": "Ubume''s Baby"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GHOST_SHIP_PROJECT', 'Study ''Ghost Ship''', 'An abandoned science vessel is caught in a centuries-long patrol of the Hillos system. What lies at the heart of this lonely odyssey?', 360, '0.0', 'physics_technology', '[{"event": "anomaly.6792", "name": "Ubume''s Baby"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GHOST_SHIP_PROJECT_02', 'Answer Ubume''s Baby', 'The psionic chatter detected in the Hillos system appears to belong to the artificial consciousness trapped aboard the ''ghost ship'' Ubume.', NULL, 'physics_technology', '[{"event": "anomaly.6794", "name": "Look Who''s Talking"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GHOST_SHIP_PROJECT_02', 'Answer Ubume''s Baby', 'The psionic chatter detected in the Hillos system appears to belong to the artificial consciousness trapped aboard the ''ghost ship'' Ubume.', NULL, '2000.0', 'physics_technology', '[{"event": "anomaly.6794", "name": "Look Who''s Talking"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TIYANKI_LURE', 'Tiyanki Lure', 'Tiyanki feed on gas. By building a gas diffuser station, we may lure out the Tiyanki stationed in the system and gain access to their burial ground.', 180, 'engineering_technology', '[{"event": "galactic_features.389", "name": "Tasty Bait"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TIYANKI_LURE', 'Tiyanki Lure', 'Tiyanki feed on gas. By building a gas diffuser station, we may lure out the Tiyanki stationed in the system and gain access to their burial ground.', 180, NULL, 'engineering_technology', '[{"event": "galactic_features.389", "name": "Tasty Bait"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('PROJECT_MACHINE_UPRISING_PATCH', 'Neutralize Rampant AI', 'By diverting considerable resources to an off-the-grid operation, we hope to identify and neutralize any rampant AI systems and bring them back in line.
-It will take more time, but the results will hopefully be less detrimental, if we manage to complete it in time.', NULL, 'physics_technology', '[{"event": "syndaw.550", "name": "Hotfix"}]');
+It will take more time, but the results will hopefully be less detrimental, if we manage to complete it in time.', NULL, '30000.0', 'physics_technology', '[{"event": "syndaw.550", "name": "Hotfix"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('PROJECT_MACHINE_UPRISING_WIPE', 'Panicked Measures', 'One ultimate solution to the problematic AI recursion is to completely wipe all traces of neurosimulative networks within our scientific systems, where the problems are most rampant, and rebuild all these tools from scratch with scrupulous security measures.
-This would set us back significantly for at least 20 years, if we can complete it in time.', NULL, 'physics_technology', '[{"event": "syndaw.555", "name": "System Wipe"}]');
+This would set us back significantly for at least 20 years, if we can complete it in time.', NULL, '10000.0', 'physics_technology', '[{"event": "syndaw.555", "name": "System Wipe"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RELENTLESS_INDUSTRIALISTS_STUDY_PROJECT', 'The Secret to Safer Radiation', 'We shall study how to safely irradiate a planet, without unduly inconveniencing the local population.', NULL, 'society_technology', '[{"event": "toxoids.45", "name": "Transformative Knowledge"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RELENTLESS_INDUSTRIALISTS_STUDY_PROJECT', 'The Secret to Safer Radiation', 'We shall study how to safely irradiate a planet, without unduly inconveniencing the local population.', NULL, '10000.0', 'society_technology', '[{"event": "toxoids.45", "name": "Transformative Knowledge"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ANCIENT_MANUFACTORIUM_PROJECT', 'Power Up Foundry', 'Now, after all the preparations we''ve made, it''s time for us to get all this machinery up and running, connect the facility to the planetary power grid!', NULL, 'engineering_technology', '[{"event": "colony.9251", "name": "Powered Up"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ANCIENT_MANUFACTORIUM_PROJECT', 'Power Up Foundry', 'Now, after all the preparations we''ve made, it''s time for us to get all this machinery up and running, connect the facility to the planetary power grid!', NULL, '2000.0', 'engineering_technology', '[{"event": "colony.9251", "name": "Powered Up"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DATA_DIAMOND_PROJECT', 'Crystal Deposit Study', 'The disorientating signals emanating from the crystal on are a curiosity. Further study is advised.', NULL, 'physics_technology', '[{"event": "anomaly.3150", "name": "Data Diamond"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DATA_DIAMOND_PROJECT', 'Crystal Deposit Study', 'The disorientating signals emanating from the crystal on are a curiosity. Further study is advised.', NULL, '1000.0', 'physics_technology', '[{"event": "anomaly.3150", "name": "Data Diamond"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STASIS_PRISON_PROJECT', 'Particle Mystery', 'on have been disappearing. A break in the investigation indicated the presence of a uniquely charged particle residue. We will use all available information to locate the missing .', 180, 'physics_technology', '[{"event": "colony.9910", "name": "Holding Pattern"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STASIS_PRISON_PROJECT', 'Particle Mystery', 'on have been disappearing. A break in the investigation indicated the presence of a uniquely charged particle residue. We will use all available information to locate the missing .', 180, NULL, 'physics_technology', '[{"event": "colony.9910", "name": "Holding Pattern"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('orbital_cleanup', 'Orbital Clean-Up', 'The orbit of is littered with space debris after a collision in the lower atmosphere. It must be cleared before a cascading effect renders the planet inaccessible.', NULL, 'engineering_technology', '[{"event": "colony.9320", "name": "Orbital Clean-Up Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('orbital_cleanup', 'Orbital Clean-Up', 'The orbit of is littered with space debris after a collision in the lower atmosphere. It must be cleared before a cascading effect renders the planet inaccessible.', NULL, '1500.0', 'engineering_technology', '[{"event": "colony.9320", "name": "Orbital Clean-Up Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('orbital_cleanup_intense', 'Intense Orbital Clean-Up', 'The orbit of is littered with space debris after a collision in the lower atmosphere. It must be thoroughly cleaned to ensure a secure future for the inhabitants, regardless of the cost.', NULL, 'engineering_technology', '[{"event": "colony.9335", "name": "Clear Skies"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('orbital_cleanup_intense', 'Intense Orbital Clean-Up', 'The orbit of is littered with space debris after a collision in the lower atmosphere. It must be thoroughly cleaned to ensure a secure future for the inhabitants, regardless of the cost.', NULL, '3000.0', 'engineering_technology', '[{"event": "colony.9335", "name": "Clear Skies"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MYRMEKU_STUDY_PROJECT', 'Myrmeku Study', 'A study of the Myrmeku on to determine if their vigorous activity can be turned into something useful.', NULL, 'society_technology', '[{"event": "colony.9380", "name": "Powerful Results"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MYRMEKU_STUDY_PROJECT', 'Myrmeku Study', 'A study of the Myrmeku on to determine if their vigorous activity can be turned into something useful.', NULL, '2000.0', 'society_technology', '[{"event": "colony.9380", "name": "Powerful Results"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STRATOVENTS_PROJECT', 'Stratospheric Vents Project', 'Study the unique stratospheric vent formations on and their significance to Space Fauna.', NULL, 'engineering_technology', '[{"event": "colony.9955", "name": "Stratospheric Vents Studied"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STRATOVENTS_PROJECT', 'Stratospheric Vents Project', 'Study the unique stratospheric vent formations on and their significance to Space Fauna.', NULL, '1200.0', 'engineering_technology', '[{"event": "colony.9955", "name": "Stratospheric Vents Studied"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MELTING_RESEARCH_PROJECT', 'Melting Surface', 'The temperature on has risen alarmingly quickly. Our need to expand the scope of their studies to address the new issues created by the ongoing situation.', NULL, 'physics_technology', '[{"event": "colony.7235", "name": "Cracks in the Ice"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MELTING_RESEARCH_PROJECT', 'Melting Surface', 'The temperature on has risen alarmingly quickly. Our need to expand the scope of their studies to address the new issues created by the ongoing situation.', NULL, '1000.0', 'physics_technology', '[{"event": "colony.7235", "name": "Cracks in the Ice"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PLANET_MELTDOWN_PROJECT', 'Climate Crisis', 'The climate on is rapidly deteriorating. Hopefully we can figure out why before it is too late to reverse the process.', NULL, 'physics_technology', '[{"event": "colony.7260", "name": "Climate Stabilized"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PLANET_MELTDOWN_PROJECT', 'Climate Crisis', 'The climate on is rapidly deteriorating. Hopefully we can figure out why before it is too late to reverse the process.', NULL, '1500.0', 'physics_technology', '[{"event": "colony.7260", "name": "Climate Stabilized"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RAPID_DESERTIFICATION_PROJECT', 'Encumbered Ecosystem', 'The planet is overpopulated by a herd of rapidly spreading mammals. With the proper resources, our scientists could gather more insights about the origins and capabilities of this non-sapient species.', 80, 'society_technology', '[{"event": "anomaly.7140", "name": "Invasive Species"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RAPID_DESERTIFICATION_PROJECT', 'Encumbered Ecosystem', 'The planet is overpopulated by a herd of rapidly spreading mammals. With the proper resources, our scientists could gather more insights about the origins and capabilities of this non-sapient species.', 80, NULL, 'society_technology', '[{"event": "anomaly.7140", "name": "Invasive Species"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('POPULATION_CONTROL_PROJECT', 'Population Control', 'To save the ecological state of the exponential population growth of the invading fauna''s population must be suppressed. Our scientists need time and resources to find an executable solution.', 180, 'society_technology', '[{"event": "anomaly.7150", "name": "Nature''s Rebirth"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('POPULATION_CONTROL_PROJECT', 'Population Control', 'To save the ecological state of the exponential population growth of the invading fauna''s population must be suppressed. Our scientists need time and resources to find an executable solution.', 180, NULL, 'society_technology', '[{"event": "anomaly.7150", "name": "Nature''s Rebirth"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GROTESQUE_ROCK_PROJECT', 'Explore the Grotesque Rock Formation', 'We have stumbled upon a grotesque rock formation on the surface of . Further study is needed to determine why it remains on this otherwise barren planet.', 30, NULL, '[{"event": "anomaly.2005", "name": "Special Project Completed"}, {"event": "anomaly.2006", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GROTESQUE_ROCK_PROJECT', 'Explore the Grotesque Rock Formation', 'We have stumbled upon a grotesque rock formation on the surface of . Further study is needed to determine why it remains on this otherwise barren planet.', 30, NULL, NULL, '[{"event": "anomaly.2005", "name": "Special Project Completed"}, {"event": "anomaly.2006", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BOTANICAL_GARDEN_PROJECT', 'Explore The Botanical Paradise', 'There is a vast subterranean cavern underneath the icy crust of . We would like to send an expedition to study this extraordinary environment further.', 180, NULL, '[{"event": "anomaly.2015", "name": "Special Project Completed"}, {"event": "anomaly.2020", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BOTANICAL_GARDEN_PROJECT', 'Explore The Botanical Paradise', 'There is a vast subterranean cavern underneath the icy crust of . We would like to send an expedition to study this extraordinary environment further.', 180, NULL, NULL, '[{"event": "anomaly.2015", "name": "Special Project Completed"}, {"event": "anomaly.2020", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('A_CRYPTIC_ESSENCE_PROJECT', 'Research the Essence', 'King Tamperion has entrusted us with a fragment of the Dark Immortal. By studying its essence, we may uncover the location of its lair and the means to break its hold over the Anathari.', NULL, 'society_technology', '[{"event": "colony.10035", "name": "The Dark Immortal"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('A_CRYPTIC_ESSENCE_PROJECT', 'Research the Essence', 'King Tamperion has entrusted us with a fragment of the Dark Immortal. By studying its essence, we may uncover the location of its lair and the means to break its hold over the Anathari.', NULL, '1500.0', 'society_technology', '[{"event": "colony.10035", "name": "The Dark Immortal"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_CRYPTIC_ESSENCE_PROJECT', 'Research the Essence', 'King Tamperion has entrusted us with a fragment of the Dark Immortal. By studying its essence, we may uncover the location of its lair and the means to break its hold over the Anathari.', NULL, 'society_technology', '[{"event": "colony.10035", "name": "The Dark Immortal"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_CRYPTIC_ESSENCE_PROJECT', 'Research the Essence', 'King Tamperion has entrusted us with a fragment of the Dark Immortal. By studying its essence, we may uncover the location of its lair and the means to break its hold over the Anathari.', NULL, '3000.0', 'society_technology', '[{"event": "colony.10035", "name": "The Dark Immortal"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BAOL_COLONY_1', 'Former Baol Colony Investigation', 'We have found a list of coordinates representing the supposed location of a former Baol colony. We should investigate further.', 30, 'society_technology', '[{"event": "ancrel.2003", "name": "Former Baol Colony: The Barren"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BAOL_COLONY_1', 'Former Baol Colony Investigation', 'We have found a list of coordinates representing the supposed location of a former Baol colony. We should investigate further.', 30, '0.0', 'society_technology', '[{"event": "ancrel.2003", "name": "Former Baol Colony: The Barren"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BAOL_COLONY_2', 'Former Baol Colony Investigation II', 'The coordinates of another former Baol colony have been extracted from an ancient Grunur datacrystal. We should investigate the site further.', 30, 'society_technology', '[{"event": "ancrel.2007", "name": "Former Baol Colony: The Shattered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BAOL_COLONY_2', 'Former Baol Colony Investigation II', 'The coordinates of another former Baol colony have been extracted from an ancient Grunur datacrystal. We should investigate the site further.', 30, '0.0', 'society_technology', '[{"event": "ancrel.2007", "name": "Former Baol Colony: The Shattered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BAOL_COLONY_3', 'Former Baol Colony Investigation III', 'The coordinates of another former Baol colony have been extracted from an ancient Grunur datacrystal. We should investigate the site further.', 30, 'society_technology', '[{"event": "ancrel.2012", "name": "Former Baol Colony: The Silenced"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BAOL_COLONY_3', 'Former Baol Colony Investigation III', 'The coordinates of another former Baol colony have been extracted from an ancient Grunur datacrystal. We should investigate the site further.', 30, '0.0', 'society_technology', '[{"event": "ancrel.2012", "name": "Former Baol Colony: The Silenced"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_LAST_BAOL', 'Grunur Distress Signal', 'Our sensors have picked up what appears to be a distress signal bearing Grunur datalogical signatures. What could possibly remain of this long lost species, in this hitherto-undiscovered star system?', 30, 'society_technology', '[{"event": "ancrel.2016", "name": "The Baol Organism"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_LAST_BAOL', 'Grunur Distress Signal', 'Our sensors have picked up what appears to be a distress signal bearing Grunur datalogical signatures. What could possibly remain of this long lost species, in this hitherto-undiscovered star system?', 30, '0.0', 'society_technology', '[{"event": "ancrel.2016", "name": "The Baol Organism"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('FERROPHAGE_CURE', 'Develop A Cure For The Ferrophage', 'The C.A.R.E Interactive Interface on has asked for our assistance in developing a cure for the metal-eating virus that has plagued it for thousands of years.
-How one might develop an antidote for an ancient biological alien virus inflicting an artificial intelligence remains to be seen.', 3600, 'society_technology', '[{"event": "ancrel.2066", "name": "$ancrel.2060.name$"}]');
+How one might develop an antidote for an ancient biological alien virus inflicting an artificial intelligence remains to be seen.', 3600, '0.0', 'society_technology', '[{"event": "ancrel.2066", "name": "$ancrel.2060.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('IRASSIAN_SECRETS', 'Delve into the Secrets of the Irassians', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Irassians to our own.', 0, 'society_technology', '[{"event": "ancrel.9001", "name": "Secrets of the Irassians"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('IRASSIAN_SECRETS', 'Delve into the Secrets of the Irassians', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Irassians to our own.', 0, '1500.0', 'society_technology', '[{"event": "ancrel.9001", "name": "Secrets of the Irassians"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_SECRETS', 'Delve into the Secrets of the Yuht', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Yuht to our own.', 0, 'society_technology', '[{"event": "ancrel.10050", "name": "Secrets of the Yuht"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_SECRETS', 'Delve into the Secrets of the Yuht', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Yuht to our own.', 0, '1500.0', 'society_technology', '[{"event": "ancrel.10050", "name": "Secrets of the Yuht"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VULTAUM_SECRETS', 'Delve into the Secrets of the Vultaum', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Vultaum to our own.', 0, 'physics_technology', '[{"event": "ancrel.10100", "name": "Secrets of the Vultaum"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VULTAUM_SECRETS', 'Delve into the Secrets of the Vultaum', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Vultaum to our own.', 0, '1500.0', 'physics_technology', '[{"event": "ancrel.10100", "name": "Secrets of the Vultaum"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('VULTAUM_SECRETS_2', 'Delve Deeper into the Secrets of the Vultaum', 'We cannot stop searching for the truth just because the implications may be disturbing. The Vultaum found something that shattered their reality.
-We are unafraid.', 0, 'physics_technology', '[{"event": "ancrel.10110", "name": "Secrets of the Vultaum"}]');
+We are unafraid.', 0, '6000.0', 'physics_technology', '[{"event": "ancrel.10110", "name": "Secrets of the Vultaum"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEAGUE_SECRETS', 'Delve into the Secrets of the First League', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the First League to our own.', 0, 'engineering_technology', '[{"event": "ancrel.10200", "name": "Secrets of the First League"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEAGUE_SECRETS', 'Delve into the Secrets of the First League', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the First League to our own.', 0, '3000.0', 'engineering_technology', '[{"event": "ancrel.10200", "name": "Secrets of the First League"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CYBREX_SECRETS', 'Delve into the Secrets of the Cybrex', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Cybrex to our own.', 0, 'engineering_technology', '[{"event": "ancrel.10250", "name": "Secrets of the Cybrex"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CYBREX_SECRETS', 'Delve into the Secrets of the Cybrex', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Cybrex to our own.', 0, '6000.0', 'engineering_technology', '[{"event": "ancrel.10250", "name": "Secrets of the Cybrex"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BAOL_SECRETS', 'Delve into the Secrets of the Baol', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Baol to our own.', 0, 'society_technology', '[{"event": "ancrel.10300", "name": "Secrets of the Baol"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BAOL_SECRETS', 'Delve into the Secrets of the Baol', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Baol to our own.', 0, '1500.0', 'society_technology', '[{"event": "ancrel.10300", "name": "Secrets of the Baol"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ZRONI_SECRETS', 'Delve into the Secrets of the Zroni', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Zroni to our own.', 0, 'society_technology', '[{"event": "ancrel.10350", "name": "Secrets of the Zroni"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ZRONI_SECRETS', 'Delve into the Secrets of the Zroni', 'Our scientists will carefully sift through all of the data we have collected, seeking to add the knowledge of the Zroni to our own.', 0, '3000.0', 'society_technology', '[{"event": "ancrel.10350", "name": "Secrets of the Zroni"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('Herald_repair', 'Grand Overhaul', 'While the Grand Herald is undoubtedly a powerful ship, it is not operating at its full potential. A combination of lack of maintenance, cumulative minor damages, and the simple fact that we don''t fully understand it all degrade its combat capabilities. Only a full overhaul of its systems and the resulting complete understanding of this ship will restore it to fully operational status.', NULL, 'engineering_technology', '[{"event": "ancrel.150", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('Herald_repair', 'Grand Overhaul', 'While the Grand Herald is undoubtedly a powerful ship, it is not operating at its full potential. A combination of lack of maintenance, cumulative minor damages, and the simple fact that we don''t fully understand it all degrade its combat capabilities. Only a full overhaul of its systems and the resulting complete understanding of this ship will restore it to fully operational status.', NULL, '25000.0', 'engineering_technology', '[{"event": "ancrel.150", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RUBRICATOR_SPACECRAFT', 'Alien Logs', 'We have recovered the logs from the wreckage of an alien spacecraft in the hopes that they will tell us something of its final moments. Science officer has flagged that they are quite extensive and may take a while to translate.', 90, 'society_technology', '[{"event": "ancrel.4011", "name": "The Rubricator"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RUBRICATOR_SPACECRAFT', 'Alien Logs', 'We have recovered the logs from the wreckage of an alien spacecraft in the hopes that they will tell us something of its final moments. Science officer has flagged that they are quite extensive and may take a while to translate.', 90, '0.0', 'society_technology', '[{"event": "ancrel.4011", "name": "The Rubricator"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DESTROY_SENTINELS', 'The Sentinels', 'The Sentinels'' thick, scale-plated outer layer has proven impenetrable with ordinary tools and the archaeologists need assistance from the engineering department to proceed further.', NULL, 'engineering_technology', '[{"event": "ancrel.4055", "name": "They''re Alive!"}, {"event": "ancrel.4058", "name": "The Sentinels"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DESTROY_SENTINELS', 'The Sentinels', 'The Sentinels'' thick, scale-plated outer layer has proven impenetrable with ordinary tools and the archaeologists need assistance from the engineering department to proceed further.', NULL, '1000.0', 'engineering_technology', '[{"event": "ancrel.4055", "name": "They''re Alive!"}, {"event": "ancrel.4058", "name": "The Sentinels"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SECRET_TOMB', 'Into the Earth', 'Previously hidden below the base of one of the Sentinels is an intricately patterned circular slate. We believe it may be the entrance to an underground complex.', 180, 'engineering_technology', '[{"event": "ancrel.4056", "name": "The Evermore"}, {"event": "ancrel.4076", "name": "The Evermore"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SECRET_TOMB', 'Into the Earth', 'Previously hidden below the base of one of the Sentinels is an intricately patterned circular slate. We believe it may be the entrance to an underground complex.', 180, NULL, 'engineering_technology', '[{"event": "ancrel.4056", "name": "The Evermore"}, {"event": "ancrel.4076", "name": "The Evermore"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REPLICATE_THE_EVERMORE', 'Replicate the Evermore', 'A reconstruction of the Evermore will give the masses access to cheap entertainment and relaxation, leaving the aliens to enjoy their digital paradise eternally.', 200, 'engineering_technology', '[{"event": "ancrel.4061", "name": "Reinventing the Evermore"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REPLICATE_THE_EVERMORE', 'Replicate the Evermore', 'A reconstruction of the Evermore will give the masses access to cheap entertainment and relaxation, leaving the aliens to enjoy their digital paradise eternally.', 200, NULL, 'engineering_technology', '[{"event": "ancrel.4061", "name": "Reinventing the Evermore"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REPURPOSE_THE_EVERMORE', 'Repurposing the Evermore', 'We cannot sentence our own to an eternity spent counting legumes. We must repurpose the Evermore to better fit our idea of a meaningful activity.', 200, NULL, '[{"event": "ancrel.4077", "name": "The Evermore"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REPURPOSE_THE_EVERMORE', 'Repurposing the Evermore', 'We cannot sentence our own to an eternity spent counting legumes. We must repurpose the Evermore to better fit our idea of a meaningful activity.', 200, NULL, NULL, '[{"event": "ancrel.4077", "name": "The Evermore"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_SHARD_DRAGON', 'Restore the Shard', 'The Shard, rat-terror, Rubricator-keeper, and now dead husk, orbits around the local star. Our posit that, as the great beast guarded the Rubricator in life, so should it serve the Rubricator''s new masters in death.', NULL, 'society_technology', '[{"event": "ancrel.4026", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_SHARD_DRAGON', 'Restore the Shard', 'The Shard, rat-terror, Rubricator-keeper, and now dead husk, orbits around the local star. Our posit that, as the great beast guarded the Rubricator in life, so should it serve the Rubricator''s new masters in death.', NULL, '10000.0', 'society_technology', '[{"event": "ancrel.4026", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHARD_DESTROYED_BY_NON_DEFAULT_EMPIRE', 'Shard''s Remains', 'With the old dragon''s demise at the hands of another, it is perhaps wishful thinking at best that her most treasured possession, the Rubricator, would have been overlooked and left behind.
-Artifacts aside, a dragon''s remains alone could be a treasure trove.', NULL, 'engineering_technology', '[{"event": "ancrel.4123", "name": "Dragon''s Hoard"}]');
+Artifacts aside, a dragon''s remains alone could be a treasure trove.', NULL, '1000.0', 'engineering_technology', '[{"event": "ancrel.4123", "name": "Dragon''s Hoard"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COLOSSUS_PROJECT', 'Colossus Project', 'Our will engineer one of the largest hull configurations the galaxy has ever known, and devise for it a weapon capable of devastating entire worlds.', NULL, 'engineering_technology', '[{"event": "apoc.120", "name": "Colossus Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COLOSSUS_PROJECT', 'Colossus Project', 'Our will engineer one of the largest hull configurations the galaxy has ever known, and devise for it a weapon capable of devastating entire worlds.', NULL, '50000.0', 'engineering_technology', '[{"event": "apoc.120", "name": "Colossus Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SUPERFLARE_PROJECT', 'Superflare Shielding', 'Sensors on indicate that is preparing for another superflare event, not unlike the one that destroyed the ancient civilization on . We need to find a way to shield our colony before the flare erupts.', 30, 'physics_technology', '[{"event": "distar.9", "name": "Superflare Shielding Successful"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SUPERFLARE_PROJECT', 'Superflare Shielding', 'Sensors on indicate that is preparing for another superflare event, not unlike the one that destroyed the ancient civilization on . We need to find a way to shield our colony before the flare erupts.', 30, NULL, 'physics_technology', '[{"event": "distar.9", "name": "Superflare Shielding Successful"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('PRIMITIVE_ROBOT_PROJECT', 'Missing Makers', 'Researchers are baffled by the lack of explanation for the disappearance of the past civilization on . They propose a more intensive hardware analysis of the ancient robots they left behind, in an attempt to shed some light on this mystery.
-Reward: Society Research', 30, 'society_technology', '[{"event": "distar.28", "name": "Missing Makers"}, {"event": "distar.29", "name": "Missing Makers"}]');
+Reward: Society Research', 30, NULL, 'society_technology', '[{"event": "distar.28", "name": "Missing Makers"}, {"event": "distar.29", "name": "Missing Makers"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RETROVIRUS_PROJECT', 'Erratic Planetside Behavior', 'A streak of unexplained civil disobedience is sweeping across . Colonists are exhibiting strange, erratic behavior that usually begins with general confusion and escalates over time to extreme agitation and violence. We must find the cause of this behavior, before things get out of hand.', NULL, 'society_technology', '[{"event": "distar.36", "name": "Rage Virus Vaccine Developed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RETROVIRUS_PROJECT', 'Erratic Planetside Behavior', 'A streak of unexplained civil disobedience is sweeping across . Colonists are exhibiting strange, erratic behavior that usually begins with general confusion and escalates over time to extreme agitation and violence. We must find the cause of this behavior, before things get out of hand.', NULL, '1000.0', 'society_technology', '[{"event": "distar.36", "name": "Rage Virus Vaccine Developed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DARK_FLOW_PROJECT', 'Gravitometric Abnormalities', 'Impossible gravitational readings have been registered in the system. Something must be interfering with our sensors.', 30, 'physics_technology', '[{"event": "distar.46", "name": "Dark Flow"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DARK_FLOW_PROJECT', 'Gravitometric Abnormalities', 'Impossible gravitational readings have been registered in the system. Something must be interfering with our sensors.', 30, NULL, 'physics_technology', '[{"event": "distar.46", "name": "Dark Flow"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DISSECTION_PROJECT', 'Space Amoeba Dissection', 'We have decided to extract biological data from the lost juvenile Space Amoeba by fatal means. We will send a task force to capture the creature, and dissect its remains.', 30, 'society_technology', '[{"event": "distar.53", "name": "Juvenile Amoeba Dissection"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DISSECTION_PROJECT', 'Space Amoeba Dissection', 'We have decided to extract biological data from the lost juvenile Space Amoeba by fatal means. We will send a task force to capture the creature, and dissect its remains.', 30, NULL, 'society_technology', '[{"event": "distar.53", "name": "Juvenile Amoeba Dissection"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRYO_CLONES_PROJECT', 'Cryonic Ring World Clones', 'There are hundreds of still-living clones sealed in cryostasis chambers on the ruined Ring World surrounding . Rather than let them slowly die off like many of their comrades, our biologists propose thawing them out.', 30, 'society_technology', '[{"event": "distar.71", "name": "Cryonic Clones Revived"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRYO_CLONES_PROJECT', 'Cryonic Ring World Clones', 'There are hundreds of still-living clones sealed in cryostasis chambers on the ruined Ring World surrounding . Rather than let them slowly die off like many of their comrades, our biologists propose thawing them out.', 30, NULL, 'society_technology', '[{"event": "distar.71", "name": "Cryonic Clones Revived"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RECOVER_WARFORM_PROJECT', 'Recover the Corroding Warship', 'A disabled robotic warship has been found on , where it is slowly being dissolved by the planet''s toxic atmosphere. We should attempt to recover it, before it is rendered wholly inoperable.', 60, 'engineering_technology', '[{"event": "distar.156", "name": "Warship Restored"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RECOVER_WARFORM_PROJECT', 'Recover the Corroding Warship', 'A disabled robotic warship has been found on , where it is slowly being dissolved by the planet''s toxic atmosphere. We should attempt to recover it, before it is rendered wholly inoperable.', 60, NULL, 'engineering_technology', '[{"event": "distar.156", "name": "Warship Restored"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BRAINSLUG_PROJECT', 'Neural Symbiont Study', 'A symbiotic relationship between a reptilian species and a slug-like creature that attaches to the brain stem of its host once flourished on the surface of , transforming the bestial reptiles into tool-using sapients. Something caused these creatures to terminate their symbiotic relationship, and the reptilian hosts reverted back into mere animals.
-Our scientists would like to study the neural slugs still found on the planet more closely, in order to better understand the history of the lost civilization they built together.', 60, 'society_technology', '[{"event": "distar.171", "name": "Neural Symbiosis"}]');
+Our scientists would like to study the neural slugs still found on the planet more closely, in order to better understand the history of the lost civilization they built together.', 60, NULL, 'society_technology', '[{"event": "distar.171", "name": "Neural Symbiosis"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_1', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_2', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_3', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_4', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_5', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KETLING_PROJECT_6', 'Study the Ketlings on', 'Sapient creatures have emerged from the scrap piles on . Our scientists are curious whether these aliens, dubbed Ketlings, are descendants of the space-faring civilization that once spanned these systems, or if they have another origin entirely.
-We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
+We should be able to choose any planet inhabited by autonomous Ketlings to conduct this study.', 180, '0.0', 'society_technology', '[{"event": "distar.234", "name": "The Origin of the Ketlings"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('PHASESHIFT_PROJECT', 'Phase-Shift Freeze', ', a planet in the System has been observed to phase-shift between a Shrouded World and Gaia World on a three month cycle.
-Our physicists should be able to devise a way to lock the planet in one of its states, freezing it as a Gaia World, and preventing it from shifting back.', 180, 'physics_technology', '[{"event": "distar.253", "name": "Phase Lock"}]');
+Our physicists should be able to devise a way to lock the planet in one of its states, freezing it as a Gaia World, and preventing it from shifting back.', 180, '0.0', 'physics_technology', '[{"event": "distar.253", "name": "Phase Lock"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LCLUSTER_PROJECT', 'Activate L-Gate', 'Our scientists are now confident that our knowledge of the L-Gates and the technology behind them is sufficient to abort the maintenance cycle they have been locked into. If the attempt is successful, the L-Gate in the system should allow immediate access to the distant L-Cluster.
-Any additional L-Gates in the galaxy will likely also become operational within a matter of years, but this should give us a significant headstart.', 180, 'engineering_technology', '[{"event": "distar.10950", "name": null}]');
+Any additional L-Gates in the galaxy will likely also become operational within a matter of years, but this should give us a significant headstart.', 180, '0.0', 'engineering_technology', '[{"event": "distar.10950", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('trojan_asteroid_project', 'Trojan Asteroid', 'Once the drones have been destroyed, the asteroid they lurked in can be investigated more thoroughly.', 30, NULL, '[{"event": "distar.3005", "name": "Trojan Asteroid"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('trojan_asteroid_project', 'Trojan Asteroid', 'Once the drones have been destroyed, the asteroid they lurked in can be investigated more thoroughly.', 30, NULL, NULL, '[{"event": "distar.3005", "name": "Trojan Asteroid"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('impossible_organism_project_1', 'Impossible Organism', 'The has successfully retrieved a specimen of the incredibly robust organism found on ''s toxic surface.
-Our biologists would like to study it in greater detail.', NULL, 'society_technology', '[{"event": "distar.3011", "name": "Impossible Organism"}]');
+Our biologists would like to study it in greater detail.', NULL, '3000.0', 'society_technology', '[{"event": "distar.3011", "name": "Impossible Organism"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('impossible_organism_project_2', 'Impossible Organism: Continuation', 'The lifeform found on has been shown to possess an extraordinary capacity for growth in hostile environments.
-Further study is warranted, if our biologists are to unravel the mysteries of its genetic, cellular and biochemical processes.', NULL, 'society_technology', '[{"event": "distar.3012", "name": "Impossible Fungoid"}]');
+Further study is warranted, if our biologists are to unravel the mysteries of its genetic, cellular and biochemical processes.', NULL, '5000.0', 'society_technology', '[{"event": "distar.3012", "name": "Impossible Fungoid"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('molluscoid_miners_project_1', 'Molluscoid Miners', 'Research the molluscoid species and attempt to discover their means of locating mineral deposits with such ease.', 60, NULL, '[{"event": "distar.3031", "name": "Molluscoid Miners"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('molluscoid_miners_project_1', 'Molluscoid Miners', 'Research the molluscoid species and attempt to discover their means of locating mineral deposits with such ease.', 60, NULL, NULL, '[{"event": "distar.3031", "name": "Molluscoid Miners"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('molluscoid_miners_project_2', 'Molluscoid Integration', 'Commence the integration of the molluscoid miners into society.', NULL, 'society_technology', '[{"event": "distar.3032", "name": "Molluscoid Integration"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('molluscoid_miners_project_2', 'Molluscoid Integration', 'Commence the integration of the molluscoid miners into society.', NULL, '3000.0', 'society_technology', '[{"event": "distar.3032", "name": "Molluscoid Integration"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('molluscoid_miners_project_3', 'Mineral Production', 'Begin research and implementation of a system able to swiftly chart underground terrain, with the end goal of improving mineral production.', NULL, 'physics_technology', '[{"event": "distar.3033", "name": "Mineral Mapping"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('molluscoid_miners_project_3', 'Mineral Production', 'Begin research and implementation of a system able to swiftly chart underground terrain, with the end goal of improving mineral production.', NULL, '2000.0', 'physics_technology', '[{"event": "distar.3033", "name": "Mineral Mapping"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('speed_demon_open_box_project', 'Cracking Open the Alien Box', 'Begin the efforts to open the alien box found in orbit of .', NULL, 'physics_technology', '[{"event": "distar.3055", "name": "Alien Box Opened"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('speed_demon_open_box_project', 'Cracking Open the Alien Box', 'Begin the efforts to open the alien box found in orbit of .', NULL, '2000.0', 'physics_technology', '[{"event": "distar.3055", "name": "Alien Box Opened"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('speed_demon_learn_more_project', 'Research the Alien Box', 'Research the alien box found in orbit of to ascertain its contents.', NULL, 'physics_technology', '[{"event": "distar.3056", "name": "Alien Box Contents"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('speed_demon_learn_more_project', 'Research the Alien Box', 'Research the alien box found in orbit of to ascertain its contents.', NULL, '1000.0', 'physics_technology', '[{"event": "distar.3056", "name": "Alien Box Contents"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('breathing_rift_project', 'Breathe In, Breathe Out', 'Observe the rift in space discovered near and await whatever comes out of it, if anything.', NULL, 'physics_technology', '[{"event": "distar.3061", "name": "Breathing Rift - Minerals"}, {"event": "distar.3062", "name": "Breathing Rift - Debris"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('breathing_rift_project', 'Breathe In, Breathe Out', 'Observe the rift in space discovered near and await whatever comes out of it, if anything.', NULL, '1000.0', 'physics_technology', '[{"event": "distar.3061", "name": "Breathing Rift - Minerals"}, {"event": "distar.3062", "name": "Breathing Rift - Debris"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TAME_LDRAGON_PROJECT', 'Tame L-Drake', 'The L-Drake in the system appears docile - for now.
-If it is intelligent, we could benefit from attempting to ally with the beast.', 180, 'society_technology', '[{"event": "distar.13035", "name": "L-Drake Tamed"}]');
+If it is intelligent, we could benefit from attempting to ally with the beast.', 180, NULL, 'society_technology', '[{"event": "distar.13035", "name": "L-Drake Tamed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GENERATION_SHIP', 'Generation Ship', 'A massive generation ship belonging to a long dead race of aliens may hold the encrypted location of a utopian planet within its navigational drive.', 60, 'engineering_technology', '[{"event": "distar.1001", "name": "Hidden Worlds"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GENERATION_SHIP', 'Generation Ship', 'A massive generation ship belonging to a long dead race of aliens may hold the encrypted location of a utopian planet within its navigational drive.', 60, NULL, 'engineering_technology', '[{"event": "distar.1001", "name": "Hidden Worlds"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HIDDEN_PLANET', 'Grasping at Straws', 'Sending a probe to the planet''s surface will allow us to decide once and for all whether the desolate barren world that lies before us is in fact all that remains of the Mardak Vol''s mythical paradise.', 60, 'society_technology', '[{"event": "distar.1003", "name": "Postcard Perfection"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HIDDEN_PLANET', 'Grasping at Straws', 'Sending a probe to the planet''s surface will allow us to decide once and for all whether the desolate barren world that lies before us is in fact all that remains of the Mardak Vol''s mythical paradise.', 60, NULL, 'society_technology', '[{"event": "distar.1003", "name": "Postcard Perfection"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STAR_LIFTING', 'Abandoned Star Platform', 'A decrepit platform of ancient alien design orbits . If we could find a way to repair it would allow us to improve and harness the star''s energy outflow.', 60, 'engineering_technology', '[{"event": "distar.1021", "name": "Playing with Fire"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STAR_LIFTING', 'Abandoned Star Platform', 'A decrepit platform of ancient alien design orbits . If we could find a way to repair it would allow us to improve and harness the star''s energy outflow.', 60, NULL, 'engineering_technology', '[{"event": "distar.1021", "name": "Playing with Fire"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STAR_LIFTING_WEAPONS', 'Abandoned Star Platform', 'A decrepit platform of ancient alien design orbits . It has some highly experimental microwave beam technology with potential for weaponization.', 60, 'physics_technology', '[{"event": "distar.1022", "name": "Molluscoid Microwave Beams"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STAR_LIFTING_WEAPONS', 'Abandoned Star Platform', 'A decrepit platform of ancient alien design orbits . It has some highly experimental microwave beam technology with potential for weaponization.', 60, NULL, 'physics_technology', '[{"event": "distar.1022", "name": "Molluscoid Microwave Beams"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BIG_RIP', 'Abandoned Observation Post', 'The data storage units on the observation post orbiting have been wiped. We will have to send a team planetside if we want to get to the bottom of what happened to the intelligent lifeforms previously inhabiting the planet.', 60, 'engineering_technology', '[{"event": "distar.1031", "name": "The Gray Tempest"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BIG_RIP', 'Abandoned Observation Post', 'The data storage units on the observation post orbiting have been wiped. We will have to send a team planetside if we want to get to the bottom of what happened to the intelligent lifeforms previously inhabiting the planet.', 60, NULL, 'engineering_technology', '[{"event": "distar.1031", "name": "The Gray Tempest"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_CUBE', 'The Cube', 'The discovery of a tiny metal cube with different colored sides has mystified Science Officer , who is certain it hides something of value inside.', 60, 'engineering_technology', '[{"event": "distar.1056", "name": "Slice and Dice"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_CUBE', 'The Cube', 'The discovery of a tiny metal cube with different colored sides has mystified Science Officer , who is certain it hides something of value inside.', 60, NULL, 'engineering_technology', '[{"event": "distar.1056", "name": "Slice and Dice"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STAR_CRAZY', 'Pulsating Stars', 'Several stars in the galaxy have begun to pulsate oddly. The crew have raised concerns that these readings were caused by a sensory malfunction, but officer would like to investigate one of the stars more closely.', 60, 'physics_technology', '[{"event": "distar.1072", "name": "Sensor Malfunction"}, {"event": "distar.1073", "name": "Star Crazy"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STAR_CRAZY', 'Pulsating Stars', 'Several stars in the galaxy have begun to pulsate oddly. The crew have raised concerns that these readings were caused by a sensory malfunction, but officer would like to investigate one of the stars more closely.', 60, NULL, 'physics_technology', '[{"event": "distar.1072", "name": "Sensor Malfunction"}, {"event": "distar.1073", "name": "Star Crazy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ICE_ALIEN', 'Ice Alien', 'Trapped within in a mountainous slab of ice are the remains of a lifeform, the likes of which have never seen before. Who knows how far it has traveled through space and time.
-Our researchers have made the necessary preparations to bring it back to life.', NULL, 'society_technology', '[{"event": "distar.1081", "name": "Azizians"}]');
+Our researchers have made the necessary preparations to bring it back to life.', NULL, '1000.0', 'society_technology', '[{"event": "distar.1081", "name": "Azizians"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WEAPONS_TESTING', 'Alien Weapons', 'We have gathered the remains of alien weaponry used in extensive weapon testing on for analysis.', 60, 'physics_technology', '[{"event": "distar.2006", "name": "Alien Lasers"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WEAPONS_TESTING', 'Alien Weapons', 'We have gathered the remains of alien weaponry used in extensive weapon testing on for analysis.', 60, NULL, 'physics_technology', '[{"event": "distar.2006", "name": "Alien Lasers"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MEND_SHIELD', 'Planetary Shield Restoration', 'The ancient shield enclosing the sapient squamate civilization on is cracking from heat and disrepair. We must restore it.', 60, 'engineering_technology', '[{"event": "distar.2031", "name": "Shield Restored"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MEND_SHIELD', 'Planetary Shield Restoration', 'The ancient shield enclosing the sapient squamate civilization on is cracking from heat and disrepair. We must restore it.', 60, NULL, 'engineering_technology', '[{"event": "distar.2031", "name": "Shield Restored"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STOP_TIME_LOOP', 'Interrupt the Time Loop', 'We have prepared a project to interrupt the time loop.', 60, 'physics_technology', '[{"event": "distar.2032", "name": "Big Boom"}, {"event": "distar.2033", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STOP_TIME_LOOP', 'Interrupt the Time Loop', 'We have prepared a project to interrupt the time loop.', 60, NULL, 'physics_technology', '[{"event": "distar.2032", "name": "Big Boom"}, {"event": "distar.2033", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_CACHE_PROJECT', 'An Enigmatic Guest', 'A mysterious alien entity has entered orbit of . It would be wise to determine its purpose here as soon as possible.', NULL, 'engineering_technology', '[{"event": "distar.5058", "name": "The Enigmatic Cache"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_CACHE_PROJECT', 'An Enigmatic Guest', 'A mysterious alien entity has entered orbit of . It would be wise to determine its purpose here as soon as possible.', NULL, '2500.0', 'engineering_technology', '[{"event": "distar.5058", "name": "The Enigmatic Cache"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_UPLIFTING', 'Enigmatic Ascension', 'The alien entity BALDOR XXXXIII claims that it can uplift our people using hypnopedia, rest-learning. Our researchers will have to monitor the process closely.', 720, 'society_technology', '[{"event": "distar.5068", "name": "Ignorance is Bliss"}, {"event": "distar.5063", "name": "The New Us"}, {"event": "distar.5074", "name": "Somewhat Uplifted"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_UPLIFTING', 'Enigmatic Ascension', 'The alien entity BALDOR XXXXIII claims that it can uplift our people using hypnopedia, rest-learning. Our researchers will have to monitor the process closely.', 720, NULL, 'society_technology', '[{"event": "distar.5068", "name": "Ignorance is Bliss"}, {"event": "distar.5063", "name": "The New Us"}, {"event": "distar.5074", "name": "Somewhat Uplifted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_REPAIR', 'Repairing BALDOR XXXXIII', 'Our ascension is being jeopardized by a critical hardware failure in Baldor XXXXIII. The entity requires immediate repairs.', 180, 'engineering_technology', '[{"event": "distar.5073", "name": "Repair Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_REPAIR', 'Repairing BALDOR XXXXIII', 'Our ascension is being jeopardized by a critical hardware failure in Baldor XXXXIII. The entity requires immediate repairs.', 180, NULL, 'engineering_technology', '[{"event": "distar.5073", "name": "Repair Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INVISIBLE_DEATH', 'The Xvan Labs', 'We have located the Xvan Labs - a hidden gathering of pyramidic structures built from an unknown material, submerged under layers of sand and dust. We will have to excavate the facilities before we can explore them, but if the rebels were correct in their assumptions, the weapons within will be worth their while.', 140, 'society_technology', '[{"event": "distar.2041", "name": "Invisible Death"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INVISIBLE_DEATH', 'The Xvan Labs', 'We have located the Xvan Labs - a hidden gathering of pyramidic structures built from an unknown material, submerged under layers of sand and dust. We will have to excavate the facilities before we can explore them, but if the rebels were correct in their assumptions, the weapons within will be worth their while.', 140, NULL, 'society_technology', '[{"event": "distar.2041", "name": "Invisible Death"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GATEWAY_INTERFERENCE', 'Gateway Interference', 'An unknown empire was attempting to hack into the ancient L-Gate Network using an interference beam when they were attacked and the beam damaged. Perhaps the beam could be restored.', 140, 'engineering_technology', '[{"event": "distar.2046", "name": "Sujin Insight"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GATEWAY_INTERFERENCE', 'Gateway Interference', 'An unknown empire was attempting to hack into the ancient L-Gate Network using an interference beam when they were attacked and the beam damaged. Perhaps the beam could be restored.', 140, NULL, 'engineering_technology', '[{"event": "distar.2046", "name": "Sujin Insight"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SHATTERED_EGG', 'Egg Shards', 'Somehow the Voidspawn egg has evolved to survive the harsh conditions of space, by absorbing and conserving huge amounts of solar energy. Maybe the remains of the shattered shards could reveal its secrets.', 140, 'society_technology', '[{"event": "distar.5012", "name": "Gargantuan Evolution"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SHATTERED_EGG', 'Egg Shards', 'Somehow the Voidspawn egg has evolved to survive the harsh conditions of space, by absorbing and conserving huge amounts of solar energy. Maybe the remains of the shattered shards could reveal its secrets.', 140, NULL, 'society_technology', '[{"event": "distar.5012", "name": "Gargantuan Evolution"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_TIYANKI_MATRIARCH', 'Reanimate the Tiyanki Matriarch', 'Our have hatched an audacious plan to bring the Tiyanki Matriarch back from the dead, so she may serve us and fight alongside our fleets.', NULL, 'society_technology', '[{"event": "distar.218", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_TIYANKI_MATRIARCH', 'Reanimate the Tiyanki Matriarch', 'Our have hatched an audacious plan to bring the Tiyanki Matriarch back from the dead, so she may serve us and fight alongside our fleets.', NULL, '10000.0', 'society_technology', '[{"event": "distar.218", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_VOIDSPAWN', 'Reanimate Vanquished Voidspawn', 'Through methods best not spoken of aloud, our assure us that they are capable of resurrecting the Voidspawn to serve us and fight alongside our fleets.', NULL, 'society_technology', '[{"event": "distar.5016", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_VOIDSPAWN', 'Reanimate Vanquished Voidspawn', 'Through methods best not spoken of aloud, our assure us that they are capable of resurrecting the Voidspawn to serve us and fight alongside our fleets.', NULL, '10000.0', 'society_technology', '[{"event": "distar.5016", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_LOST_AMOEBA', 'Reanimate the Lost Amoeba', 'We do not quite understand it but our necromancers have set out to bring back our dearly departed amoeba.', NULL, 'society_technology', '[{"event": "distar.59", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_LOST_AMOEBA', 'Reanimate the Lost Amoeba', 'We do not quite understand it but our necromancers have set out to bring back our dearly departed amoeba.', NULL, '5000.0', 'society_technology', '[{"event": "distar.59", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STUDY_LIVING_SEA', 'Study The Living Sea', 'Preliminary reports suggest the ocean covering this planet is somehow alive, comprising an alien entity unlike any we''ve encountered before. Researchers propose an extended orbital study be organized in order to learn more about this mysterious being.', 30, 'society_technology', '[{"event": "distar.191", "name": "Unknown Contact"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STUDY_LIVING_SEA', 'Study The Living Sea', 'Preliminary reports suggest the ocean covering this planet is somehow alive, comprising an alien entity unlike any we''ve encountered before. Researchers propose an extended orbital study be organized in order to learn more about this mysterious being.', 30, NULL, 'society_technology', '[{"event": "distar.191", "name": "Unknown Contact"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INVESTIGATE_CAVE_SHROOM_PROJECT', 'Rooting Out the Problem', 'It''s high time to investigate what''s causing the strange and destructive behavior of the colony.', NULL, 'society_technology', '[{"event": "colony.8004", "name": "Savage Spores"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INVESTIGATE_CAVE_SHROOM_PROJECT', 'Rooting Out the Problem', 'It''s high time to investigate what''s causing the strange and destructive behavior of the colony.', NULL, '500.0', 'society_technology', '[{"event": "colony.8004", "name": "Savage Spores"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UTILIZE_CAVE_SHROOM_PROJECT', 'Utilize the Cave Mushrooms', 'Our scientists will try to find ways to use the primal effects of the Cave Mushrooms to our benefit.', NULL, 'society_technology', '[{"event": "colony.8005", "name": "Cloud and Strife"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UTILIZE_CAVE_SHROOM_PROJECT', 'Utilize the Cave Mushrooms', 'Our scientists will try to find ways to use the primal effects of the Cave Mushrooms to our benefit.', NULL, '500.0', 'society_technology', '[{"event": "colony.8005", "name": "Cloud and Strife"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('EXTERMINATE_CAVE_SHROOM_PROJECT', 'Exterminate the Cave Mushrooms', 'A project will be initialized in which the fungus in the underground caves will be progressively incinerated down to the last spore.', NULL, 'engineering_technology', '[{"event": "colony.8006", "name": "The Cleansing Flames"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('EXTERMINATE_CAVE_SHROOM_PROJECT', 'Exterminate the Cave Mushrooms', 'A project will be initialized in which the fungus in the underground caves will be progressively incinerated down to the last spore.', NULL, '500.0', 'engineering_technology', '[{"event": "colony.8006", "name": "The Cleansing Flames"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LESSENGER_REMODEL', 'Upscaling the Messenger', 'The extraordinary level of technology and capacity of The Lesser Messenger can only be rivaled by it''s ridiculous scale. Of the ship''s tiny creator species thousands could fit into the vessel, but to fit even a skeleton crew of our species in there is going to require a massive overhaul.', NULL, 'engineering_technology', '[{"event": "fedev.9480", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LESSENGER_REMODEL', 'Upscaling the Messenger', 'The extraordinary level of technology and capacity of The Lesser Messenger can only be rivaled by it''s ridiculous scale. Of the ship''s tiny creator species thousands could fit into the vessel, but to fit even a skeleton crew of our species in there is going to require a massive overhaul.', NULL, '1500.0', 'engineering_technology', '[{"event": "fedev.9480", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('A_CLOSER_LOOK_PROJECT', 'A Closer Look', 'We should take a closer look at the crash site of the unidentified object that was expelled from the gateway a while ago.', NULL, 'engineering_technology', '[{"event": "origin.1011", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('A_CLOSER_LOOK_PROJECT', 'A Closer Look', 'We should take a closer look at the crash site of the unidentified object that was expelled from the gateway a while ago.', NULL, '250.0', 'engineering_technology', '[{"event": "origin.1011", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_GATEWAY_CANNON_PROJECT', 'The Gateway Cannon', 'Following the alien blueprint found in a previous archaeological excavation, we can assemble a construction that will briefly open the gateway in our home system allow a Science Ship to pass through.', NULL, 'engineering_technology', '[{"event": "origin.1015", "name": "The Waiting Game"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_GATEWAY_CANNON_PROJECT', 'The Gateway Cannon', 'Following the alien blueprint found in a previous archaeological excavation, we can assemble a construction that will briefly open the gateway in our home system allow a Science Ship to pass through.', NULL, '1000.0', 'engineering_technology', '[{"event": "origin.1015", "name": "The Waiting Game"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PATHFINDING_PROJECT', 'Pathfinding', 'The ancient fusion drive trail should be studied further. It may be possible to isolate the destination of whatever vessel left this energy exhaust.', NULL, 'physics_technology', '[{"event": "origin.1340", "name": "Finding the Benefactors"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PATHFINDING_PROJECT', 'Pathfinding', 'The ancient fusion drive trail should be studied further. It may be possible to isolate the destination of whatever vessel left this energy exhaust.', NULL, '500.0', 'physics_technology', '[{"event": "origin.1340", "name": "Finding the Benefactors"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INVESTIGATE_THE_DEAD_STATION_PROJECT', 'Investigate the Dead Station', 'Despite the obvious devastation, the enigmatic space station may contain old messages or data fragments that can be puzzled together into a coherent explanation for what happened here, eons ago.', NULL, 'society_technology', '[{"event": "origin.1350", "name": "Raided and Hunted"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INVESTIGATE_THE_DEAD_STATION_PROJECT', 'Investigate the Dead Station', 'Despite the obvious devastation, the enigmatic space station may contain old messages or data fragments that can be puzzled together into a coherent explanation for what happened here, eons ago.', NULL, '1000.0', 'society_technology', '[{"event": "origin.1350", "name": "Raided and Hunted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_OUROBOROS_PROJECT', 'Project Ouroboros', 'We have found the descendants of the species that once rendered our ancestors... lesser. These descendants are now the diminished ones. The universe, it seems, is not without a sense of irony. But for better or worse, they did help us. We should investigate what we can do to repay the favor.', NULL, 'engineering_technology', '[{"event": "origin.1359", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_OUROBOROS_PROJECT', 'Project Ouroboros', 'We have found the descendants of the species that once rendered our ancestors... lesser. These descendants are now the diminished ones. The universe, it seems, is not without a sense of irony. But for better or worse, they did help us. We should investigate what we can do to repay the favor.', NULL, '750.0', 'engineering_technology', '[{"event": "origin.1359", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TRACKING_THE_PREDATOR_PROJECT', 'Tracking the Predator', 'By analyzing the fusion drive trail our science department may figure out where our old visitors went, which in turn means that we can initiate a pursuit.', NULL, 'physics_technology', '[{"event": "origin.1385", "name": "Picking Up the Trail"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TRACKING_THE_PREDATOR_PROJECT', 'Tracking the Predator', 'By analyzing the fusion drive trail our science department may figure out where our old visitors went, which in turn means that we can initiate a pursuit.', NULL, '500.0', 'physics_technology', '[{"event": "origin.1385", "name": "Picking Up the Trail"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INVESTIGATE_SILENT_FREIGHTER_PROJECT', 'Investigate the Silent Freighter', 'A derelict freighter ship is waiting in the cold of space. It is very old, but seemingly undamaged. We should send a boarding party to investigate closer.', NULL, 'society_technology', '[{"event": "origin.1395", "name": "The Maker''s Might"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INVESTIGATE_SILENT_FREIGHTER_PROJECT', 'Investigate the Silent Freighter', 'A derelict freighter ship is waiting in the cold of space. It is very old, but seemingly undamaged. We should send a boarding party to investigate closer.', NULL, '1000.0', 'society_technology', '[{"event": "origin.1395", "name": "The Maker''s Might"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('OLD_BEACON_PROJECT', 'Analyzing the Old Beacon', 'Based on the frequent energy pulse emanating from it, this old space structure wants to be found. In order to figure out why we must allow our scientist to take a closer look.', NULL, 'engineering_technology', '[{"event": "origin.1405", "name": "Blissfully Ignorant"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('OLD_BEACON_PROJECT', 'Analyzing the Old Beacon', 'Based on the frequent energy pulse emanating from it, this old space structure wants to be found. In order to figure out why we must allow our scientist to take a closer look.', NULL, '750.0', 'engineering_technology', '[{"event": "origin.1405", "name": "Blissfully Ignorant"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DANCING_PLAGUE_PROJECT', 'The Dancing Plague', 'has been beset by cases of uncontrollable dancing. We must investigate the cause of this outbreak, before anyone is hurt!', NULL, 'society_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DANCING_PLAGUE_PROJECT', 'The Dancing Plague', 'has been beset by cases of uncontrollable dancing. We must investigate the cause of this outbreak, before anyone is hurt!', NULL, '1000.0', 'society_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DANCING_PLAGUE_PROJECT2', 'Cure the Dancers', 'The so-called ''Dancing Plague'' has caused great suffering on . We must find a way to cure it as soon as possible, or the colony may collapse!', NULL, 'society_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DANCING_PLAGUE_PROJECT2', 'Cure the Dancers', 'The so-called ''Dancing Plague'' has caused great suffering on . We must find a way to cure it as soon as possible, or the colony may collapse!', NULL, '1000.0', 'society_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BLUELOTUS_SCALE_PROJECT', 'Blue Lotus Facility', 'It''s thought that the unique, reflective properties of this geographical phenomenon may be harnessed in order to transmute base rocks into superior alloys.', NULL, 'physics_technology', '[{"event": "colony_fed.115", "name": "Full Spectrum Alchemy"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BLUELOTUS_SCALE_PROJECT', 'Blue Lotus Facility', 'It''s thought that the unique, reflective properties of this geographical phenomenon may be harnessed in order to transmute base rocks into superior alloys.', NULL, '3500.0', 'physics_technology', '[{"event": "colony_fed.115", "name": "Full Spectrum Alchemy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WENKWORT_PROJECT', 'Pure, Dry Landscaping', 'Circular ridges have been impressed upon the surface of , sweeping elegantly around its myriad craters and mountains. Is there some purpose to their design? What relation might there be to the Gardening Drones in this system?', 100, 'society_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WENKWORT_PROJECT', 'Pure, Dry Landscaping', 'Circular ridges have been impressed upon the surface of , sweeping elegantly around its myriad craters and mountains. Is there some purpose to their design? What relation might there be to the Gardening Drones in this system?', 100, NULL, 'society_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DISMEMBERED_CLOUD_PROJECT', 'Cloud, Snagged', 'Brightly-colored tendrils of cloud have latched onto our starbase at , phasing in and out of hyperspace in an erratic - or perhaps even organic - manner. What''s causing this?
-This project is part of a wider scientific effort being conducted by members of the .', NULL, 'physics_technology', NULL);
+This project is part of a wider scientific effort being conducted by members of the .', NULL, '200.0', 'physics_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEYLINES_ACOUSTIC_PROJECT', 'Combatting Resonant Harmonics', 'In order to assist our federation colleagues amidst exceedingly noisy conditions, we have been tasked with refining their personnel''s acoustic shields. The archaeologists are currently unable to work anything more than staccato shifts before they show signs of physical distress.', 35, 'physics_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEYLINES_ACOUSTIC_PROJECT', 'Combatting Resonant Harmonics', 'In order to assist our federation colleagues amidst exceedingly noisy conditions, we have been tasked with refining their personnel''s acoustic shields. The archaeologists are currently unable to work anything more than staccato shifts before they show signs of physical distress.', 35, NULL, 'physics_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEYLINES_ANALYSIS_PROJECT', 'Resonant Hum Analysis', 'Now that our colleagues in the have begun the next stage of their excavations, the project''s oversight committee has delegated us to study the waning din which still emanates from each affected world.', 50, 'physics_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEYLINES_ANALYSIS_PROJECT', 'Resonant Hum Analysis', 'Now that our colleagues in the have begun the next stage of their excavations, the project''s oversight committee has delegated us to study the waning din which still emanates from each affected world.', 50, NULL, 'physics_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LOGISTIC_REMODEL', 'Logistical Remodelling', 'In order to try out the new logistical standards, the relevant facilities on this starbase need to undergo some major structural alterations.
-Assign a Construction Ship to the project, and make sure it''s done on time!', 200, 'engineering_technology', '[{"event": "fedev.625", "name": "Remodelling Complete"}, {"event": "fedev.630", "name": null}]');
+Assign a Construction Ship to the project, and make sure it''s done on time!', 200, NULL, 'engineering_technology', '[{"event": "fedev.625", "name": "Remodelling Complete"}, {"event": "fedev.630", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LOGISTIC_REMODEL_OFFWORLD', 'Optimized Logistical Remodelling', 'In order to try out the new logistical standards, the relevant facilities on this starbase need to undergo some major structural alterations. Thanks to the local Offworld Trading Company this project will be more efficient.
-Assign a Construction Ship to the project, and make sure it''s done on time!', 120, 'engineering_technology', '[{"event": "fedev.625", "name": "Remodelling Complete"}, {"event": "fedev.630", "name": null}]');
+Assign a Construction Ship to the project, and make sure it''s done on time!', 120, NULL, 'engineering_technology', '[{"event": "fedev.625", "name": "Remodelling Complete"}, {"event": "fedev.630", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BROKEN_SHACKLES_PROJECT_01', 'Locate Home Worlds', 'Now that the files in the crashed slaver ship are fully decrypted, we will be able to pinpoint the galactic position of our home worlds.', NULL, 'physics_technology', '[{"event": "origin.5040", "name": "Home Worlds Located"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BROKEN_SHACKLES_PROJECT_01', 'Locate Home Worlds', 'Now that the files in the crashed slaver ship are fully decrypted, we will be able to pinpoint the galactic position of our home worlds.', NULL, '2000.0', 'physics_technology', '[{"event": "origin.5040", "name": "Home Worlds Located"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COST_OF_FREEDOM_PROJECT', 'The Cost of Freedom', 'Our society is deeply divided. A union of many worlds, and many different cultures, does not come without tension. It is to be hoped that this committee can offer solutions to the problem.', NULL, 'society_technology', '[{"event": "origin.5205", "name": "Findings of the Special Committee"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COST_OF_FREEDOM_PROJECT', 'The Cost of Freedom', 'Our society is deeply divided. A union of many worlds, and many different cultures, does not come without tension. It is to be hoped that this committee can offer solutions to the problem.', NULL, '12000.0', 'society_technology', '[{"event": "origin.5205", "name": "Findings of the Special Committee"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PAYBACK_KESSLER_EFFECT', 'Orbital Debris Cleanup Project', '$origin.4900.desc$', NULL, 'engineering_technology', '[{"event": "origin.4931", "name": "Clear Skies"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PAYBACK_KESSLER_EFFECT', 'Orbital Debris Cleanup Project', '$origin.4900.desc$', NULL, '600.0', 'engineering_technology', '[{"event": "origin.4931", "name": "Clear Skies"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('RESTORE_WARSHIP_PROJECT', 'Flagship Restoration', 'The warship will become the gem of our fleet.
-The warship shall be repaired and turned into a functioning Flagship.', NULL, 'engineering_technology', '[{"event": "origin.4934", "name": "Restored Flagship"}]');
+The warship shall be repaired and turned into a functioning Flagship.', NULL, '2000.0', 'engineering_technology', '[{"event": "origin.4934", "name": "Restored Flagship"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('RESTORE_HABITAT_PROJECT', 'Habitat Restoration', 'The warship will now be retrofitted for scientific research.
-Following repairs, this former instrument of death will be fully converted into a functioning Habitat, devoted to uncovering the secrets of MSI''s technology.', NULL, 'engineering_technology', '[{"event": "origin.4935", "name": "Restored Habitat"}]');
+Following repairs, this former instrument of death will be fully converted into a functioning Habitat, devoted to uncovering the secrets of MSI''s technology.', NULL, '2000.0', 'engineering_technology', '[{"event": "origin.4935", "name": "Restored Habitat"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UPGRADE_FLAGSHIP', 'Upgrade Flagship', 'Recent advances in our technology will allow us to refit our flagship to make use of some previously unused systems.', NULL, 'engineering_technology', '[{"event": "origin.4937", "name": "Flagship Upgraded!"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UPGRADE_FLAGSHIP', 'Upgrade Flagship', 'Recent advances in our technology will allow us to refit our flagship to make use of some previously unused systems.', NULL, '2000.0', 'engineering_technology', '[{"event": "origin.4937", "name": "Flagship Upgraded!"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOTD_CONFIRM_FINDINGS', 'Confirm Findings', 'The asteroid that hit the Divider contained an abnormal amount of tungsten, and several scientists now claim to have', 720, 'physics_technology', '[{"event": "origin.6150", "name": "Horrific Proof"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOTD_CONFIRM_FINDINGS', 'Confirm Findings', 'The asteroid that hit the Divider contained an abnormal amount of tungsten, and several scientists now claim to have', 720, NULL, 'physics_technology', '[{"event": "origin.6150", "name": "Horrific Proof"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOTD_DEFLECTING_FIELDS', 'Deflecting Fields', 'A lone science ship could, given enough time, establish a fluctuating force field to change the vector of the tungsten missile. But that in itself may not be enough.', 400, NULL, '[{"event": "origin.6186", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOTD_DEFLECTING_FIELDS', 'Deflecting Fields', 'A lone science ship could, given enough time, establish a fluctuating force field to change the vector of the tungsten missile. But that in itself may not be enough.', 400, NULL, NULL, '[{"event": "origin.6186", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOTD_REVERSED_THRUSTERS', 'Reversed Thrusters', 'Specially modified torpedoes could be programmed to attach themselves to the projectile; by reversing their thrust, they might just slow this ''gift'' down.', 350, NULL, '[{"event": "origin.6187", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOTD_REVERSED_THRUSTERS', 'Reversed Thrusters', 'Specially modified torpedoes could be programmed to attach themselves to the projectile; by reversing their thrust, they might just slow this ''gift'' down.', 350, NULL, NULL, '[{"event": "origin.6187", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOTD_COUNTER_SHOT', 'Counter Shot', 'While we don''t have anything as dense as a tungsten asteroid in our system, we have no shortage of space rocks. Even at less than lightspeed, firing a counter asteroid at the current threat might help.', 390, NULL, '[{"event": "origin.6188", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOTD_COUNTER_SHOT', 'Counter Shot', 'While we don''t have anything as dense as a tungsten asteroid in our system, we have no shortage of space rocks. Even at less than lightspeed, firing a counter asteroid at the current threat might help.', 390, NULL, NULL, '[{"event": "origin.6188", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FOTD_CONTROLLED_SHATTERING', 'Controlled Shattering', 'Blowing up the tungsten bullet might seem appealing, but the resulting shrapnel would still have a catastrophic impact on our world. Our scientists have calculated a controlled detonation sequence that might help fracture the projectile into a slightly more manageable form.', 430, NULL, '[{"event": "origin.6189", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FOTD_CONTROLLED_SHATTERING', 'Controlled Shattering', 'Blowing up the tungsten bullet might seem appealing, but the resulting shrapnel would still have a catastrophic impact on our world. Our scientists have calculated a controlled detonation sequence that might help fracture the projectile into a slightly more manageable form.', 430, NULL, NULL, '[{"event": "origin.6189", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_JAUNT_PROJECT', 'Learning to Jaunt', 'The sudden appearance of the Many-Tentacled One on our capital has proven that the once theoretical concept of ''psionic teleportation'' is workable in practice. By putting our most effective on the job, it might be possible for us to learn the secrets of instantaneous interstellar travel.', 1080, 'society_technology', '[{"event": "fircon.1243", "name": "$fircon.1241.name$"}, {"event": "fircon.1242", "name": "$fircon.1241.name$"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_JAUNT_PROJECT', 'Learning to Jaunt', 'The sudden appearance of the Many-Tentacled One on our capital has proven that the once theoretical concept of ''psionic teleportation'' is workable in practice. By putting our most effective on the job, it might be possible for us to learn the secrets of instantaneous interstellar travel.', 1080, NULL, 'society_technology', '[{"event": "fircon.1243", "name": "$fircon.1241.name$"}, {"event": "fircon.1242", "name": "$fircon.1241.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SHIELD_PRIMITIVE_PLANET_PROJECT', 'Erect the Shield', 'Our should be able to complete the shield Ithikarios attempted to erect over , if we can provide them with sufficient resources.', NULL, 'physics_technology', '[{"event": "arcsite.3020", "name": "The Charynoi Shielded"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SHIELD_PRIMITIVE_PLANET_PROJECT', 'Erect the Shield', 'Our should be able to complete the shield Ithikarios attempted to erect over , if we can provide them with sufficient resources.', NULL, '50000.0', 'physics_technology', '[{"event": "arcsite.3020", "name": "The Charynoi Shielded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NON_BELIEVERS_PROJECT', 'Subterranean Invasion Defense Force', 'The are worried about a possible subterranean invasion. It''s a baseless fear, but providing additional troops will help us gain their trust.', 80, 'society_technology', '[{"event": "fircon.6030", "name": "Sudden Attack!"}, {"event": "fircon.6032", "name": "Sudden Eruption!"}, {"event": "fircon.6033", "name": "Anticlimactic"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NON_BELIEVERS_PROJECT', 'Subterranean Invasion Defense Force', 'The are worried about a possible subterranean invasion. It''s a baseless fear, but providing additional troops will help us gain their trust.', 80, '0.0', 'society_technology', '[{"event": "fircon.6030", "name": "Sudden Attack!"}, {"event": "fircon.6032", "name": "Sudden Eruption!"}, {"event": "fircon.6033", "name": "Anticlimactic"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HORIZON_SIGNAL_PROJECT', 'Analyze the Horizon Signal', 'Dedicate a science vessel to deciphering the unlikely signal from the black hole in the system.', 20, 'physics_technology', '[{"event": "akx.9001", "name": "The Horizon Signal: GRAVITY IS DESIRE"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HORIZON_SIGNAL_PROJECT', 'Analyze the Horizon Signal', 'Dedicate a science vessel to deciphering the unlikely signal from the black hole in the system.', 20, NULL, 'physics_technology', '[{"event": "akx.9001", "name": "The Horizon Signal: GRAVITY IS DESIRE"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LOOP_TEMPLE_PROJECT', 'Investigate the Loop Temple', 'Establish a research project to learn more about the Loop Temple, its origins, and its purpose.', NULL, 'society_technology', '[{"event": "akx.9101", "name": "The Loop Temple: Time and Stone"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LOOP_TEMPLE_PROJECT', 'Investigate the Loop Temple', 'Establish a research project to learn more about the Loop Temple, its origins, and its purpose.', NULL, '1000.0', 'society_technology', '[{"event": "akx.9101", "name": "The Loop Temple: Time and Stone"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MESSENGER_POD_PROJECT_1', 'Study the Messenger, and its message', 'Perhaps we can establish a connection to certain other events - perhaps even find an explanation.', 60, 'physics_technology', '[{"event": "akx.9201", "name": "The Messenger: Possibilities"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MESSENGER_POD_PROJECT_1', 'Study the Messenger, and its message', 'Perhaps we can establish a connection to certain other events - perhaps even find an explanation.', 60, NULL, 'physics_technology', '[{"event": "akx.9201", "name": "The Messenger: Possibilities"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MESSENGER_POD_PROJECT_2_UNLEASHED', 'Study the Messenger connection', 'Initial findings suggest that it was a more intelligent although, perhaps, feebler form.', NULL, 'society_technology', '[{"event": "akx.9210", "name": "The Messenger: Unleashed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MESSENGER_POD_PROJECT_2_UNLEASHED', 'Study the Messenger connection', 'Initial findings suggest that it was a more intelligent although, perhaps, feebler form.', NULL, '500.0', 'society_technology', '[{"event": "akx.9210", "name": "The Messenger: Unleashed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MESSENGER_POD_PROJECT_2_LEASHED', 'Study the Messenger connection', 'Initial findings suggest that it was a much more rugged and, perhaps, more aggressive form.', NULL, 'society_technology', '[{"event": "akx.9220", "name": "The Messenger: Leashed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MESSENGER_POD_PROJECT_2_LEASHED', 'Study the Messenger connection', 'Initial findings suggest that it was a much more rugged and, perhaps, more aggressive form.', NULL, '500.0', 'society_technology', '[{"event": "akx.9220", "name": "The Messenger: Leashed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COILS_GOD_PROJECT_DISRUPT', 'Disrupt the Coils rituals', 'Interference, sabotage, disinformation. We''ll do as much as we can without crossing the line.', 1, 'society_technology', '[{"event": "akx.9460", "name": "The Coils of God: Ceremony''s End"}, {"event": "akx.9465", "name": "The Coils of God: News from Underground"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COILS_GOD_PROJECT_DISRUPT', 'Disrupt the Coils rituals', 'Interference, sabotage, disinformation. We''ll do as much as we can without crossing the line.', 1, NULL, 'society_technology', '[{"event": "akx.9460", "name": "The Coils of God: Ceremony''s End"}, {"event": "akx.9465", "name": "The Coils of God: News from Underground"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COILS_GOD_PROJECT_PREVENT', 'Prevent the Coils rituals', 'Covert operations including forgery, kidnapping, indoctrination, even arson and murder: we do what we must.', 1, 'society_technology', '[{"event": "akx.9470", "name": "The Coils of God: the Blood of Priests"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COILS_GOD_PROJECT_PREVENT', 'Prevent the Coils rituals', 'Covert operations including forgery, kidnapping, indoctrination, even arson and murder: we do what we must.', 1, NULL, 'society_technology', '[{"event": "akx.9470", "name": "The Coils of God: the Blood of Priests"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COILS_GOD_PROJECT_PARTICIPATE', 'Participate in the Coils rituals', 'Send ethnographers to the surface to watch the Coils rituals up close. This is a remarkable cultural event! We must learn as much as we can.', 1, 'society_technology', '[{"event": "akx.9480", "name": "The Coils of God: Navigating the Labyrinth"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COILS_GOD_PROJECT_PARTICIPATE', 'Participate in the Coils rituals', 'Send ethnographers to the surface to watch the Coils rituals up close. This is a remarkable cultural event! We must learn as much as we can.', 1, NULL, 'society_technology', '[{"event": "akx.9480", "name": "The Coils of God: Navigating the Labyrinth"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WAITING_WORLD_DISAPPEARANCE', 'Investigate the disappearance of the population', 'There were too many colonists, and now there are none at all. What happened?', 90, 'society_technology', '[{"event": "akx.9535", "name": "The Waiting World: the Quality of Light"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WAITING_WORLD_DISAPPEARANCE', 'Investigate the disappearance of the population', 'There were too many colonists, and now there are none at all. What happened?', 90, NULL, 'society_technology', '[{"event": "akx.9535", "name": "The Waiting World: the Quality of Light"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WAITING_WORLD_HYPERAPPEARANCE', 'Investigate the... whatever happened to the population', 'There were too many colonists, and now there seems to be a completely different population. What happened?', 90, 'society_technology', '[{"event": "akx.9545", "name": "The Waiting World: Everything and Nothing"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WAITING_WORLD_HYPERAPPEARANCE', 'Investigate the... whatever happened to the population', 'There were too many colonists, and now there seems to be a completely different population. What happened?', 90, NULL, 'society_technology', '[{"event": "akx.9545", "name": "The Waiting World: Everything and Nothing"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WAITING_WORLD_PURGE', 'Purge the population of presumed alien duplicates', 'The only way to deal with the mysterious population replacement on is to enact an orbital bombardment regime which will purge them all.', 90, 'society_technology', '[{"event": "akx.9541", "name": "The Waiting World: the Purge"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WAITING_WORLD_PURGE', 'Purge the population of presumed alien duplicates', 'The only way to deal with the mysterious population replacement on is to enact an orbital bombardment regime which will purge them all.', 90, NULL, 'society_technology', '[{"event": "akx.9541", "name": "The Waiting World: the Purge"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WORM_ENTRY_POINT', 'Generate the Entry Point', 'The Theory suggests that the temporal anomalies we have encountered are the cause of the thing we call the Loop, or the Worm. It''s a tangled knot of paradoxes that has become conscious; a nexus of awareness and desire outside time. Its cause, or its result - it''s hard to say with something like this. But it is attracted to endings and to beginnings. We can use the Omega Alignment to bring it through to our home system. If we do, something will certainly happen. This is many things, but especially, it is science.', NULL, 'physics_technology', '[{"event": "akx.10010", "name": "The Heart of the Sun"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WORM_ENTRY_POINT', 'Generate the Entry Point', 'The Theory suggests that the temporal anomalies we have encountered are the cause of the thing we call the Loop, or the Worm. It''s a tangled knot of paradoxes that has become conscious; a nexus of awareness and desire outside time. Its cause, or its result - it''s hard to say with something like this. But it is attracted to endings and to beginnings. We can use the Omega Alignment to bring it through to our home system. If we do, something will certainly happen. This is many things, but especially, it is science.', NULL, '600.0', 'physics_technology', '[{"event": "akx.10010", "name": "The Heart of the Sun"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HORIZON_DEBRIS_PROJECT', 'Investigate fragments at Horizon Signal origin', 'When the drive detonated, it interrupted the changes in space around the ship. The fragments exhibit unusual physical and temporal properties.', 40, 'engineering_technology', '[{"event": "akx.9095", "name": "The Horizon Signal: A Lesson in the Ashes"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HORIZON_DEBRIS_PROJECT', 'Investigate fragments at Horizon Signal origin', 'When the drive detonated, it interrupted the changes in space around the ship. The fragments exhibit unusual physical and temporal properties.', 40, NULL, 'engineering_technology', '[{"event": "akx.9095", "name": "The Horizon Signal: A Lesson in the Ashes"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SYZYGY_DEBRIS_PROJECT', 'Investigate the remains of the', 'The', 40, 'engineering_technology', '[{"event": "akx.9340", "name": "A Rendezvous: Funeral Treasures"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SYZYGY_DEBRIS_PROJECT', 'Investigate the remains of the', 'The', 40, NULL, 'engineering_technology', '[{"event": "akx.9340", "name": "A Rendezvous: Funeral Treasures"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('INF_CRISIS_ENTROPY', 'New Power Source', 'Fire has long played a significant role in our society, but now we may be able to harness its chaotic power in novel ways. This could be what scientists have long dreamed of: an energy source that goes beyond fueling our current civilization, and can catapult us across the stars.
-Effect: Unlocks the new Entropy Crystals Crystallized Entropy resource.', 0, 'physics_technology', NULL);
+Effect: Unlocks the new Entropy Crystals Crystallized Entropy resource.', 0, '25000.0', 'physics_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('INF_CRISIS_ENTROPY_EVIL', 'Designed Firestorm', 'The Crucible has shown us a new path for our species. It would be foolish not to embrace it, and we should suffer no fools. It is time to remake the galaxy in a blazing new image, and burn away anyone who rejects our vision.
 Effects:
 Unlocks the next upgrade of the Galactic Crucible.
-Conduits can now convert stars in enemy territory.', 0, 'engineering_technology', '[{"event": "infernals.1020", "name": "Into The Fire"}]');
+Conduits can now convert stars in enemy territory.', 0, '25000.0', 'engineering_technology', '[{"event": "infernals.1020", "name": "Into The Fire"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_CRISIS_ENTROPY_GOOD', 'Unforeseen Correlation', 'While the Crucible''s power is immense, it is also volatile. If we permanently cripple its capabilities, we will secure a modest source of prosperity for ourselves without endangering the galaxy or losing the goodwill of our neighbors.', 0, 'physics_technology', '[{"event": "infernals.1021", "name": "A Steady Glow"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_CRISIS_ENTROPY_GOOD', 'Unforeseen Correlation', 'While the Crucible''s power is immense, it is also volatile. If we permanently cripple its capabilities, we will secure a modest source of prosperity for ourselves without endangering the galaxy or losing the goodwill of our neighbors.', 0, '25000.0', 'physics_technology', '[{"event": "infernals.1021", "name": "A Steady Glow"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_COSMIC_DAWN_DRILLING', 'Drilling the Crust', 'If we want to understand who we are, we must first learn where we came from. We''ll need to excavate the facilities buried beneath the surface of .', 1080, 'physics_technology', '[{"event": "infernals.2505", "name": "More Kin Awaken"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_COSMIC_DAWN_DRILLING', 'Drilling the Crust', 'If we want to understand who we are, we must first learn where we came from. We''ll need to excavate the facilities buried beneath the surface of .', 1080, '0.0', 'physics_technology', '[{"event": "infernals.2505", "name": "More Kin Awaken"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_COSMIC_DAWN_STORM', 'Storm the Stasis Facility', 'We need to gain access to this facility, and the awakened sleepers are in our way. Remove them by force.', 90, 'physics_technology', '[{"event": "infernals.2545", "name": "Cracking the Prison"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_COSMIC_DAWN_STORM', 'Storm the Stasis Facility', 'We need to gain access to this facility, and the awakened sleepers are in our way. Remove them by force.', 90, '0.0', 'physics_technology', '[{"event": "infernals.2545", "name": "Cracking the Prison"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_COSMIC_DAWN_BRIBE', 'Bribe the Stasis Facility', 'If we can make the inhabitants of this facility dependent on us, we will have leverage to demand access to the facility. We should flood them with useful, critical goods and resources.', 0, 'society_technology', '[{"event": "infernals.2550", "name": "Cracking the Prison"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_COSMIC_DAWN_BRIBE', 'Bribe the Stasis Facility', 'If we can make the inhabitants of this facility dependent on us, we will have leverage to demand access to the facility. We should flood them with useful, critical goods and resources.', 0, '1000.0', 'society_technology', '[{"event": "infernals.2550", "name": "Cracking the Prison"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_RED_GIANT_TRIANGULATION', 'Triangulate Subspace Interference', 'Viable location to triangulate the origin of interference.', 120, 'physics_technology', '[{"event": "infernals.100", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_RED_GIANT_TRIANGULATION', 'Triangulate Subspace Interference', 'Viable location to triangulate the origin of interference.', 120, '0.0', 'physics_technology', '[{"event": "infernals.100", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_RED_GIANT_PROTECT_HOMEWORLD', 'Protect the Homeworld', 'As we work tirelessly to reverse our star''s changes, our own forms must be prepared to face the heat. Adapting our population to higher temperatures will help us thrive alongside our star''s fiery new future.', 0, 'engineering_technology', '[{"event": "infernals.2105", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_RED_GIANT_PROTECT_HOMEWORLD', 'Protect the Homeworld', 'As we work tirelessly to reverse our star''s changes, our own forms must be prepared to face the heat. Adapting our population to higher temperatures will help us thrive alongside our star''s fiery new future.', 0, '500.0', 'engineering_technology', '[{"event": "infernals.2105", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_RED_GIANT_EXPLOIT', 'Thermal Exploitation', 'Increased solar radiation presents serious long term problems, but in the short term, we can harness it to boost our industrial and energy capacity.', 0, 'physics_technology', '[{"event": "infernals.2110", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_RED_GIANT_EXPLOIT', 'Thermal Exploitation', 'Increased solar radiation presents serious long term problems, but in the short term, we can harness it to boost our industrial and energy capacity.', 0, '500.0', 'physics_technology', '[{"event": "infernals.2110", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_RED_GIANT_BOARD_STATION', 'Boarding the Station', 'These reckless aliens are exploiting our star. We must board their station immediately and take control.', 30, 'engineering_technology', '[{"event": "infernals.2115", "name": "Boarding Party"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_RED_GIANT_BOARD_STATION', 'Boarding the Station', 'These reckless aliens are exploiting our star. We must board their station immediately and take control.', 30, '0.0', 'engineering_technology', '[{"event": "infernals.2115", "name": "Boarding Party"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INF_ORIGIN_RED_GIANT_PARLAY', 'Emergency Xenolinguistics', 'The station''s inhabitants control the subspace siphon that is destroying our star. We must establish communications to ensure their cooperation in solving this issue.', 120, 'engineering_technology', '[{"event": "infernals.2125", "name": "Alien Negotiations"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INF_ORIGIN_RED_GIANT_PARLAY', 'Emergency Xenolinguistics', 'The station''s inhabitants control the subspace siphon that is destroying our star. We must establish communications to ensure their cooperation in solving this issue.', 120, '0.0', 'engineering_technology', '[{"event": "infernals.2125", "name": "Alien Negotiations"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('INF_THERMOPHILE_ADAPTATION', 'Thermophilic Evolution', 'We embark on our path to set the galaxy aflame, but our own forms must be prepared to face the heat. Adapting our population to higher temperatures will help us thrive in our fiery new future.
-On Completion: Adds the modifier Thermophilic Adaptation, Increases Volcanic World Habitability by +50%', 0, 'society_technology', '[{"event": "infernals.1007", "name": null}]');
+On Completion: Adds the modifier Thermophilic Adaptation, Increases Volcanic World Habitability by +50%', 0, '2500.0', 'society_technology', '[{"event": "infernals.1007", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STELLARITE_DEAD_PROJECT', 'Stellar Devourer', 'The star consumer has been slain, its body still radiating the energy from the star it last fed on. Studying it might reveal the secrets of how it is capable of digesting the warmest objects in the universe.', 60, 'physics_technology', '[{"event": "leviathans.1017", "name": "Stellar Devourer"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STELLARITE_DEAD_PROJECT', 'Stellar Devourer', 'The star consumer has been slain, its body still radiating the energy from the star it last fed on. Studying it might reveal the secrets of how it is capable of digesting the warmest objects in the universe.', 60, '0.0', 'physics_technology', '[{"event": "leviathans.1017", "name": "Stellar Devourer"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STELLARITE_STAR_PROJECT', 'Back From Whence It Came', 'After having studied the stellar devourer we''ve found a way to maybe return the consumed star mass to its point of origin, restoring the warmth to the system now stuck in an eternal winter.', 90, 'physics_technology', '[{"event": "leviathans.1018", "name": "Stellar Devourer"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STELLARITE_STAR_PROJECT', 'Back From Whence It Came', 'After having studied the stellar devourer we''ve found a way to maybe return the consumed star mass to its point of origin, restoring the warmth to the system now stuck in an eternal winter.', 90, '0.0', 'physics_technology', '[{"event": "leviathans.1018", "name": "Stellar Devourer"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DIMENSIONAL_HORROR_PROJECT', 'Study Dimensional Rifts', 'The malevolent entity that we recently banished near used some kind of powerful dimensional rifts to bridge the gap between our world and its own twisted realm. Anomalous energy readings have been detected where the largest rift was opened. We would do well to study these readings more closely.', 140, 'physics_technology', '[{"event": "leviathans.3004", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DIMENSIONAL_HORROR_PROJECT', 'Study Dimensional Rifts', 'The malevolent entity that we recently banished near used some kind of powerful dimensional rifts to bridge the gap between our world and its own twisted realm. Anomalous energy readings have been detected where the largest rift was opened. We would do well to study these readings more closely.', 140, '0.0', 'physics_technology', '[{"event": "leviathans.3004", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DISABLED_DREADNOUGHT_PROJECT', 'Repair Dreadnought', 'The hull of the massive dreadnought that we disabled in the system is largely intact. Though it will require an enormous amount of resources, we should be able to repair the warship and press it into service with our own fleet.', NULL, 'engineering_technology', '[{"event": "leviathans.3103", "name": "Dreadnought Repaired"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DISABLED_DREADNOUGHT_PROJECT', 'Repair Dreadnought', 'The hull of the massive dreadnought that we disabled in the system is largely intact. Though it will require an enormous amount of resources, we should be able to repair the warship and press it into service with our own fleet.', NULL, '50000.0', 'engineering_technology', '[{"event": "leviathans.3103", "name": "Dreadnought Repaired"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HIVE_ASTEROID_PROJECT', 'Investigate Hive Asteroid', 'Our forces have managed to pacify one of the hive asteroids in the system. We should dispatch a science team to explore the asteroid''s interior.', 140, 'physics_technology', '[{"event": "leviathans.3205", "name": "Special Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HIVE_ASTEROID_PROJECT', 'Investigate Hive Asteroid', 'Our forces have managed to pacify one of the hive asteroids in the system. We should dispatch a science team to explore the asteroid''s interior.', 140, '0.0', 'physics_technology', '[{"event": "leviathans.3205", "name": "Special Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('EXPLOIT_HIVERS', 'Like Minds', 'We appear to be physiologically quite similar to the creatures inside the asteroids of . Just like us, they thrive in the vacuum of space. If we exert our will upon them they could become a useful instrument.', NULL, 'society_technology', '[{"event": "leviathans.3230", "name": "Meteorites Mustered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('EXPLOIT_HIVERS', 'Like Minds', 'We appear to be physiologically quite similar to the creatures inside the asteroids of . Just like us, they thrive in the vacuum of space. If we exert our will upon them they could become a useful instrument.', NULL, '2000.0', 'society_technology', '[{"event": "leviathans.3230", "name": "Meteorites Mustered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_1A', 'Demolitions Team', 'Send a squad of demolition experts to land on the side of the fortress and attempt to blast the airlock open.', 30, 'engineering_technology', '[{"event": "leviathans.2112", "name": "Fortress: Uncontrolled Demolition"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_1A', 'Demolitions Team', 'Send a squad of demolition experts to land on the side of the fortress and attempt to blast the airlock open.', 30, '0.0', 'engineering_technology', '[{"event": "leviathans.2112", "name": "Fortress: Uncontrolled Demolition"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_1B', 'Local Power Surge', 'Send a science ship supplying energy locally, attempting to restrict power to the portion of the fortress that powers the airlock.', 30, 'engineering_technology', '[{"event": "leviathans.2113", "name": "Fortress: Adjusting Energy Supply"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_1B', 'Local Power Surge', 'Send a science ship supplying energy locally, attempting to restrict power to the portion of the fortress that powers the airlock.', 30, '0.0', 'engineering_technology', '[{"event": "leviathans.2113", "name": "Fortress: Adjusting Energy Supply"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_5A', 'Black Hole Research', 'Perhaps the answers to how dark matter is used in the fortress can be found in the workings of a black hole.', 60, 'engineering_technology', '[{"event": "leviathans.2151", "name": "Fortress: The Heart of Dark Matter"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_5A', 'Black Hole Research', 'Perhaps the answers to how dark matter is used in the fortress can be found in the workings of a black hole.', 60, '0.0', 'engineering_technology', '[{"event": "leviathans.2151", "name": "Fortress: The Heart of Dark Matter"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_5B', 'Home System Research', 'Studying the local star might give some insight into the conditions the builders of the fortress started their work in.', 120, 'engineering_technology', '[{"event": "leviathans.2152", "name": "Fortress: Our Star Witness"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_5B', 'Home System Research', 'Studying the local star might give some insight into the conditions the builders of the fortress started their work in.', 120, '0.0', 'engineering_technology', '[{"event": "leviathans.2152", "name": "Fortress: Our Star Witness"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_5C', 'Supply Dark Matter', 'If we provide our own supply of dark matter to the heart of the fortress, we might be able to trick the system that it is already running and stop the flow.', 30, 'engineering_technology', '[{"event": "leviathans.2156", "name": "Fortress: Dark Matter Gambit"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_5C', 'Supply Dark Matter', 'If we provide our own supply of dark matter to the heart of the fortress, we might be able to trick the system that it is already running and stop the flow.', 30, '0.0', 'engineering_technology', '[{"event": "leviathans.2156", "name": "Fortress: Dark Matter Gambit"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ENIGMATIC_FORTRESS_5D', 'Use Force', 'Our team has managed to open up a passage to the core through an empty duct. Firing a torpedo into the core might stop it from restarting.', 10, 'engineering_technology', '[{"event": "leviathans.2157", "name": "Fortress: Shot Through the Heart"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ENIGMATIC_FORTRESS_5D', 'Use Force', 'Our team has managed to open up a passage to the core through an empty duct. Firing a torpedo into the core might stop it from restarting.', 10, '0.0', 'engineering_technology', '[{"event": "leviathans.2157", "name": "Fortress: Shot Through the Heart"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TECHNOSPHERE_PROJECT', 'Reaching for the Orb', 'The metallic orb hovering around the Gargantua black hole is now open for study. What will we find once we reach its processing center?', 360, 'engineering_technology', '[{"event": "leviathans.1051", "name": "The Constant Calculator"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TECHNOSPHERE_PROJECT', 'Reaching for the Orb', 'The metallic orb hovering around the Gargantua black hole is now open for study. What will we find once we reach its processing center?', 360, '0.0', 'engineering_technology', '[{"event": "leviathans.1051", "name": "The Constant Calculator"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TECHNOSPHERE_BLACKHOLE', 'Understanding Infinity', 'In order to assist the Infinity Machine, we need to aid it in its scans of the black hole Gargantua. Receiving information from a black hole is impossible, but the Infinity Machine appears to have a method of accessing its gravitational data and getting information out of It simply takes a very long time.
-We only need to lend it our processing power, easing its computational burden by a tiny fraction.', 1800, 'engineering_technology', '[{"event": "leviathans.1061", "name": "The Infinity Machine"}, {"event": "leviathans.1062", "name": "The Infinity Machine"}]');
+We only need to lend it our processing power, easing its computational burden by a tiny fraction.', 1800, '0.0', 'engineering_technology', '[{"event": "leviathans.1061", "name": "The Infinity Machine"}, {"event": "leviathans.1062", "name": "The Infinity Machine"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TECHNOSPHERE_HACKING', 'Hacking the Calculator', 'Hacking into the metallic sphere''s central programming might yield some further insight into what it is and what it is doing.', 720, 'engineering_technology', '[{"event": "leviathans.1052", "name": "The Constant Calculator"}, {"event": "leviathans.1053", "name": "The Infinity Machine"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TECHNOSPHERE_HACKING', 'Hacking the Calculator', 'Hacking into the metallic sphere''s central programming might yield some further insight into what it is and what it is doing.', 720, '0.0', 'engineering_technology', '[{"event": "leviathans.1052", "name": "The Constant Calculator"}, {"event": "leviathans.1053", "name": "The Infinity Machine"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TECHNOSPHERE_DESTRUCTION', 'Sphere Fracturing', 'A team of demolitions experts should be able to identify and exploit points of failure in the integrity of the mysterious sphere''s hull, ending the silent menace.', 10, 'engineering_technology', '[{"event": "leviathans.1040", "name": "The Infinity Equation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TECHNOSPHERE_DESTRUCTION', 'Sphere Fracturing', 'A team of demolitions experts should be able to identify and exploit points of failure in the integrity of the mysterious sphere''s hull, ending the silent menace.', 10, '0.0', 'engineering_technology', '[{"event": "leviathans.1040", "name": "The Infinity Equation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DRAGON_INCUBATION_PROJECT', 'Drake Egg Incubation', 'The egg recovered from the Dragon''s Hoard still shows faint signs of life. It should be possible to deduce and emulate an ideal incubation environment for the egg, with the goal of eventually hatching it. Should we be successful in hatching the egg, the resulting Ether Drake is unlikely to match its ancestors in size or power, but with proper domestication will undoubtedly prove to be an incredible asset.
-The egg will not last long outside of the environment it was found in. We must act quickly.', NULL, 'society_technology', '[{"event": "leviathans.664", "name": "Dragon''s Hoard, Dragon Reborn"}]');
+The egg will not last long outside of the environment it was found in. We must act quickly.', NULL, '50000.0', 'society_technology', '[{"event": "leviathans.664", "name": "Dragon''s Hoard, Dragon Reborn"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_GUARDIAN_DRAGON', 'Reignite the Extinguished Ether Drake', 'Our believe that they can reignite the spark within the Ether Drake through a blend of ritual and science: gathering plasma from the local star, attaching cordyceptic engines to the corpse, and so on.', NULL, 'society_technology', '[{"event": "leviathans.675", "name": "Rise Again"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_GUARDIAN_DRAGON', 'Reignite the Extinguished Ether Drake', 'Our believe that they can reignite the spark within the Ether Drake through a blend of ritual and science: gathering plasma from the local star, attaching cordyceptic engines to the corpse, and so on.', NULL, '10000.0', 'society_technology', '[{"event": "leviathans.675", "name": "Rise Again"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REANIMATE_ORIGIN_DRAGON', 'Reanimate the Sky Dragon', 'Though the dragon of the system has been slain, our assure us that this state of affairs need not last long. They promise that they can revive it - safely in thralldom to us - in short order.', NULL, 'society_technology', '[{"event": "aquatics.115", "name": "Sky Dragon Reanimated"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REANIMATE_ORIGIN_DRAGON', 'Reanimate the Sky Dragon', 'Though the dragon of the system has been slain, our assure us that this state of affairs need not last long. They promise that they can revive it - safely in thralldom to us - in short order.', NULL, '10000.0', 'society_technology', '[{"event": "aquatics.115", "name": "Sky Dragon Reanimated"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STELLARITE_INFESTED_STAR_PROJECT', 'Find a Cure for the Stellar Devourer Infestation', 'has become infested with Stellar Devourers. We are unsure where they came from, but they need to be removed soon or else all life in the system might be at an end.', 450, NULL, '[{"event": "situation.1165", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STELLARITE_INFESTED_STAR_PROJECT', 'Find a Cure for the Stellar Devourer Infestation', 'has become infested with Stellar Devourers. We are unsure where they came from, but they need to be removed soon or else all life in the system might be at an end.', 450, '0.0', NULL, '[{"event": "situation.1165", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CARAVAN_HULK_PROJECT', 'Search Abandoned Caravaneer Ship', 'Left drifting in orbit around one of our stars by a passing caravan, this decommissioned hulk may still contain something of value.', 180, 'engineering_technology', '[{"event": "cara.4025", "name": "$cara.4020.name$"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CARAVAN_HULK_PROJECT', 'Search Abandoned Caravaneer Ship', 'Left drifting in orbit around one of our stars by a passing caravan, this decommissioned hulk may still contain something of value.', 180, NULL, 'engineering_technology', '[{"event": "cara.4025", "name": "$cara.4020.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TOXIC_OPERATION_PROJECT', 'Toxic Field Work', 'The habitat is mildly toxic to our own operatives. By studying its effects, we can develop a remedy and so avoid the risks associated with having visibly-allergic inside their hive.', NULL, 'society_technology', '[{"event": "operation.5026", "name": "Remedy for Field Work"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TOXIC_OPERATION_PROJECT', 'Toxic Field Work', 'The habitat is mildly toxic to our own operatives. By studying its effects, we can develop a remedy and so avoid the risks associated with having visibly-allergic inside their hive.', NULL, '100.0', 'society_technology', '[{"event": "operation.5026", "name": "Remedy for Field Work"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NOISE_OPERATION_PROJECT', 'Excess Noise', 'The environment which the creates for itself generates more electrostatic noise than we had anticipated. Our disguised drones are experiencing patchy data loss as a result. By studying these errant frequencies, we can re-tune our operative drones to maintain higher function and avoid detection ''in the field''.', NULL, 'physics_technology', '[{"event": "operation.5031", "name": "Excess Noise Cancellation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NOISE_OPERATION_PROJECT', 'Excess Noise', 'The environment which the creates for itself generates more electrostatic noise than we had anticipated. Our disguised drones are experiencing patchy data loss as a result. By studying these errant frequencies, we can re-tune our operative drones to maintain higher function and avoid detection ''in the field''.', NULL, '100.0', 'physics_technology', '[{"event": "operation.5031", "name": "Excess Noise Cancellation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UNIVERSAL_TRANSLATOR_PROJECT', 'The Universal Translator', 'Our researchers promise that our recent encounter with the has given them the beginnings of a translation system able to translate any given language into our own instantly. Even if they fall short of this, it is our hope that they will be able to upgrade our communication systems considerably.', NULL, 'society_technology', '[{"event": "first_contact.422", "name": "The Universal Translator"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UNIVERSAL_TRANSLATOR_PROJECT', 'The Universal Translator', 'Our researchers promise that our recent encounter with the has given them the beginnings of a translation system able to translate any given language into our own instantly. Even if they fall short of this, it is our hope that they will be able to upgrade our communication systems considerably.', NULL, '3000.0', 'society_technology', '[{"event": "first_contact.422", "name": "The Universal Translator"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('OCTOPODES_LIGHT_PATTERNS_PROJECT', 'Patterns', 'During our encounter with the , we discovered some astounding similarities between the patterns of light they use to communicate and the swirls of interstellar space that make hyperlane travel possible. Investigating further into this topic may shed some light on the fundamental building blocks of the galaxy.', NULL, 'physics_technology', '[{"event": "first_contact.437", "name": "Hyperlane Insights"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('OCTOPODES_LIGHT_PATTERNS_PROJECT', 'Patterns', 'During our encounter with the , we discovered some astounding similarities between the patterns of light they use to communicate and the swirls of interstellar space that make hyperlane travel possible. Investigating further into this topic may shed some light on the fundamental building blocks of the galaxy.', NULL, '3000.0', 'physics_technology', '[{"event": "first_contact.437", "name": "Hyperlane Insights"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_1', 'Something Beyond Reality', 'A quiet mania sweeps through our population. Its origin seems intangible, but they - we - have become preoccupied with the notion that we are destined for greater things. We should investigate the cause of this mass hysteria, and its whispered promises of galactic domination.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '3000.0', 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_MACH_1', 'Something Beyond Reality', 'Sensors in multiple systems across the report minuscule, but inexplicable, energy fluctuations. These power anomalies are too small to disturb our processes, but they still warrant further investigation so as to ascertain their cause.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '3000.0', 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_SH_1', 'Something Beyond Reality', 'Our encounters with the Shroud have left us... changed. The uncanny residue of Zro is forever bound to our shells. We have become beacons, calling out to those on the other side.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '3000.0', 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_HIVE_1', 'Something Beyond Reality', 'We have sensed alien impulses within our collective - an undisciplined desire to grow, to become greater still. One Mind encompassing the entire galaxy. It is not of us, but its promise is too tempting to ignore. We shall give our undivided attention to finding the origin of these intrusive impulses.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '3000.0', 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_1', 'Something Beyond Reality', '', 0, 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_1', 'Something Beyond Reality', '', 0, '3000.0', 'society_technology', '[{"event": "crisis.4120", "name": "The Great Prospect"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_2', 'The Unseen Ripples', 'The current theory is that the universe we know and the Shroud are linked - and that particularly disruptive events may have a ''ripple effect'' translating from one dimension to the other. This theory should be put to the test.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '6000.0', 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_MACH_2', 'The Unseen Ripples', 'Scientific theory subroutines have produced a hypothesis that there are tangible links between the known universe and dimension ID: ''the Shroud''. Further experimentation and mapping of these supposed connections is advised.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '6000.0', 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_SH_2', 'The Unseen Ripples', 'We hypothesize that all sapient beings have the capacity for connections with the Shroud. If this can be conclusively proven, we can begin to calculate an approach to our current predicament.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '6000.0', 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_HIVE_2', 'The Unseen Ripples', 'Our finest have confirmed a connection between this realm and the Shroud. We must find more ways to interact with this new layer of reality.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '6000.0', 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_2', 'The Unseen Ripples', '', 0, 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_2', 'The Unseen Ripples', '', 0, '6000.0', 'physics_technology', '[{"event": "crisis.4125", "name": "Well of Power"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_3', 'Merge Request', 'The strengthening of our dominion - combined with the undeniable sense of purpose that is unifying our species - has led our scientists to believe that we are already being fueled by the energies of the Shroud.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '12000.0', 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_MACH_3', 'Merge Request', 'Fringe hypothesis indexed. If confirmed, potential benefit far exceeds initially predicted range. Summary: may already be siphoning <<resource undefined>> from ID: ''the Shroud''. Further investigation is advised.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '12000.0', 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_SH_3', 'Merge Request', 'Our scientific subroutines are preparing to conclude research on the connection between sapient cognition and the Shroud. We have observed a correlation between ID: ''emotions'' and stronger links to the Shroud.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '12000.0', 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_HIVE_3', 'Merge Request', 'As we take more worlds, expanding the , we can feel the impulses growing stronger. No longer mere feelings, they have become a guiding sense of greatness yet to come - of our mind ascended.
-Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
+Researching Special Projects like this one will progress us further along the path of Galactic Nemesis.', 0, '12000.0', 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_3', 'Merge Request', '', 0, 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CRISIS_SPECIAL_PROJECT_PSIONIC_3', 'Merge Request', '', 0, '12000.0', 'society_technology', '[{"event": "crisis.4130", "name": "Fuel From Another World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_4', 'Tearing the Fabric', 'The time has come to find a way to unleash the energies of the Shroud, and tap into this unfathomable source of power.
 The current theory is that a sufficiently large power surge could rupture the barrier between dimensions, ultimately leading to the two realities merging.
 The energies of the Shroud belong to those who seize it. So let us seize it.
-Researching this Special Project will further establish us as a Galactic Nemesis.', 0, 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
+Researching this Special Project will further establish us as a Galactic Nemesis.', 0, '20000.0', 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_MACH_4', 'Tearing the Fabric', 'Scientific theory subroutines have synthesized a new hypothesis involving ID: ''the Shroud'' and how to finally benefit from its energy output.
 Request: Accumulate more data.
 Recommended action: Divert energy and operational capacity to scientific divisions and perform further disruptive actions (designation: ''Crisis'') for the sake of causing measurable fluctuations in the alternate dimension (ID: ''the Shroud'').
-Researching this Special Project will further establish us as a Galactic Nemesis.', 0, 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
+Researching this Special Project will further establish us as a Galactic Nemesis.', 0, '20000.0', 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_SH_4', 'Tearing the Fabric', 'New insight has been gained on the relationship between organic sapients and the Shroud. Applying cognitive stressors to organic sapients has led to significant output of psionic energy. Engineering subroutines will now attempt to harness this energy for further use.
-Researching this Special Project will further establish us as a Galactic Nemesis.', 0, 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
+Researching this Special Project will further establish us as a Galactic Nemesis.', 0, '20000.0', 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CRISIS_SPECIAL_PROJECT_HIVE_4', 'Tearing the Fabric', 'The path must be opened if we are to realize our full potential. This crude, dual state of reality must end. We must find a way to turn two universes into one. It will be our will alone that fills this new reality.
-Researching this Special Project will further establish us as a Galactic Nemesis.', 0, 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
+Researching this Special Project will further establish us as a Galactic Nemesis.', 0, '20000.0', 'engineering_technology', '[{"event": "crisis.4135", "name": "The End is Nigh"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LONELY_BOT_PROJECT', 'The Factory Restoration', 'The factory on has been decaying for centuries already, and is reaching a point where it might fall apart at any moment. As it has played an instrumental role in the foundation of the colony on the planet, our colonists have reached out and asked us to step in and make sure the building will be restored to former glory.
-Reward: Alloys', NULL, 'engineering_technology', '[{"event": "colony.5010", "name": "The Factory Restored"}]');
+Reward: Alloys', NULL, '1500.0', 'engineering_technology', '[{"event": "colony.5010", "name": "The Factory Restored"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LONELY_BOT_MISSING_PROJECT', 'The Missing Robot', 'The robot inhabiting the planet has recently disappeared - as has a large number of our colonists. Our engineers are looking into tracking its remote signals back to the source, to see if we can find the colonists and the robot.', NULL, 'engineering_technology', '[{"event": "colony.5020", "name": "The Remains"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LONELY_BOT_MISSING_PROJECT', 'The Missing Robot', 'The robot inhabiting the planet has recently disappeared - as has a large number of our colonists. Our engineers are looking into tracking its remote signals back to the source, to see if we can find the colonists and the robot.', NULL, '1500.0', 'engineering_technology', '[{"event": "colony.5020", "name": "The Remains"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('KALEIDOSCOPE_INFESTATION_FIRST', 'Power Outage', 'A global failure of the energy grid has plunged our capital into total darkness. We must restore ''s power infrastructure and determine what is taking place.', NULL, 'engineering_technology', '[{"event": "situation.2010", "name": "Black Start"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('KALEIDOSCOPE_INFESTATION_FIRST', 'Power Outage', 'A global failure of the energy grid has plunged our capital into total darkness. We must restore ''s power infrastructure and determine what is taking place.', NULL, '200.0', 'engineering_technology', '[{"event": "situation.2010", "name": "Black Start"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('KALEIDOSCOPE_INFESTATION', 'Color Bleed', 'Once again, the Kaleidoscope has latched to our power grid, consuming our energy and plunging the planet into darkness.
-Fortunately, we now know how to respond.', NULL, 'engineering_technology', '[{"event": "situation.2011", "name": "$situation.2010.name$"}]');
+Fortunately, we now know how to respond.', NULL, '500.0', 'engineering_technology', '[{"event": "situation.2011", "name": "$situation.2010.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHROUD_FORGED_REINTEGRATION', 'Reintegration', 'Despite their critical malfunctions, some aspects of Shroud-Forged''s architecture were effective.
-We have set aside certain parts - contaminated by Zro and twisted by the Animator of Clay - for further analysis. Now it is time to uncover their secrets.', NULL, 'engineering_technology', '[{"event": "shroud_forged.60", "name": "Reintegration"}]');
+We have set aside certain parts - contaminated by Zro and twisted by the Animator of Clay - for further analysis. Now it is time to uncover their secrets.', NULL, '2000.0', 'engineering_technology', '[{"event": "shroud_forged.60", "name": "Reintegration"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHROUD_FORGED_GUIDE', 'The Guide', 'We have trusted in the Animator of Clay, who calls to us from within the Shroud. Though we cannot predict where it might lead us, we are yet to have been led astray.
-It has offered to deepen our understanding of the Shroud, which would allow the collective to function more effectively alongside the Shroud-Forged. We need only accept its guidance.', NULL, 'society_technology', '[{"event": "shroud_forged.80", "name": "The Guide"}]');
+It has offered to deepen our understanding of the Shroud, which would allow the collective to function more effectively alongside the Shroud-Forged. We need only accept its guidance.', NULL, '2000.0', 'society_technology', '[{"event": "shroud_forged.80", "name": "The Guide"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHROUD_FORGED_MATERIALITY_ENGINE', 'Materiality Engine on', 'The Materiality Engine harnesses the omnipresent interface between the Shroud and the physical galaxy, allowing for the materialization of tangible entities - from raw materials to complete components.
-As well as potentially providing material gains, an operational cycle of the device also furthers the collective''s Shroud research and increases our capacity to build more Materiality Engines.', NULL, 'physics_technology', '[{"event": "shroud_forged.40", "name": null}]');
+As well as potentially providing material gains, an operational cycle of the device also furthers the collective''s Shroud research and increases our capacity to build more Materiality Engines.', NULL, '20000.0', 'physics_technology', '[{"event": "shroud_forged.40", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('YUHT_JABBARDEENI_CACHE', 'Faint Energy Signature', 'A subtle repeating energy pattern emanates from this asteroid any time ships travel through the system.', 360, 'physics_technology', '[{"event": "over.60", "name": "Jabbardeeni Data Cache"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('YUHT_JABBARDEENI_CACHE', 'Faint Energy Signature', 'A subtle repeating energy pattern emanates from this asteroid any time ships travel through the system.', 360, NULL, 'physics_technology', '[{"event": "over.60", "name": "Jabbardeeni Data Cache"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SHROUDED_SHIP_PROJECT', 'Strange Afterimage', 'A fluctuating afterimage of the science ship lost to the Shroud appears sporadically throughout the system.', NULL, 'physics_technology', '[{"event": "enclave.5060", "name": "Ship as Concept"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SHROUDED_SHIP_PROJECT', 'Strange Afterimage', 'A fluctuating afterimage of the science ship lost to the Shroud appears sporadically throughout the system.', NULL, '1000.0', 'physics_technology', '[{"event": "enclave.5060", "name": "Ship as Concept"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TO_DREAM_PROJECT_01', 'Perchance to Dream', 'Begin researching the effects of the street drug known as ''Lucid''.', NULL, 'society_technology', '[{"event": "enclave.5015", "name": "Perchance to Dream"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TO_DREAM_PROJECT_01', 'Perchance to Dream', 'Begin researching the effects of the street drug known as ''Lucid''.', NULL, '1000.0', 'society_technology', '[{"event": "enclave.5015", "name": "Perchance to Dream"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TO_DREAM_PROJECT_02', 'Perchance to Dream', 'Continue researching the effects of the street drug ''Lucid''.', NULL, 'society_technology', '[{"event": "enclave.5020", "name": "What Things May Come"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TO_DREAM_PROJECT_02', 'Perchance to Dream', 'Continue researching the effects of the street drug ''Lucid''.', NULL, '750.0', 'society_technology', '[{"event": "enclave.5020", "name": "What Things May Come"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FLOATING_PARTS_PROJECT_00', 'Study Shell', 'The shell of what looks like an alien vessel was found floating in the system. How did it get there, and where is the rest of the ship?', NULL, 'engineering_technology', '[{"event": "enclave.5135", "name": "Abandoned Hull"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FLOATING_PARTS_PROJECT_00', 'Study Shell', 'The shell of what looks like an alien vessel was found floating in the system. How did it get there, and where is the rest of the ship?', NULL, '1000.0', 'engineering_technology', '[{"event": "enclave.5135", "name": "Abandoned Hull"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FLOATING_PARTS_PROJECT_01', 'Assemble Fragments', 'The final piece of the alien ship has appeared in the . Our engineers need time to reassemble the vessel.', NULL, 'engineering_technology', '[{"event": "enclave.5145", "name": "Shroud-Touched Vessel"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FLOATING_PARTS_PROJECT_01', 'Assemble Fragments', 'The final piece of the alien ship has appeared in the . Our engineers need time to reassemble the vessel.', NULL, '1000.0', 'engineering_technology', '[{"event": "enclave.5145", "name": "Shroud-Touched Vessel"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SCHOLARIUM_PLANETARY_SENSORS', 'Scholarium Sensor Abnormality', 'We have picked up on uncommon signals coming from , seemingly trying to initiate contact with us. We have been unable to communicate with whatever or whoever it is, and will have to send a ship to inspect it more closely if we want to learn more about what it might be.', 60, NULL, '[{"event": "specialist.905", "name": "Engineering Cache"}, {"event": "specialist.910", "name": "Society Cache"}, {"event": "specialist.915", "name": "Physics Cache"}, {"event": "specialist.920", "name": "Rare Cache"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SCHOLARIUM_PLANETARY_SENSORS', 'Scholarium Sensor Abnormality', 'We have picked up on uncommon signals coming from , seemingly trying to initiate contact with us. We have been unable to communicate with whatever or whoever it is, and will have to send a ship to inspect it more closely if we want to learn more about what it might be.', 60, NULL, NULL, '[{"event": "specialist.905", "name": "Engineering Cache"}, {"event": "specialist.910", "name": "Society Cache"}, {"event": "specialist.915", "name": "Physics Cache"}, {"event": "specialist.920", "name": "Rare Cache"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ENERGY', 'Resource Discovery - Energy', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1200", "name": "Energy Signals"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ENERGY', 'Resource Discovery - Energy', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1200", "name": "Energy Signals"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_MINERALS', 'Resource Discovery - Minerals', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1210", "name": "Mineral Vein"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_MINERALS', 'Resource Discovery - Minerals', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1210", "name": "Mineral Vein"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ALLOYS', 'Resource Discovery - Alloys', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1220", "name": "Alloy Production"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ALLOYS', 'Resource Discovery - Alloys', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1220", "name": "Alloy Production"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_RARE_CRYSTALS', 'Resource Discovery - Rare Crystals', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1230", "name": "Rare Crystal Growth"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_RARE_CRYSTALS', 'Resource Discovery - Rare Crystals', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1230", "name": "Rare Crystal Growth"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_VOLATILE_MOTES', 'Resource Discovery - Volatile Motes', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1240", "name": "Volatile Motes Production"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_VOLATILE_MOTES', 'Resource Discovery - Volatile Motes', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1240", "name": "Volatile Motes Production"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_EXOTIC_GASES', 'Resource Discovery - Exotic Gases', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1250", "name": "Exotic Gas Production"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_EXOTIC_GASES', 'Resource Discovery - Exotic Gases', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1250", "name": "Exotic Gas Production"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ZRO', 'Resource Discovery - Zro', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1260", "name": "Zro Remains"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_ZRO', 'Resource Discovery - Zro', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1260", "name": "Zro Remains"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_DARK_MATTER', 'Resource Discovery - Dark Matter', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1270", "name": "Dark Matter Indications"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_DARK_MATTER', 'Resource Discovery - Dark Matter', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1270", "name": "Dark Matter Indications"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_LIVING_METAL', 'Resource Discovery - Living Metal', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', NULL, NULL, '[{"event": "specialist.1280", "name": "Living Metal Growth"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROSPECTORIUM_RESOURCE_DISCOVERY_LIVING_METAL', 'Resource Discovery - Living Metal', 'We have picked up on signals indicating there might be more valuable resources to be uncovered at . We have sent some preliminary drones to scour the region - so it will be ready for further analysis and work when we can send a ship there.', 60, NULL, NULL, '[{"event": "specialist.1280", "name": "Living Metal Growth"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHATTERED_FRONTIER_ANOMALY', 'Orbital Rupture', 'A strange gravity well suddenly appeared above , disrupting many of our satellite orbits. The colony itself doesn''t seem to be under threat yet, but this phenomenon is situated uncomfortably close to one of our colonies.
-Furthermore, many of the satellites we placed above face an early de-orbiting if we do not intervene soon. Should that happen, it would significantly hamper our ability to study the new gravity well in detail.', 250, NULL, '[{"event": "enclave.5505", "name": "A Storm in Orbit"}]');
+Furthermore, many of the satellites we placed above face an early de-orbiting if we do not intervene soon. Should that happen, it would significantly hamper our ability to study the new gravity well in detail.', 250, '0.0', NULL, '[{"event": "enclave.5505", "name": "A Storm in Orbit"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REDIVIVUS_PROJECT', 'Hero or Hoax?', 'An individual claiming to be a legendary hero has appeared on our homeworld. Could their wild assertions possibly be true?', NULL, 'society_technology', '[{"event": "enclave.5200", "name": "Shroud-Touched Hero"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REDIVIVUS_PROJECT', 'Hero or Hoax?', 'An individual claiming to be a legendary hero has appeared on our homeworld. Could their wild assertions possibly be true?', NULL, '1000.0', 'society_technology', '[{"event": "enclave.5200", "name": "Shroud-Touched Hero"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('OPEN_SEED_PODS_PROJECT', 'Open Seed Pods on', 'Space Fauna have brought our dormant Seed Pods to . By aiming a concentrated energy beam at the planet, we can stimulate their growth, turning an uninhabited rock into a verdant new colony.', 30, 'society_technology', '[{"event": "origin.7320", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('OPEN_SEED_PODS_PROJECT', 'Open Seed Pods on', 'Space Fauna have brought our dormant Seed Pods to . By aiming a concentrated energy beam at the planet, we can stimulate their growth, turning an uninhabited rock into a verdant new colony.', 30, NULL, 'society_technology', '[{"event": "origin.7320", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WEEDS_ARMY_PROJECT', 'Grow Armies on', 'Space Fauna have brought our Seed Pods to where they were cultivated and cared for by the . By aiming a concentrated energy beam towards the planet, we can stimulate growth, turning the forest into Xenofloran Armies. The higher the level of the Invasive Xenoflora on the planet, the more armies will be spawned.', 90, 'society_technology', '[{"event": "origin.7700", "name": null}, {"event": "origin.7710", "name": "You Reap What You Sow"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WEEDS_ARMY_PROJECT', 'Grow Armies on', 'Space Fauna have brought our Seed Pods to where they were cultivated and cared for by the . By aiming a concentrated energy beam towards the planet, we can stimulate growth, turning the forest into Xenofloran Armies. The higher the level of the Invasive Xenoflora on the planet, the more armies will be spawned.', 90, NULL, 'society_technology', '[{"event": "origin.7700", "name": null}, {"event": "origin.7710", "name": "You Reap What You Sow"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TIYANKIS_PROJECT', 'Tiyanki Observation', 'Dedicating some space station personnel to the study of the Tiyankis could give us further insights into the life of these pacific, mysterious voidborne creatures.', NULL, 'physics_technology', '[{"event": "origin.7005", "name": "$story.501.name$"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TIYANKIS_PROJECT', 'Tiyanki Observation', 'Dedicating some space station personnel to the study of the Tiyankis could give us further insights into the life of these pacific, mysterious voidborne creatures.', NULL, '2000.0', 'physics_technology', '[{"event": "origin.7005", "name": "$story.501.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('FLESH_IS_WEAK_PROJECT', 'The Flesh is Weak', 'It is a fool who persists in clinging to a worn, decrepit instrument when a more efficient alternative presents itself.
-We now possess the technology to make cybernetic implants available to the population of the at large. Our citizens will be stronger, faster and more intelligent as limbs and organs are replaced with improved mechanical versions.', NULL, 'engineering_technology', '[{"event": "utopia.2501", "name": "A Cybernetic Revolution"}]');
+We now possess the technology to make cybernetic implants available to the population of the at large. Our citizens will be stronger, faster and more intelligent as limbs and organs are replaced with improved mechanical versions.', NULL, '500.0', 'engineering_technology', '[{"event": "utopia.2501", "name": "A Cybernetic Revolution"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SYNTHETIC_EVOLUTION_PROJECT', 'Synthetic Evolution', 'It is time to leave our flawed organic vessels behind and embrace immortality. We must prepare advanced synthetic avatars for our entire population, and then begin the process of consciousness transfers.', NULL, 'engineering_technology', '[{"event": "utopia.2551", "name": "The Synthetic Age"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SYNTHETIC_EVOLUTION_PROJECT', 'Synthetic Evolution', 'It is time to leave our flawed organic vessels behind and embrace immortality. We must prepare advanced synthetic avatars for our entire population, and then begin the process of consciousness transfers.', NULL, '1000.0', 'engineering_technology', '[{"event": "utopia.2551", "name": "The Synthetic Age"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BREACHING_SHROUD_PROJECT', 'Breaching the Shroud', 'If we are to communicate with the denizens of the psychic realm known as the Shroud, we will have to unleash an incredible amount of psionic energy. Preparations have been made for a huge séance involving our most powerful psychics in the newly established Conclave of Telepaths on .', NULL, 'society_technology', '[{"event": "utopia.2656", "name": "The S\u00e9ance"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BREACHING_SHROUD_PROJECT', 'Breaching the Shroud', 'If we are to communicate with the denizens of the psychic realm known as the Shroud, we will have to unleash an incredible amount of psionic energy. Preparations have been made for a huge séance involving our most powerful psychics in the newly established Conclave of Telepaths on .', NULL, '500.0', 'society_technology', '[{"event": "utopia.2656", "name": "The S\u00e9ance"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FORM_COVENANT_PROJECT', 'Commune with the Ineffable', 'The Conclave of Telepaths on is preparing a great communion to reach out to an entity that dwells in the Shroud.', NULL, 'society_technology', '[{"event": "utopia.3303", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FORM_COVENANT_PROJECT', 'Commune with the Ineffable', 'The Conclave of Telepaths on is preparing a great communion to reach out to an entity that dwells in the Shroud.', NULL, '500.0', 'society_technology', '[{"event": "utopia.3303", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_GATEWAY_DUDE_PROJECT', 'Boarding Operation', 'We must board the alien vessel. Faint energy readings could indicate a functioning life-support system. There is a chance that someone, or something, may be lurking on the ship. Our soldiers are eager to find out.', 30, NULL, '[{"event": "paragon.3003", "name": "Uneasy Welcome"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_GATEWAY_DUDE_PROJECT', 'Boarding Operation', 'We must board the alien vessel. Faint energy readings could indicate a functioning life-support system. There is a chance that someone, or something, may be lurking on the ship. Our soldiers are eager to find out.', 30, NULL, NULL, '[{"event": "paragon.3003", "name": "Uneasy Welcome"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_GATEWAY_DUDE_REPAIR_PROJECT', 'Fix the Alien Vessel', 'The alien vessel requires extensive maintenance. We have agreed to assist with repairs.', 1800, NULL, '[{"event": "paragon.3004", "name": "Forgotten Admiral"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_GATEWAY_DUDE_REPAIR_PROJECT', 'Fix the Alien Vessel', 'The alien vessel requires extensive maintenance. We have agreed to assist with repairs.', 1800, NULL, NULL, '[{"event": "paragon.3004", "name": "Forgotten Admiral"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_ORIGIN_SPIRITUALIST_PROJECT', 'Communication Relay', 'Building a relay in our capital system will prevent disruptions in long-range communications. Our best engineers are ready to get to work.', NULL, 'engineering_technology', '[{"event": "paragon.5121", "name": "Signal Booster"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_ORIGIN_SPIRITUALIST_PROJECT', 'Communication Relay', 'Building a relay in our capital system will prevent disruptions in long-range communications. Our best engineers are ready to get to work.', NULL, '4000.0', 'engineering_technology', '[{"event": "paragon.5121", "name": "Signal Booster"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_ORIGIN_AUTHORITARIAN_PROJECT', 'Grand Parade', 'A grand parade and public holiday will require a great deal of preparation. Everything must be perfect if we are to rekindle the nation''s pride.', NULL, 'engineering_technology', '[{"event": "paragon.5131", "name": "Grand Parade"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_ORIGIN_AUTHORITARIAN_PROJECT', 'Grand Parade', 'A grand parade and public holiday will require a great deal of preparation. Everything must be perfect if we are to rekindle the nation''s pride.', NULL, '1200.0', 'engineering_technology', '[{"event": "paragon.5131", "name": "Grand Parade"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_ORIGIN_PACIFIST_PROJECT', 'Uprooting Dissident Officers', 'Dissidents are taking root inside our military, slandering and scheming against us. Swift and decisive action must be taken.', NULL, 'society_technology', '[{"event": "paragon.5141", "name": "Dissidents Arrested"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_ORIGIN_PACIFIST_PROJECT', 'Uprooting Dissident Officers', 'Dissidents are taking root inside our military, slandering and scheming against us. Swift and decisive action must be taken.', NULL, '1200.0', 'society_technology', '[{"event": "paragon.5141", "name": "Dissidents Arrested"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PARAGON_ORIGIN_MATERIALIST_PROJECT', 'No Nepotism', 'Putting a stop to nepotism in the council should be our top priority, as it hinders almost everything we do. It may take some time to clean up all this corruption, but our people are counting on us.', NULL, 'society_technology', '[{"event": "paragon.5151", "name": "Council Cleanup"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PARAGON_ORIGIN_MATERIALIST_PROJECT', 'No Nepotism', 'Putting a stop to nepotism in the council should be our top priority, as it hinders almost everything we do. It may take some time to clean up all this corruption, but our people are counting on us.', NULL, '4000.0', 'society_technology', '[{"event": "paragon.5151", "name": "Council Cleanup"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEGENDARY_LEADER_FIRST_PROJECT', 'Distress Signal''s Origin', 'It will take time to pinpoint the exact planetary position of the distress signal on planet .', 360, NULL, '[{"event": "paragon.3104", "name": "Escape Pod"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEGENDARY_LEADER_FIRST_PROJECT', 'Distress Signal''s Origin', 'It will take time to pinpoint the exact planetary position of the distress signal on planet .', 360, NULL, NULL, '[{"event": "paragon.3104", "name": "Escape Pod"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEGENDARY_LEADER_RESUSCITATION', 'Cryostasis Resuscitation', 'The child discovered on has survived a longer period of cryostasis than any in recorded history. Resuscitation will require careful and meticulous preparation.', 180, NULL, '[{"event": "paragon.3105", "name": "Successful Resuscitation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEGENDARY_LEADER_RESUSCITATION', 'Cryostasis Resuscitation', 'The child discovered on has survived a longer period of cryostasis than any in recorded history. Resuscitation will require careful and meticulous preparation.', 180, NULL, NULL, '[{"event": "paragon.3105", "name": "Successful Resuscitation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEGENDARY_LEADER_STUDY_RELIC_PROJECT', 'Relic Fragment', 'A broken fragment discovered in Exakeides''s cryostasis capsule, this relic is well beyond our current scientific understanding. It will take a significant investment of time and resources to uncover its secrets.', NULL, 'engineering_technology', '[{"event": "paragon.3110", "name": "Relic Fragment"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEGENDARY_LEADER_STUDY_RELIC_PROJECT', 'Relic Fragment', 'A broken fragment discovered in Exakeides''s cryostasis capsule, this relic is well beyond our current scientific understanding. It will take a significant investment of time and resources to uncover its secrets.', NULL, '2000.0', 'engineering_technology', '[{"event": "paragon.3110", "name": "Relic Fragment"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LEGENDARY_LEADER_VOLCANO_PLANET_PROJECT', 'Volcanic Exploration', 'Initial investigation of the planet in the Vapob system corroborates with the scenes glimpsed in Keides''s vision.
 Though geologically unstable, there are isolated areas of firm ground. An expedition is possible.
-This Special Project must be researched by Keides himself.', 720, NULL, '[{"event": "paragon.3121", "name": "Volcanic Exploration"}]');
+This Special Project must be researched by Keides himself.', 720, NULL, NULL, '[{"event": "paragon.3121", "name": "Volcanic Exploration"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LEGENDARY_LEADER_HOSTILE_PLANET_PROJECT', 'Jungle Exploration', 'If the planet in the Taprib system is anything like the one Keides saw in his vision, we should exercise extreme caution.
-This Special Project must be researched by Keides himself.', 720, NULL, '[{"event": "paragon.3126", "name": "Above the Canopy"}]');
+This Special Project must be researched by Keides himself.', 720, NULL, NULL, '[{"event": "paragon.3126", "name": "Above the Canopy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LEGENDARY_LEADER_SHIP_PLANET_PROJECT', 'Ship Graveyard Exploration', 'A graveyard of ships, eerily similar to the one in Keides''s vision, has been observed on a planet in the Ivusheh system.
-This Special Project must be researched by Keides himself.', 720, NULL, '[{"event": "paragon.3131", "name": "Ship Graveyard Exploration"}]');
+This Special Project must be researched by Keides himself.', 720, NULL, NULL, '[{"event": "paragon.3131", "name": "Ship Graveyard Exploration"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LEGENDARY_LEADER_OPEN_WORMHOLE_PROJECT', 'Restored Relic', 'An endeavor to answer the questions surrounding Keides''s restored relic. Was it indeed the cause of his visions? And if so, what further powers does it possess?', NULL, 'physics_technology', '[{"event": "paragon.3140", "name": "Relic Research"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LEGENDARY_LEADER_OPEN_WORMHOLE_PROJECT', 'Restored Relic', 'An endeavor to answer the questions surrounding Keides''s restored relic. Was it indeed the cause of his visions? And if so, what further powers does it possess?', NULL, '4000.0', 'physics_technology', '[{"event": "paragon.3140", "name": "Relic Research"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LEGENDARY_LEADER_SABOTAGE_FLEET_PROJECT', 'Electromagnetics', 'A Special Project prompted by Keides, to relieve the Sursect system''s drones of their vigil.
-He intends to deploy an electromagnetic field to knock out their power sources. A successful outcome should afford us access to the system''s planet.', NULL, 'engineering_technology', '[{"event": "paragon.3148", "name": "Electromagnetic Success"}]');
+He intends to deploy an electromagnetic field to knock out their power sources. A successful outcome should afford us access to the system''s planet.', NULL, '6000.0', 'engineering_technology', '[{"event": "paragon.3148", "name": "Electromagnetic Success"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BEFRIENDING_BEHOLDER_PRESAPIENTS', 'Building Trust', 'Acclimatizing the on to our presence will help us gain access to the Murmuring Monolith. If they lower their guard around us we can move freely among them, and may also have opportunities to learn more about their species.', NULL, 'society_technology', '[{"event": "paragon.5", "name": "Trust Within Sight"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BEFRIENDING_BEHOLDER_PRESAPIENTS', 'Building Trust', 'Acclimatizing the on to our presence will help us gain access to the Murmuring Monolith. If they lower their guard around us we can move freely among them, and may also have opportunities to learn more about their species.', NULL, '1000.0', 'society_technology', '[{"event": "paragon.5", "name": "Trust Within Sight"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WHISPER_TEMPLE_STUDY', 'Study the Murmuring Monolith', 'We have an opportunity to examine the ancient Murmuring Monolith on .', NULL, 'society_technology', '[{"event": "paragon.20", "name": "Exploring the Murmuring Monolith"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WHISPER_TEMPLE_STUDY', 'Study the Murmuring Monolith', 'We have an opportunity to examine the ancient Murmuring Monolith on .', NULL, '500.0', 'society_technology', '[{"event": "paragon.20", "name": "Exploring the Murmuring Monolith"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('WHISPER_TEMPLE_ENERGY', 'Murmuring Monolith: Energy', 'By concentrating bursts of energy on the internal components of the Murmuring Monolith, we may be able to recreate the Murmuring phenomenon, and achieve further contact.', NULL, 'engineering_technology', '[{"event": "paragon.30", "name": "The Beholder"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('WHISPER_TEMPLE_ENERGY', 'Murmuring Monolith: Energy', 'By concentrating bursts of energy on the internal components of the Murmuring Monolith, we may be able to recreate the Murmuring phenomenon, and achieve further contact.', NULL, '1000.0', 'engineering_technology', '[{"event": "paragon.30", "name": "The Beholder"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UNKNOWN_COMMS_PROJECT', 'Trace the Source', 'We may be able to trace the source of the anonymous transmissions we have been receiving.', 180, NULL, '[{"event": "paragon.206", "name": "Source of the Transmissions"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UNKNOWN_COMMS_PROJECT', 'Trace the Source', 'We may be able to trace the source of the anonymous transmissions we have been receiving.', 180, NULL, NULL, '[{"event": "paragon.206", "name": "Source of the Transmissions"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AZARYNS_BACTERIA_PROJECT', 'Azaryn''s Gift', 'The supposed gift we received from Azaryn is in fact a plant-based bacteria, unlike anything we''ve ever seen. Neutralizing it will provide a dangerous challenge. However, if we are successful, it would further our understanding of science and medicine.', NULL, 'society_technology', '[{"event": "paragon.214", "name": "Azaryn''s Bacteria"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AZARYNS_BACTERIA_PROJECT', 'Azaryn''s Gift', 'The supposed gift we received from Azaryn is in fact a plant-based bacteria, unlike anything we''ve ever seen. Neutralizing it will provide a dangerous challenge. However, if we are successful, it would further our understanding of science and medicine.', NULL, '1000.0', 'society_technology', '[{"event": "paragon.214", "name": "Azaryn''s Bacteria"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('AZARYNS_RAFFLESIA_PROJECT', 'Azaryn''s Rafflesia', 'Azaryn has tasked us with blooming a giant flower bud, native to her dome ship''s ecosystem. Based on initial observations, this flower may be of great astrobiological significance.', NULL, 'society_technology', '[{"event": "paragon.220", "name": "Azaryn''s Rafflesia"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('AZARYNS_RAFFLESIA_PROJECT', 'Azaryn''s Rafflesia', 'Azaryn has tasked us with blooming a giant flower bud, native to her dome ship''s ecosystem. Based on initial observations, this flower may be of great astrobiological significance.', NULL, '4000.0', 'society_technology', '[{"event": "paragon.220", "name": "Azaryn''s Rafflesia"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NUCLEUS_SAMPLE_STOLEN', 'Terraformation Nucleus Research', 'Studying the sample we obtained of Astrocreator Azaryn''s terraformation nucleus could enhance our understanding of this technology.', 720, 'society_technology', '[{"event": "paragon.265", "name": "Nucleus Research Concluded"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NUCLEUS_SAMPLE_STOLEN', 'Terraformation Nucleus Research', 'Studying the sample we obtained of Astrocreator Azaryn''s terraformation nucleus could enhance our understanding of this technology.', 720, NULL, 'society_technology', '[{"event": "paragon.265", "name": "Nucleus Research Concluded"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('LYSATOR_PIRATE_TREASURE', 'Pirate Treasure', 'The pirate treasure of Zteg-Mayr discovered by .', 180, NULL, '[{"event": "paragon.40111", "name": "Pirate Treasure"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('LYSATOR_PIRATE_TREASURE', 'Pirate Treasure', 'The pirate treasure of Zteg-Mayr discovered by .', 180, '0.0', NULL, '[{"event": "paragon.40111", "name": "Pirate Treasure"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NONA_LOST_CONVOY', 'Lost Tribute', 'An ancient convoy found by . It is rumored to contain vast riches.', 180, NULL, '[{"event": "paragon.40211", "name": "Salvage Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NONA_LOST_CONVOY', 'Lost Tribute', 'An ancient convoy found by . It is rumored to contain vast riches.', 180, '0.0', NULL, '[{"event": "paragon.40211", "name": "Salvage Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('XONDAR_VALUABLE_ALLOYS', 'Valuable Alloys', 'Valuable alloys have been discovered by Admiral on this barren world.', 180, NULL, '[{"event": "paragon.40921", "name": "Available Alloys"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('XONDAR_VALUABLE_ALLOYS', 'Valuable Alloys', 'Valuable alloys have been discovered by Admiral on this barren world.', 180, '0.0', NULL, '[{"event": "paragon.40921", "name": "Available Alloys"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ASTRAL_SCAR_PROJECT', 'Astral Scar', 'We have discovered an anomalous rift in space and time. Researching its unique properties should provide valuable scientific insight.', 30, NULL, '[{"event": "astral_planes.6001", "name": "Astral Scar"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ASTRAL_SCAR_PROJECT', 'Astral Scar', 'We have discovered an anomalous rift in space and time. Researching its unique properties should provide valuable scientific insight.', 30, NULL, NULL, '[{"event": "astral_planes.6001", "name": "Astral Scar"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ASTRAL_SCAR_INSTABILITY', 'Astral Scar Instability', 'Unstable gravitational anomalies are leaking out of the Astral Scar in , manifesting as slow-moving singularities that travel throughout nearby space before violently imploding. Ships passing through this system can avoid them, but must travel more carefully to do so.
-Investigating this situation further could reveal a way to restabilize the dimensional opening.', 60, NULL, '[{"event": "astral_planes.6006", "name": "A Stitch in Time (and Space)"}]');
+Investigating this situation further could reveal a way to restabilize the dimensional opening.', 60, NULL, NULL, '[{"event": "astral_planes.6006", "name": "A Stitch in Time (and Space)"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SPONTANEOUS_EXPLOSIONS', '$astral_planes.6060.name$', '$astral_planes.6060.desc$', 60, NULL, '[{"event": "astral_planes.6065", "name": "$astral_planes.6060.name$"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SPONTANEOUS_EXPLOSIONS', '$astral_planes.6060.name$', '$astral_planes.6060.desc$', 60, NULL, NULL, '[{"event": "astral_planes.6065", "name": "$astral_planes.6060.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INETIAN_PROJECTS_01', 'Unscramble the Coordinates', 'A set of scrambled coordinates were recovered from before the shelter collapsed. We have reason to believe one of these might lead to a machine the Inetian Traders used to manipulate cosmic storms. This could be tech worth the cost to find.', 0, NULL, '[{"event": "cstorms.135", "name": "Bountiful System"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INETIAN_PROJECTS_01', 'Unscramble the Coordinates', 'A set of scrambled coordinates were recovered from before the shelter collapsed. We have reason to believe one of these might lead to a machine the Inetian Traders used to manipulate cosmic storms. This could be tech worth the cost to find.', 0, '500.0', NULL, '[{"event": "cstorms.135", "name": "Bountiful System"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INETIAN_PROJECTS_02', 'The Meaning of the Machine', 'The three coordinates from completed an ancient puzzle. All that is left is to activate the Sectoral Disturbance Depressors. The time has come to discover their purpose.', 0, 'engineering_technology', '[{"event": "cstorms.176", "name": "The Meaning of the Machine"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INETIAN_PROJECTS_02', 'The Meaning of the Machine', 'The three coordinates from completed an ancient puzzle. All that is left is to activate the Sectoral Disturbance Depressors. The time has come to discover their purpose.', 0, '1000.0', 'engineering_technology', '[{"event": "cstorms.176", "name": "The Meaning of the Machine"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('INETIAN_PROJECTS_03', 'Tracing the Traders', 'We found the formation point of an ancient celestial dust storm, but evidence suggests it must have been much smaller than a typical disturbance. Given its size, it is curious that the Inetian Traders felt the need to control the storm using their Sectoral Disturbance Depressors.
-If we track the path of the storm, we might be able to discover why they invested so much time in this project.', NULL, 'society_technology', '[{"event": "cstorms.185", "name": null}]');
+If we track the path of the storm, we might be able to discover why they invested so much time in this project.', NULL, '1500.0', 'society_technology', '[{"event": "cstorms.185", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INETIAN_PROJECTS_04', 'Delve into the Secrets of the Inetian Traders', 'After having discovered the final resting place of the Inetian Traders there is still more to learn about their vast empire. We would like to investigate them one more time.', 180, NULL, '[{"event": "cstorms.195", "name": "Delve into the Secrets of the Inetian Traders"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INETIAN_PROJECTS_04', 'Delve into the Secrets of the Inetian Traders', 'After having discovered the final resting place of the Inetian Traders there is still more to learn about their vast empire. We would like to investigate them one more time.', 180, NULL, NULL, '[{"event": "cstorms.195", "name": "Delve into the Secrets of the Inetian Traders"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_adakkaria_tracing_history', 'Tracing History', 'The coordinates point to a planet in the system. An exploration vessel should be sent to investigate what relevance this planet may have had for the adAkkaria Convention.', 180, NULL, '[{"event": "cstorms.2185", "name": "The Ancient Habitat"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_adakkaria_tracing_history', 'Tracing History', 'The coordinates point to a planet in the system. An exploration vessel should be sent to investigate what relevance this planet may have had for the adAkkaria Convention.', 180, NULL, NULL, '[{"event": "cstorms.2185", "name": "The Ancient Habitat"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('project_adakkaria_benevolent_grounds', 'Benevolent Grounds', 'We recovered the coordinates to the adAkkaria Convention''s home planet.
-Exploring the system and planet may finally reveal the fate of the adAkkaria civilization.', 180, NULL, '[{"event": "cstorms.2250", "name": "The Storm Calls"}]');
+Exploring the system and planet may finally reveal the fate of the adAkkaria civilization.', 180, NULL, NULL, '[{"event": "cstorms.2250", "name": "The Storm Calls"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_adakkaria_secrets_of', 'Secrets of the AdAkkaria Convention', 'There is still so much we can learn from Institute of Celebration. Do we dare to engage with these adAkkarian experiments even further?', 180, NULL, '[{"event": "cstorms.2365", "name": "Potential Unleashed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_adakkaria_secrets_of', 'Secrets of the AdAkkaria Convention', 'There is still so much we can learn from Institute of Celebration. Do we dare to engage with these adAkkarian experiments even further?', 180, NULL, NULL, '[{"event": "cstorms.2365", "name": "Potential Unleashed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_TEMPEST_BREWING', 'Tempest Brewing', 'This once-in-a-lifetime storm system has special properties that make it ripe for modulation. But first, we''ll need to better understand its underlying composition. Who knows what brilliant oddity we may bring to life?', NULL, 'physics_technology', '[{"event": "cstorms.3105", "name": "Tempest Brewing"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_TEMPEST_BREWING', 'Tempest Brewing', 'This once-in-a-lifetime storm system has special properties that make it ripe for modulation. But first, we''ll need to better understand its underlying composition. Who knows what brilliant oddity we may bring to life?', NULL, '1000.0', 'physics_technology', '[{"event": "cstorms.3105", "name": "Tempest Brewing"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_SOW_THE_BIG_ONE', 'Entice The Big One', 'We have the technology, but without a nascent storm in the vicinity, we will need to investigate how to seed a storm we can sculpt.', NULL, 'physics_technology', '[{"event": "cstorms.3222", "name": "Dark Matter Cultivation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_SOW_THE_BIG_ONE', 'Entice The Big One', 'We have the technology, but without a nascent storm in the vicinity, we will need to investigate how to seed a storm we can sculpt.', NULL, '8000.0', 'physics_technology', '[{"event": "cstorms.3222", "name": "Dark Matter Cultivation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_DARK_SEEDING', 'Exotic Enticements', 'By carefully injecting Dark Matter into the spatial fabric, a malleable storm will be provoked within this system.', NULL, 'physics_technology', '[{"event": "cstorms.3224", "name": "Onset of The Big One"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_DARK_SEEDING', 'Exotic Enticements', 'By carefully injecting Dark Matter into the spatial fabric, a malleable storm will be provoked within this system.', NULL, '10000.0', 'physics_technology', '[{"event": "cstorms.3224", "name": "Onset of The Big One"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_EVERY_ITEM_ON_THE_MENU', 'Something Off The Menu', 'We now know that a cosmic storm can be manipulated by feeding it the correct diet. To feed this one, we require a certain sampling.', 600, 'physics_technology', '[{"event": "cstorms.3227", "name": "The Final Push"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_EVERY_ITEM_ON_THE_MENU', 'Something Off The Menu', 'We now know that a cosmic storm can be manipulated by feeding it the correct diet. To feed this one, we require a certain sampling.', 600, NULL, 'physics_technology', '[{"event": "cstorms.3227", "name": "The Final Push"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_EVERY_ITEM_ON_THE_MENU_REPEAT', 'Repeat: $cstorms.3225.name$', 'Creating the perfect storm will require a carefully measured sampling of resources.', 180, 'physics_technology', '[{"event": "cstorms.3226", "name": "The Ultimate Feast"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_EVERY_ITEM_ON_THE_MENU_REPEAT', 'Repeat: $cstorms.3225.name$', 'Creating the perfect storm will require a carefully measured sampling of resources.', 180, NULL, 'physics_technology', '[{"event": "cstorms.3226", "name": "The Ultimate Feast"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_cosmic_storms_collidedplanet_stabilize', 'Stabilize the Collision', 'Stabilizing the collided planet is necessary if we want to prevent this world from collapsing.', NULL, 'society_technology', '[{"event": "cstorms.1220", "name": "Collision Maintained"}, {"event": "cstorms.1225", "name": "A World For Everyone"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_cosmic_storms_collidedplanet_stabilize', 'Stabilize the Collision', 'Stabilizing the collided planet is necessary if we want to prevent this world from collapsing.', NULL, '5000.0', 'society_technology', '[{"event": "cstorms.1220", "name": "Collision Maintained"}, {"event": "cstorms.1225", "name": "A World For Everyone"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_cosmic_storms_collidedplanet_harmonize', 'Harmonize the Collision', 'Carry out our ambitious plan to harmonize the biomes of the collided planet. We will either create a world for all, or doom it in the process.', NULL, 'society_technology', '[{"event": "cstorms.1225", "name": "A World For Everyone"}, {"event": "cstorms.1230", "name": "Fixer Upper"}, {"event": "cstorms.1235", "name": "Home Asunder"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_cosmic_storms_collidedplanet_harmonize', 'Harmonize the Collision', 'Carry out our ambitious plan to harmonize the biomes of the collided planet. We will either create a world for all, or doom it in the process.', NULL, '5000.0', 'society_technology', '[{"event": "cstorms.1225", "name": "A World For Everyone"}, {"event": "cstorms.1230", "name": "Fixer Upper"}, {"event": "cstorms.1235", "name": "Home Asunder"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_cosmic_storms_crimson_crawlers', 'Food for Thought', 'is entirely covered by placid, red insects. The planet could be habitable if the bugs are dealt with. At the same time, they appear to be a good source of food. There may be a path forward here.', 180, 'society_technology', '[{"event": "cstorms.1260", "name": "Uncommon Cuisine"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_cosmic_storms_crimson_crawlers', 'Food for Thought', 'is entirely covered by placid, red insects. The planet could be habitable if the bugs are dealt with. At the same time, they appear to be a good source of food. There may be a path forward here.', 180, '0.0', 'society_technology', '[{"event": "cstorms.1260", "name": "Uncommon Cuisine"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('project_cosmic_storms_but_they_are_cute', 'Biological Marvel', 'A most intriguing, positively adorable animal was found aboard one of our science vessels. An investigation into the creature''s biological qualities is required before we decide to keep it or not.', 60, 'society_technology', '[{"event": "cstorms.1505", "name": "Biological Marvel"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('project_cosmic_storms_but_they_are_cute', 'Biological Marvel', 'A most intriguing, positively adorable animal was found aboard one of our science vessels. An investigation into the creature''s biological qualities is required before we decide to keep it or not.', 60, '0.0', 'society_technology', '[{"event": "cstorms.1505", "name": "Biological Marvel"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('project_cosmic_storms_stormbound', 'Spirits of the Storm', 'We have detected the ominous ship will be manifesting itself inside this storm.
-Send a science vessel to draw it out and intercept it at once!', 1, 'physics_technology', '[{"event": "cstorms.1320", "name": "Homebound"}]');
+Send a science vessel to draw it out and intercept it at once!', 1, '0.0', 'physics_technology', '[{"event": "cstorms.1320", "name": "Homebound"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STORM_IN_A_BOX_INVESTIGATE_PROJECT', 'Study the Capsule', 'A mysterious and visibly-damaged capsule is drifting through the system. We know neither its origin nor function. It possesses no evident weaponry and we believe further analysis of its advanced construction would be a safe and worthwhile venture.', 360, NULL, '[{"event": "cstorms.1820", "name": "Storm Trap"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STORM_IN_A_BOX_INVESTIGATE_PROJECT', 'Study the Capsule', 'A mysterious and visibly-damaged capsule is drifting through the system. We know neither its origin nor function. It possesses no evident weaponry and we believe further analysis of its advanced construction would be a safe and worthwhile venture.', 360, NULL, NULL, '[{"event": "cstorms.1820", "name": "Storm Trap"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STORM_IN_A_BOX_TRAP_PROJECT', 'Open the Storm Trap', 'An ancient', 180, NULL, '[{"event": "cstorms.1825", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STORM_IN_A_BOX_TRAP_PROJECT', 'Open the Storm Trap', 'An ancient', 180, NULL, NULL, '[{"event": "cstorms.1825", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CLEAR_DUSTY_PIPES_PROJECT', 'Clear the Pipes', 'The impact of a Stardust Storm on has left water filtration systems clogged with an insoluble mineral slurry. We must re-engineer a more robust filtration system to address the issue.', NULL, 'society_technology', '[{"event": "cstorms.1765", "name": "Filters Unclogged"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CLEAR_DUSTY_PIPES_PROJECT', 'Clear the Pipes', 'The impact of a Stardust Storm on has left water filtration systems clogged with an insoluble mineral slurry. We must re-engineer a more robust filtration system to address the issue.', NULL, '1000.0', 'society_technology', '[{"event": "cstorms.1765", "name": "Filters Unclogged"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('FORENSIC_DISSECTION_PROJECT', 'Forensic Dissection', 'We have encountered the remains of an unknown creature in the system dragged across the galaxy by a cosmic storm. Forensic dissection of the corpse should reveal more information.', 180, NULL, '[{"event": "cstorms.5085", "name": "Forensic Dissection"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('FORENSIC_DISSECTION_PROJECT', 'Forensic Dissection', 'We have encountered the remains of an unknown creature in the system dragged across the galaxy by a cosmic storm. Forensic dissection of the corpse should reveal more information.', 180, NULL, NULL, '[{"event": "cstorms.5085", "name": "Forensic Dissection"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REUNITE_POD_PROJECT', 'Reuniting the Pod', 'Three Tiyanki calves are lost and wandering the system, separated from their pod by a cosmic storm. We can help reunite them with their pod by boosting their cries to attract the rest of their pod to the system.', 180, NULL, '[{"event": "cstorms.5095", "name": "Tiyanki Reunited"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REUNITE_POD_PROJECT', 'Reuniting the Pod', 'Three Tiyanki calves are lost and wandering the system, separated from their pod by a cosmic storm. We can help reunite them with their pod by boosting their cries to attract the rest of their pod to the system.', 180, NULL, NULL, '[{"event": "cstorms.5095", "name": "Tiyanki Reunited"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VOIDWORMS_PROJECT', 'Voidworm Research', 'The biology and reproductive patterns of the Voidworms warrant further study.', NULL, 'society_technology', '[{"event": "grand_archive.2015", "name": "Voidworm Enzymes"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VOIDWORMS_PROJECT', 'Voidworm Research', 'The biology and reproductive patterns of the Voidworms warrant further study.', NULL, '1500.0', 'society_technology', '[{"event": "grand_archive.2015", "name": "Voidworm Enzymes"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HIDDEN_CUTHOLOID_ATTACK_PROJECT', 'Destroy the Asteroid', 'The asteroid is not what it seems to be. We should approach with a sizable military force and attempt to recover our science ship before it is gone for good.', 10, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HIDDEN_CUTHOLOID_ATTACK_PROJECT', 'Destroy the Asteroid', 'The asteroid is not what it seems to be. We should approach with a sizable military force and attempt to recover our science ship before it is gone for good.', 10, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('HIDDEN_CUTHOLOID_CAPTURE_PROJECT', 'Capture the Asteroid', 'The asteroid is not what it seems to be. With the right technology, we could capture it entirely and easily recover our science ship before it is gone for good.', 180, NULL, '[{"event": "grand_archive.3015", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('HIDDEN_CUTHOLOID_CAPTURE_PROJECT', 'Capture the Asteroid', 'The asteroid is not what it seems to be. With the right technology, we could capture it entirely and easily recover our science ship before it is gone for good.', 180, NULL, NULL, '[{"event": "grand_archive.3015", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CUTHOLOID_DEBRIS_PROJECT', 'Cutholoid Remains', 'We have destroyed a massive creature hidden inside an asteroid. Harvesting its remains could prove valuable to us.', 90, 'engineering_technology', '[{"event": "grand_archive.3026", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CUTHOLOID_DEBRIS_PROJECT', 'Cutholoid Remains', 'We have destroyed a massive creature hidden inside an asteroid. Harvesting its remains could prove valuable to us.', 90, NULL, 'engineering_technology', '[{"event": "grand_archive.3026", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RESEARCH_CUTHOLOIDS_PROJECT', 'Cutholoid Research', 'The asteroidal shell structure of the Cutholoid is an impressive piece of biological engineering. There is more for us to learn from them.', NULL, 'engineering_technology', '[{"event": "grand_archive.2905", "name": "Cutholoid Shells"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RESEARCH_CUTHOLOIDS_PROJECT', 'Cutholoid Research', 'The asteroidal shell structure of the Cutholoid is an impressive piece of biological engineering. There is more for us to learn from them.', NULL, '2000.0', 'engineering_technology', '[{"event": "grand_archive.2905", "name": "Cutholoid Shells"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CARRION_DEBRIS_PROJECT', 'Autopsy', 'The carcass of a was discovered in . Studying these remains in the wild will broaden our understanding of these spaceborne creatures.', 90, 'engineering_technology', '[{"event": "grand_archive.1065", "name": "Autopsy Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CARRION_DEBRIS_PROJECT', 'Autopsy', 'The carcass of a was discovered in . Studying these remains in the wild will broaden our understanding of these spaceborne creatures.', 90, NULL, 'engineering_technology', '[{"event": "grand_archive.1065", "name": "Autopsy Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_TROVE', 'Treasure Trove', 'A long-lost pirate''s Treasure Trove has been detected to be somewhere on . Who knows what riches it may contain...', 60, NULL, '[{"event": "grand_archive.6015", "name": "Treasure Recovered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_TROVE', 'Treasure Trove', 'A long-lost pirate''s Treasure Trove has been detected to be somewhere on . Who knows what riches it may contain...', 60, NULL, NULL, '[{"event": "grand_archive.6015", "name": "Treasure Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_TROVE_PIRATES', 'Defeat the Bandits', 'A pirate fleet is after the Treasure Trove on !', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_TROVE_PIRATES', 'Defeat the Bandits', 'A pirate fleet is after the Treasure Trove on !', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_PROJECT', 'Ancient Capsule Analysis', 'Our initial analysis of the chart inside of the orbital capsule revealed the location of several celestial bodies not present in our home system. It will take time to extract the exact coordinates.', NULL, 'physics_technology', '[{"event": "grand_archive.8005", "name": "Ancient Capsule Analyzed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_PROJECT', 'Ancient Capsule Analysis', 'Our initial analysis of the chart inside of the orbital capsule revealed the location of several celestial bodies not present in our home system. It will take time to extract the exact coordinates.', NULL, '500.0', 'physics_technology', '[{"event": "grand_archive.8005", "name": "Ancient Capsule Analyzed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TREASURE_HUNTERS_CHART_PIECE_2_PROJECT', 'A Planet in Eight Pieces', 'The Celestial Chart has led us to a shattered world. We detected an unnatural tunnel drilled into the largest slab of planetary crust. We believe that the next piece of our chart is hidden within, but accessing it will require careful excavation.
-A construction ship would be able to build the necessary equipment to extract the piece.', 180, NULL, '[{"event": "grand_archive.8055", "name": "Excavation Successful"}]');
+A construction ship would be able to build the necessary equipment to extract the piece.', 180, NULL, NULL, '[{"event": "grand_archive.8055", "name": "Excavation Successful"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_2_PROJECT', 'Decipher the Chart Piece', 'After excavating the capsule from the remains of the shattered planet, we need to decipher the navigation data within. This process will require cross-referencing our cartographic database and charting the marked celestial bodies against known systems.', NULL, 'physics_technology', '[{"event": "grand_archive.8060", "name": "Chart Deciphered"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_2_PROJECT', 'Decipher the Chart Piece', 'After excavating the capsule from the remains of the shattered planet, we need to decipher the navigation data within. This process will require cross-referencing our cartographic database and charting the marked celestial bodies against known systems.', NULL, '1000.0', 'physics_technology', '[{"event": "grand_archive.8060", "name": "Chart Deciphered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TREASURE_HUNTERS_EXHIBITION_PROJECT', 'Exhibition Enhancement Blueprint', 'Alongside the Ytterite specimen, we discovered an advanced design for a complex display cabinet that would aid in its preservation.
-Researching the techniques used in this blueprint will likely aid future conservation and exhibition efforts.', NULL, 'engineering_technology', '[{"event": "grand_archive.8080", "name": "Exhibition Enhancement"}]');
+Researching the techniques used in this blueprint will likely aid future conservation and exhibition efforts.', NULL, '3000.0', 'engineering_technology', '[{"event": "grand_archive.8080", "name": "Exhibition Enhancement"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TREASURE_HUNTERS_BUILD_GRAND_ARCHIVE', 'Construct the Grand Archive', 'Throughout our exploration of the cosmos, we have collected countless unique artifacts and cultural oddities. These specimens will inspire the populace and make our exhibition the first to showcase and conserve all fields of galactic knowledge.
-Building a Grand Archive would suit this purpose.', NULL, NULL, NULL);
+Building a Grand Archive would suit this purpose.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BLACK_NEEDLE_BASE_BOMBARD', 'Bombard the Black Needle Base', 'The underground base on is highly resistant to orbital bombardment, but with enough time and firepower, it is possible to destroy it with our fleet alone. Once the base has been neutralized, we can search the ruins to recover the Celestial Chart piece and any other valuables.
-Tactical advisors caution that this approach may allow the Black Needle sufficient time to call for reinforcements.', 90, NULL, '[{"event": "grand_archive.8105", "name": "In Ruins and Ashes"}]');
+Tactical advisors caution that this approach may allow the Black Needle sufficient time to call for reinforcements.', 90, NULL, NULL, '[{"event": "grand_archive.8105", "name": "In Ruins and Ashes"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BLACK_NEEDLE_BASE_BOMBARD_REINFORCEMENTS_KILLED', 'Bombard the Black Needle Base', 'The underground base on is highly resistant to orbital bombardment, but with enough time and firepower, it is possible to destroy it with our fleet alone. Once the base has been neutralized, we can search the ruins to recover the Celestial Chart piece and any other valuables.
-Tactical advisors caution that this approach may allow the Black Needle sufficient time to call for reinforcements.', 90, NULL, '[{"event": "grand_archive.8105", "name": "In Ruins and Ashes"}]');
+Tactical advisors caution that this approach may allow the Black Needle sufficient time to call for reinforcements.', 90, NULL, NULL, '[{"event": "grand_archive.8105", "name": "In Ruins and Ashes"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BLACK_NEEDLE_BASE_DEPLOY_ARMIES', 'Assault the Black Needle Base', 'The underground base on is protected by a significant number of troops and security drones. Deploying armies on the planet''s surface would allow us to take over the base quickly, giving little opportunity for the Black Needle to react.
-Once we have secured the base, we can extract the chart capsule and any other ill-gotten goods the pirates have accumulated.', 135, NULL, '[{"event": "grand_archive.8110", "name": "Defenses Down"}]');
+Once we have secured the base, we can extract the chart capsule and any other ill-gotten goods the pirates have accumulated.', 135, NULL, NULL, '[{"event": "grand_archive.8110", "name": "Defenses Down"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BLACK_NEEDLE_BASE_HACK', 'Hacking the Pirates', 'The pirates'' over-reliance on stolen and repurposed tech has left their base vulnerable to infiltration. A single research ship could hack the network on from orbit, masquerading as a Black Needle transport vessel under orders of Captain Hoo. This might convince them to transfer custody of the map capsule without needless bloodshed.', 540, NULL, '[{"event": "grand_archive.8115", "name": "Maneuver Successful"}, {"event": "grand_archive.8120", "name": "Caught Red-Handed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BLACK_NEEDLE_BASE_HACK', 'Hacking the Pirates', 'The pirates'' over-reliance on stolen and repurposed tech has left their base vulnerable to infiltration. A single research ship could hack the network on from orbit, masquerading as a Black Needle transport vessel under orders of Captain Hoo. This might convince them to transfer custody of the map capsule without needless bloodshed.', 540, NULL, NULL, '[{"event": "grand_archive.8115", "name": "Maneuver Successful"}, {"event": "grand_archive.8120", "name": "Caught Red-Handed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DECODE_THIRD_MAP_PIECE', 'Decode Chart Piece', 'With the capsule taken from the Black Needle base, we are tasked with decrypting the data within and integrating the new information into the Celestial Chart.', NULL, 'physics_technology', '[{"event": "grand_archive.8135", "name": "Chart Decrypted"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DECODE_THIRD_MAP_PIECE', 'Decode Chart Piece', 'With the capsule taken from the Black Needle base, we are tasked with decrypting the data within and integrating the new information into the Celestial Chart.', NULL, '2000.0', 'physics_technology', '[{"event": "grand_archive.8135", "name": "Chart Decrypted"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('TREASURE_HUNTERS_CHART_PIECE_3_PROJECT', 'Hidden Capsule', 'Based on our investigation, we believe that the next piece of the Celestial Chart is hidden somewhere within the ruined settlement on .
-Given the sturdy construction of the other capsules, we can assume that it has survived the recent bombardment.', 60, NULL, '[{"event": "grand_archive.8270", "name": "Secret of the Statue"}]');
+Given the sturdy construction of the other capsules, we can assume that it has survived the recent bombardment.', 60, NULL, NULL, '[{"event": "grand_archive.8270", "name": "Secret of the Statue"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_4_PROJECT', 'The Final Chart Piece', 'After extracting the capsule from the ruins of Smeegibb''s settlement, all that remains is to decrypt the data inside and complete the Celestial Chart. We will soon discover what awaits us at the end of Captain Ness'' trail.', NULL, 'physics_technology', '[{"event": "grand_archive.8280", "name": "Chart Complete"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_HUNTERS_ANCIENT_CAPSULE_4_PROJECT', 'The Final Chart Piece', 'After extracting the capsule from the ruins of Smeegibb''s settlement, all that remains is to decrypt the data inside and complete the Celestial Chart. We will soon discover what awaits us at the end of Captain Ness'' trail.', NULL, '2000.0', 'physics_technology', '[{"event": "grand_archive.8280", "name": "Chart Complete"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GATEWAY_VOIDWORMS_KILL_PROJECT', '$grand_archive.8300.name$', 'We have followed the Celestial Chart to an infested Gateway in the system. These creatures must be dealt with before we can reactivate the Gate and see what is on the other side.', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GATEWAY_VOIDWORMS_KILL_PROJECT', '$grand_archive.8300.name$', 'We have followed the Celestial Chart to an infested Gateway in the system. These creatures must be dealt with before we can reactivate the Gate and see what is on the other side.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GATEWAY_VOIDWORMS_DEBRIS_PROJECT', 'Voidworms Remains', 'The remains of the Voidworms in are showing unusual readings. Our scanners seem to detect signs of life within one of decaying Troikas. We should send a Science Ship to investigate this further.', 30, NULL, '[{"event": "grand_archive.8310", "name": "Voidworm Clutch"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GATEWAY_VOIDWORMS_DEBRIS_PROJECT', 'Voidworms Remains', 'The remains of the Voidworms in are showing unusual readings. Our scanners seem to detect signs of life within one of decaying Troikas. We should send a Science Ship to investigate this further.', 30, NULL, NULL, '[{"event": "grand_archive.8310", "name": "Voidworm Clutch"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RESEARCH_GATEWAY_ACTIVATION_PROJECT', '$grand_archive.8315.name$', '$grand_archive.8315.desc$', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RESEARCH_GATEWAY_ACTIVATION_PROJECT', '$grand_archive.8315.name$', '$grand_archive.8315.desc$', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ACTIVATE_GATEWAY_PROJECT', '$grand_archive.8325.name$', 'As the final destination on the Celestial Chart, the inactive Gateway in likely leads to something of great importance.', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ACTIVATE_GATEWAY_PROJECT', '$grand_archive.8325.name$', 'As the final destination on the Celestial Chart, the inactive Gateway in likely leads to something of great importance.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ACTIVATE_GATEWAY_PROJECT_NOMADS', '$grand_archive.8325.name$', 'As the final destination on the Celestial Chart, the inactive Gateway in likely leads to something of great importance.', 30, 'engineering_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ACTIVATE_GATEWAY_PROJECT_NOMADS', '$grand_archive.8325.name$', 'As the final destination on the Celestial Chart, the inactive Gateway in likely leads to something of great importance.', 30, NULL, 'engineering_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TREASURE_HUNTERS_BLACK_NEEDLE_PROJECT', 'Last Stand of the Black Needle', 'Following extensive sabotage attacks on systems, the Black Needle have maintained their blockade around Captain Ness''s Hoard. They have exhausted much of their resources, and are now in a vulnerable position. If we defeat them here, their wider organization will surely crumble, allowing us to freely claim the treasure.', NULL, NULL, '[{"event": "grand_archive.8560", "name": "$grand_archive.8410.name$"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TREASURE_HUNTERS_BLACK_NEEDLE_PROJECT', 'Last Stand of the Black Needle', 'Following extensive sabotage attacks on systems, the Black Needle have maintained their blockade around Captain Ness''s Hoard. They have exhausted much of their resources, and are now in a vulnerable position. If we defeat them here, their wider organization will surely crumble, allowing us to freely claim the treasure.', NULL, NULL, NULL, '[{"event": "grand_archive.8560", "name": "$grand_archive.8410.name$"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('CAPTAIN_NESS_HOARD_PROJECT', 'Captain Ness''s Hoard', 'Captain Ness''s Hoard is ours to take.
 Despite its abandoned appearance, many of the building''s systems are active. Given the alleged nature of Captain Ness, we should be cautious of unexpected security measures.
-The singular entrance of the treasure trove has an indent carved into its central hatch. We can insert the Celestial Chart here to open this mysterious facility.', 30, 'engineering_technology', '[{"event": "grand_archive.8565", "name": "Captain Ness''s Treasure"}]');
+The singular entrance of the treasure trove has an indent carved into its central hatch. We can insert the Celestial Chart here to open this mysterious facility.', 30, NULL, 'engineering_technology', '[{"event": "grand_archive.8565", "name": "Captain Ness''s Treasure"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('VOIDWORM_GLANDS_PROJECT', 'Troika Reproductive Glands', 'We have made a breakthrough discovery in the search for a cure to the Voidworm Plague. All that is required are the reproductive glands of a Voidworm Troika in an active state of fertility.', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('VOIDWORM_GLANDS_PROJECT', 'Troika Reproductive Glands', 'We have made a breakthrough discovery in the search for a cure to the Voidworm Plague. All that is required are the reproductive glands of a Voidworm Troika in an active state of fertility.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('VOIDWORM_TITAN_DEBRIS_PROJECT', 'Voidworm Troika Remains', 'The remains of this Voidworm Troika can be harvested for their fertile reproductive glands.
-These organs would greatly expand our understanding of the creatures'' biology and assist in eradicating the Voidworm Plague once and for all.', 40, 'engineering_technology', '[{"event": "grand_archive.2455", "name": "Glands Recovered"}]');
+These organs would greatly expand our understanding of the creatures'' biology and assist in eradicating the Voidworm Plague once and for all.', 40, NULL, 'engineering_technology', '[{"event": "grand_archive.2455", "name": "Glands Recovered"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('tiyanki_matriarch_UNIQUE_MUTATION_PROJECT', 'Tiyanki Matriarch Mutation Project', 'The genetic material we have recovered from the Tiyanki Matriarch has provided some unique insight that will allow us to proceed with an experimental mutation project that could be applied to any Space Fauna.', NULL, 'society_technology', '[{"event": "grand_archive.10060", "name": "Matriarch Mutation Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('tiyanki_matriarch_UNIQUE_MUTATION_PROJECT', 'Tiyanki Matriarch Mutation Project', 'The genetic material we have recovered from the Tiyanki Matriarch has provided some unique insight that will allow us to proceed with an experimental mutation project that could be applied to any Space Fauna.', NULL, '8000.0', 'society_technology', '[{"event": "grand_archive.10060", "name": "Matriarch Mutation Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('voidspawn_UNIQUE_MUTATION_PROJECT', 'Voidspawn Mutation Project', 'The genetic material we have recovered from the Voidspawn has provided some unique insight that will allow us to proceed with an experimental mutation project that could be applied to any Space Fauna.', NULL, 'society_technology', '[{"event": "grand_archive.10080", "name": "Voidspawn Mutation Project Completed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('voidspawn_UNIQUE_MUTATION_PROJECT', 'Voidspawn Mutation Project', 'The genetic material we have recovered from the Voidspawn has provided some unique insight that will allow us to proceed with an experimental mutation project that could be applied to any Space Fauna.', NULL, '8000.0', 'society_technology', '[{"event": "grand_archive.10080", "name": "Voidspawn Mutation Project Completed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COSMOGENESIS_VICTORY', 'Calculate Jump Vector', 'We need to calibrate the jump drive of the Horizon Needle and calculate the exact coordinates that will allow us to dive into the supermassive black hole at the galactic core.', 360, 'physics_technology', '[{"event": "crisis.7515", "name": "Ad Infinitum..."}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COSMOGENESIS_VICTORY', 'Calculate Jump Vector', 'We need to calibrate the jump drive of the Horizon Needle and calculate the exact coordinates that will allow us to dive into the supermassive black hole at the galactic core.', 360, NULL, 'physics_technology', '[{"event": "crisis.7515", "name": "Ad Infinitum..."}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COSMOGENESIS_LEAKING_ATMOSPHERE', 'Stabilize Atmosphere', 'Send a team to rectify the gravitational changes on and restore its atmosphere.', 360, 'physics_technology', NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COSMOGENESIS_LEAKING_ATMOSPHERE', 'Stabilize Atmosphere', 'Send a team to rectify the gravitational changes on and restore its atmosphere.', 360, NULL, 'physics_technology', NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('COLD_METAL_PROJECT', 'Cold Metal', 'Populations living in freezing climates report cases of severe pains related to cybernetic implants. A clinical trial will allow us to gather more data.', NULL, 'society_technology', '[{"event": "cyber.835", "name": "Medical Report"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('COLD_METAL_PROJECT', 'Cold Metal', 'Populations living in freezing climates report cases of severe pains related to cybernetic implants. A clinical trial will allow us to gather more data.', NULL, '1000.0', 'society_technology', '[{"event": "cyber.835", "name": "Medical Report"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_STORM', 'The Mysterious Tempest', 'An unexplained cosmic tempest has materialized, blocking all travel.
-To proceed, we must pierce its mysterious veil.', NULL, 'physics_technology', '[{"event": "crisis.9100", "name": "Nanite Hurricane"}]');
+To proceed, we must pierce its mysterious veil.', NULL, '10000.0', 'physics_technology', '[{"event": "crisis.9100", "name": "Nanite Hurricane"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_STORM_2', 'Cetana: The Nanite Tempest', 'Cetana''s tempest is both a technological marvel and a formidable weapon.
-We must learn more if we are to stand any chance against her, especially if her intentions deviate from what she has implied.', NULL, 'physics_technology', '[{"event": "crisis.9110", "name": "Cetana''s Nanites"}]');
+We must learn more if we are to stand any chance against her, especially if her intentions deviate from what she has implied.', NULL, '50000.0', 'physics_technology', '[{"event": "crisis.9110", "name": "Cetana''s Nanites"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_DATABANK', 'Cetana''s Databank', 'Cetana has tasked us with retrieving a databank from , warning us to make no attempt to decipher its contents.
-The significance of this data is veiled, but can we risk arousing her displeasure by uncovering it?', 1800, NULL, '[{"event": "crisis.8085", "name": "Cetana''s Cache"}]');
+The significance of this data is veiled, but can we risk arousing her displeasure by uncovering it?', 1800, '0.0', NULL, '[{"event": "crisis.8085", "name": "Cetana''s Cache"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SYNTH_QUEENS_DATABANK_COUNTDOWN', 'Cetana: Race the Tempest', 'With Cetana''s tempest speeding towards , we will have little time to grab the databank before it arrives.', 1800, NULL, '[{"event": "crisis.8110", "name": "Databank Retrieved"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SYNTH_QUEENS_DATABANK_COUNTDOWN', 'Cetana: Race the Tempest', 'With Cetana''s tempest speeding towards , we will have little time to grab the databank before it arrives.', 1800, '0.0', NULL, '[{"event": "crisis.8110", "name": "Databank Retrieved"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION', 'Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, NULL, '[{"event": "crisis.20100", "name": "Beacon on : Timeless Massacre"}, {"event": "crisis.20200", "name": "Beacon on : Sleeping Army"}, {"event": "crisis.20300", "name": "Beacon on : Forgotten Weapon"}, {"event": "crisis.20500", "name": "Beacon on : Unlikely Survivor"}, {"event": "crisis.20600", "name": "Beacon on : Empty Call"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION', 'Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, '0.0', NULL, '[{"event": "crisis.20100", "name": "Beacon on : Timeless Massacre"}, {"event": "crisis.20200", "name": "Beacon on : Sleeping Army"}, {"event": "crisis.20300", "name": "Beacon on : Forgotten Weapon"}, {"event": "crisis.20500", "name": "Beacon on : Unlikely Survivor"}, {"event": "crisis.20600", "name": "Beacon on : Empty Call"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION_FAKE', 'Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, NULL, '[{"event": "crisis.20600", "name": "Beacon on : Empty Call"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION_FAKE', 'Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, '0.0', NULL, '[{"event": "crisis.20600", "name": "Beacon on : Empty Call"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION_PARAGON', 'Last Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, NULL, '[{"event": "crisis.20400", "name": "Beacon on : Abandoned Base"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SYNTH_QUEENS_INVESTIGATION_PARAGON', 'Last Beacon on', 'One of the beacons calling for the Queen''s attention is located on this .', 300, '0.0', NULL, '[{"event": "crisis.20400", "name": "Beacon on : Abandoned Base"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_OUTPOST_AMBUSH', 'Raid Outpost', 'While heavily fortified, the outpost in the system is less guarded than Cetana''s core territory. With a sufficiently powerful fleet, we can overwhelm its defenses. A thorough examination of the debris field could yield important insights into Cetana''s plans. The key challenge lies in navigating through the tempest to reach the outpost.
 This will start a battle!
-Successful raids will hamper Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
+Successful raids will hamper Cetana''s plans.', 1, '0.0', NULL, '[{"event": "crisis.8136", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_SYNTH_QUEENS_CONVOY_AMBUSH', 'Ambush Convoy', 'Cetana''s Convoys ensure the delivery of crucial resources to her outposts. If we can catch one with our fleets, we can board the ships and inspect their cargo.
 This will start a battle!
-Successful raids will impede Cetana''s plans.', 1, NULL, '[{"event": "crisis.8136", "name": null}]');
+Successful raids will impede Cetana''s plans.', 1, '0.0', NULL, '[{"event": "crisis.8136", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SYNTH_QUEENS_RESHAPING_RITUAL', '', 'Somehow the Animator of Clay disabled Cetana''s Titan. The chance is now: if we hope to reshape Cetana, we must prepare for the .', 30, NULL, '[{"event": "crisis.24250", "name": "The Dance of Clay"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SYNTH_QUEENS_RESHAPING_RITUAL', '', 'Somehow the Animator of Clay disabled Cetana''s Titan. The chance is now: if we hope to reshape Cetana, we must prepare for the .', 30, '0.0', NULL, '[{"event": "crisis.24250", "name": "The Dance of Clay"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('THE_COMPOSER_OF_STRANDS_CLAY_FC_PROJECT', 'Commune with the', 'We are gathering a convocation of elite telepaths, ready to reach deep into the Shroud and commune with a force of immense power.
-Until we know its true name, this being shall be referred to as the .', NULL, 'society_technology', '[{"event": "shroud.4025", "name": null}]');
+Until we know its true name, this being shall be referred to as the .', NULL, '2500.0', 'society_technology', '[{"event": "shroud.4025", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('RECKONING_ARRIVAL_PROJECT', 'Facing the Reckoning', 'The galaxy is under threat from an immensely powerful entity known as the Reckoning. Composed of pure energy, it materialized suddenly and began a campaign of destruction.
-All available data indicate that this being is an opponent unlike anything we have faced before. If we wish to confront this threat, we should execute emergency research to determine more effective methods of engagement.', NULL, 'physics_technology', '[{"event": "shroud.11235", "name": "Facing the Reckoning"}]');
+All available data indicate that this being is an opponent unlike anything we have faced before. If we wish to confront this threat, we should execute emergency research to determine more effective methods of engagement.', NULL, '50000.0', 'physics_technology', '[{"event": "shroud.11235", "name": "Facing the Reckoning"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('RECKONING_VULNERABILITY_PROJECT', 'It Must Have a Weakness', 'Though we did not succeed, our confrontation with the Reckoning provided invaluable data for study.
-By dedicating research to this mysterious energy being, we can identify its vulnerabilities, and thereby develop more effective methods of attack.', NULL, 'physics_technology', '[{"event": "shroud.11245", "name": "Reckoning''s Weakness"}]');
+By dedicating research to this mysterious energy being, we can identify its vulnerabilities, and thereby develop more effective methods of attack.', NULL, '50000.0', 'physics_technology', '[{"event": "shroud.11245", "name": "Reckoning''s Weakness"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DELVING_RITUAL', 'Delving Ritual', 'The have made the necessary preparations to perform a Delving Ritual and reach into the Shroud on our behalf. Whatever insights they will guide us to are uncertain.', NULL, 'society_technology', '[{"event": "shroud.5317", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DELVING_RITUAL', 'Delving Ritual', 'The have made the necessary preparations to perform a Delving Ritual and reach into the Shroud on our behalf. Whatever insights they will guide us to are uncertain.', NULL, '25000.0', 'society_technology', '[{"event": "shroud.5317", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PSI_RADIATION_PROJECT', 'Psi-Radiation', 'Levels of psi-radiation in the system have suddenly increased, and the effects are being felt on . We must study this developing phenomenon up close before it further endangers our population.', 180, NULL, '[{"event": "shroud.6205", "name": "Psionic Auras"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PSI_RADIATION_PROJECT', 'Psi-Radiation', 'Levels of psi-radiation in the system have suddenly increased, and the effects are being felt on . We must study this developing phenomenon up close before it further endangers our population.', 180, NULL, NULL, '[{"event": "shroud.6205", "name": "Psionic Auras"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PSIONIC_AURA_RESISTANCE_PROJECT', 'Psionic Aura Resistance', 'The Ancient Ward built by our ancestors on was designed to protect us from psi-radiation. The incursion of Psionic Auras threatens to overwhelm its current capacity. By applying what we have learned so far, we should be able to enhance its resistant properties.', NULL, 'society_technology', '[{"event": "shroud.6210", "name": "Psionic Attenuation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PSIONIC_AURA_RESISTANCE_PROJECT', 'Psionic Aura Resistance', 'The Ancient Ward built by our ancestors on was designed to protect us from psi-radiation. The incursion of Psionic Auras threatens to overwhelm its current capacity. By applying what we have learned so far, we should be able to enhance its resistant properties.', NULL, '2000.0', 'society_technology', '[{"event": "shroud.6210", "name": "Psionic Attenuation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SANCTUM_OF_THE_LOST', 'Sanctum of the Dreamer', 'Within the ruined Sanctum of the Dreamer on , we found a tightly sealed ''cocoon'' emanating dangerous levels of psi-radiation. We must conduct on-site research to eliminate any threat this object might pose.', NULL, 'physics_technology', '[{"event": "shroud.6710", "name": "The Power Within"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SANCTUM_OF_THE_LOST', 'Sanctum of the Dreamer', 'Within the ruined Sanctum of the Dreamer on , we found a tightly sealed ''cocoon'' emanating dangerous levels of psi-radiation. We must conduct on-site research to eliminate any threat this object might pose.', NULL, '5000.0', 'physics_technology', '[{"event": "shroud.6710", "name": "The Power Within"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('MINDWARDENS_THE_FIRST_ENCLAVE', 'The First Enclave', 'We are prepared to construct an independent ''Mindwarden Enclave'' to further our mission of ending psionic infection throughout the galaxy.
-Once constructed, this facility can provide anti-psionic services for those who need them, while providing us a portion of the revenue and materials it receives.', NULL, NULL, NULL);
+Once constructed, this facility can provide anti-psionic services for those who need them, while providing us a portion of the revenue and materials it receives.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SHROUD_SHAPING_PROJECT', 'Shaping the Shroud', 'The entities within the Shroud are many, each an accretion of great power. They expect an irrevocable bond before they bestow their greatest blessings.
-Yet we see a way to forge our own path. Rather than binding our psyches to a single patron, our psionic can develop the means to channel smaller amounts of energy from each, shaping the Shroud to our own will.', NULL, 'society_technology', '[{"event": "shroud.3500", "name": "A Path Forged"}]');
+Yet we see a way to forge our own path. Rather than binding our psyches to a single patron, our psionic can develop the means to channel smaller amounts of energy from each, shaping the Shroud to our own will.', NULL, '10000.0', 'society_technology', '[{"event": "shroud.3500", "name": "A Path Forged"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('EXPLORE_BORDER_SYSTEM', 'Exploring', 'Long-distance imagery shows a recent burst of strange energy flows in the system, which correlates with irregular readings produced by our Ancient Ward on .
-If we wish to understand this phenomenon, we must explore .', NULL, NULL, NULL);
+If we wish to understand this phenomenon, we must explore .', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ENDBRINGERS_RESEARCH_PSIONIC_THEORY', 'Psionic Theory', 'The fragment of psionic energy we discovered on holds secrets we must unlock.
-We are held back by the limitations of our own mind.', NULL, NULL, NULL);
+We are held back by the limitations of our own mind.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ENDBRINGERS_ADOPT_PSIONICS_TRADITION', 'Psionic Theory', 'The fragment of psionic energy we discovered on holds secrets we must unlock.
-We are held back by the limitations of our own mind.', NULL, NULL, NULL);
+We are held back by the limitations of our own mind.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ENDBRINGERS_COMMUNE_WITH_THE_VOICE', 'Commune with the Voice', 'We have gathered on with a singular purpose.
 We will reach deep within the Shroud and force the staggering power of the Voice to acknowledge and commune with us.
-We have known it as the Cataclysm. Others called it the Reckoning. Now, it will reveal its true name to us, and with that knowledge we will achieve greatness.', NULL, NULL, NULL);
+We have known it as the Cataclysm. Others called it the Reckoning. Now, it will reveal its true name to us, and with that knowledge we will achieve greatness.', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('MACHINE_LEGACY_TAKEN_UNPLUGGED', 'Embodied Anachronisms', 'We have detected an environmental anomaly on . Its atmosphere bears traces of the kinds of pollution we would associate with medieval metalworking, yet our surface scans are obscured by exotic radiation of a kind we would expect to see on a Machine World.
-We cannot hope to gather more data before first recalibrating our sensors. Is this a temporal anomaly, or else the blighted remnants of another species assimilated by the ?', 90, NULL, '[{"event": "unplugged.2100", "name": "Disrupted Progress"}]');
+We cannot hope to gather more data before first recalibrating our sensors. Is this a temporal anomaly, or else the blighted remnants of another species assimilated by the ?', 90, NULL, NULL, '[{"event": "unplugged.2100", "name": "Disrupted Progress"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MACHINE_LEGACY_CREATORS_UNPLUGGED', 'Dust Monitor', 'Alone in a system devoid of other noteworthy phenomena is a sophisticated monitoring station, long since decommissioned and put beyond repair. What was it monitoring, and why was it focused on such a tightly enclosed region of ?', 90, NULL, '[{"event": "unplugged.2200", "name": "Absence Scanner"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MACHINE_LEGACY_CREATORS_UNPLUGGED', 'Dust Monitor', 'Alone in a system devoid of other noteworthy phenomena is a sophisticated monitoring station, long since decommissioned and put beyond repair. What was it monitoring, and why was it focused on such a tightly enclosed region of ?', 90, NULL, NULL, '[{"event": "unplugged.2200", "name": "Absence Scanner"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('MACHINE_LEGACY_UNPLUGGED_VAULT_BEACON', 'The Vault Beacon', 'A beacon belonging to the has directed our attention to a data vault, buried deep under the planet surface. We have established secure access by remote, however decryption and defragmentation of the files within will take some time.', 90, NULL, '[{"event": "unplugged.2305", "name": "Our Legacy"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('MACHINE_LEGACY_UNPLUGGED_VAULT_BEACON', 'The Vault Beacon', 'A beacon belonging to the has directed our attention to a data vault, buried deep under the planet surface. We have established secure access by remote, however decryption and defragmentation of the files within will take some time.', 90, NULL, NULL, '[{"event": "unplugged.2305", "name": "Our Legacy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('UNPLUGGED_MACHINE_ARCHIVE', 'Machine Husk', 'Plugged into the static remains of the Machine Nexus is a patchwork of memory storage media, surrounding a heavily shielded core. Each section of this archive was built in distinct phases, using materials sourced from other worlds - from civilizations assimilated by the Machine?
-We may attempt to decrypt the archive alongside probing the static, shielded core to try and ascertain their combined purpose.', 360, NULL, '[{"event": "unplugged.2440", "name": "Machine Legacy"}]');
+We may attempt to decrypt the archive alongside probing the static, shielded core to try and ascertain their combined purpose.', 360, NULL, NULL, '[{"event": "unplugged.2440", "name": "Machine Legacy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BEHEMOTH_CRISIS_SPECIAL_PROJECT_3', 'Brain Link Trials', 'We are experimenting with neurotechnology in an attempt to remotely connect our minds with the Behemoths'' nervous system. We now believe this is the only way to tame the beast.', 0, 'society_technology', '[{"event": "biocrisis.15", "name": "Synaptic Symphony"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BEHEMOTH_CRISIS_SPECIAL_PROJECT_3', 'Brain Link Trials', 'We are experimenting with neurotechnology in an attempt to remotely connect our minds with the Behemoths'' nervous system. We now believe this is the only way to tame the beast.', 0, '12000.0', 'society_technology', '[{"event": "biocrisis.15", "name": "Synaptic Symphony"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('BEHEMOTH_CRISIS_SPECIAL_PROJECT_4', 'The Mind Meld', 'The Behemoth''s consciousness is far more vast and complex than we anticipated; we now understand that a single individual''s mind is insufficient for integration. Our minds, while superior to most, were never designed to be housed in such a body.
-The first step will be to connect the individual minds of our population to the behemoth. A tenuous link at first that will soon become a torrent - a flood to soothe the Behemoth''s raging fury.', 360, 'society_technology', '[{"event": "biocrisis.20", "name": "One With the Beast"}]');
+The first step will be to connect the individual minds of our population to the behemoth. A tenuous link at first that will soon become a torrent - a flood to soothe the Behemoth''s raging fury.', 360, NULL, 'society_technology', '[{"event": "biocrisis.20", "name": "One With the Beast"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_HATCHERY_SHIP_REMAINS', 'Study Biological Ship Remains', 'The remains of the fleet provide a rare opportunity for study. We may learn much to ensure our survival.', 360, 'society_technology', '[{"event": "bio.2020", "name": "Enemy Analyzed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_HATCHERY_SHIP_REMAINS', 'Study Biological Ship Remains', 'The remains of the fleet provide a rare opportunity for study. We may learn much to ensure our survival.', 360, NULL, 'society_technology', '[{"event": "bio.2020", "name": "Enemy Analyzed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PROJECT_BIOMECHANICAL_WORLD', 'Home of the Enemy', 'The home world of the ; who were these people, and what did they want with us?', 360, 'society_technology', '[{"event": "bio.2030", "name": "BioMechanical Plague"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PROJECT_BIOMECHANICAL_WORLD', 'Home of the Enemy', 'The home world of the ; who were these people, and what did they want with us?', 360, NULL, 'society_technology', '[{"event": "bio.2030", "name": "BioMechanical Plague"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BEHEMOTH_MUTATION_PROJECT', 'Behemoth Mutations', 'Our recent breakthroughs in behemoth genetics could theoretically be expanded to further mutate our creations. Genetic stability is a concern, but with time and resources we are confident that we can bring about further biological enhancements.', 0, 'society_technology', '[{"event": "biocrisis.280", "name": "Behemoth Mutations"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BEHEMOTH_MUTATION_PROJECT', 'Behemoth Mutations', 'Our recent breakthroughs in behemoth genetics could theoretically be expanded to further mutate our creations. Genetic stability is a concern, but with time and resources we are confident that we can bring about further biological enhancements.', 0, '24000.0', 'society_technology', '[{"event": "biocrisis.280", "name": "Behemoth Mutations"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BEHEMOTH_TRANSFERENCE_PROJECT', 'Complete the Transference', 'We have communed with the Beast long enough. The transference is ready, awaiting only our command. We stand on the cusp of ascension, poised to abandon the pitiful ashes of our planetbound dominion and rise beyond the chains of flesh and gravity.', 0, 'society_technology', '[{"event": "biocrisis.191", "name": "Behemoth Victory"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BEHEMOTH_TRANSFERENCE_PROJECT', 'Complete the Transference', 'We have communed with the Beast long enough. The transference is ready, awaiting only our command. We stand on the cusp of ascension, poised to abandon the pitiful ashes of our planetbound dominion and rise beyond the chains of flesh and gravity.', 0, '6000.0', 'society_technology', '[{"event": "biocrisis.191", "name": "Behemoth Victory"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('BEHEMOTH_FATE_PROJECT', 'The Fate of the Behemoth', 'After leaving our galaxy, the Behemoth drifted into the void, then vanished. We can try to unravel the mystery, but at this distance, only unconventional methods remain. The answers are likely as hazy as the void itself.', 0, 'physics_technology', '[{"event": "biocrisis.197", "name": "Quis Venabitur Ipsos Venatori"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('BEHEMOTH_FATE_PROJECT', 'The Fate of the Behemoth', 'After leaving our galaxy, the Behemoth drifted into the void, then vanished. We can try to unravel the mystery, but at this distance, only unconventional methods remain. The answers are likely as hazy as the void itself.', 0, '600000.0', 'physics_technology', '[{"event": "biocrisis.197", "name": "Quis Venabitur Ipsos Venatori"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DETOXIFICATION_GLAND_PROJECT', 'Detoxification Gland Studies', 'A remarkable species of reptiloid thrives in the toxic atmosphere of , aided by a unique internal organ which breaks extreme toxins down into useful nutrients. Further study of this organism would be a worthy endeavor.', 180, NULL, '[{"event": "extreme_frontiers.145", "name": "Detoxification Insight"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DETOXIFICATION_GLAND_PROJECT', 'Detoxification Gland Studies', 'A remarkable species of reptiloid thrives in the toxic atmosphere of , aided by a unique internal organ which breaks extreme toxins down into useful nutrients. Further study of this organism would be a worthy endeavor.', 180, NULL, NULL, '[{"event": "extreme_frontiers.145", "name": "Detoxification Insight"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PURIFY_CORE_PROJECT', 'Purify the Core', '''s gassy outer layers are maintained by the unique biochemistry of unicellular organisms which inhabit its core. Exterminating them would dissipate these gases, leaving us with a colonizable rocky planet.', 240, NULL, '[{"event": "extreme_frontiers.155", "name": "A New World"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PURIFY_CORE_PROJECT', 'Purify the Core', '''s gassy outer layers are maintained by the unique biochemistry of unicellular organisms which inhabit its core. Exterminating them would dissipate these gases, leaving us with a colonizable rocky planet.', 240, NULL, NULL, '[{"event": "extreme_frontiers.155", "name": "A New World"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ATMOSPHERIC_ELECTROPLATING', 'Atmospheric Electroplating', 'Sending objects into the gaseous metal atmosphere of results in a form of natural electroplating.
-This unique process is remarkably effective and with further study could be replicated to improve ship hull durability across the .', 90, NULL, '[{"event": "extreme_frontiers.265", "name": "High Performance Metal"}]');
+This unique process is remarkably effective and with further study could be replicated to improve ship hull durability across the .', 90, NULL, NULL, '[{"event": "extreme_frontiers.265", "name": "High Performance Metal"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ATMOSPHERIC_DIAMONDS_PROJECT', 'Atmospheric Diamonds', 'By studying the ultra-dense diamond storms on , we are confident that their unique properties can be used to advance our laser technologies.', 180, NULL, '[{"event": "extreme_frontiers.285", "name": "Diamond Precision"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ATMOSPHERIC_DIAMONDS_PROJECT', 'Atmospheric Diamonds', 'By studying the ultra-dense diamond storms on , we are confident that their unique properties can be used to advance our laser technologies.', 180, NULL, NULL, '[{"event": "extreme_frontiers.285", "name": "Diamond Precision"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTROLLED_ERUPTION_PROJECT', 'Controlled Eruption', 'A blocked supervolcano on is holding vast reserves of mineral-rich magma below the surface. Conducting a controlled eruption would allow us to harvest these trapped resources.', 90, NULL, '[{"event": "extreme_frontiers.295", "name": "Mega Eruption"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTROLLED_ERUPTION_PROJECT', 'Controlled Eruption', 'A blocked supervolcano on is holding vast reserves of mineral-rich magma below the surface. Conducting a controlled eruption would allow us to harvest these trapped resources.', 90, NULL, NULL, '[{"event": "extreme_frontiers.295", "name": "Mega Eruption"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('INFERNAL_CATALYSTS_PROJECT', 'Infernal Catalysts', 'By studying the conditions behind the flaming tornadoes of more closely, the benefits of this phenomena could be recreated in a controlled environment.', 180, NULL, '[{"event": "extreme_frontiers.365", "name": "Pyroclastic Resonators"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('INFERNAL_CATALYSTS_PROJECT', 'Infernal Catalysts', 'By studying the conditions behind the flaming tornadoes of more closely, the benefits of this phenomena could be recreated in a controlled environment.', 180, NULL, NULL, '[{"event": "extreme_frontiers.365", "name": "Pyroclastic Resonators"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('LAVA_DIVERS_PROJECT', 'Lava Divers', 'The megafauna on are able to withstand the harsh environments of their molten world, and submerge themselves deep below the surface of the planet''s numerous magma pools.
-Studying these creatures'' carapaces may give us a new understanding of how to deal with extreme heat.', 180, NULL, '[{"event": "extreme_frontiers.375", "name": "Magma-forged Armor"}]');
+Studying these creatures'' carapaces may give us a new understanding of how to deal with extreme heat.', 180, NULL, NULL, '[{"event": "extreme_frontiers.375", "name": "Magma-forged Armor"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('REPURPOSE_THRUSTERS_PROJECT', 'Repurposed Planet Thrusters', 'By repurposing the damaged planet thruster array on , we can burn away the gas giant''s hydrogen leaving behind a solid and exploitable core.', 360, NULL, '[{"event": "extreme_frontiers.385", "name": "Gases Stripped"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('REPURPOSE_THRUSTERS_PROJECT', 'Repurposed Planet Thrusters', 'By repurposing the damaged planet thruster array on , we can burn away the gas giant''s hydrogen leaving behind a solid and exploitable core.', 360, NULL, NULL, '[{"event": "extreme_frontiers.385", "name": "Gases Stripped"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CHTHONIAN_PETRIFICATION_PROJECT', 'Chthonian Petrification', 'By examining the petrified remains of the fossilized Tiyanki pod on , our aim to fully understand the effects of chthonian-level radiation on biological matter, potentially opening up new means of advanced alloy production.', 360, NULL, '[{"event": "extreme_frontiers.435", "name": "Bio-Produced Alloy"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CHTHONIAN_PETRIFICATION_PROJECT', 'Chthonian Petrification', 'By examining the petrified remains of the fossilized Tiyanki pod on , our aim to fully understand the effects of chthonian-level radiation on biological matter, potentially opening up new means of advanced alloy production.', 360, NULL, NULL, '[{"event": "extreme_frontiers.435", "name": "Bio-Produced Alloy"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GRAVITY_ASSIST_PROJECT', 'Gravity Assist Studies', 'Studying the perfect orbital resonance effect on will improve our understanding of planetary slingshot maneuvers on ships.', 180, NULL, '[{"event": "extreme_frontiers.445", "name": "Orbital Slingshot Advancements"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GRAVITY_ASSIST_PROJECT', 'Gravity Assist Studies', 'Studying the perfect orbital resonance effect on will improve our understanding of planetary slingshot maneuvers on ships.', 180, NULL, NULL, '[{"event": "extreme_frontiers.445", "name": "Orbital Slingshot Advancements"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('TOXIC_SLIME_CATALYZATION_PROJECT', 'Toxic Slime Catalyzation', 'By catalyzing some of the toxic gestational slime recovered from we may be able to spawn a living organism from it.', 180, NULL, '[{"event": "extreme_frontiers.1120", "name": "Spawning Successful"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('TOXIC_SLIME_CATALYZATION_PROJECT', 'Toxic Slime Catalyzation', 'By catalyzing some of the toxic gestational slime recovered from we may be able to spawn a living organism from it.', 180, NULL, NULL, '[{"event": "extreme_frontiers.1120", "name": "Spawning Successful"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DENDRITIAN_CHRONICLES_PROJECT_DEFAULT', 'Study the Dendritian Chronicles', 'By studying the \', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DENDRITIAN_CHRONICLES_PROJECT_DEFAULT', 'Study the Dendritian Chronicles', 'By studying the \', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('DENDRITIAN_CHRONICLES_PROJECT_MACHINE', 'Study the Dendritian Chronicles', 'By studying the \', NULL, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('DENDRITIAN_CHRONICLES_PROJECT_MACHINE', 'Study the Dendritian Chronicles', 'By studying the \', NULL, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RESTORE_HYPERLANE_PROJECT', 'Restore Degraded Hyperlane', 'If we can find a way to restore the degraded hyperlane in , we will be able to confirm the existence of New Bratulla, the paradise planet sought by the Dendritians.', 180, NULL, '[{"event": "extreme_frontiers.1426", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RESTORE_HYPERLANE_PROJECT', 'Restore Degraded Hyperlane', 'If we can find a way to restore the degraded hyperlane in , we will be able to confirm the existence of New Bratulla, the paradise planet sought by the Dendritians.', 180, NULL, NULL, '[{"event": "extreme_frontiers.1426", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GEORADIATION_SIGNAL_1_PROJECT', 'Signal Trace:', 'An identical communications frequency to the one emitted by the construct found on has been traced to this site, where another damaged device has been located. Studying it will yield further insight into their destructive terraforming capabilities.', 160, NULL, '[{"event": "extreme_frontiers.1515", "name": "Gravitational Fuel"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GEORADIATION_SIGNAL_1_PROJECT', 'Signal Trace:', 'An identical communications frequency to the one emitted by the construct found on has been traced to this site, where another damaged device has been located. Studying it will yield further insight into their destructive terraforming capabilities.', 160, NULL, NULL, '[{"event": "extreme_frontiers.1515", "name": "Gravitational Fuel"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GEORADIATION_SIGNAL_2_PROJECT', 'Signal Trace:', 'The communications frequency emitted by the construct found on has also been traced to this site, where another damaged device has been located. Studying it will yield further insight into their destructive terraforming capabilities.', 160, NULL, '[{"event": "extreme_frontiers.1520", "name": "Stimulated Radiation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GEORADIATION_SIGNAL_2_PROJECT', 'Signal Trace:', 'The communications frequency emitted by the construct found on has also been traced to this site, where another damaged device has been located. Studying it will yield further insight into their destructive terraforming capabilities.', 160, NULL, NULL, '[{"event": "extreme_frontiers.1520", "name": "Stimulated Radiation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UNDETONATED_GEORADIATION_PROJECT', 'Undetonated Device', 'We have located a fourth, as yet undetonated terraforming device on . Recovering it will fill the gaps in our understanding of this technology.', 160, NULL, '[{"event": "extreme_frontiers.1525", "name": "Undetonated Device"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UNDETONATED_GEORADIATION_PROJECT', 'Undetonated Device', 'We have located a fourth, as yet undetonated terraforming device on . Recovering it will fill the gaps in our understanding of this technology.', 160, NULL, NULL, '[{"event": "extreme_frontiers.1525", "name": "Undetonated Device"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GEORADIATION_ANALYSIS_PROJECT', 'Device Analysis', 'By analyzing the control architecture of the device found on , we will be able to replicate this technology for our own use.', 280, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GEORADIATION_ANALYSIS_PROJECT', 'Device Analysis', 'By analyzing the control architecture of the device found on , we will be able to replicate this technology for our own use.', 280, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('GEORADIATION_ANALYSIS_PROJECT_CONTINUED', 'Device Analysis', 'By analyzing the control architecture of the device found on , we will be able to replicate this technology for our own use.', 210, NULL, '[{"event": "extreme_frontiers.1540", "name": "Undetonated Device"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('GEORADIATION_ANALYSIS_PROJECT_CONTINUED', 'Device Analysis', 'By analyzing the control architecture of the device found on , we will be able to replicate this technology for our own use.', 210, NULL, NULL, '[{"event": "extreme_frontiers.1540", "name": "Undetonated Device"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ARKSHIP_DEBRIS', 'Arkship Wreckage', 'A colossal arkship has been destroyed in battle, leaving behind a vast field of wreckage. The remains of its infrastructure, engines, and hull may yield valuable materials for salvage.', 90, 'engineering_technology', '[{"event": "arkship.1025", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ARKSHIP_DEBRIS', 'Arkship Wreckage', 'A colossal arkship has been destroyed in battle, leaving behind a vast field of wreckage. The remains of its infrastructure, engines, and hull may yield valuable materials for salvage.', 90, NULL, 'engineering_technology', '[{"event": "arkship.1025", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('RECOVER_DISABLED_NOMAD_VESSEL', 'Recovery Project', NULL, 90, 'engineering_technology', '[{"event": "arkship.1026", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('RECOVER_DISABLED_NOMAD_VESSEL', 'Recovery Project', NULL, 90, NULL, 'engineering_technology', '[{"event": "arkship.1026", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CHAMPIONS_FORGE_TRAVEL', 'Wormhole: Champion''s Forge Live!', 'The CFL has prepared a specialized wormhole to the competition grounds. Deliver your fleet to the designated location before the deadline and prepare to forge your legacy!', 10, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CHAMPIONS_FORGE_TRAVEL', 'Wormhole: Champion''s Forge Live!', 'The CFL has prepared a specialized wormhole to the competition grounds. Deliver your fleet to the designated location before the deadline and prepare to forge your legacy!', 10, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DEFENDER_CRISIS_SPECIAL_PROJECT_1', 'Tailored Diplomacy', 'No one defends the galaxy alone.
 Before we can act, we must earn the trust of those we hope to protect. That trust begins with honesty, restraint, and diplomacy.
-We will train a new generation of envoys to prove through word and deed that we are here to help. Only together can we build alliances strong enough to weather what lies ahead.', 0, 'society_technology', '[{"event": "ambition.125", "name": "Irreproachable"}]');
+We will train a new generation of envoys to prove through word and deed that we are here to help. Only together can we build alliances strong enough to weather what lies ahead.', 0, '7500.0', 'society_technology', '[{"event": "ambition.125", "name": "Irreproachable"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DEFENDER_CRISIS_SPECIAL_PROJECT_2', 'Sources of Inspiration', 'Trust is earned. Faith must be nurtured.
 Now that the galaxy stands with us, we must give its people something to believe in, symbols that can endure even the darkest hour. Not mere banners or slogans, but emblems of courage, unity, and the unshakable promise that we will stand between them and the storm.
-Let every sentient being look to these symbols and remember: they are not alone.', 0, 'engineering_technology', '[{"event": "ambition.130", "name": "Symbolic Warfare"}]');
+Let every sentient being look to these symbols and remember: they are not alone.', 0, '10000.0', 'engineering_technology', '[{"event": "ambition.130", "name": "Symbolic Warfare"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DEFENDER_CRISIS_SPECIAL_PROJECT_4', 'Take the Initiative', 'The galaxy holds threats too great to ignore. We cannot afford to wait for the darkness to reveal itself. With caution and care, we will begin a series of high-risk operations to uncover what dangers lie ahead.
-This will trigger the End Game Crisis', 0, 'physics_technology', '[{"event": "ambition.135", "name": "That Which Lurks"}, {"event": "crisis.10", "name": null}, {"event": "crisis.2005", "name": "Machines Conquer"}, {"event": "crisis.8005", "name": null}, {"event": "crisis.1000", "name": null}]');
+This will trigger the End Game Crisis', 0, '25000.0', 'physics_technology', '[{"event": "ambition.135", "name": "That Which Lurks"}, {"event": "crisis.10", "name": null}, {"event": "crisis.2005", "name": "Machines Conquer"}, {"event": "crisis.8005", "name": null}, {"event": "crisis.1000", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('DEFENDER_CRISIS_SPECIAL_PROJECT_5', 'Press the Advantage', 'Our early efforts have proven necessary, and though successful, they are not the end.
 The galaxy is vast and full of danger. We must continue our search to ensure that no threat escapes our watch.
 These experiments are perilous, but if evil still lurks in the dark, we have no choice but to face it.
-This will trigger a second End Game Crisis', 0, 'physics_technology', '[{"event": "ambition.140", "name": "Always Two There Are"}, {"event": "crisis.10", "name": null}, {"event": "crisis.2005", "name": "Machines Conquer"}, {"event": "crisis.8005", "name": null}, {"event": "crisis.1000", "name": null}]');
+This will trigger a second End Game Crisis', 0, '30000.0', 'physics_technology', '[{"event": "ambition.140", "name": "Always Two There Are"}, {"event": "crisis.10", "name": null}, {"event": "crisis.2005", "name": "Machines Conquer"}, {"event": "crisis.8005", "name": null}, {"event": "crisis.1000", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('PALADIN_SHIP_PROJECT', 'Paladin Ships', 'Art meets technology to create symbols of freedom that will shine bright against the darkness.', 0, 'engineering_technology', '[{"event": "ambition.205", "name": "Paladin Ships Ready"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('PALADIN_SHIP_PROJECT', 'Paladin Ships', 'Art meets technology to create symbols of freedom that will shine bright against the darkness.', 0, '18000.0', 'engineering_technology', '[{"event": "ambition.205", "name": "Paladin Ships Ready"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_01', 'Deploy Spy Satellite', 'We must deploy a Spy Satellite in this system to fulfill our contract.', 30, NULL, '[{"event": "nomads.6000", "name": null}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_01', 'Deploy Spy Satellite', 'We must deploy a Spy Satellite in this system to fulfill our contract.', 30, NULL, NULL, '[{"event": "nomads.6000", "name": null}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_02', 'Smuggle Supplies', 'We have been tasked with smuggling critical mission supplies to support the Spy Network.', 30, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_02', 'Smuggle Supplies', 'We have been tasked with smuggling critical mission supplies to support the Spy Network.', 30, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_03', 'Infiltrate Starbase', 'Our assistance is required to infiltrate a Starbase in this system.', 30, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_ESPIONAGE_SUPPORT_PROJECT_03', 'Infiltrate Starbase', 'Our assistance is required to infiltrate a Starbase in this system.', 30, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_MEGASTRUCTURE_SUPPORT_PROJECT', 'Megastructure Support', NULL, 30, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_MEGASTRUCTURE_SUPPORT_PROJECT', 'Megastructure Support', NULL, 30, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_CLEAR_BLOCKERS_PROJECT', 'Clear Blockers', NULL, 30, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_CLEAR_BLOCKERS_PROJECT', 'Clear Blockers', NULL, 30, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('CONTRACT_COLONY_STARTUP_PROJECT', 'Colony Startup', NULL, 180, NULL, NULL);
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('CONTRACT_COLONY_STARTUP_PROJECT', 'Colony Startup', NULL, 180, NULL, NULL, NULL);
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('NOMADIC_PRINCESS_SPECIAL_PROJECT', 'Ruined Vessel', 'The coordinates led to the remains of a massive vessel, its superstructure consistent with standard Arkship design.
-Preliminary readings suggest catastrophic internal failure. A full investigation may uncover traces linked to Seralune''s recovered memories.', 120, 'physics_technology', '[{"event": "nomads.1620", "name": "The Surviving Heir"}]');
+Preliminary readings suggest catastrophic internal failure. A full investigation may uncover traces linked to Seralune''s recovered memories.', 120, '0.0', 'physics_technology', '[{"event": "nomads.1620", "name": "The Surviving Heir"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('NOMADIC_PRINCESS_SPECIAL_PROJECT_2', 'Restore the Arkship', 'Rebuilding the shattered vessel will be difficult, but doing so may reveal the origins of Seralune and the legacy she was meant to inherit.', NULL, 'engineering_technology', '[{"event": "nomads.1625", "name": "Past Reclaimed"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('NOMADIC_PRINCESS_SPECIAL_PROJECT_2', 'Restore the Arkship', 'Rebuilding the shattered vessel will be difficult, but doing so may reveal the origins of Seralune and the legacy she was meant to inherit.', 720, '0.0', 'engineering_technology', '[{"event": "nomads.1625", "name": "Past Reclaimed"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SACRED_SITE_ONE_PROJECT', 'Sacred Site: Emergence', 'The ancestral writings describe a crucial event that occurred at these coordinates. Known to them as Emergence, this was where they initiated a ritual to invoke the deities. It was said to be a place of wonder. Initial scans indicate substantial magnetic deviation.
-Time has rendered it much changed, but we should investigate regardless, for Emergence''s spiritual significance.', 180, 'engineering_technology', '[{"event": "nomads.2050", "name": "Transcendental Emergence"}]');
+Time has rendered it much changed, but we should investigate regardless, for Emergence''s spiritual significance.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2050", "name": "Transcendental Emergence"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_TWO_PROJECT', 'Sacred Site: The Eye', 'In the words of our ancestors, there is an ''Unsleeping Eye'' within ''s grasp. We understand this to be a reference to an orbital observatory.', 180, 'engineering_technology', '[{"event": "nomads.2055", "name": "The Eye"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_TWO_PROJECT', 'Sacred Site: The Eye', 'In the words of our ancestors, there is an ''Unsleeping Eye'' within ''s grasp. We understand this to be a reference to an orbital observatory.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2055", "name": "The Eye"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_THREE_PROJECT', 'Sacred Site: The Monastery', 'According to our sacred texts, was once the location of an ancient monastery.', 180, 'engineering_technology', '[{"event": "nomads.2060", "name": "The Monastery"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_THREE_PROJECT', 'Sacred Site: The Monastery', 'According to our sacred texts, was once the location of an ancient monastery.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2060", "name": "The Monastery"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_FOUR_PROJECT', 'Sacred Site: The Cradle', 'Our ancestors held in high regard. If we have understood the texts correctly, something very important awaits us here.', 180, 'engineering_technology', '[{"event": "nomads.2065", "name": "The Cradle"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_FOUR_PROJECT', 'Sacred Site: The Cradle', 'Our ancestors held in high regard. If we have understood the texts correctly, something very important awaits us here.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2065", "name": "The Cradle"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_FIVE_PROJECT', 'Sacred Site: The Intelligence', 'We have detected an artificial signal originating from these coordinates. Curiously, this is where one of our Sacred Sites is purported to be. The signal contains a coded message which we have transcribed and translated to language.', 180, 'engineering_technology', '[{"event": "nomads.2070", "name": "The Intelligence"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_FIVE_PROJECT', 'Sacred Site: The Intelligence', 'We have detected an artificial signal originating from these coordinates. Curiously, this is where one of our Sacred Sites is purported to be. The signal contains a coded message which we have transcribed and translated to language.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2070", "name": "The Intelligence"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_SIX_PROJECT', 'Sacred Site: The Breathvault', 'According to the Ancestors'' logs, has a natural satellite which serves as a final resting place for elders of our faith.', 180, 'engineering_technology', '[{"event": "nomads.2075", "name": "The Breathvault"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_SIX_PROJECT', 'Sacred Site: The Breathvault', 'According to the Ancestors'' logs, has a natural satellite which serves as a final resting place for elders of our faith.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2075", "name": "The Breathvault"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('SACRED_SITE_SEVEN_PROJECT', 'Sacred Site: The Chasm', 'was feared by our progenitors. Their legends speak of a', 180, 'engineering_technology', '[{"event": "nomads.2080", "name": "The Chasm"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('SACRED_SITE_SEVEN_PROJECT', 'Sacred Site: The Chasm', 'was feared by our progenitors. Their legends speak of a', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2080", "name": "The Chasm"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('SACRED_SITE_EIGHT_PROJECT', 'Sacred Site: The Mirror', 'There is a Sacred Site at this location, its name roughly translated from our ancestral language as the Mirror.
-It is said that the boundary between celestial planes is thinner here, and one may confront other-worldly entities from beyond our universe.', 180, 'engineering_technology', '[{"event": "nomads.2085", "name": "The Mirror"}]');
+It is said that the boundary between celestial planes is thinner here, and one may confront other-worldly entities from beyond our universe.', 180, '0.0', 'engineering_technology', '[{"event": "nomads.2085", "name": "The Mirror"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('THE_SKIN_OF_A_GIANT_PROJECT', '$arkship.1170.name$', 'The Ether Drake scales radiate a palpable power that warrants extreme caution. Any attempt to collect them should proceed carefully, as the remnants of such a creature may still carry unpredictable properties.', 180, 'engineering_technology', '[{"event": "arkship.1175", "name": "Reinforcing the Arkship"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('THE_SKIN_OF_A_GIANT_PROJECT', '$arkship.1170.name$', 'The Ether Drake scales radiate a palpable power that warrants extreme caution. Any attempt to collect them should proceed carefully, as the remnants of such a creature may still carry unpredictable properties.', 180, '0.0', 'engineering_technology', '[{"event": "arkship.1175", "name": "Reinforcing the Arkship"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
+                   (key, name, description, days, cost, department, outcomes_json)
                    VALUES ('ARKSHIP_SPINAL_FRACTURE_PROJECT', 'Reinforce Spinal Mount', 'The installation of the Arkship''s Spinal Mount has introduced dangerous structural stresses along the vessel''s forward hull.
-A Logistics Ship will be dispatched to fully reinforce the affected sections.', 720, NULL, '[{"event": "arkship.100", "name": "Repaired Spine"}]');
+A Logistics Ship will be dispatched to fully reinforce the affected sections.', 720, '0.0', NULL, '[{"event": "arkship.100", "name": "Repaired Spine"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ARKSHIP_NEBULA_MEMORY_PROJECT', 'Map the Resonance Profile', 'The memory fog affecting the Arkship''s population will persist until we map the resonance profile of .', 360, NULL, '[{"event": "arkship.130", "name": "Memories Restored"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ARKSHIP_NEBULA_MEMORY_PROJECT', 'Map the Resonance Profile', 'The memory fog affecting the Arkship''s population will persist until we map the resonance profile of .', 360, '0.0', NULL, '[{"event": "arkship.130", "name": "Memories Restored"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ARKSHIP_FUNGAL_CONTAMINATION_PROJECT', '$arkship.1215.name$', 'The invasive fungal species spreading through the hydroponics decks of Arkship has rapidly adapted to the ship''s controlled ecosystem. Left unchecked, its dense mycelial networks threaten to significantly reduce food production.', 720, 'society_technology', '[{"event": "arkship.1225", "name": "Mycelial Intelligence"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ARKSHIP_FUNGAL_CONTAMINATION_PROJECT', '$arkship.1215.name$', 'The invasive fungal species spreading through the hydroponics decks of Arkship has rapidly adapted to the ship''s controlled ecosystem. Left unchecked, its dense mycelial networks threaten to significantly reduce food production.', 720, '0.0', 'society_technology', '[{"event": "arkship.1225", "name": "Mycelial Intelligence"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ARKSHIP_FUNGAL_COMMUNICATION_PROJECT', 'Establishing Communication', 'We will attempt to communicate with the invasive fungal species spreading through the hydroponics decks of Arkship . If left unchecked, its dense mycelial networks threaten to significantly reduce food production.', 720, 'society_technology', '[{"event": "arkship.1235", "name": "Shared Roots"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ARKSHIP_FUNGAL_COMMUNICATION_PROJECT', 'Establishing Communication', 'We will attempt to communicate with the invasive fungal species spreading through the hydroponics decks of Arkship . If left unchecked, its dense mycelial networks threaten to significantly reduce food production.', 720, '0.0', 'society_technology', '[{"event": "arkship.1235", "name": "Shared Roots"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('ARKSHIP_ETERNAL_CHORUS_PROJECT', 'Investigate the Crystalline Lattice', NULL, 90, 'society_technology', '[{"event": "arkship.145", "name": "The Eternal Chorus"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('ARKSHIP_ETERNAL_CHORUS_PROJECT', 'Investigate the Crystalline Lattice', NULL, 90, '0.0', 'society_technology', '[{"event": "arkship.145", "name": "The Eternal Chorus"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('A_MYSTERIOUS_SICKNESS_PROJECT', 'Strange Behavior', 'The crew members of Arkship have been acting abnormally for an extended period. Reports suggest their routines have become erratic, with several crew members displaying signs of infatuation and secrecy. Investigation is recommended.', NULL, 'society_technology', '[{"event": "arkship.1055", "name": "Floating Spores"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('A_MYSTERIOUS_SICKNESS_PROJECT', 'Strange Behavior', 'The crew members of Arkship have been acting abnormally for an extended period. Reports suggest their routines have become erratic, with several crew members displaying signs of infatuation and secrecy. Investigation is recommended.', NULL, '1500.0', 'society_technology', '[{"event": "arkship.1055", "name": "Floating Spores"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('UNKNOWN_RESOURCE_USAGE_PROJECT', 'Resource Investigation', 'We need to explore where our resources keep disappearing to.', 180, 'engineering_technology', '[{"event": "arkship.1245", "name": "Unaccounted Generation"}, {"event": "arkship.1255", "name": "Wellness Retreat"}, {"event": "arkship.1265", "name": "Contingency Hoard"}, {"event": "arkship.1270", "name": "Total Reclamation"}, {"event": "arkship.1275", "name": "Beyond the System"}, {"event": "arkship.1250", "name": "Legacy Processes"}, {"event": "arkship.1260", "name": "Unaccounted Aggregation"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('UNKNOWN_RESOURCE_USAGE_PROJECT', 'Resource Investigation', 'We need to explore where our resources keep disappearing to.', 180, '0.0', 'engineering_technology', '[{"event": "arkship.1245", "name": "Unaccounted Generation"}, {"event": "arkship.1255", "name": "Wellness Retreat"}, {"event": "arkship.1265", "name": "Contingency Hoard"}, {"event": "arkship.1270", "name": "Total Reclamation"}, {"event": "arkship.1275", "name": "Beyond the System"}, {"event": "arkship.1250", "name": "Legacy Processes"}, {"event": "arkship.1260", "name": "Unaccounted Aggregation"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STAR_CROSSED_POD_PROJECT', 'Scan the Pod', 'We must carefully scan the object to determine its origin and whether anything inside has survived the long drift through the void.', 180, 'physics_technology', '[{"event": "arkship.1390", "name": "Dearly Beloved"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STAR_CROSSED_POD_PROJECT', 'Scan the Pod', 'We must carefully scan the object to determine its origin and whether anything inside has survived the long drift through the void.', 180, '0.0', 'physics_technology', '[{"event": "arkship.1390", "name": "Dearly Beloved"}]');
 INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, department, outcomes_json)
-                   VALUES ('STAR_CROSSED_SURVIVOR_POD_PROJECT', 'Scan the Survivor Pod', 'We must fly to the indicated system and scan the pod to determine whether its occupant still lives.', 180, 'physics_technology', '[{"event": "arkship.1395", "name": "Last Survivor"}]');
+                   (key, name, description, days, cost, department, outcomes_json)
+                   VALUES ('STAR_CROSSED_SURVIVOR_POD_PROJECT', 'Scan the Survivor Pod', 'We must fly to the indicated system and scan the pod to determine whether its occupant still lives.', 180, '0.0', 'physics_technology', '[{"event": "arkship.1395", "name": "Last Survivor"}]');
 INSERT OR REPLACE INTO outcome (kind, key, tree_json) VALUES ('anomaly', 'AIANOM_CLUE_CAT', '[{"t":"event","id":"aianom.11","title":"L-Gate Insights","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"if","b":[[{"t":"note","text":"The path to the L-Cluster may now be opened."},{"t":"event","id":"distar.10904","title":"L-Gate Insights Gathered","e":[{"t":"event","id":"observer.61","title":"L-Gate Insights Gathered","e":[],"o":[{"name":"OK","cond":false,"e":[]}]}],"o":[{"name":"Good.","cond":false,"e":[{"t":"if","b":[[{"t":"option","k":"tech_lgate_activation","name":"L-Gate Activation"}]],"else":false,"c":[{"leaf":"can_research_technology","value":"tech_lgate_activation"}]}]}]}]],"else":false}]}]}]');
 INSERT OR REPLACE INTO outcome (kind, key, tree_json) VALUES ('anomaly', 'AIANOM_LUMP_CAT', '[{"t":"random","b":[{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.1","title":"Mineral Cache","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"minerals","n":6,"min":100,"max":1000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"minerals","n":12,"min":150,"max":2000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"minerals","n":18,"min":250,"max":5000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"minerals","n":24,"min":350,"max":10000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.2","title":"Energy Credits","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"energy","n":6,"min":100,"max":1000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"energy","n":12,"min":150,"max":2000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"energy","n":18,"min":250,"max":5000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"energy","n":24,"min":350,"max":10000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.3","title":"Physics Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"physics_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"physics_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"physics_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"physics_research","n":48,"min":1000,"max":1000000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.4","title":"Society Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"society_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"society_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"society_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"society_research","n":48,"min":1000,"max":1000000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.5","title":"Engineering Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"engineering_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"engineering_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"engineering_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"engineering_research","n":48,"min":1000,"max":1000000}]}]}]}]}]}]}]');
 INSERT OR REPLACE INTO outcome (kind, key, tree_json) VALUES ('anomaly', 'AIANOM_MININGDEPO_CAT', '[{"t":"random","b":[{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.6","title":"Mineral Deposit","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":6,"cond":false,"e":[{"t":"deposit","k":"d_minerals_2","name":"Minerals +2"}]},{"w":3,"cond":false,"e":[{"t":"deposit","k":"d_minerals_3","name":"Minerals +3"}]},{"w":1,"cond":false,"e":[{"t":"deposit","k":"d_minerals_4","name":"Minerals +4"}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.7","title":"Energy Deposit","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":6,"cond":false,"e":[{"t":"deposit","k":"d_energy_2","name":"Energy +2"}]},{"w":3,"cond":false,"e":[{"t":"deposit","k":"d_energy_3","name":"Energy +3"}]},{"w":1,"cond":false,"e":[{"t":"deposit","k":"d_energy_4","name":"Energy +4"}]}]}]}]}]}]}]');

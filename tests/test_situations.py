@@ -4,7 +4,7 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import event_ids, outcomes_json, stage_keys, stage_modifiers
+from extractor.situations import event_ids, outcomes_json, project_number, stage_keys, stage_modifiers
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
 ANOMALY = """
@@ -65,3 +65,13 @@ class TestOutcomes(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestProjectNumber(unittest.TestCase):
+    def test_forms(self):
+        v = {'@tier2cost1': 1500.0}
+        self.assertEqual(project_number('600', v), 600.0)
+        self.assertEqual(project_number('@tier2cost1', v), 1500.0)
+        self.assertEqual(project_number({'base': '2000', 'modifier': {'factor': '2'}}, v), 2000.0)
+        self.assertIsNone(project_number(None, v))
+        self.assertIsNone(project_number('@unknown', v))

@@ -1243,7 +1243,8 @@ CREATE TABLE special_project (
     key           TEXT PRIMARY KEY,        -- e.g. "GAS_GIANT_BODIES_PROJECT"
     name          TEXT,
     description   TEXT,
-    days          INTEGER,                 -- days_to_research
+    days          INTEGER,                 -- days_to_research (a ship's or fleet's project)
+    cost          REAL,                    -- research cost, its base (the field halts meanwhile)
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
     outcomes_json TEXT                     -- on_success events, as anomaly_category's
 );

@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The format follows
 - `outcome` trees carry the conditions on the player's empire (`c`): an event's own `trigger`, an
   option's conditions, an `if` chain's limits, a weighted branch's modifier. Only what asks
   something of the empire: in a ship or fleet event, only the `owner = { … }` part.
+- `special_project.cost`: a research project's cost (its `base`; 0 for a ship's project).
+
+### Fixed
+
+- `special_project.days` written as an `@variable` was empty (10 projects in 4.5.4).
 
 ## [0.1.18] - 2026-11-15
 
