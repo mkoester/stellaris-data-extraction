@@ -610,7 +610,11 @@ the unconditional `pop_group_modifier` entries (`right_modifiers`; triggered one
 `prescripted_name`: every `PRESCRIPTED_*` / `EMPIRE_DESIGN_*` loc key with its text (528 in 4.5.2).
 Saves name a prescripted empire's ruler, species and empire by these keys. Also the quoted entries
 of `common/random_names/` that are loc keys (`random_name_keys`; 320 in 4.5.2, 848 rows in all):
-saves name some systems by them (`VOIDWORM_SYSTEM_12` = "Papqaqtet").
+saves name some systems by them (`VOIDWORM_SYSTEM_12` = "Papqaqtet"). And the keys of a plain
+`set_name = <key>` in `events/` and `common/` (`set_name_keys`, 2026-11-17; 110 more rows in
+4.5): a save names what an event renamed by its key — the Cutholoids' first contact
+`grand_archive.2800.name` = "False Asteroid". The block form (`set_name = { key = …
+variable_string = … }`) is left out: its text has a variable filled in at run time.
 
 ## Empire focus and leader traits (focus.py, leaders.py)
 

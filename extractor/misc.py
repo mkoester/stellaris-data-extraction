@@ -180,6 +180,17 @@ def random_name_keys(text: str) -> set[str]:
     return set(re.findall(r'"([A-Za-z][A-Za-z0-9_]*)"', text))
 
 
+_SET_NAME = re.compile(r'\bset_name\s*=\s*"?([A-Za-z][A-Za-z0-9_.]*)"?')
+
+
+def set_name_keys(text: str) -> set[str]:
+    """The keys of plain `set_name = <key>` in events and common script: a save names what an
+    event renamed by its key (`grand_archive.2800.name` = "False Asteroid", the Cutholoids' first
+    contact). The block form (`set_name = { key = … variable_string = … }`) fills in a variable
+    at run time, so its text alone would be wrong: not taken."""
+    return set(_SET_NAME.findall(text))
+
+
 def extract_prescripted_names(loc: dict[str, str], name_keys: set[str], w: Writer) -> None:
     for key, text in prescripted_names(loc, name_keys):
         w.execute("INSERT INTO prescripted_name (key, text) VALUES (?, ?)", (key, text))
