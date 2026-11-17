@@ -15,11 +15,18 @@ Effect nodes (`t` is the kind; names resolved from localisation where the game h
   deposit {k, name}, clear_deposits, modifier {k, name, days}, trait {k, name}, xp {n},
   specimen {k, name}, relic {k, name}, pc {k, name}, megastructure {k, name}, leader, pops,
   species, fleet {mine}, kill_leader, destroy, project {k, name}, note {text}
-  random {b: [{w, cond, w_if?, e}]}  a random_list (locked too), a weighted anomaly outcome,
+  random {b: [{w, cond, w_if?, c?, e}]}  a random_list (locked too), a weighted anomaly outcome,
                         `random = { chance }`; w_if: a conditional branch's weight when its
                         modifiers' `add`s hold
-  if {b: [e…], else}    an if/else_if/else chain (branches whose effects are all equal collapse)
-  event {id, title, delay?, e, o: [{name, cond, e}]}  a visible event: immediate/after in e
+  if {b: [e…], else, c?: [trigger|null…]}  an if/else_if/else chain (branches whose effects are
+                        all equal collapse); c: each branch's `limit`
+  event {id, title, delay?, c?, e, o: [{name, cond, c?, e}]}  a visible event: immediate/after
+                        in e; c: the event's own `trigger`, an option's its conditions
+
+`c` is a condition as `triggers.normalize_trigger` writes it, present only where it asks something
+of our empire: in a country-scope event as written, in a ship or fleet event only what is inside
+`owner = { … }`; every other test (the ship, its leader, the planet) is opaque (`complex`). Where
+the scope is unknown there is no `c`.
   later {days, e}       a hidden event fired at least a year later
   ref {id, title}       an event already shown higher up, or past the depth limit
 """
@@ -28,9 +35,11 @@ from pathlib import Path
 import json
 import re
 import sys
+from .clausewitz import Cmp, IfBlock
 from .game_start import parse_ordered
 from .localisation import _clean_loc
 from .mods import top_level_spans
+from .triggers import COMPLEX, _and, _scripted_trigger_index, dlc_trigger_map, normalize_trigger
 
 _EVENT_ID = re.compile(r'^[A-Za-z_][\w]*\.\d+$')
 _EVENT_KEYS = frozenset({
@@ -45,6 +54,8 @@ _TRIGGERS = frozenset({
     'desc', 'title', 'picture', 'mean_time_to_happen', 'abort_trigger', 'exclusive_trigger',
     'response_text', 'is_triggered_only', 'location', 'show_sound', 'trackable'})
 _OPTION_CONDITIONS = ('trigger', 'allow', 'exclusive_trigger', 'potential')
+# the scope an event's body runs in, as far as conditions on our empire go
+_EVENT_SCOPES = {'country_event': 'country', 'ship_event': 'ship', 'fleet_event': 'ship'}
 _SKIPPED = re.compile(r'^tutorial\.')   # the tutorial's popups: a side event, unless the root
 _LATER_DAYS = 360
 MAX_DEPTH = 10
@@ -77,6 +88,66 @@ def _get(entries: list[tuple], key: str):
 def _is_block(v) -> bool:
     """An ordered block ([(key, op, value)]) — not a `limit` parsed as a dict or a token list."""
     return isinstance(v, list) and all(isinstance(x, tuple) and len(x) == 3 for x in v)
+
+
+def as_trigger_dict(entries) -> dict:
+    """An ordered block as the dict parser gives it, for `normalize_trigger`: duplicate keys
+    promoted to a list, comparisons as `Cmp`, an `if` as an `IfBlock` with its `else_if`/`else`
+    chain. A `limit` inside is a dict already."""
+    if isinstance(entries, dict):
+        return entries
+    if not _is_block(entries):
+        return {}
+    out: dict = {}
+    multi: set[str] = set()
+    i = 0
+    while i < len(entries):
+        k, op, v = entries[i]
+        i += 1
+        if op is None or k in ('else_if', 'else'):
+            continue
+        if _is_block(v):
+            v = as_trigger_dict(v)
+        elif isinstance(v, str) and op != '=':
+            v = Cmp(op, v)
+        if k == 'if' and isinstance(v, dict):
+            b = IfBlock(v)
+            while i < len(entries) and entries[i][0] in ('else_if', 'else'):
+                ck, _, cv = entries[i]
+                i += 1
+                b.chain.append((ck, as_trigger_dict(cv)))
+            v = b
+        if k in multi:
+            out[k].append(v)
+        elif k in out:
+            out[k] = [out[k], v]
+            multi.add(k)
+        else:
+            out[k] = v
+    return out
+
+
+def _ours(node: dict | None, ship: bool) -> dict | None:
+    """A normalised condition with `owner = { … }` lifted (ship scope) and every other test of a
+    ship-scope condition opaque."""
+    if node is None:
+        return None
+    if 'lifted' in node:
+        return node['lifted'] or {'leaf': 'always', 'value': 'yes'}
+    if 'op' in node:
+        return {'op': node['op'], 'args': [_ours(a, ship) for a in node['args']]}
+    if ship and node['leaf'] != 'always':
+        return COMPLEX
+    return node
+
+
+def _asks(node: dict | None) -> bool:
+    """Whether a condition tests anything the dashboard might answer (not only opaque parts)."""
+    if node is None:
+        return False
+    if 'op' in node:
+        return any(_asks(a) for a in node['args'])
+    return node != COMPLEX and node.get('value') != 'scope'
 
 
 def expand_inline(entries: list[tuple], load, depth: int = 0) -> list[tuple]:
@@ -140,8 +211,11 @@ class Outcomes:
 
     def __init__(self, events: dict[str, str], effects: dict[str, str], loc: dict[str, str],
                  variables: dict[str, float] | None = None, load_inline=None,
-                 shared: frozenset[str] = frozenset()):
+                 shared: frozenset[str] = frozenset(), dlc_triggers: dict[str, str] | None = None):
         self.events = events
+        self.dlc_triggers = dict(dlc_triggers or {})
+        self.scope: str | None = None   # 'country', 'ship' or unknown, where the walk is
+        self._kinds: dict[str, str] = {}
         self.shared = shared
         self.effects = effects
         self.loc = loc
@@ -181,7 +255,9 @@ class Outcomes:
             entries = None
             if text:
                 parsed = expand_inline(parse_ordered(text), self.load_inline)
-                entries = next((v for k, _, v in parsed if _is_block(v)), None)
+                found = next(((k, v) for k, _, v in parsed if _is_block(v)), None)
+                if found:
+                    self._kinds[eid], entries = found
             self._parsed[eid] = entries
         return self._parsed[eid]
 
@@ -194,11 +270,43 @@ class Outcomes:
         except (ValueError, IndexError):
             return None
 
+    # conditions ----------------------------------------------------------------------------
+
+    def cond(self, block) -> dict | None:
+        """A condition block in the current scope as `c`, or None when it asks nothing of us."""
+        if self.scope is None or block is None:
+            return None
+        ship = self.scope == 'ship'
+
+        def lift(k, v):
+            if ship and k == 'owner' and isinstance(v, dict):
+                return {'lifted': normalize_trigger(v, self.dlc_triggers, self.variables)}
+            return None
+
+        try:
+            t = normalize_trigger(as_trigger_dict(block), self.dlc_triggers, self.variables, lift)
+        except (TypeError, AttributeError, ValueError):
+            return None
+        t = _ours(t, ship)
+        return t if _asks(t) else None
+
+    def _in(self, scope: str | None, fn):
+        prev, self.scope = self.scope, scope
+        try:
+            return fn()
+        finally:
+            self.scope = prev
+
     # walking -------------------------------------------------------------------------------
 
-    def root(self, block, kind: str = 'effect') -> list[dict]:
+    def root(self, block, kind: str = 'effect', scope: str | None = None) -> list[dict]:
         """An `on_success`: an anomaly's weighted list of events (`1 = anomaly.35`,
-        `0 = { modifier = {…} anomaly_event = … }`), a bare event id, or a project's effects."""
+        `0 = { modifier = {…} anomaly_event = … }`), a bare event id, or a project's effects.
+        `scope`: what the block runs in — an anomaly's always a ship, a project's its
+        `event_scope`."""
+        return self._in('ship' if kind == 'anomaly' else scope, lambda: self._root(block, kind))
+
+    def _root(self, block, kind: str) -> list[dict]:
         ctx = _Ctx()
         if isinstance(block, str):
             return self.follow(block, 0, ctx, 0)
@@ -237,7 +345,12 @@ class Outcomes:
             return []
         if has_else and all(b == branches[0] for b in branches):
             return branches[0]
-        return [{'t': 'if', 'b': branches, 'else': has_else}]
+        node = {'t': 'if', 'b': branches, 'else': has_else}
+        limits = [self.cond(_get(b, 'limit')) if _is_block(b) and not (has_else and i == len(chain) - 1)
+                  else None for i, b in enumerate(chain)]
+        if any(limits):
+            node['c'] = limits
+        return [node]
 
     def _random(self, weighted: list[tuple[float, object]], depth, ctx, sdepth=0) -> list[dict]:
         branches = []
@@ -253,6 +366,11 @@ class Outcomes:
             b = {'w': _int_or_float(w), 'cond': cond, 'e': e}
             if cond:
                 b['w_if'] = _int_or_float(w + self._weight_adds(v))
+                mods = [m for k, _, m in v if k == 'modifier' and _is_block(m)]
+                c = self.cond([x for x in mods[0] if x[0] not in ('add', 'factor')]) \
+                    if len(mods) == 1 else None
+                if c:
+                    b['c'] = c
             branches.append(b)
         if len(branches) == 1 and not branches[0]['cond']:
             return branches[0]['e']
@@ -381,7 +499,9 @@ class Outcomes:
                 return self.walk(body, depth, ctx, sdepth + 1) if body else []
             return []
         if _is_block(value):   # a scope: owner = {…}, from = {…}, random_owned_planet = {…}
-            return self.walk(value, depth, ctx, sdepth)
+            # our empire: a ship's owner, or a country's own (owner of a country is itself)
+            inner = 'country' if key == 'owner' and self.scope in ('ship', 'country') else None
+            return self._in(inner, lambda: self.walk(value, depth, ctx, sdepth))
         return []
 
     def follow(self, eid: str, depth: int, ctx: '_Ctx', sdepth: int = 0, delay: int = 0) -> list[dict]:
@@ -396,7 +516,9 @@ class Outcomes:
             return [] if hidden else [{'t': 'ref', 'id': eid, 'title': self.title(eid)}]
         ctx.path.append(eid)
         ctx.count += 1
+        prev_scope, self.scope = self.scope, _EVENT_SCOPES.get(self._kinds.get(eid, ''))
         try:
+            when = self.cond(_get(entries, 'trigger'))
             pre = self.walk(_get(entries, 'immediate') or [], depth + 1, ctx, sdepth)
             post = self.walk(_get(entries, 'after') or [], depth + 1, ctx, sdepth)
             specimen = _get(entries, 'specimen')
@@ -407,12 +529,16 @@ class Outcomes:
                 if k != 'option' or not _is_block(v):
                     continue
                 name = _get(v, 'name')
-                options.append({
-                    'name': self.text(name) if isinstance(name, str) else None,
-                    'cond': any(_get(v, k) is not None for k in _OPTION_CONDITIONS),
-                    'e': self.walk(v, depth + 1, ctx, sdepth)})
+                o = {'name': self.text(name) if isinstance(name, str) else None,
+                     'cond': any(_get(v, k) is not None for k in _OPTION_CONDITIONS)}
+                c = _and([self.cond(_get(v, k)) for k in _OPTION_CONDITIONS])
+                if c:
+                    o['c'] = c
+                o['e'] = self.walk(v, depth + 1, ctx, sdepth)
+                options.append(o)
         finally:
             ctx.path.pop()
+            self.scope = prev_scope
         options = _distinct_options(options)
         if hidden:
             e = pre + [x for o in options[:1] for x in o['e']] + post
@@ -420,6 +546,8 @@ class Outcomes:
                 return []
             return [{'t': 'later', 'days': delay, 'e': e}] if delay >= _LATER_DAYS else e
         node = {'t': 'event', 'id': eid, 'title': self.title(eid), 'e': pre + post, 'o': options}
+        if when:
+            node['c'] = when
         if delay >= _LATER_DAYS:
             node['delay'] = delay
         return [node]
@@ -514,7 +642,8 @@ def load_outcomes(install_dir: Path, loc: dict[str, str], scripted_vars: dict[st
     for f in sorted((install_dir / 'common' / 'scripted_effects').glob('*.txt')):
         effects.update(definition_index(_read(f)))
     shared = frozenset(k for k, n in refs.items() if n >= SHARED_REFS)
-    return Outcomes(events, effects, loc, variables, load_inline, shared)
+    dlc = dlc_trigger_map(_scripted_trigger_index(install_dir))
+    return Outcomes(events, effects, loc, variables, load_inline, shared, dlc)
 
 
 def extract_outcomes(install_dir: Path, oc: Outcomes, w, progress=sys.stderr) -> None:
@@ -543,7 +672,8 @@ def extract_outcomes(install_dir: Path, oc: Outcomes, w, progress=sys.stderr) ->
                 if isinstance(pk, str):
                     projects[pk.strip('"')] = v
     for key, p in sorted(projects.items()):
-        put('project', key, oc.root(_get(p, 'on_success') or []))
+        scope = _EVENT_SCOPES.get(str(_get(p, 'event_scope') or ''))
+        put('project', key, oc.root(_get(p, 'on_success') or [], scope=scope))
 
     for key, site in sorted(_ordered_definitions(common / 'archaeological_site_types').items()):
         if key.startswith('@'):

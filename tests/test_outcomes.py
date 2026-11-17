@@ -36,6 +36,22 @@ ship_event = {
     title = loop.1.name
     option = { name = OK hidden_effect = { ship_event = { id = loop.1 days = 400 } } }
 }
+ship_event = {
+    id = orb.1
+    title = orb.1.name
+    option = { name = orb.1.a }
+    option = {
+        name = orb.1.b
+        trigger = { owner = { has_civic = civic_hive_devouring_swarm } leader = { has_trait = x } }
+        owner = { add_resource = { food = 100 } }
+    }
+}
+country_event = {
+    id = gate.1
+    title = gate.1.name
+    trigger = { is_gestalt = no }
+    option = { name = OK if = { limit = { has_ethic = ethic_xenophile } add_resource = { unity = 10 } } else = { add_resource = { energy = 10 } } }
+}
 country_event = {
     id = story.5
     title = story.5.name
@@ -80,6 +96,34 @@ def make(shared=frozenset()):
 
 def block(text):
     return parse_ordered(text)[0][2]
+
+
+class TestConditions(unittest.TestCase):
+    def test_ship_option_keeps_only_the_owner_part(self):
+        (ev,) = make().root('orb.1', 'anomaly')
+        self.assertNotIn('c', ev['o'][0])
+        self.assertEqual(ev['o'][1]['c'], {'op': 'and', 'args': [
+            {'leaf': 'has_civic', 'value': 'civic_hive_devouring_swarm'},
+            {'leaf': 'complex', 'value': 'yes'}]})
+
+    def test_country_event_trigger_and_if_limits(self):
+        (ev,) = make().root('gate.1')
+        self.assertEqual(ev['c'], {'leaf': 'is_gestalt', 'value': 'no'})
+        (node,) = ev['o'][0]['e']
+        self.assertEqual(node['c'], [{'leaf': 'has_ethic', 'value': 'ethic_xenophile'}, None])
+
+    def test_unknown_scope_writes_no_condition(self):
+        tree = make().root(block('x = { if = { limit = { has_ethic = e } add_resource = { a = 1 } } }'))
+        self.assertNotIn('c', tree[0])
+        tree = make().root(block('x = { if = { limit = { has_ethic = e } add_resource = { a = 1 } } }'),
+                           scope='country')
+        self.assertEqual(tree[0]['c'], [{'leaf': 'has_ethic', 'value': 'e'}])
+
+    def test_a_ship_condition_on_the_ship_alone_is_dropped(self):
+        on_success = block('on_success = { 0 = { modifier = { add = 1 leader = { x = y } } '
+                           'anomaly_event = anomaly.2015 } 1 = anomaly.2020 }')
+        (r,) = make().root(on_success, 'anomaly')
+        self.assertNotIn('c', r['b'][0])
 
 
 class TestOutcomes(unittest.TestCase):
