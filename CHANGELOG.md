@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `contract`: `event_chain`, `steps`, `reward_json` (the operator's reward: scaled trade and
+  resource, fixed influence, trust, opinion), `failed_opinion`, `operator_techs_json` and
+  `description` (`{issuer}` / `{system}` placeholders); `special_project`: `event_chain`,
+  `requirements_json` and `arkship_branches` — what a Nomads contract asks and pays.
 - `planet_class.artificial`: the class's `is_artificial_planet` (arkship, habitats, ring segments,
   crystal habitat), what the trigger `is_artificial` asks.
 - `personality.research_agreement_acceptance` and `commercial_pact_acceptance`, `attitude.alliance`
