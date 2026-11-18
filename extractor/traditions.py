@@ -66,7 +66,18 @@ DEFINE_KEYS = ('TRADITION_COST_AMOUNTS', 'TRADITION_COST_TRADITION', 'TRADITION_
                'LOW_HAPPINESS', 'HIGH_HAPPINESS', 'POP_CRIME', 'HIGH_PLANET_CRIME', 'MAX_PLANET_CRIME',
                # … when the recruitable leaders are replaced, and when a leader levels up
                'LEADER_POOL_REFRESH_TIME', 'LEADER_EXPERIENCE_REQUIREMENT_BASE_VALUE',
-               'LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', 'LEADER_BASE_SKILL_CAP')
+               'LEADER_EXPERIENCE_REQUIREMENT_SCALE_VALUE', 'LEADER_BASE_SKILL_CAP',
+               # … whether an AI accepts a research agreement or a commercial pact
+               'OPINION_GOOD')
+DEFINE_KEYS += tuple(f'{pact}_ACCEPTANCE_{term}'
+                     for pact in ('RESEARCH_AGREEMENT', 'COMMERCIAL_PACT')
+                     for term in ('OPINION_FACTOR', 'ATTITUDE_ALLIANCE', 'ATTITUDE_COEXIST',
+                                  'OTHER_ATTITUDE', 'NUM_PACTS', 'DISTANCE_MULT'))
+DEFINE_KEYS += tuple(f'RESEARCH_AGREEMENT_ACCEPTANCE_{t}'
+                     for t in ('GIVEN_TECHS', 'TAKEN_TECHS', 'TECHS_MIN', 'TECHS_MAX'))
+DEFINE_KEYS += tuple(f'COMMERCIAL_PACT_ACCEPTANCE_{t}'
+                     for t in ('GIVEN_VALUE', 'GIVEN_VALUE_MIN', 'GIVEN_VALUE_MAX', 'TAKEN_VALUE',
+                               'TAKEN_VALUE_MIN', 'TAKEN_VALUE_MAX'))
 # the cosmic storms' maximum per game stage, a default per galaxy size
 DEFINE_KEYS += tuple(f'COSMIC_STORM_{stage}_GAME_SPAWN_MAX_CAP_DEFAULT_{size}_GALAXY'
                      for size in ('TINY', 'SMALL', 'MEDIUM', 'LARGE', 'HUGE')

@@ -1489,14 +1489,18 @@ DROP TABLE IF EXISTS personality;
 CREATE TABLE personality (
     key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
     name              TEXT,
-    trade_willingness REAL
+    trade_willingness REAL,
+    research_agreement_acceptance REAL,  -- added to the acceptance of a research agreement
+    commercial_pact_acceptance    REAL   -- … and of a commercial pact
 );
 -- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
 DROP TABLE IF EXISTS attitude;
 CREATE TABLE attitude (
     key   TEXT PRIMARY KEY,                -- e.g. "cordial"
     name  TEXT,
-    trade INTEGER NOT NULL DEFAULT 0
+    trade INTEGER NOT NULL DEFAULT 0,
+    alliance INTEGER NOT NULL DEFAULT 0,  -- behaviour alliance: pacts' *_ACCEPTANCE_ATTITUDE_ALLIANCE
+    coexist  INTEGER NOT NULL DEFAULT 0   -- behaviour coexist: *_ACCEPTANCE_ATTITUDE_COEXIST
 );
 -- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
 DROP TABLE IF EXISTS opinion_modifier;
@@ -89785,6 +89789,18 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('CLAIM_COST_MAX', '1000.
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_MONTHLY_GROWTH', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COLONY_POPS_REQUIRED', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMAND_LIMIT_MULT_DEFAULT', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_ATTITUDE_ALLIANCE', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_ATTITUDE_COEXIST', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_DISTANCE_MULT', '-0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_GIVEN_VALUE', '-0.5');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_GIVEN_VALUE_MAX', '0.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_GIVEN_VALUE_MIN', '-100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_NUM_PACTS', '-30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_OPINION_FACTOR', '0.4');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_OTHER_ATTITUDE', '0.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_TAKEN_VALUE', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_TAKEN_VALUE_MAX', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('COMMERCIAL_PACT_ACCEPTANCE_TAKEN_VALUE_MIN', '0.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_DEVASTATION_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_HUGE_GALAXY', '4.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('COSMIC_STORM_EARLY_GAME_SPAWN_MAX_CAP_DEFAULT_LARGE_GALAXY', '3.0');
@@ -89860,11 +89876,22 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_WILLINGNESS_TO_OFFE
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('NAVAL_CAPACITY_MULT_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_ACCEPTANCE_ATTITUDE', '-1000.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OFFER_TRADE_MIN_RESOURCE_THRESHOLD', '0.8');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('OPINION_GOOD', '300.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_DECLINE_THRESHOLD', '1.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_MACHINE_DECLINE_THRESHOLD', '1.25');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_ASSEMBLY_THRESHOLD', '1.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('OVERCROWDING_NO_GROWTH_THRESHOLD', '1.15');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('POP_CRIME', '0.02');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_ATTITUDE_ALLIANCE', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_ATTITUDE_COEXIST', '50.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_DISTANCE_MULT', '-0.1');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_GIVEN_TECHS', '-0.5');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_NUM_PACTS', '-30.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_OPINION_FACTOR', '0.4');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_OTHER_ATTITUDE', '0.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_TAKEN_TECHS', '-0.5');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_TECHS_MAX', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('RESEARCH_AGREEMENT_ACCEPTANCE_TECHS_MIN', '-100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('STARBASE_CAPACITY_BASE', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MAX', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_LOYALTY_MIN', '-100.0');
@@ -136283,81 +136310,81 @@ INSERT INTO pop_category_automation (category, resource, amount)
                          VALUES ('complex_drone', 'energy', '8.0');
 INSERT INTO pop_category_automation (category, resource, amount)
                          VALUES ('simple_drone', 'energy', '4.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('spiritual_seekers', 'Spiritual Seekers', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('ruthless_capitalists', 'Ruthless Capitalists', '1.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('peaceful_traders', 'Peaceful Traders', '1.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('hegemonic_imperialists', 'Hegemonic Imperialists', '0.8');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('slaving_despots', 'Slaving Despots', '0.8');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('decadent_hierarchy', 'Decadent Hierarchy', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('democratic_crusaders', 'Democratic Crusaders', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('harmonious_hierarchy', 'Harmonious Collective', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('federation_builders', 'Federation Builders', '0.95');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('xenophobic_isolationists', 'Xenophobic Isolationists', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fanatic_purifiers', 'Fanatical Purifiers', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('hive_mind', 'Hive Mind', '0.7');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('devouring_swarm', 'Devouring Swarm', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('migrating_flock', 'Migratory Flock', '1.1');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('metalhead', 'Metalheads', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('machine_intelligence', 'Machine Intelligence', '0.8');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('assimilators', 'Driven Assimilators', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('exterminators', 'Determined Exterminators', '1.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('servitors', 'Rogue Servitors', '0.9');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fanatic_befrienders', 'Fanatical Befrienders', '1.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('became_the_crisis', 'Crisis Aspirant', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('galactic_defense_force', NULL, NULL);
-INSERT INTO personality (key, name, trade_willingness) VALUES ('imperial_origin_overlord_ai', 'Indolent Overlord', '0.25');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('hive_mind_friend', 'Cooperative Multitude', '0.95');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('decadent_capitalists', 'Benevolent Corporation', '0.75');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('scorching_infernals', 'Blazing Devastators', '0.25');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('hyperthermia_empire', 'Thermarchy', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_spiritualist', 'Holy Guardians', '0.33');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_materialist', 'Keepers of Knowledge', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_xenophobe', 'Militant Isolationists', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_xenophile', 'Enigmatic Observers', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_spiritualist', 'Doctrinal Enforcers', '0.33');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_materialist', 'Watchful Regulators', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_xenophobe', 'Jingoistic Reclaimers', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_xenophile', 'Benevolent Interventionists', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_machine', 'Ancient Caretakers', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_machine', 'Galactic Custodians', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('berserk_fallen_empire_machine', 'Rampaging Machines', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('fallen_empire_hive_mind', 'Shattered Fragment', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_war', 'Reforged Sword', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_growth', 'Reforged Plow', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('awakened_fallen_empire_hive_mind_control', 'Reforged Whip', '0.33');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('pre_ftl_splintered', 'Splintered Species', NULL);
-INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_spiritualist', 'Mirror Empire', '0.33');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_xenophobe', 'Mirror Empire', '0.0');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('mirrored_empire_default', 'Mirror Empire', '0.5');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('benevolent_wilderness', 'Harmonic Wilderness', '0.95');
-INSERT INTO personality (key, name, trade_willingness) VALUES ('rampant_wilderness', 'Rampant Wilderness', '0.0');
-INSERT INTO attitude (key, name, trade) VALUES ('neutral', 'Neutral', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('wary', 'Wary', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('receptive', 'Receptive', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('unfriendly', 'Suspicious', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('rival', 'Rival', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('hostile', 'Hostile', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('domineering', 'Domineering', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('cordial', 'Cordial', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('friendly', 'Friendly', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('protective', 'Protective', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('loyal', 'Loyal', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('disloyal', 'Disloyal', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('overlord', 'Overlord', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('threatened', 'Threatened', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('dismissive', 'Dismissive', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('patronizing', 'Patronizing', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('angry', 'Angry', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('arrogant', 'Arrogant', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('imperious', 'Imperious', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('belligerent', 'Belligerent', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('custodial', 'Custodial', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('enigmatic', 'Enigmatic', 1);
-INSERT INTO attitude (key, name, trade) VALUES ('berserker', 'Berserk', 0);
-INSERT INTO attitude (key, name, trade) VALUES ('null', 'None', 0);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('honorbound_warriors', 'Honorbound Warriors', '0.7', '0.0', '-20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('evangelising_zealots', 'Evangelizing Zealots', '0.75', '-20.0', '-20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('erudite_explorers', 'Erudite Explorers', '0.9', '50.0', '10.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('spiritual_seekers', 'Spiritual Seekers', '0.9', '10.0', '10.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('ruthless_capitalists', 'Ruthless Capitalists', '1.0', '10.0', '20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('peaceful_traders', 'Peaceful Traders', '1.0', '10.0', '20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('hegemonic_imperialists', 'Hegemonic Imperialists', '0.8', '-10.0', '-10.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('slaving_despots', 'Slaving Despots', '0.8', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('decadent_hierarchy', 'Decadent Hierarchy', '0.9', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('democratic_crusaders', 'Democratic Crusaders', '0.9', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('harmonious_hierarchy', 'Harmonious Collective', '0.9', '10.0', '10.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('federation_builders', 'Federation Builders', '0.95', '15.0', '15.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('xenophobic_isolationists', 'Xenophobic Isolationists', '0.5', '-20.0', '-20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fanatic_purifiers', 'Fanatical Purifiers', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('hive_mind', 'Hive Mind', '0.7', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('devouring_swarm', 'Devouring Swarm', '0.0', '-1000.0', '-1000.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('migrating_flock', 'Migratory Flock', '1.1', '20.0', '20.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('metalhead', 'Metalheads', '0.0', '-1000.0', '-1000.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('machine_intelligence', 'Machine Intelligence', '0.8', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('assimilators', 'Driven Assimilators', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('exterminators', 'Determined Exterminators', '1.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('servitors', 'Rogue Servitors', '0.9', '0.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fanatic_befrienders', 'Fanatical Befrienders', '1.0', '50.0', '50.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('became_the_crisis', 'Crisis Aspirant', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('galactic_defense_force', NULL, NULL, NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('imperial_origin_overlord_ai', 'Indolent Overlord', '0.25', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('hive_mind_friend', 'Cooperative Multitude', '0.95', '10.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('decadent_capitalists', 'Benevolent Corporation', '0.75', '10.0', '50.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('scorching_infernals', 'Blazing Devastators', '0.25', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('hyperthermia_empire', 'Thermarchy', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_spiritualist', 'Holy Guardians', '0.33', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_materialist', 'Keepers of Knowledge', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_xenophobe', 'Militant Isolationists', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_xenophile', 'Enigmatic Observers', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_spiritualist', 'Doctrinal Enforcers', '0.33', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_materialist', 'Watchful Regulators', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_xenophobe', 'Jingoistic Reclaimers', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_xenophile', 'Benevolent Interventionists', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_machine', 'Ancient Caretakers', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_machine', 'Galactic Custodians', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('berserk_fallen_empire_machine', 'Rampaging Machines', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('fallen_empire_hive_mind', 'Shattered Fragment', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_hive_mind_war', 'Reforged Sword', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_hive_mind_growth', 'Reforged Plow', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('awakened_fallen_empire_hive_mind_control', 'Reforged Whip', '0.33', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('pre_ftl_splintered', 'Splintered Species', NULL, NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('mirrored_empire_spiritualist', 'Mirror Empire', '0.33', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('mirrored_empire_xenophobe', 'Mirror Empire', '0.0', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('mirrored_empire_default', 'Mirror Empire', '0.5', NULL, NULL);
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('benevolent_wilderness', 'Harmonic Wilderness', '0.95', '10.0', '0.0');
+INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES ('rampant_wilderness', 'Rampant Wilderness', '0.0', '-1000.0', '-1000.0');
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('neutral', 'Neutral', 1, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('wary', 'Wary', 1, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('receptive', 'Receptive', 1, 0, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('unfriendly', 'Suspicious', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('rival', 'Rival', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('hostile', 'Hostile', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('domineering', 'Domineering', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('cordial', 'Cordial', 1, 0, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('friendly', 'Friendly', 1, 1, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('protective', 'Protective', 1, 0, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('loyal', 'Loyal', 1, 1, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('disloyal', 'Disloyal', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('overlord', 'Overlord', 1, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('threatened', 'Threatened', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('dismissive', 'Dismissive', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('patronizing', 'Patronizing', 1, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('angry', 'Angry', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('arrogant', 'Arrogant', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('imperious', 'Imperious', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('belligerent', 'Belligerent', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('custodial', 'Custodial', 1, 1, 1);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('enigmatic', 'Enigmatic', 1, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('berserker', 'Berserk', 0, 0, 0);
+INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES ('null', 'None', 0, 0, 0);
 INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)
                VALUES ('opinion_cheat', 'Cheat', '1.0', 0, NULL, NULL, NULL);
 INSERT INTO opinion_modifier (key, name, opinion, accumulative, min, max, decay)

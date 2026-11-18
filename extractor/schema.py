@@ -1494,14 +1494,18 @@ DROP TABLE IF EXISTS personality;
 CREATE TABLE personality (
     key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
     name              TEXT,
-    trade_willingness REAL
+    trade_willingness REAL,
+    research_agreement_acceptance REAL,  -- added to the acceptance of a research agreement
+    commercial_pact_acceptance    REAL   -- … and of a commercial pact
 );
 -- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
 DROP TABLE IF EXISTS attitude;
 CREATE TABLE attitude (
     key   TEXT PRIMARY KEY,                -- e.g. "cordial"
     name  TEXT,
-    trade INTEGER NOT NULL DEFAULT 0
+    trade INTEGER NOT NULL DEFAULT 0,
+    alliance INTEGER NOT NULL DEFAULT 0,  -- behaviour alliance: pacts' *_ACCEPTANCE_ATTITUDE_ALLIANCE
+    coexist  INTEGER NOT NULL DEFAULT 0   -- behaviour coexist: *_ACCEPTANCE_ATTITUDE_COEXIST
 );
 -- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
 DROP TABLE IF EXISTS opinion_modifier;

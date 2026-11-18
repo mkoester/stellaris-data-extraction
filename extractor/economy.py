@@ -60,8 +60,13 @@ def automation_upkeep(data, variables: dict[str, float]) -> dict[str, float]:
 
 def attitude_trades(data: dict) -> int:
     """An attitude's `behaviour = { trade = yes }`: the AI considers trade deals at all."""
+    return attitude_behaviour(data, 'trade')
+
+
+def attitude_behaviour(data: dict, key: str) -> int:
+    """An attitude's `behaviour = { <key> = yes }` (trade, alliance, coexist, …)."""
     b = data.get('behaviour')
-    return flag(b.get('trade')) if isinstance(b, dict) else 0
+    return flag(b.get(key)) if isinstance(b, dict) else 0
 
 
 def slot_count(value) -> int:
@@ -106,14 +111,17 @@ def extract_economy(install_dir: Path, loc: dict[str, str], scripted_vars: dict[
 
     personalities = _load(common / 'personalities', scripted_vars)
     for key, (data, pvars, _) in personalities.items():
-        w.execute("INSERT INTO personality (key, name, trade_willingness) VALUES (?, ?, ?)",
+        w.execute("INSERT INTO personality (key, name, trade_willingness, research_agreement_acceptance, commercial_pact_acceptance) VALUES (?, ?, ?, ?, ?)",
                   (key, ctx.text(f'personality_{key}'),
-                   _resolve_var(data.get('trade_willingness'), pvars)))
+                   _resolve_var(data.get('trade_willingness'), pvars),
+                   _resolve_var(data.get('research_agreement_acceptance'), pvars),
+                   _resolve_var(data.get('commercial_pact_acceptance'), pvars)))
 
     attitudes = _load(common / 'attitudes', scripted_vars)
     for key, (data, _, _) in attitudes.items():
-        w.execute("INSERT INTO attitude (key, name, trade) VALUES (?, ?, ?)",
-                  (key, ctx.text(f'attitude_{key}'), attitude_trades(data)))
+        w.execute("INSERT INTO attitude (key, name, trade, alliance, coexist) VALUES (?, ?, ?, ?, ?)",
+                  (key, ctx.text(f'attitude_{key}'), attitude_trades(data),
+                   attitude_behaviour(data, 'alliance'), attitude_behaviour(data, 'coexist')))
 
     opinions = _load(common / 'opinion_modifiers', scripted_vars)
     for key, (data, ovars, _) in opinions.items():

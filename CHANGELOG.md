@@ -10,6 +10,9 @@ All notable changes to this project are documented here. The format follows
 
 - `planet_class.artificial`: the class's `is_artificial_planet` (arkship, habitats, ring segments,
   crystal habitat), what the trigger `is_artificial` asks.
+- `personality.research_agreement_acceptance` and `commercial_pact_acceptance`, `attitude.alliance`
+  and `coexist`, and the defines `RESEARCH_AGREEMENT_ACCEPTANCE_*`, `COMMERCIAL_PACT_ACCEPTANCE_*`
+  and `OPINION_GOOD`: what an AI's acceptance of either pact is made of.
 
 ## [0.1.20] - 2026-11-17
 
