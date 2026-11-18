@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.economy import (attitude_trades, automation_upkeep, base_value, category_parent, opinion_row,
+from extractor.economy import (attitude_behaviour, attitude_trades, automation_upkeep, base_value, category_parent, opinion_row,
                                resource_row, slot_count)
 
 
@@ -45,6 +45,12 @@ class TestEconomyHelpers(unittest.TestCase):
     def test_attitude_trades(self):
         self.assertEqual(attitude_trades(parse('a = { behaviour = { trade = yes coexist = yes } }')['a']), 1)
         self.assertEqual(attitude_trades(parse('a = { behaviour = { weaken = yes } }')['a']), 0)
+
+    def test_attitude_behaviour(self):
+        # friendly (common/attitudes/attitudes.txt, 4.5.4): alliance and coexist
+        a = parse('a = { behaviour = { trade = yes alliance = yes coexist = yes } }')['a']
+        self.assertEqual((attitude_behaviour(a, 'alliance'), attitude_behaviour(a, 'coexist')), (1, 1))
+        self.assertEqual(attitude_behaviour(parse('a = { behaviour = { } }')['a'], 'coexist'), 0)
 
     def test_slot_count(self):
         s = parse('l = { module_slots = { 1 2 } building_slots = { 1 } }')['l']

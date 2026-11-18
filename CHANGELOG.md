@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.21] - 2026-11-18
+
+### Added
+
+- `contract`: `event_chain`, `steps`, `reward_json` (the operator's reward: scaled trade and
+  resource, fixed influence, trust, opinion), `failed_opinion`, `operator_techs_json` and
+  `description` (`{issuer}` / `{system}` placeholders); `special_project`: `event_chain`,
+  `requirements_json` and `arkship_branches` — what a Nomads contract asks and pays.
+- `planet_class.artificial`: the class's `is_artificial_planet` (arkship, habitats, ring segments,
+  crystal habitat), what the trigger `is_artificial` asks.
+- `personality.research_agreement_acceptance` and `commercial_pact_acceptance`, `attitude.alliance`
+  and `coexist`, and the defines `RESEARCH_AGREEMENT_ACCEPTANCE_*`, `COMMERCIAL_PACT_ACCEPTANCE_*`
+  and `OPINION_GOOD`: what an AI's acceptance of either pact is made of.
+
 ## [0.1.20] - 2026-11-17
 
 ### Added

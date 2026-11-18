@@ -5,6 +5,8 @@ A contract is a mission whose category (common/missions/mission_categories) has
 `inline_script = contracts/…`."""
 
 from pathlib import Path
+import json
+import re
 import sys
 from .clausewitz import Parser, parse_file, tokenize
 from .localisation import _clean_loc
@@ -50,6 +52,133 @@ def days(raw, variables: dict[str, float]) -> int | None:
     return int(v) if v is not None else None
 
 
+def _blocks(v) -> list:
+    return v if isinstance(v, list) else [v]
+
+
+def _walk(node, visit, load) -> None:
+    """Every (key, value) under `node`, nested inline scripts expanded (`$PARAM$` substituted)."""
+    if isinstance(node, list):
+        for x in node:
+            _walk(x, visit, load)
+        return
+    if not isinstance(node, dict):
+        return
+    for k, v in node.items():
+        if k == 'inline_script':
+            for ref in _blocks(v):
+                ref = ref if isinstance(ref, dict) else {'script': ref}
+                text = load(str(ref.get('script', '')).strip('"'))
+                if text is None:
+                    continue
+                for pk, pv in ref.items():
+                    if pk != 'script':
+                        text = text.replace(f'${pk}$', str(pv).strip('"'))
+                _walk(Parser(tokenize(text)).parse(), visit, load)
+            continue
+        for b in _blocks(v):
+            visit(k, b)
+        _walk(v, visit, load)
+
+
+def _num(v, variables: dict[str, float]) -> float | None:
+    if isinstance(v, str) and v.startswith('@'):
+        return variables.get(v)
+    return _resolve_modifier_float(v)
+
+
+def reward(on_success, variables: dict[str, float], load) -> dict | None:
+    """What a contract pays its operator on success. `scaled`: each
+    `contract_scaling_reward_effect` (trade plus a resource, both × `contract_bonus_value`), the
+    first the full reward — military contracts carry a smaller second one for a partial success;
+    `cruise`: Forever Cruise's trade (`cruise_contract_scaling_reward_effect`); `fixed`: plain
+    `add_resource` (the influence `@opinion_contract_*`), one with a `mult` left out; `trust`,
+    `opinion`: from the `trustN` / `opinionN` tooltips. None: nothing found. Pure."""
+    out: dict = {'scaled': [], 'cruise': None, 'fixed': {}, 'trust': None, 'opinion': None}
+
+    def visit(k, b):
+        if k == 'contract_scaling_reward_effect' and isinstance(b, dict):
+            out['scaled'].append({'trade': _num(b.get('TRADE'), variables),
+                                  'resource': _key(b.get('RESOURCE')),
+                                  'amount': _num(b.get('RESOURCE_AMOUNT'), variables)})
+        elif k == 'cruise_contract_scaling_reward_effect' and isinstance(b, dict):
+            out['cruise'] = _num(b.get('TRADE'), variables)
+        elif k == 'add_resource' and isinstance(b, dict) and 'mult' not in b:
+            for r, a in b.items():
+                if (n := _num(a, variables)) is not None:
+                    out['fixed'][r] = out['fixed'].get(r, 0) + n
+        elif k == 'custom_tooltip' and isinstance(b, str):
+            for name in ('trust', 'opinion'):
+                if b.startswith(name) and b[len(name):].isdigit() and out[name] is None:
+                    out[name] = int(b[len(name):])
+
+    _walk(on_success, visit, load)
+    found = out['scaled'] or out['cruise'] is not None or out['fixed'] or out['trust'] or out['opinion']
+    return out if found else None
+
+
+def failed_opinion(on_cancel, variables: dict[str, float], load) -> float | None:
+    """The issuer's opinion change when the contract fails or is cancelled: its
+    `opinion_failed_contract_<size>` modifier, whose base is `@opinion_failed_contract_<size>`."""
+    found: list[float] = []
+
+    def visit(k, b):
+        if k == 'add_opinion_modifier' and isinstance(b, dict):
+            m = _key(b.get('modifier')) or ''
+            if m.startswith('opinion_failed_contract') and (v := variables.get(f'@{m}')) is not None:
+                found.append(v)
+
+    _walk(on_cancel, visit, load)
+    return min(found) if found else None
+
+
+def operator_techs(possible_operator) -> list[str]:
+    """The techs `possible_operator` asks for at its top level (`has_technology = tech_…`)."""
+    if not isinstance(possible_operator, dict):
+        return []
+    return [t for v in _blocks(possible_operator.get('has_technology')) if (t := _key(v))]
+
+
+def desc_key(m: dict, key: str) -> str:
+    """The operator's description key: `desc_operator` or `desc` (a block's first `text`), else
+    `<key>_desc` — the game's default."""
+    for field in ('desc_operator', 'desc'):
+        for v in _blocks(m.get(field)):
+            k = _key(v.get('text')) if isinstance(v, dict) else _key(v)
+            if k:
+                return k
+    return f'{key}_desc'
+
+
+# A contract's scopes in its description: `from` the issuer, `fromfrom` the contract's system.
+# {issuer} and {system} are filled in by the dashboard; the rest become plain words.
+_DESC_SCOPES = {
+    'from.getname': '{issuer}',
+    'fromfrom.getname': '{system}',
+    'from.capital_scope.getname': "{issuer}'s capital",
+    'from.capital_scope.solar_system.getname': 'home',  # "… in the home system"
+    'capital_scope.getname': 'our capital',
+    'owner.getscientistcapital': 'our capital',
+}
+_SCOPE_TAG = re.compile(r'\[([A-Za-z_.:0-9]+)\]')
+
+
+def desc_scopes(text: str) -> str:
+    """Scope tags the dashboard can fill ([From.GetName] → {issuer}); others are left to
+    `_clean_loc`, which drops them. Pure."""
+    return _SCOPE_TAG.sub(lambda m: _DESC_SCOPES.get(m.group(1).lower(), m.group(0)), text)
+
+
+def steps(counter) -> int | None:
+    """The progress a contract needs: its first counter's `max` (Espionage Support 2: 2)."""
+    if not isinstance(counter, dict):
+        return None
+    for v in counter.values():
+        if isinstance(v, dict) and (n := _resolve_modifier_float(v.get('max'))) is not None:
+            return int(n)
+    return None
+
+
 # ── Extraction ────────────────────────────────────────────────────────────────
 
 def extract_contracts(install_dir: Path, loc: dict[str, str], load, w: Writer,
@@ -77,9 +206,18 @@ def extract_contracts(install_dir: Path, loc: dict[str, str], load, w: Writer,
             if category not in cats:
                 continue
             raw = loc.get(key)
+            r = reward(m.get('on_success'), variables, load)
+            techs = operator_techs(m.get('possible_operator'))
             w.execute(
-                "INSERT OR REPLACE INTO contract (key, name, category, time_to_accept, time_to_complete) VALUES (?, ?, ?, ?, ?)",
+                """INSERT OR REPLACE INTO contract
+                   (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
+                    reward_json, failed_opinion, operator_techs_json, description)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (key, _clean_loc(raw, loc) if raw else None, category,
-                 days(m.get('time_to_accept'), variables), days(m.get('time_to_complete'), variables)))
+                 days(m.get('time_to_accept'), variables), days(m.get('time_to_complete'), variables),
+                 _key(m.get('event_chain')), steps(m.get('counter')),
+                 json.dumps(r) if r else None, failed_opinion(m.get('on_cancel'), variables, load),
+                 json.dumps(techs) if techs else None,
+                 _clean_loc(desc_scopes(d), loc) if (d := loc.get(desc_key(m, key))) else None))
             n += 1
     print(f"  {n} contracts ({len(cats)} contract categories)", file=progress)

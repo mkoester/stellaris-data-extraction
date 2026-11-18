@@ -81,6 +81,21 @@ def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
 
+def requirements(block) -> dict | None:
+    """A project's `requirements = { … }` as plain values: `carries_colony = 1` (an arkship),
+    `shipclass_science_ship = 1`, `leader = scientist`. A nested block stays as parsed. Pure."""
+    if not isinstance(block, dict) or not block:
+        return None
+    return {k: (int(f) if (f := _resolve_modifier_float(v)) is not None and f == int(f) else
+                f if f is not None else _key(v) if isinstance(v, str) else v)
+            for k, v in block.items()}
+
+
+def branches_on_arkship(block) -> bool:
+    """Whether a project's outcome depends on the arkship type that does it."""
+    return any(t in repr(block) for t in ('is_science_arkship', 'is_military_arkship', 'is_civilian_arkship'))
+
+
 # ── Extraction ────────────────────────────────────────────────────────────────
 
 def _files(d: Path) -> list[Path]:
@@ -149,11 +164,15 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             days = project_number(p.get('days_to_research'), variables)
             w.execute(
                 """INSERT OR REPLACE INTO special_project
-                   (key, name, description, days, cost, department, outcomes_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                   (key, name, description, days, cost, department, outcomes_json,
+                    event_chain, requirements_json, arkship_branches)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (key, _text(loc, key), _text(loc, f'{key}_DESC', True),
                  None if days is None else int(days), project_number(p.get('cost'), variables),
-                 _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc, title)))
+                 _key(p.get('tech_department')), outcomes_json(p.get('on_success'), loc, title),
+                 _key(p.get('event_chain')),
+                 json.dumps(r) if (r := requirements(p.get('requirements'))) else None,
+                 int(branches_on_arkship(p.get('on_success')))))
             n_proj += 1
 
     print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages ({n_mod} modifiers), "

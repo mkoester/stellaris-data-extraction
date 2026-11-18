@@ -461,6 +461,7 @@ CREATE TABLE planet_class (
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
     ideal       INTEGER NOT NULL DEFAULT 0,  -- ideal = yes: full habitability (Gaia); empire dashboard
+    artificial  INTEGER NOT NULL DEFAULT 0,  -- is_artificial_planet = yes (trigger `is_artificial`): arkship, habitats, rings
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
@@ -1246,7 +1247,10 @@ CREATE TABLE special_project (
     days          INTEGER,                 -- days_to_research (a ship's or fleet's project)
     cost          REAL,                    -- research cost, its base (the field halts meanwhile)
     department    TEXT,                    -- physics_technology / society_technology / engineering_technology
-    outcomes_json TEXT                     -- on_success events, as anomaly_category's
+    outcomes_json TEXT,                    -- on_success events, as anomaly_category's
+    event_chain   TEXT,                    -- e.g. "contract_colony_startup_chain" (contract.event_chain)
+    requirements_json TEXT,                -- what must be there, e.g. {"carries_colony": 1} (an arkship), {"shipclass_science_ship": 1, "leader": "scientist"}
+    arkship_branches INTEGER NOT NULL DEFAULT 0 -- 1: on_success differs by arkship type (is_science_arkship / is_military_arkship)
 );
 -- What anomaly categories, special projects and dig sites lead to: their events followed down to
 -- the effects (extractor/outcomes.py documents the node kinds), for the empire dashboard.
@@ -1275,7 +1279,13 @@ CREATE TABLE contract (
     name             TEXT,                 -- e.g. "Remote Physics Research"
     category         TEXT NOT NULL,        -- e.g. "resource_contract", "science_contract_internal"
     time_to_accept   INTEGER,              -- days an offer stays open; NULL = no limit
-    time_to_complete INTEGER               -- days to finish once accepted; NULL = no limit
+    time_to_complete INTEGER,              -- days to finish once accepted; NULL = no limit
+    event_chain      TEXT,                 -- its special projects share it (special_project.event_chain)
+    steps            INTEGER,              -- progress needed (the first counter's max): Espionage Support 2 → 2
+    reward_json      TEXT,                 -- {"scaled":[{"trade","resource","amount"}…] (× contract_bonus_value; a 2nd = partial success), "cruise", "fixed":{res:n}, "trust", "opinion"}; NULL: none found
+    failed_opinion   REAL,                 -- the issuer's opinion of us on failure or cancel, e.g. -75
+    operator_techs_json TEXT,              -- techs the operator needs (possible_operator), e.g. ["tech_mine_volatile_motes"]
+    description      TEXT                  -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
 );
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
@@ -1493,14 +1503,18 @@ DROP TABLE IF EXISTS personality;
 CREATE TABLE personality (
     key               TEXT PRIMARY KEY,    -- e.g. "peaceful_traders"
     name              TEXT,
-    trade_willingness REAL
+    trade_willingness REAL,
+    research_agreement_acceptance REAL,  -- added to the acceptance of a research agreement
+    commercial_pact_acceptance    REAL   -- … and of a commercial pact
 );
 -- AI attitudes; trade = 0 refuses every trade deal (OFFER_TRADE_ACCEPTANCE_ATTITUDE).
 DROP TABLE IF EXISTS attitude;
 CREATE TABLE attitude (
     key   TEXT PRIMARY KEY,                -- e.g. "cordial"
     name  TEXT,
-    trade INTEGER NOT NULL DEFAULT 0
+    trade INTEGER NOT NULL DEFAULT 0,
+    alliance INTEGER NOT NULL DEFAULT 0,  -- behaviour alliance: pacts' *_ACCEPTANCE_ATTITUDE_ALLIANCE
+    coexist  INTEGER NOT NULL DEFAULT 0   -- behaviour coexist: *_ACCEPTANCE_ATTITUDE_COEXIST
 );
 -- Opinion modifiers, base values (conditional factors left out); e.g. opinion_trade_gift.
 DROP TABLE IF EXISTS opinion_modifier;
