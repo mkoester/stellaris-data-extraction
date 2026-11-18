@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `planet_class.artificial`: the class's `is_artificial_planet` (arkship, habitats, ring segments,
+  crystal habitat), what the trigger `is_artificial` asks.
+
 ## [0.1.20] - 2026-11-17
 
 ### Added

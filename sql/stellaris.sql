@@ -456,6 +456,7 @@ CREATE TABLE planet_class (
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
     ideal       INTEGER NOT NULL DEFAULT 0,  -- ideal = yes: full habitability (Gaia); empire dashboard
+    artificial  INTEGER NOT NULL DEFAULT 0,  -- is_artificial_planet = yes (trigger `is_artificial`): arkship, habitats, rings
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
@@ -33295,98 +33296,98 @@ INSERT OR REPLACE INTO origin
                     ascension_blocks, starting_colony, forces_home_system, icon, sort_order)
                VALUES ('origin_nomadic_subject', 'Voidroamers', 'No effects', NULL, 0, NULL, NULL, NULL, 0, 'gfx/interface/icons/origins/origin_nomadic_settled.dds', 76);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_desert', 'Desert World', 'dry', 1, 1, 0, 0);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_desert', 'Desert World', 'dry', 1, 1, 0, 0, 0);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_arid', 'Arid World', 'dry', 1, 1, 0, 1);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_arid', 'Arid World', 'dry', 1, 1, 0, 0, 1);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_savannah', 'Savanna World', 'dry', 1, 1, 0, 2);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_savannah', 'Savanna World', 'dry', 1, 1, 0, 0, 2);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_tropical', 'Tropical World', 'wet', 1, 1, 0, 3);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_tropical', 'Tropical World', 'wet', 1, 1, 0, 0, 3);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_continental', 'Continental World', 'wet', 1, 1, 0, 4);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_continental', 'Continental World', 'wet', 1, 1, 0, 0, 4);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_ocean', 'Ocean World', 'wet', 1, 1, 0, 5);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_ocean', 'Ocean World', 'wet', 1, 1, 0, 0, 5);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_tundra', 'Tundra World', 'cold', 1, 1, 0, 6);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_tundra', 'Tundra World', 'cold', 1, 1, 0, 0, 6);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_arctic', 'Arctic World', 'cold', 1, 1, 0, 7);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_arctic', 'Arctic World', 'cold', 1, 1, 0, 0, 7);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_alpine', 'Alpine World', 'cold', 1, 1, 0, 8);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_alpine', 'Alpine World', 'cold', 1, 1, 0, 0, 8);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_volcanic', 'Volcanic World', 'dry', 1, 1, 0, 9);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_volcanic', 'Volcanic World', 'dry', 1, 1, 0, 0, 9);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_gas_giant', 'Gas Giant', NULL, 0, 0, 0, 10);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_gas_giant', 'Gas Giant', NULL, 0, 0, 0, 0, 10);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_asteroid', 'Asteroid', NULL, 0, 0, 0, 11);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_asteroid', 'Asteroid', NULL, 0, 0, 0, 0, 11);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_molten', 'Molten World', NULL, 0, 0, 0, 12);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_molten', 'Molten World', NULL, 0, 0, 0, 0, 12);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_barren', 'Barren World', NULL, 0, 0, 0, 13);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_barren', 'Barren World', NULL, 0, 0, 0, 0, 13);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_barren_cold', 'Barren World', NULL, 0, 0, 0, 14);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_barren_cold', 'Barren World', NULL, 0, 0, 0, 0, 14);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_toxic', 'Toxic World', NULL, 0, 0, 0, 15);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_toxic', 'Toxic World', NULL, 0, 0, 0, 0, 15);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_frozen', 'Frozen World', NULL, 0, 0, 0, 16);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_frozen', 'Frozen World', NULL, 0, 0, 0, 0, 16);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_nuked', 'Tomb World', NULL, 1, 0, 0, 17);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_nuked', 'Tomb World', NULL, 1, 0, 0, 0, 17);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_hive', 'Hive World', NULL, 1, 0, 1, 18);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_hive', 'Hive World', NULL, 1, 0, 1, 0, 18);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_machine', 'Machine World', NULL, 1, 0, 0, 19);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_machine', 'Machine World', NULL, 1, 0, 0, 0, 19);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_gaia', 'Gaia World', NULL, 1, 0, 1, 20);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_gaia', 'Gaia World', NULL, 1, 0, 1, 0, 20);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_nanotech', 'Nanite World', NULL, 1, 0, 0, 21);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_nanotech', 'Nanite World', NULL, 1, 0, 0, 0, 21);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_ringworld_habitable', 'Ring Segment', 'artificial', 1, 0, 1, 22);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_ringworld_habitable', 'Ring Segment', 'artificial', 1, 0, 1, 1, 22);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_shattered_ring_habitable', 'Shattered Ring Segment', 'artificial', 1, 0, 0, 23);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_shattered_ring_habitable', 'Shattered Ring Segment', 'artificial', 1, 0, 0, 1, 23);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_habitat', 'Orbital Habitat', 'artificial', 1, 0, 0, 24);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_habitat', 'Orbital Habitat', 'artificial', 1, 0, 0, 1, 24);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_cosmogenesis_world', 'Synaptic Lathe', 'artificial', 1, 0, 0, 25);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_cosmogenesis_world', 'Synaptic Lathe', 'artificial', 1, 0, 0, 1, 25);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_crystal_habitat', NULL, NULL, 1, 0, 1, 26);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_crystal_habitat', NULL, NULL, 1, 0, 1, 1, 26);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_warden_guardian', NULL, NULL, 1, 0, 1, 27);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_warden_guardian', NULL, NULL, 1, 0, 1, 1, 27);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_city', 'Ecumenopolis', 'dry', 1, 0, 1, 28);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_city', 'Ecumenopolis', 'dry', 1, 0, 1, 0, 28);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 0, 29);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_relic', 'Relic World', 'dry', 1, 0, 0, 0, 29);
 INSERT OR REPLACE INTO planet_class
-                   (key, name, climate, colonizable, is_standard, ideal, sort_order)
-               VALUES ('pc_ark', 'Arkship', 'artificial', 1, 1, 0, 30);
+                   (key, name, climate, colonizable, is_standard, ideal, artificial, sort_order)
+               VALUES ('pc_ark', 'Arkship', 'artificial', 1, 1, 0, 1, 30);
 INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ai_01', '[]');
 INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ai_02', '[]');
 INSERT OR REPLACE INTO graphical_culture (key, ship_kinds_json) VALUES ('ancient', '[]');

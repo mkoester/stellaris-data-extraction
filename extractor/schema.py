@@ -461,6 +461,7 @@ CREATE TABLE planet_class (
     colonizable INTEGER NOT NULL DEFAULT 0,
     is_standard INTEGER NOT NULL DEFAULT 0,  -- initial = yes (default startable climate)
     ideal       INTEGER NOT NULL DEFAULT 0,  -- ideal = yes: full habitability (Gaia); empire dashboard
+    artificial  INTEGER NOT NULL DEFAULT 0,  -- is_artificial_planet = yes (trigger `is_artificial`): arkship, habitats, rings
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 
