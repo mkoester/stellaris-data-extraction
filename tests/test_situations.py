@@ -4,7 +4,8 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import event_ids, outcomes_json, project_number, stage_keys, stage_modifiers
+from extractor.situations import (event_ids, is_permanent, outcomes_json, project_number, stage_keys,
+                                  stage_modifiers)
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
 ANOMALY = """
@@ -20,6 +21,12 @@ on_success = {
 
 
 class TestStages(unittest.TestCase):
+    def test_permanent(self):
+        # situation_nomad_economy: `permanent = yes`; most situations say nothing
+        self.assertTrue(is_permanent(Parser(tokenize('permanent = yes stages = {}')).parse()))
+        self.assertFalse(is_permanent(Parser(tokenize('stages = {}')).parse()))
+        self.assertFalse(is_permanent(Parser(tokenize('permanent = no')).parse()))
+
     # shaped like situation_nomad_economy (common/situations/14_nomads_situations.txt)
     def test_file_order(self):
         data = Parser(tokenize("""stages = {

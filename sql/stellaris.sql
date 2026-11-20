@@ -1207,7 +1207,9 @@ CREATE TABLE situation (
     key         TEXT PRIMARY KEY,          -- e.g. "situation_alloys_deficit"
     name        TEXT,
     description TEXT,
-    category    TEXT                       -- positive / negative / neutral
+    category    TEXT,                      -- positive / negative / neutral
+    permanent   INTEGER NOT NULL DEFAULT 0 -- 1: never ends at either extreme (`permanent = yes`:
+                                           -- Operational Reserves, Passenger Satisfaction)
 );
 CREATE TABLE situation_approach (
     situation_key TEXT NOT NULL,
@@ -125650,8 +125652,8 @@ INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_ord
                VALUES ('exploration_rewards_9', 'exploration', '200.0', '[{"tech":"tech_sapient_ai","when":null}]', 28);
 INSERT OR REPLACE INTO focus_reward (key, category, cost, options_json, sort_order)
                VALUES ('exploration_rewards_10', 'exploration', '220.0', '[{"tech":"tech_jump_drive_1","when":null}]', 29);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_living_snow', 'Unusual Snow', 'Snow has begun congregating outside of one of the main colonial settlements on , a desert planet where snow is a decidedly unusual occurrence.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_living_snow', 'Unusual Snow', 'Snow has begun congregating outside of one of the main colonial settlements on , a desert planet where snow is a decidedly unusual occurrence.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_living_snow', 'situation_snow_hostile', 'Melt it. All.', NULL, 0, 0);
@@ -125664,8 +125666,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_living_snow', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_living_snow', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_mysterious_labyrinth', 'The Mysterious Labyrinth', 'We have discovered a suspicious, seemingly alien labyrinth on . It is unclear how or why it got there.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_mysterious_labyrinth', 'The Mysterious Labyrinth', 'We have discovered a suspicious, seemingly alien labyrinth on . It is unclear how or why it got there.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_mysterious_labyrinth', 'approach_investigate', 'Explore its Interior', NULL, 0, 0);
@@ -125688,8 +125690,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_mysterious_labyrinth', 'stage_2_alt', 'Stage II', 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_mysterious_labyrinth', 'stage_3_alt', 'Stage III', 4);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('leviathan_celebration_opportunity', 'Opportunity', 'After defeating the , we believe that a on focusing on the we secured would be very beneficial to our empire.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('leviathan_celebration_opportunity', 'Opportunity', 'After defeating the , we believe that a on focusing on the we secured would be very beneficial to our empire.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('leviathan_celebration_opportunity', 'approach_encourage', 'Encourage it', NULL, 1, 0);
@@ -125705,8 +125707,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('leviathan_celebration_opportunity', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('leviathan_celebration_opportunity', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_gravity_well', 'Gravity Well', 'The has left its stable orbit and is now spiraling into the system''s black hole. While the incident offers us a never-before-seen opportunity to harvest Dark Matter and Physics Research, if we don''t act fast to counteract the gravitational pull of the black hole, the station will soon be swallowed whole.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_gravity_well', 'Gravity Well', 'The has left its stable orbit and is now spiraling into the system''s black hole. While the incident offers us a never-before-seen opportunity to harvest Dark Matter and Physics Research, if we don''t act fast to counteract the gravitational pull of the black hole, the station will soon be swallowed whole.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_gravity_well', 'approach_retreat', 'Retreat', NULL, 0, 0);
@@ -125742,9 +125744,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_gravity_well', 'gravity_well_no_return', 'country_situations_physics_research_produces_add', '20.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_situations_physics_research_produces_add', 'Monthly Physics Research', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_geomagnetic_storm', 'Geomagnetic Storm', 'An increase in solar activity is weakening ''s magnetosphere, exposing our machines to dangerous levels of ionizing radiation. Invest in radiation hardening techniques to shield our drones against damage until the storm subsides.
-The situation will end in month(s).', 'negative');
+The situation will end in month(s).', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_geomagnetic_storm', 'protect_everydrone', 'Shield All Drones', NULL, 0, 0);
@@ -125763,8 +125765,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_geomagnetic_storm', 'radiation_damage_mid', 'RadiAt1on d4mAGe: mEDiUm', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_geomagnetic_storm', 'radiation_damage_high', 'HhhhAhahDiation Dam4ge: hhhhhhhhhH', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_tainted_voidspawn', 'Contamination on', 'Our supply has been contaminated with the acidic venom from the Voidspawn.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_tainted_voidspawn', 'Contamination on', 'Our supply has been contaminated with the acidic venom from the Voidspawn.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_tainted_voidspawn', 'approach_clean_the_contaminant', 'Clean it', NULL, 1, 0);
@@ -125773,8 +125775,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_tainted_voidspawn', 'approach_study_the_contaminant', 'Study it', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_tainted_voidspawn', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_stellarite_infested_star', 'Infested', 'Our star, , has been acting extremely oddly recently, generating a lot less energy than usual. If this is not remedied soon we could be facing ecological disaster!', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_stellarite_infested_star', 'Infested', 'Our star, , has been acting extremely oddly recently, generating a lot less energy than usual. If this is not remedied soon we could be facing ecological disaster!', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_stellarite_infested_star', 'approach_search_for_a_cure', 'Search for a Cure', NULL, 1, 0);
@@ -125789,9 +125791,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_stellarite_infested_star', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_stellarite_infested_star', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_kaleidoscope', 'The Kaleidoscope', 'A colorful energy parasite is infecting our power grid, feasting on our energy supplies. We could indulge it, or use an Espionage Operation to pass this problem to another empire.
-.', 'neutral');
+.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_kaleidoscope', 'approach_no_food', 'Do not feed it', 'Lowers mood. A starved Kaleidoscope will lash out and give us trouble.', 1, 0);
@@ -125803,8 +125805,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_kaleidoscope', 'approach_a_lot_of_food', 'Overfeed it', 'Greatly improves mood. An overstuffed Kaleidoscope will give us no trouble, but it will cost us dearly.', 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_kaleidoscope', 'kaleidoscope_progress', 'Overload', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_negative_mass', 'Plight of the Beta-Universe', 'We have been confronted with a terrible situation inside the ''Beta-Universe'' and must now decide if we are to stand aside or assist the doomed dimension.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_negative_mass', 'Plight of the Beta-Universe', 'We have been confronted with a terrible situation inside the ''Beta-Universe'' and must now decide if we are to stand aside or assist the doomed dimension.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_negative_mass', 'approach_save_b_world', 'Bring -Beta to our universe', NULL, 0, 0);
@@ -125822,29 +125824,29 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_negative_mass', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_negative_mass', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('divination_visitors', 'Sign of the Visitor', 'It is the will of the Shroud that your worlds be visited. Whether these strangers bring ill tidings or not is a mystery yet to be experienced.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('divination_visitors', 'Sign of the Visitor', 'It is the will of the Shroud that your worlds be visited. Whether these strangers bring ill tidings or not is a mystery yet to be experienced.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('divination_visitors', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('divination_visitors', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('divination_locus', 'Sign of the Locus', 'It is the will of the Shroud that the space around you take on new forms. Tread carefully but boldly, and consider what marvels may lie on the paths ahead.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('divination_locus', 'Sign of the Locus', 'It is the will of the Shroud that the space around you take on new forms. Tread carefully but boldly, and consider what marvels may lie on the paths ahead.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('divination_locus', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('divination_locus', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('shroudwalker_spy_network', 'Shroudwalker Insight', 'The will peer into the Shroud in hopes of gaining insight into the inner workings of the .', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('shroudwalker_spy_network', 'Shroudwalker Insight', 'The will peer into the Shroud in hopes of gaining insight into the inner workings of the .', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('shroudwalker_spy_network', 'into_the_unknown', 'Into the Unknown', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('shroudwalker_spy_network', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('relentless_industrialists_situation', 'Environmental Deterioration of', 'If we take no action, our exploitation of will rapidly render it a Tomb World. We must decide where we stand on this issue: will we have to change our ways, or is this an acceptable - or even desirable - price of industrial progress?', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('relentless_industrialists_situation', 'Environmental Deterioration of', 'If we take no action, our exploitation of will rapidly render it a Tomb World. We must decide where we stand on this issue: will we have to change our ways, or is this an acceptable - or even desirable - price of industrial progress?', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('relentless_industrialists_situation', 'approach_take_no_action', 'Take No Action', NULL, 1, 0);
@@ -125860,8 +125862,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('relentless_industrialists_situation', 'stage_cataclysm_1', 'Environmental Upheaval', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('relentless_industrialists_situation', 'stage_cataclysm_2', 'Irreversible Cataclysm', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_toxic_knights', 'Quest for the Toxic God', 'Founded centuries ago by the first ruler of our world, the Order has one purpose: to search tirelessly for the Toxic God. Much has changed since its creation, but the Order lives on as does its Quest, to search from the smallest corner of our home world to the farthest reaches of the galaxy.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_toxic_knights', 'Quest for the Toxic God', 'Founded centuries ago by the first ruler of our world, the Order has one purpose: to search tirelessly for the Toxic God. Much has changed since its creation, but the Order lives on as does its Quest, to search from the smallest corner of our home world to the farthest reaches of the galaxy.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_toxic_knights', 'situation_toxic_knights_regular', 'Regular Funding', NULL, 1, 0);
@@ -125887,8 +125889,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_toxic_knights', 'stage_7', 'Stage VII', 6);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_toxic_knights', 'stage_8', 'Stage VIII', 7);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_energy_deficit', 'Energy Shortages', 'Our energy deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_energy_deficit', 'Energy Shortages', 'Our energy deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_energy_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -125930,8 +125932,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_energy_deficit', 'deficit_fourth', 'planet_jobs_produces_mult', '-0.1', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_mineral_deficit', 'Mineral Shortages', 'Our mineral deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_mineral_deficit', 'Mineral Shortages', 'Our mineral deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_mineral_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -125946,8 +125948,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_mineral_deficit', 'deficit_third', 'Severe Deficit', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_mineral_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_food_deficit', 'Food Shortages', 'Our food deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_food_deficit', 'Food Shortages', 'Our food deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_food_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -125962,8 +125964,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_food_deficit', 'deficit_third', 'Severe Deficit', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_food_deficit', 'deficit_fourth', 'Catastrophic Deficit', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_consumer_goods_deficit', 'Consumer Goods Shortages', 'Our consumer goods deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_consumer_goods_deficit', 'Consumer Goods Shortages', 'Our consumer goods deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_consumer_goods_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -126002,8 +126004,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_consumer_goods_deficit', 'deficit_fourth', 'country_unity_produces_mult', '-0.6', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_alloys_deficit', 'Alloys Shortages', 'Our alloys deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_alloys_deficit', 'Alloys Shortages', 'Our alloys deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_alloys_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -126111,8 +126113,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_alloys_deficit', 'deficit_fourth', 'habitat_stability_add', '-30.0', 7);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('habitat_stability_add', 'Stability on Habitats', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_rare_crystals_deficit', 'Rare Crystal Shortages', 'Our rare crystals deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_rare_crystals_deficit', 'Rare Crystal Shortages', 'Our rare crystals deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_rare_crystals_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -126166,8 +126168,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_rare_crystals_deficit', 'deficit_fourth', 'ship_sensor_range_add', '-3.0', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_volatile_motes_deficit', 'Volatile Motes Shortages', 'Our volatile motes deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_volatile_motes_deficit', 'Volatile Motes Shortages', 'Our volatile motes deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_volatile_motes_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -126233,8 +126235,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_volatile_motes_deficit', 'deficit_fourth', 'weapon_type_kinetic_weapon_damage_mult', '-0.9', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('weapon_type_kinetic_weapon_damage_mult', 'Kinetic Weapon Damage', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_exotic_gases_deficit', 'Exotic Gas Shortages', 'Our exotic gases deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_exotic_gases_deficit', 'Exotic Gas Shortages', 'Our exotic gases deficit is out of control! We will have to cut back on our expenditures or increase our income, failing which we will face ever bigger penalties.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_exotic_gases_deficit', 'deficit_approach_do_nothing', 'Maintain Current Expenditures', 'This approach will have no effect.', 1, 0);
@@ -126280,8 +126282,8 @@ INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modif
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ship_speed_mult', 'Sublight Speed', 1);
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_exotic_gases_deficit', 'deficit_fourth', 'terraform_speed_mult', '-0.8', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_planetary_revolt', 'Planetary Revolt on', NULL, 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_planetary_revolt', 'Planetary Revolt on', NULL, 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_planetary_revolt', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
@@ -126299,8 +126301,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_planetary_revolt', 'revolt_severity_3', 'Escalating Turmoil', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_planetary_revolt', 'revolt_severity_4', 'Imminent Crisis', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_machine_uprising', 'AI-Related Incidents', 'The robots within our empire are showing worrying signs of independence. We must put them in their place - or invite them to join us among the sentient species of the galaxy.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_machine_uprising', 'AI-Related Incidents', 'The robots within our empire are showing worrying signs of independence. We must put them in their place - or invite them to join us among the sentient species of the galaxy.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_machine_uprising', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
@@ -126324,8 +126326,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_machine_uprising', 'stage_3', 'pop_bonus_workforce_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_terravore_consume_planet', 'Consume', 'We feast: another world''s soil tasted; our hunger yet unsated.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_terravore_consume_planet', 'Consume', 'We feast: another world''s soil tasted; our hunger yet unsated.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_terravore_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);
@@ -126334,33 +126336,33 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_terravore_consume_planet', 'approach_restraint', 'Restraint', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_terravore_consume_planet', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('pre_ftl_tech_progress_situation', 'Technological Progression', 'This civilization is progressing to a new technological age.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('pre_ftl_tech_progress_situation', 'Technological Progression', 'This civilization is progressing to a new technological age.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('pre_ftl_tech_progress_situation', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('pre_ftl_tech_progress_situation', 'high_level', 'I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('mercenary_dividends', 'Mercenary Dividends', 'This enclave is accumulating tribute for their patron.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('mercenary_dividends', 'Mercenary Dividends', 'This enclave is accumulating tribute for their patron.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('mercenary_dividends', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('mercenary_dividends', 'high_level', 'I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('mindwardens_dividends', 'Mindwardens Dividends', 'This enclave is accumulating tribute for their patron.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('mindwardens_dividends', 'Mindwardens Dividends', 'This enclave is accumulating tribute for their patron.', NULL, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('mindwardens_dividends', 'high_level', 'I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('fallen_empires_situation', 'Fallen Empire Behavior', 'Fallen Empire Behavior', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('fallen_empires_situation', 'Fallen Empire Behavior', 'Fallen Empire Behavior', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('fallen_empires_situation', 'approach_revolt_do_nothing', 'Maintain Current Measures', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('fallen_empires_situation', 'high_level', 'I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_shroud_forged', 'Forged by the Shroud', 'After we encountered the Shroud entity known as the Animator of Clay, a significant increase in deviant behavior has emerged throughout the collective network. The afflicted automata - the ''Shroud-Forged'' - now demand special rights and treatment. Our response will define the course of society.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_shroud_forged', 'Forged by the Shroud', 'After we encountered the Shroud entity known as the Animator of Clay, a significant increase in deviant behavior has emerged throughout the collective network. The afflicted automata - the ''Shroud-Forged'' - now demand special rights and treatment. Our response will define the course of society.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_shroud_forged', 'approach_shroud_forged_suppress', 'Suppress', 'Monthly Progress: $@situation_suppress_progress|0$', 0, 0);
@@ -126392,8 +126394,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_shroud_forged', 'stage_shroud_forged_free', 'stage_shroud_forged_free_modifier', '1.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('stage_shroud_forged_free_modifier', 'Chaotic Shroud-Forged', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_last_gift', 'The Last Gift', 'The Fevorians have left us with a dreadful parting gift: initial telemetry has revealed that the final shot of their titanic mass driver was aimed at .', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_last_gift', 'The Last Gift', 'The Fevorians have left us with a dreadful parting gift: initial telemetry has revealed that the final shot of their titanic mass driver was aimed at .', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_last_gift', 'approach_stop_the_bullet', 'Stop the Projectile', NULL, 1, 0);
@@ -126403,8 +126405,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_last_gift', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_last_gift', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_fotd_terraforming', 'Fear of the Dark Terraforming Situation', 'Progress on next terraforming stage.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_fotd_terraforming', 'Fear of the Dark Terraforming Situation', 'Progress on next terraforming stage.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_fotd_terraforming', 'approach_stop_the_bullet', 'Stop the Projectile', NULL, 1, 0);
@@ -126416,8 +126418,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_fotd_terraforming', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_fotd_terraforming', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_observation_insight', 'Observation Insights', 'Our are in the process of gathering Insights from our study subjects. We may discover a new Insight Technology during a breakthrough event.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_observation_insight', 'Observation Insights', 'Our are in the process of gathering Insights from our study subjects. We may discover a new Insight Technology during a breakthrough event.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_observation_insight', 'approach_favor_insights', 'Favor Insights', NULL, 0, 0);
@@ -126429,8 +126431,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_observation_insight', 'approach_favor_mission', 'Favor Mission', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_observation_insight', 'insights', 'Insights', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_pre_ftl_plague', 'Zoonotic Plague', 'A novel zoonotic disease has appeared on . Without natural immunity or the medical technology required to combat the infection, the population is quickly succumbing to misery and death.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_pre_ftl_plague', 'Zoonotic Plague', 'A novel zoonotic disease has appeared on . Without natural immunity or the medical technology required to combat the infection, the population is quickly succumbing to misery and death.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_plague', 'approach_watch_learn', 'Watch and Learn', NULL, 0, 0);
@@ -126446,8 +126448,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_pre_ftl_plague', 'situation_plague_stage_two', 'Second Wave', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_pre_ftl_plague', 'situation_plague_stage_three', 'Fever Broken', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_pre_ftl_singularity', 'Organic Singularity', 'The people on have stumbled across a new type of species. A nodal consciousness with the ability to handle complex operations, interacting with this creature may eventually result in the advent of an Organic Singularity.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_pre_ftl_singularity', 'Organic Singularity', 'The people on have stumbled across a new type of species. A nodal consciousness with the ability to handle complex operations, interacting with this creature may eventually result in the advent of an Organic Singularity.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_singularity', 'approach_watch_singularity', 'Watch and Learn', 'Watching this unfold should provide some interesting insights.', 0, 0);
@@ -126459,8 +126461,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_pre_ftl_singularity', 'approach_promote_singularity', 'Promote Singularity', 'Promoting the Singularity will require a significant investment. Once selected, we will be unable to change this approach.', 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_pre_ftl_singularity', 'situation_singularity_stage_one', 'Advent of the Singularity', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_pre_ftl_nwo', 'New World Order', 'Preaching a radical doctrine of planetary unification, a charismatic leader has appeared on . Now, only a small and relatively ill-equipped band of rebels stands opposed to majoritarian rule.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_pre_ftl_nwo', 'New World Order', 'Preaching a radical doctrine of planetary unification, a charismatic leader has appeared on . Now, only a small and relatively ill-equipped band of rebels stands opposed to majoritarian rule.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_pre_ftl_nwo', 'approach_watch_nwo', 'Watch and Learn', 'Watching this unfold should provide some interesting insights.', 0, 0);
@@ -126478,8 +126480,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_three', 'Power Struggles', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_pre_ftl_nwo', 'situation_nwo_stage_four', 'Final Round', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_sickness', 'Illness Progression', 'The virulent disease known as Feather Rot has affected most of Skrand''s crew. Our forecasts predict a grim outcome. For now, we can only limit the spread of the disease by providing proper care and dealing with the symptoms.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_sickness', 'Illness Progression', 'The virulent disease known as Feather Rot has affected most of Skrand''s crew. Our forecasts predict a grim outcome. For now, we can only limit the spread of the disease by providing proper care and dealing with the symptoms.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_sickness', 'situation_paragon_skrand_sickness_generous', 'Intensive Care', NULL, 1, 0);
@@ -126497,8 +126499,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_sickness', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_sickness', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_cure', 'Cure Progression', 'As with any new disease, lab work is paramount in combating Feather Rot. Research teams are working tirelessly to find a cure, while our medical personnel are fighting to ease symptoms and limit the spread of the disease.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_cure', 'Cure Progression', 'As with any new disease, lab work is paramount in combating Feather Rot. Research teams are working tirelessly to find a cure, while our medical personnel are fighting to ease symptoms and limit the spread of the disease.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_cure', 'situation_paragon_skrand_cure_generous', 'Extensive Research', NULL, 0, 0);
@@ -126510,8 +126512,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_paragon_skrand_cure', 'situation_paragon_skrand_cure_nothing', 'Minimal Research', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_cure', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_integration', 'Command Integration', 'The command integration project focuses on easing infighting within the admiralty, especially between Skrand and our own personnel. Addressing the root causes of the tension could improve the efficacy of our command processes.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_integration', 'Command Integration', 'The command integration project focuses on easing infighting within the admiralty, especially between Skrand and our own personnel. Addressing the root causes of the tension could improve the efficacy of our command processes.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_integration', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126524,8 +126526,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_integration', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_integration', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_upgrade', 'Upgrade The Talon', 'Joint engineering teams have found a way to install additional layers of armor around the most critical parts of the Talon. Given the time and resources, we will certainly succeed in bolstering its defenses.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_upgrade', 'Upgrade The Talon', 'Joint engineering teams have found a way to install additional layers of armor around the most critical parts of the Talon. Given the time and resources, we will certainly succeed in bolstering its defenses.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_upgrade', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126538,8 +126540,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_upgrade', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_upgrade', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_crisis', 'Study The Crisis', 'We are beset by powerful forces that seek to destroy life in the galaxy as we know it. Skrand has offered his expertise as well as relevant data from the Talon''s logs, but it will be some time before we can complete a comprehensive analysis.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_crisis', 'Study The Crisis', 'We are beset by powerful forces that seek to destroy life in the galaxy as we know it. Skrand has offered his expertise as well as relevant data from the Talon''s logs, but it will be some time before we can complete a comprehensive analysis.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_crisis', 'situation_paragon_skrand_generous', 'Generous Funding', NULL, 0, 0);
@@ -126555,8 +126557,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_crisis', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_crisis', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_study', 'Study The Talon', 'By studying the design of the Talon, we can learn from its construction and better help its team with maintenance.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_study', 'Study The Talon', 'By studying the design of the Talon, we can learn from its construction and better help its team with maintenance.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_study', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126565,8 +126567,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_paragon_skrand_study', 'situation_paragon_skrand_low', 'Minimal Funding', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_study', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_rebuild', 'Rebuild The Talon', 'The Talon was destroyed. But given all we have learned, we should be able to use its recovered remains as a base to make it operational once again.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_rebuild', 'Rebuild The Talon', 'The Talon was destroyed. But given all we have learned, we should be able to use its recovered remains as a base to make it operational once again.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_rebuild', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126575,8 +126577,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_paragon_skrand_rebuild', 'situation_paragon_skrand_none', 'No Funding', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_rebuild', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_species', 'New Species', 'Given our expertise in genetics, we should be able to revive Skrand''s people, giving them hope and a fresh start in our empire.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_species', 'New Species', 'Given our expertise in genetics, we should be able to revive Skrand''s people, giving them hope and a fresh start in our empire.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_species', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126587,8 +126589,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_species', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_species', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_paragon_skrand_story', 'Lessons of the Past', 'Studying the history of Skrand and his people via the Talon''s data banks should provide a number of unique insights.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_paragon_skrand_story', 'Lessons of the Past', 'Studying the history of Skrand and his people via the Talon''s data banks should provide a number of unique insights.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paragon_skrand_story', 'situation_paragon_skrand_balanced', 'Balanced Funding', NULL, 1, 0);
@@ -126603,9 +126605,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_story', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paragon_skrand_story', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('paragon_origin_promise', 'The Unifying Promise', 'During the Unification period, swore that one day our people would settle on other planets. To many, that vow has become an almost prophetic promise. Others doubt it will ever become a reality. Recently, and despite advances in FTL technology, some have started using this unfulfilled promise to undermine the rule of .
-The surest way to silence these dissidents is to prove them wrong. We will take to the stars, settle new worlds and expand our borders as much as possible.', 'positive');
+The surest way to silence these dissidents is to prove them wrong. We will take to the stars, settle new worlds and expand our borders as much as possible.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_promise', 'situation_origin_first_promise_expansion', 'Internal Affairs', NULL, 1, 0);
@@ -126620,8 +126622,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('paragon_origin_promise', 'situation_origin_first_promise_engineering', 'New Technologies', NULL, 0, 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_promise', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('paragon_origin_forgotten', 'Dissidence on the Rise', 'Protesters are gathering in front of governmental buildings demanding that hear out their grievances. Most of them are youngsters, but among their leaders are veterans of the Unification. Ignoring their demands may prove unwise.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('paragon_origin_forgotten', 'Dissidence on the Rise', 'Protesters are gathering in front of governmental buildings demanding that hear out their grievances. Most of them are youngsters, but among their leaders are veterans of the Unification. Ignoring their demands may prove unwise.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_forgotten', 'situation_origin_forgotten_propaganda', 'Use Propaganda', NULL, 0, 0);
@@ -126639,8 +126641,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_forgotten', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('paragon_origin_forgotten', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('paragon_origin_reformists_struggle', 'Reformists Demands', 'Under the guise of freedom, the Reformists demagogues are trying to destroy the nation! As violent clashes erupt across our territories, their lies have convinced many of our people to turn on us. They think weak, cruel and incompetent, but we will show them!', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('paragon_origin_reformists_struggle', 'Reformists Demands', 'Under the guise of freedom, the Reformists demagogues are trying to destroy the nation! As violent clashes erupt across our territories, their lies have convinced many of our people to turn on us. They think weak, cruel and incompetent, but we will show them!', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('paragon_origin_reformists_struggle', 'situation_paragon_origin_reformists_struggle_harsh', 'Maintain Control', NULL, 1, 0);
@@ -126671,8 +126673,8 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_origin_reformists_struggle', 'stage_3', 'pop_ethic_egalitarian_attraction_mult', '0.4', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_a_rift_in_space', 'A Rift in Space', 'We have discovered an extraordinary rift in space and time. Perhaps if we take time to study its properties, we can find a way to explore further. We have no way of knowing what may be on the other side.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_a_rift_in_space', 'A Rift in Space', 'We have discovered an extraordinary rift in space and time. Perhaps if we take time to study its properties, we can find a way to explore further. We have no way of knowing what may be on the other side.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_a_rift_in_space', 'situation_a_rift_in_space_standard', 'Study Passively', NULL, 1, 0);
@@ -126686,8 +126688,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_a_rift_in_space', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_a_rift_in_space', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_destroy_crystal_sphere', 'Destroy the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_destroy_crystal_sphere', 'Destroy the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_destroy_crystal_sphere', 'situation_destroy_crystal_sphere_mechanical', 'Mechanical Approach', NULL, 1, 0);
@@ -126696,8 +126698,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_destroy_crystal_sphere', 'situation_destroy_crystal_sphere_astral', 'Astral Approach', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_destroy_crystal_sphere', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_study_crystal_sphere', 'Study the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_study_crystal_sphere', 'Study the Crystal Sphere', 'A mysterious object has appeared. We believe our exploration into the rifts between space and time has drawn the attention of someone, or something.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_study_crystal_sphere', 'situation_study_crystal_sphere_observe', 'Observe and Report', NULL, 1, 0);
@@ -126709,8 +126711,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_study_crystal_sphere', 'situation_study_crystal_sphere_astral', 'Astral Method', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_study_crystal_sphere', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_the_seal', 'The Seal', 'Under assault from an unknown force, the entities currently inhabiting the center of the galaxy have requested our assistance. Should they fall, we know not our fate.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_the_seal', 'The Seal', 'Under assault from an unknown force, the entities currently inhabiting the center of the galaxy have requested our assistance. Should they fall, we know not our fate.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_the_seal', 'situation_the_seal_do_nothing', 'Do Nothing', NULL, 1, 0);
@@ -126722,8 +126724,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_the_seal', 'situation_the_seal_pump_exotic_gases', 'Pump Exotic Gases', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_the_seal', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_initiate_storm', 'Gather the Storm', NULL, 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_initiate_storm', 'Gather the Storm', NULL, 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_initiate_storm', 'approach_situation_initiate_storm_supercharge', 'Supercharge the Star', NULL, 0, 0);
@@ -126755,8 +126757,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_initiate_storm', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_initiate_storm', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_stormfall', 'Stormfall', 'Intense weather has revealed the exhilarating power of storms. If we master their control, we could harness that knowledge on a cosmic scale and call forth a storm of our very own.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_stormfall', 'Stormfall', 'Intense weather has revealed the exhilarating power of storms. If we master their control, we could harness that knowledge on a cosmic scale and call forth a storm of our very own.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_stormfall', 'situation_stormfall_chill', 'Chill', NULL, 0, 0);
@@ -126772,10 +126774,10 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_stormfall', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_stormfall', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_cybernetic_creed_cyberization', 'The Conclave of Fusion', 'Our society has long strived toward a perfect union of and machine and the time for them to take the ultimate journey has come.
 To fuse is divine. Augmentation is worship.
-Pops to receive holy implants next Month:', 'positive');
+Pops to receive holy implants next Month:', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cybernetic_creed_cyberization', 'situation_cybernetic_creed_cyberization_no_funding', 'Church Funded', NULL, 1, 0);
@@ -126797,9 +126799,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cybernetic_creed_cyberization', 'stage_5', 'Stage V', 4);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cybernetic_creed_cyberization', 'stage_6', 'Stage VI', 5);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_synthetic_fertility_digitization', 'Rapid Identity Preservation', 'We cannot bear offspring, but we can preserve our minds. This process is slow but necessary.
-In time, it may be possible for us to return to the physical world, but doing so will require the development of synthetic replacements.', 'negative');
+In time, it may be possible for us to return to the physical world, but doing so will require the development of synthetic replacements.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synthetic_fertility_digitization', 'situation_synthetic_fertility_approach_none', 'Economy First', NULL, 1, 0);
@@ -126817,17 +126819,17 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_synthetic_fertility_digitization', 'situation_synthetic_fertility_approach_unity_high', 'Emergency Measures', NULL, 0, 4);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_synthetic_fertility_digitization', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_synthetic_fertility_synthesization', 'Synthesization', 'We now have the needed technical knowledge to complete the synthesization of our population.
-Pops to receive synthetic bodies next month:', NULL);
+Pops to receive synthetic bodies next month:', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synthetic_fertility_synthesization', 'situation_synthetic_fertility_synthesization_careful', 'Careful Approach', 'Upload speed: 100 Pops per month', 1, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synthetic_fertility_synthesization', 'situation_synthetic_fertility_synthesization_full_speed', 'Full Speed', 'Upload speed: 200 Pops per month', 0, 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_synth_queen_doomclock', 'Cetana''s Work', 'Cetana works to end suffering through the annihilation of consciousness. If we do not stop her in time, she will erase our minds, leaving our bodies as mere husks.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_synth_queen_doomclock', 'Cetana''s Work', 'Cetana works to end suffering through the annihilation of consciousness. If we do not stop her in time, she will erase our minds, leaving our bodies as mere husks.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synth_queen_doomclock', 'situation_doomclock_approach', NULL, NULL, 1, 0);
@@ -126839,10 +126841,10 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_synth_queen_doomclock', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_synth_queen_doomclock', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_synth_queen_player_facing', 'Cetana: The Synthetic Queen', 'The enigmatic and formidable Cetana has emerged, preaching salvation, yet shrouded in mystery.
 What grand design lies beneath her gentle words?
-Special Projects and events related to Cetana will increase your progress and conclude the Situation.', NULL);
+Special Projects and events related to Cetana will increase your progress and conclude the Situation.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_synth_queen_player_facing', 'situation_synth_queen_balanced_approach', 'Balanced Observation', 'Given the unknowns, maintaining stability and composure may prove our wisest course of action.', 1, 0);
@@ -126856,9 +126858,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_synth_queen_player_facing', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_synth_queen_player_facing', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_cyberization', 'Cyberization', 'We will soon be ready to augment our biological bodies with machine parts. The processing power of the brain and the strength of limbs can be increased. The question is who will benefit the most from such augmentation.
-Pops to receive implants next month:', 'neutral');
+Pops to receive implants next month:', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cyberization', 'situation_cyberization_cautious', 'Cautious', NULL, 0, 0);
@@ -126876,10 +126878,10 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cyberization', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cyberization', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_cyberization_hive', 'Cyberization', 'A Hive Mind needs superior bodies. With cybernetic implants, our drones can be perfected, enhanced, remodelled.
 It is time to transcend the limits of our biology.
-Pops to receive implants next month:', 'neutral');
+Pops to receive implants next month:', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cyberization_hive', 'situation_cyberization_cautious', 'Cautious', NULL, 0, 0);
@@ -126897,11 +126899,11 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cyberization_hive', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cyberization_hive', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_paperclips', 'Commodities Consolidation', 'Our primary directive and purpose is output maximization. Meeting the required quotas is mandatory.
 The delivery date is
 The current production target is:
-The current stockpile is:', 'negative');
+The current stockpile is:', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_paperclips', 'situation_fulfill_overdrive', 'Overdrive', NULL, 0, 0);
@@ -126910,9 +126912,9 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_paperclips', 'situation_fulfill_drive', 'Fulfill', NULL, 1, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_paperclips', 'situation_paperclip_stage_1', 'Months Left', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_digitization', 'Synthesization', 'It is time to leave our flawed biological vessels behind. We must prepare advanced machine bodies and perform the process of consciousness transfers.
-Pops to be digitized next month:', 'neutral');
+Pops to be digitized next month:', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_digitization', 'situation_digitization_errorcorrecting', 'Error Correcting', NULL, 0, 0);
@@ -126930,8 +126932,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_digitization', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_digitization', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_transformation', 'Transformation', 'The passive iteration of the mechanical body has come to its logical and inevitable conclusion. A transformative age is upon us, sparked by innovation and oiled by opportunity.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_transformation', 'Transformation', 'The passive iteration of the mechanical body has come to its logical and inevitable conclusion. A transformative age is upon us, sparked by innovation and oiled by opportunity.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_transformation', 'situation_transformation_errorcorrecting', 'Error Correcting', NULL, 0, 0);
@@ -126949,8 +126951,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_transformation', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_transformation', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_nanotech_consume_planet', 'Extract Nanites from', 'Everything, including entire worlds, is destined to be assimilated into our collective, to become a part of us.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_nanotech_consume_planet', 'Extract Nanites from', 'Everything, including entire worlds, is destined to be assimilated into our collective, to become a part of us.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_nanotech_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);
@@ -126959,17 +126961,17 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_nanotech_consume_planet', 'approach_restraint', 'Restraint', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_nanotech_consume_planet', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('voidworm_country_situation', 'Voidworms Behavior', 'Voidworms Behavior', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('voidworm_country_situation', 'Voidworms Behavior', 'Voidworms Behavior', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('voidworm_country_situation', 'approach_voidworm_plague_do_nothing', 'Do Nothing', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('voidworm_country_situation', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_voidworm_plague', 'Voidworm Plague', 'A plague of Voidworms is upon us.
 These creatures will no longer spare host planets as breeding grounds. We must work to eradicate them or our colonies will be at risk.
-Each Voidworm destroyed accelerates Situation progress.', 'neutral');
+Each Voidworm destroyed accelerates Situation progress.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_voidworm_plague', 'approach_voidworm_plague_do_nothing', 'Do Nothing', NULL, 1, 0);
@@ -126988,8 +126990,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_voidworm_plague', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_voidworm_plague', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_sabotage', 'Black Needle Saboteurs', 'A vast network of saboteurs from the Black Needle is hidden among us causing widespread disruption across . Unless we eliminate the saboteurs, the damage will continue until our supply lines collapse.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_sabotage', 'Black Needle Saboteurs', 'A vast network of saboteurs from the Black Needle is hidden among us causing widespread disruption across . Unless we eliminate the saboteurs, the damage will continue until our supply lines collapse.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_sabotage', 'approach_sabotage_do_nothing', 'Do Nothing', NULL, 1, 0);
@@ -127003,9 +127005,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_sabotage', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_sabotage', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_frenzied_voidworms', 'Frenzied Voidworms', 'We discovered a large hive of obviously mutated Voidworms. They exist in a heightened state of aggression, and apparently have the ability to reproduce in a non-parasitic manner.
-Our presence seems to be agitating their nests. We must proceed with caution.', 'neutral');
+Our presence seems to be agitating their nests. We must proceed with caution.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_frenzied_voidworms', 'approach_frenzied_voidworms_do_nothing', 'Do Nothing', NULL, 1, 0);
@@ -127020,8 +127022,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_frenzied_voidworms', 'approach_frenzied_voidworms_feed_nests', 'Feed the Nests', NULL, 0, 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_frenzied_voidworms', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('genetic_ascension_situation', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('genetic_ascension_situation', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('genetic_ascension_situation', 'genetic_ascension_approach_purity', 'Purity', NULL, 0, 0);
@@ -127037,8 +127039,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('genetic_ascension_situation', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('genetic_ascension_situation', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('genetic_ascension_situation_hive', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('genetic_ascension_situation_hive', 'Biomorphosis', 'Natural selection and genetic drift no longer stand between us and biological dominance. As a civilization, we are on the verge of redefining the future of our species. Our is clay, and we are its sculptor.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('genetic_ascension_situation_hive', 'genetic_ascension_approach_purity', 'Purity', NULL, 0, 0);
@@ -127054,8 +127056,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('genetic_ascension_situation_hive', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('genetic_ascension_situation_hive', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('evolutionary_predators_situation', 'Adaptive Evolution', 'Unique Genetic Insights are analyzed and disseminated as we encounter new species. Once finished, we will evolve, permanently adding a new positive Species Trait to our own genetic code.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('evolutionary_predators_situation', 'Adaptive Evolution', 'Unique Genetic Insights are analyzed and disseminated as we encounter new species. Once finished, we will evolve, permanently adding a new positive Species Trait to our own genetic code.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('evolutionary_predators_situation', 'situation_evolutionary_predators_consume', 'Consume', NULL, 0, 0);
@@ -127067,9 +127069,9 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('evolutionary_predators_situation', 'situation_evolutionary_predators_synthesize', 'Synthesize', NULL, 0, 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('evolutionary_predators_situation', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('behemoth_finale_situation', 'Growing Pains', 'It will take some time for us to adjust to a form so massive in scale. As we grow into this body, we must remain aware of our surroundings. There now stands nothing between us and the void.
-Our current Growth Factor is: %', 'positive');
+Our current Growth Factor is: %', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('behemoth_finale_situation', 'behemoth_finale_approach_brawn', 'Fight', 'Monthly Situation Progress: -0.75', 0, 0);
@@ -127095,8 +127097,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('behemoth_finale_situation', 'stage_7', 'Stage VII', 6);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('behemoth_finale_situation', 'stage_8', 'Stage VIII', 7);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_unplugged_identity', 'Embodied Identity', 'Cut loose from the , we must decide how we present ourselves to the galaxy. Shall we embrace the fearsome might of the Machine, or cast off our stigmatic augments? Many voices wish to be heard.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_unplugged_identity', 'Embodied Identity', 'Cut loose from the , we must decide how we present ourselves to the galaxy. Shall we embrace the fearsome might of the Machine, or cast off our stigmatic augments? Many voices wish to be heard.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_unplugged_identity', 'situation_unplugged_identity_open_conversations', 'No Interference', NULL, 1, 0);
@@ -127112,8 +127114,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_unplugged_identity', 'unplugged_identity_stage_2', 'Status Quo', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_unplugged_identity', 'unplugged_identity_stage_3', 'Machine Harmony', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_toxify_world', 'Toxify', 'We have begun the irreversible process of irradiating , promoting the growth of and turning it into a toxic wasteland in the process.', NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_toxify_world', 'Toxify', 'We have begun the irreversible process of irradiating , promoting the growth of and turning it into a toxic wasteland in the process.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_toxify_world', 'approach_toxify_world_georadiation', 'Georadiate', NULL, 1, 0);
@@ -127122,8 +127124,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_toxify_world', 'approach_toxify_world_killswitch', 'Kill Switch', NULL, 0, 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_toxify_world', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_red_giant_expansion', 'Red Giant Expansion', 'The rapid changes in our star''s emissions threaten the stability of our homeworld. If this continues, will eventually go nova, atomizing the system.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_red_giant_expansion', 'Red Giant Expansion', 'The rapid changes in our star''s emissions threaten the stability of our homeworld. If this continues, will eventually go nova, atomizing the system.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_red_giant_expansion', 'approach_reassure_public', 'Reassure the Public', NULL, 1, 0);
@@ -127170,8 +127172,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_red_giant_expansion', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_red_giant_expansion', 'stage_5', 'Stage V', 4);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_cosmic_dawn', 'Deep Excavation', 'Our excavation has revealed subterranean facilities housing advanced technology, archived data, and stasis pods containing more of our dormant kin. Our history itself is buried here; if we can dig it all up, we may finally understand who we are.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_cosmic_dawn', 'Deep Excavation', 'Our excavation has revealed subterranean facilities housing advanced technology, archived data, and stasis pods containing more of our dormant kin. Our history itself is buried here; if we can dig it all up, we may finally understand who we are.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_cosmic_dawn', 'approach_cd_mining', 'Strip Mining', NULL, 0, 0);
@@ -127191,9 +127193,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cosmic_dawn', 'stage_4', 'Stage IV', 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_cosmic_dawn', 'stage_5', 'Stage V', 4);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_galactic_hyperthermia_timer', 'Mobilization', 'Our mastery of Crystallized Entropy will soon allow us to begin a radical transformation of the galaxy. We have opened wormholes to six systems around the galactic core.
-If we establish Conduits in each of these, and defend them from anyone who would meddle with our plans, we will be able to set the galaxy itself ablaze.', NULL);
+If we establish Conduits in each of these, and defend them from anyone who would meddle with our plans, we will be able to set the galaxy itself ablaze.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_galactic_hyperthermia_timer', 'situation_gh_approach_timer', 'Face the Fallout', NULL, 1, 0);
@@ -127201,8 +127203,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_galactic_hyperthermia_timer', 'stage_1', 'Stage I', 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_galactic_hyperthermia_timer', 'stage_2', 'Stage II', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_galactic_hyperthermia', 'Galactic Firestorm', NULL, NULL);
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_galactic_hyperthermia', 'Galactic Firestorm', NULL, NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_galactic_hyperthermia', 'situation_gh_approach_perp', 'Fuel the Fire', NULL, 1, 0);
@@ -127217,9 +127219,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_galactic_hyperthermia', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_galactic_hyperthermia', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_breach_shroud', 'Psionic Ascension', 'Something has awoken inside of us. We are only beginning to understand the implications.
-By unlocking the psionic abilities latent in all , we can transcend the limitations of our physical existence.', 'neutral');
+By unlocking the psionic abilities latent in all , we can transcend the limitations of our physical existence.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_breach_shroud', 'approach_situation_breach_shroud_nothing', 'Watch and Wait', NULL, 1, 0);
@@ -127244,10 +127246,10 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_breach_shroud', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_breach_shroud', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_experimental_testing', 'Experimental Testing', 'By gathering imprisoned and subjecting them to scientific experiments, we can significantly increase the pace of our technological advancement.
 Total number of :
-Build Experimentation Chambers to gain Test Subjects.', 'positive');
+Build Experimentation Chambers to gain Test Subjects.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_experimental_testing', 'situation_experimental_testing_hold', 'Hold Testing', NULL, 1, 0);
@@ -127262,8 +127264,8 @@ INSERT OR REPLACE INTO situation_approach
                        VALUES ('situation_experimental_testing', 'situation_experimental_testing_engineering', 'Engineering', NULL, 0, 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_experimental_testing', 'situation_experimental_testing_stage_1', 'Tests Ongoing', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('end_of_the_cycle', 'The End of the Cycle', 'At the very center of the Shroud dwells the End of the Cycle. An amalgamation of psionic will, it is a great force of balance among the various domains of this dimension. Without ends, there can be no beginnings.', 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('end_of_the_cycle', 'The End of the Cycle', 'At the very center of the Shroud dwells the End of the Cycle. An amalgamation of psionic will, it is a great force of balance among the various domains of this dimension. Without ends, there can be no beginnings.', 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('end_of_the_cycle', 'approach_situation_end_of_the_cycle_let_it_come', 'Let It Come', NULL, 1, 0);
@@ -127281,8 +127283,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('end_of_the_cycle', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('end_of_the_cycle', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_breach_shroud_endbringers', 'Psionic Ascension', NULL, 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_breach_shroud_endbringers', 'Psionic Ascension', NULL, 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_breach_shroud_endbringers', 'approach_situation_breach_shroud_endbringers_nothing', 'Watch and Wait', NULL, 1, 0);
@@ -127298,8 +127300,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_breach_shroud_endbringers', 'stage_2', 'Stage II', 1);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_breach_shroud_endbringers', 'stage_3', 'Stage III', 2);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('end_of_the_cycle_endbringers', 'The End of the Cycle', NULL, 'negative');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('end_of_the_cycle_endbringers', 'The End of the Cycle', NULL, 'negative', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('end_of_the_cycle_endbringers', 'approach_situation_end_of_the_cycle_bring_the_inevitable', 'Bring the Inevitable', NULL, 1, 0);
@@ -127317,8 +127319,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('end_of_the_cycle_endbringers', 'stage_3', 'Stage III', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('end_of_the_cycle_endbringers', 'stage_4', 'Stage IV', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_passenger_satisfaction', 'Passenger Satisfaction', 'This cruise will travel the stars forever by juggling passenger wishes and crew needs. Completing both Passenger or Crew Contracts affect the situation.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_passenger_satisfaction', 'Passenger Satisfaction', 'This cruise will travel the stars forever by juggling passenger wishes and crew needs. Completing both Passenger or Crew Contracts affect the situation.', 'neutral', 1);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_crew', 'Strict Itineraries', NULL, 0, 0);
@@ -127348,9 +127350,9 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_stressed', 'Crew Uprising', 5);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_passenger_satisfaction', 'situation_passenger_satisfaction_stage_mutiny', 'Mutiny', 6);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_core_conspiracy', 'A Core Conspiracy', 'A malfunction born of internal directive conflict has split the AI core aboard Arkship The result is the emergence of two distinct directives, each embodying a divergent philosophy of governance. One prioritizes analytical dominance and ship functionality. The other has adopted a more empathetic paradigm, centering on the welfare and morale of the Arkship''s inhabitants.
-In the end, only one directive can remain.', NULL);
+In the end, only one directive can remain.', NULL, 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_core_conspiracy', 'approach_steris', 'Empower Functionality', NULL, 0, 0);
@@ -127367,8 +127369,8 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_core_conspiracy', 'stage_2_alt', 'Stage II', 3);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_core_conspiracy', 'stage_3_alt', 'Stage III', 4);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_nomad_economy', 'Operational Reserves', 'Our Operational Reserves are our combined energy and mineral reserves.', 'neutral');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_nomad_economy', 'Operational Reserves', 'Our Operational Reserves are our combined energy and mineral reserves.', 'neutral', 1);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_nomad_economy', 'situation_nomad_economy_stringent_budget', 'Conserve', NULL, 1, 0);
@@ -127435,9 +127437,9 @@ INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modif
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_stability_add', 'Stability', 1);
 INSERT OR REPLACE INTO situation_stage_modifier (situation_key, stage_key, modifier_key, modifier_value, sort_order) VALUES ('situation_nomad_economy', 'situation_nomad_economy_stage_3_thriving', 'all_technology_research_speed', '0.1', 1);
-INSERT OR REPLACE INTO situation (key, name, description, category)
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
                    VALUES ('situation_grand_refurbishment', 'The Grand Refurbishment', 'The structural framework of Arkship has been assessed as overdue for comprehensive renovation. Work will continue by section, taking districts offline in sequence and temporarily displacing inhabitants.
-How the project is managed will determine the quality of the outcome.', 'neutral');
+How the project is managed will determine the quality of the outcome.', 'neutral', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_grand_refurbishment', 'approach_refurbishment_minimal', 'Minimal Allocation', NULL, 0, 0);
@@ -127455,15 +127457,15 @@ INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_grand_refurbishment', 'stage_refurbishment_military', 'Ordnance Engineering Overhaul', 2);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_grand_refurbishment', 'stage_refurbishment_city', 'Habitation Decks Overhaul', 3);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_arkship_lithoid_consume_planet', 'Devouring', 'From the Arkship, our lithoid swarms descend in their thousands, feasting on the crust and mantle of this world until nothing remains.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_arkship_lithoid_consume_planet', 'Devouring', 'From the Arkship, our lithoid swarms descend in their thousands, feasting on the crust and mantle of this world until nothing remains.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_arkship_lithoid_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);
 INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
                        VALUES ('situation_arkship_lithoid_consume_planet', 'stage_1', 'Stage I', 0);
-INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES ('situation_arkship_nanotech_consume_planet', 'Subsuming', 'The Arkship releases its nanite swarms to dissolve and claim this world. Rock, soil, and atmosphere are broken down and reassembled into nanites.', 'positive');
+INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES ('situation_arkship_nanotech_consume_planet', 'Subsuming', 'The Arkship releases its nanite swarms to dissolve and claim this world. Rock, soil, and atmosphere are broken down and reassembled into nanites.', 'positive', 0);
 INSERT OR REPLACE INTO situation_approach
                        (situation_key, key, name, tooltip, is_default, sort_order)
                        VALUES ('situation_arkship_nanotech_consume_planet', 'approach_devour', 'Devour', NULL, 1, 0);

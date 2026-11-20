@@ -106,6 +106,12 @@ def _files(d: Path) -> list[Path]:
     return sorted(f for f in d.glob('*.txt') if not f.name.startswith('99_README'))
 
 
+def is_permanent(data: dict) -> bool:
+    """`permanent = yes`: the situation does not end at either extreme (99_README_SITUATIONS.txt).
+    4.5.4: every nomad's Operational Reserves and the Forever Cruise's Passenger Satisfaction."""
+    return data.get('permanent') == 'yes'
+
+
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        progress=sys.stderr, scripted_vars: dict[str, float] | None = None,
                        title=None, load=None) -> None:
@@ -126,9 +132,10 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             if key.startswith('@') or not isinstance(data, dict):
                 continue
             w.execute(
-                """INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES (?, ?, ?, ?)""",
-                (key, _text(loc, key), _text(loc, f'{key}_desc', True), _key(data.get('category'))))
+                """INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (key, _text(loc, key), _text(loc, f'{key}_desc', True), _key(data.get('category')),
+                 1 if is_permanent(data) else 0))
             n_sit += 1
             for order, a in enumerate(_as_blocks(data.get('approach'))):
                 name = _key(a.get('name'))

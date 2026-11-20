@@ -1212,7 +1212,9 @@ CREATE TABLE situation (
     key         TEXT PRIMARY KEY,          -- e.g. "situation_alloys_deficit"
     name        TEXT,
     description TEXT,
-    category    TEXT                       -- positive / negative / neutral
+    category    TEXT,                      -- positive / negative / neutral
+    permanent   INTEGER NOT NULL DEFAULT 0 -- 1: never ends at either extreme (`permanent = yes`:
+                                           -- Operational Reserves, Passenger Satisfaction)
 );
 CREATE TABLE situation_approach (
     situation_key TEXT NOT NULL,
