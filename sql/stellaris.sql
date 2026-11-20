@@ -1198,6 +1198,15 @@ CREATE TABLE system_entry_event (
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
+-- Event chains (common/event_chains): the situation log's entries a country runs and completes —
+-- precursors (`vultaum_chain`, 6 artifacts), the L-Cluster (`l_cluster_chain`, 7 insights).
+DROP TABLE IF EXISTS event_chain;
+CREATE TABLE event_chain (
+    key           TEXT PRIMARY KEY,        -- e.g. "cybrex_chain"
+    title         TEXT,                    -- `<key>_title`: "Precursors - The Cybrex"
+    category      TEXT,                    -- `situation_log_category`: precursors / developments / …
+    counters_json TEXT                     -- [{"key":"cybrex_artifacts","max":6}]; NULL: none
+);
 DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
@@ -130514,6 +130523,606 @@ INSERT OR REPLACE INTO special_project
                    (key, name, description, days, cost, department, outcomes_json,
                     event_chain, requirements_json, arkship_branches)
                    VALUES ('CONTRACT_SIGHTSEEING_TOUR_TRAVEL_PROJECT', 'Travel to Contract Location (Sightseeing Tour)', NULL, 3, NULL, NULL, NULL, 'contract_sightseeing_tour_chain', '{"carries_colony": 1}', 0);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('test_chain', 'Mysteries of', NULL, '[{"key": "test_counter", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('test_chain_2', 'Mysteries of', NULL, NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('migrating_forests_chain', 'Migrating Forests on', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('subterranean_civilization_chain', 'Civilization', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('abandoned_terraforming_chain', 'Abandoned Terraforming Project', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('vultaum_chain', 'Precursors - The Vultaum', 'precursors', '[{"key": "vultaum_artifacts", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('vultaum_homeworld_chain', 'The Vultaum Home System', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('yuht_chain', 'Precursors - The Yuht', 'precursors', '[{"key": "yuht_artifacts", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('yuht_homeworld_chain', 'The Yuht Home System', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('first_league_chain', 'Precursors - The First League', 'precursors', '[{"key": "first_league_artifacts", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('first_league_homeworld_chain', 'The First League Capital System', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('irassian_chain', 'Precursors - The Irassians', 'precursors', '[{"key": "irassian_artifacts", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('irassian_homeworld_chain', 'The Irassian Home System', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cybrex_chain', 'Precursors - The Cybrex', 'precursors', '[{"key": "cybrex_artifacts", "max": 6}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cybrex_homeworld_chain', 'The Cybrex Home System', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('sublight_probes_chain', 'Sublight Exploration Probes', 'developments', '[{"key": "probes_recovered", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('survey_habitable_worlds_chain', 'Habitable Worlds Survey', 'developments', '[{"key": "habitable_worlds_surveyed", "max": 8}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('specimen_procurement_chain', 'Alien Organism Procurement', 'developments', '[{"key": "specimens_collected", "max": 7}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('radical_cult', 'The', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('survey_home_system', 'Survey Home System', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('establish_colony', 'Establish First Colony', NULL, '[{"key": "first_colony", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('asteroid_sighted_chain', 'Asteroid Sighted', 'developments', '[{"key": "asteroid_destroyed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('coming_storm_chain', 'Coming Storm', 'crises', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ghost_signal_chain', 'The Ghost Signal', 'crises', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ai_crisis_chain', 'The Contingency', 'crises', '[{"key": "assimilated_worlds", "max": null}, {"key": "active_machine_worlds", "max": null}, {"key": "contingency_kills_us", "max": null}, {"key": "contingency_kills_others", "max": null}, {"key": "contingency_victims", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('prethoryn_scourge_chain', 'The Scourge of the Void', 'crises', '[{"key": "infested_worlds", "max": null}, {"key": "infested_worlds_cleansed", "max": null}, {"key": "prethoryn_kills_us", "max": null}, {"key": "prethoryn_kills_others", "max": null}, {"key": "prethoryn_victims", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('extradimensional_invasion_chain', 'The Unbidden', 'crises', '[{"key": "dimensional_anchors_1", "max": null}, {"key": "extradimensional_kills_us_1", "max": null}, {"key": "extradimensional_kills_others_1", "max": null}, {"key": "extradimensional_victims_1", "max": null}, {"key": "extradimensional_planets_1", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('extradimensional_invasion_chain_2', 'The Aberrant', 'crises', '[{"key": "dimensional_anchors_2", "max": null}, {"key": "extradimensional_kills_us_2", "max": null}, {"key": "extradimensional_kills_others_2", "max": null}, {"key": "extradimensional_victims_2", "max": null}, {"key": "extradimensional_planets_2", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('extradimensional_invasion_chain_3', 'The Vehement', 'crises', '[{"key": "dimensional_anchors_3", "max": null}, {"key": "extradimensional_kills_us_3", "max": null}, {"key": "extradimensional_kills_others_3", "max": null}, {"key": "extradimensional_victims_3", "max": null}, {"key": "extradimensional_planets_3", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('hunting_hyacinth', 'The Hunt for the Hyacinth', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nomads_observation_chain', 'Unusual Spacefarers', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('enigmatic_fortress_chain', 'The Enigmatic Fortress', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('baol_chain', 'Precursors - The Baol', 'precursors', '[{"key": "baol_colonies", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('feral_overload_chain', 'Feral Overload', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('find_the_curators', 'Remnant of a Remnant', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fumongus_chain', 'The Fungal Trail', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nemma_world_chain', 'Nemma World', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('stratovent_world_chain', 'Stratospheric Vents', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('parvus_III_chain', 'The Inhabitants of Parvus III', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_forged_chain', 'The Zroni Legacy', 'empire_concerns', '[{"key": "shroud_forged_zroni_planet", "max": 3}, {"key": "shroud_forged_zroni_portal", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('old_gods_chain', 'Shrines to the Old Gods', 'developments', '[{"key": "shrines_searched", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('rogue_scientist_1_chain', 'Wanderlust: Rogue Scientist', 'developments', '[{"key": "likely_locations_searched", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('rogue_scientist_2_chain', 'Wanderlust: Hot Pursuit', 'developments', '[{"key": "scientist_pursued", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('rogue_scientist_3_chain', 'Wanderlust: Confrontation', 'developments', '[{"key": "scientist_apprehended", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mass_extinction_chain', 'Mass Extinction Through the Ages', 'developments', '[{"key": "massex_analyzed", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('find_sol_chain', 'Solar Coordinates', 'anomalies', '[{"key": "found", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('amoebas_1_chain', 'Space Amoeba Specimen', NULL, '[{"key": "specimen_procured", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('amoebas_2_chain', 'Space Amoeba Slaughter', NULL, '[{"key": "amoebas_slaughtered", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('crystals_1_chain', 'Crystalline Entity Shard', NULL, '[{"key": "shard_collected", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('crystals_2_chain', 'Crystal Kaleidoscope', NULL, '[{"key": "crystals_shattered", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('drones_1_chain', 'Mining Drone Analysis', NULL, '[{"key": "drone_disassembled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('clouds_1_chain', 'Void Cloud', NULL, '[{"key": "stardust_sifted", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ransomeer_chain', 'The Ransomeers', 'anomalies', '[{"key": "captive_crew_rescued", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mineral_planet_chain', 'High-Value Mining Targets', NULL, '[{"key": "systems_visited", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cloud_chain', 'Drifting Clouds', NULL, '[{"key": "clouds_watched", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('holy_war', 'Holy War', NULL, '[{"key": "profane_planets_seized", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('wrecked_fleet_chain', 'Drifting Battlefield', 'anomalies', '[{"key": "battlefield_located", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('star_power_chain', 'Unusual Star Stuff', 'anomalies', '[{"key": "systems_visited_poi", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('market_founding_chain', 'Founding the Galactic Market', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('market_relocation_chain', 'Relocate Galactic Market', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('clone_fertility_chain', 'Genetic Crossroads', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tiyanki_graveyard_chain', 'Tiyanki Graveyard', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('machine_uprising_chain', 'Inhibit Self-Deterministic AIs', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('snake_infestation_chain', 'Insidious Ophidians', NULL, NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shrouded_ship_chain', 'Shrouded', 'developments', '[{"key": "\"shrouded_ship_discoveries\"", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('homeworlds_chain', 'Finding Home', 'empire_concerns', '[{"key": "found_homeworlds", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('MSI_chain', 'MSI Located', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('whisperers_covenant_chain', 'The Whisperers in the Void', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('eater_covenant_chain', 'The Eater of Worlds', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('composer_covenant_chain', 'The Composer of Strands', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('instrument_covenant_chain', 'The Instrument of Desire', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('myrmeku_chain', 'Myrmeku Activity', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fruitful_partnership_chain', 'Seed Dispersal', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fruitful_partnership_war_chain', 'Seeds Of War', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ideal_furnace_chain', 'Fuel for the Forge', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('toxoid_knights_finisher_chain', 'Toxic God: Location', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('rubricator_chain', 'The Rubricator', 'developments', '[{"key": "rubricator_planet_found", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('rubricator_chain_2', 'The Rubricator', 'developments', '[{"key": "rubricator_dragon_defeated", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('behemoth_crisis_chain', 'Behemoth Crisis', 'ambitions', '[{"key": "crisis_level_reached", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('elder_voidspawn_chain', 'Rampaging Voidspawn', 'ambitions', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('behemoth_victory_chain', 'King of the Monsters', 'ambitions', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('abandoned_hatchery_chain_1', 'Siege of the Citadel', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('abandoned_hatchery_chain_2', 'Siege of the Citadel', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('abandoned_hatchery_chain_3', 'Siege of the Citadel', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('abandoned_hatchery_chain_4', 'Siege of the Citadel', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_inetian_chain', 'Precursors - The Inetian Traders', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_adAkkaria_chain', 'Precursors - The adAkkaria', 'precursors', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_stormfever_chain', 'Storm Fever', 'empire_concerns', '[{"key": "challenges_completed", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_stormfrenzy_chain', 'Storm Frenzy', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_collided_planet_chain', 'The Collided Planet', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_stormbound_chain', 'Stormbound', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_crimson_crawlers_chain', 'We found a planet carpeted in trillions of red insects. A plague, or an opportunity?', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cs_but_they_are_cute_chain', 'But They''re Cute!', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cosmogenesis_chain', 'Cosmogenesis', 'ambitions', '[{"key": "cosmogenesis_level_reached", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cosmogenesis_planet_pickup_chain', 'Cosmogenesis - Exodus', 'ambitions', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('futureshock_chain', 'Future Shock', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('synthshock_chain', 'Digital Refactoring', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('living_planet_chain', 'Unknown Contact', 'anomalies', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ketling_study_chain', 'Ketling Origins', 'anomalies', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('l_cluster_chain', 'The L-Cluster', 'developments', '[{"key": "clues", "max": 7}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('generation_ship_chain', 'The Vechtar Zavonia', 'anomalies', '[{"key": "planet_found", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('star_crazy_chain', 'Energy Emissions', NULL, '[{"key": "corrupt_data_investigated", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('negative_mass', 'Negative Mass', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('chronicles_of_dendrus_chain', 'Chronicles of Dendrus', 'dig_sites', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('georadiation_terraforming_chain', 'Georadiation Terraforming', 'dig_sites', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('intercepting_history_chain', 'Intercepting History', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('relentless_pursuit_chain', 'Relentless Pursuit', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('wenkwort_chain', 'Kept Grounds', 'anomalies', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('dismembered_cloud_chain', 'Flocks of Cloud', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('leylines_chain', 'The Din from Below', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('hegemony_joint_project_chain', 'A Celebration of Unity and Great Leadership', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fotd_chain', 'Fear of the Dark', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_restore_warship_chain', 'Restoring the Warship', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_debt_collectors_chain', 'Debt Collectors', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_make_them_pay_swords_chain', 'Even The Score', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_make_them_pay_words_chain', 'Even The Score', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_make_them_pay_words_1_chain', 'Even The Score', 'empire_concerns', '[{"key": "equal_standing_passed", "max": 1}, {"key": "sanctions_passed", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_make_them_pay_words_2_chain', 'Even The Score', 'empire_concerns', '[{"key": "non_interference_passed", "max": 1}, {"key": "sanctions_passed", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('payback_out_of_warranty_chain', 'Out of Warranty', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cutholoid_discovered_chain', 'Recover', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('treasure_troves_chain', 'Treasure Troves', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('treasure_hunters_origin_story_chain', 'Follow the Mysterious Chart', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('voidworm_crisis_eradicate_chain', 'Eradicate the Voidworms', 'crises', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('WORM_CHAIN_1', 'The Worm-in-Waiting: Signals', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('WORM_CHAIN_2', 'The Worm-in-Waiting: Signs', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('red_giant_event_chain', 'Red Giant', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cosmic_dawn_anomalies_event_chain', 'Interstellar Refugia', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('galactic_hyperthermia_chain', 'Galactic Hyperthermia', 'ambitions', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('curator_poi_chain', 'Mysteries of the Universe', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('technosphere_chain', 'Technosphere', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('synthetic_fertility_chain', 'Synthetic Fertility', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_synth_queen_war_chain', 'Cetana: The Resistance', 'crises', '[{"key": "synth_queen_base_1", "max": null}, {"key": "synth_queen_fleet_1", "max": null}, {"key": "synth_queen_kills_us_1", "max": null}, {"key": "synth_queen_kills_others_1", "max": null}, {"key": "synth_queen_victims_1", "max": null}, {"key": "synth_queen_planets_1", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_synth_queen_history_chain', 'Cetana: The Queen''s Servants', 'crises', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_synth_queen_raids_chain', 'Cetana: Weak Links', 'crises', '[{"key": "synth_queen_raids_outpost", "max": null}, {"key": "synth_queen_raids_convoy", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('cybernetic_creed_chain', 'Cybernetic Creed', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('manifesti_chain', 'Rise of the Manifesti', 'developments', '[{"key": "manifesti_rise", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('become_the_crisis_chain', 'Become the Crisis', 'ambitions', '[{"key": "crisis_level_reached", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('operative_resurfaces_chain', 'Operative Resurfaces', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nomad_checklist_chain', 'Arkship Readiness', 'empire_concerns', '[{"key": "checklist_items", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('champions_forge_tournament_chain', 'Champion''s Forge Live! Tournament', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('defender_of_the_galaxy_chain', 'Defender of the Galaxy', 'developments', '[{"key": "ambition_level_reached", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('defender_of_the_galaxy_ending_chain', 'Preemptive Strike', 'developments', '[{"key": "crisis_defeated", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('heirs_khan_candidate', 'Drums of War', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('sacred_sites_visited_chain', 'The Sacred Path', 'empire_concerns', '[{"key": "sacred_sites_surveyed", "max": -1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('an_old_container_chain', 'An Old Container', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('a_mysterious_sickness_chain', 'A Mysterious Sickness', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('a_forgotten_level_chain', 'A Forgotten Level', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_forgetting_chain', 'The Forgetting', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('arkship_eternal_chorus_chain', 'The Eternal Chorus', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fungal_contamination_chain', 'Fungal Contamination', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('arkship_diplomatic_envoy_chain', 'Diplomatic Overture', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('clues_chrysanthemum', 'Clues of the Chrysanthemum', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_minerals_chain', 'Harvest: Minerals', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_energy_chain', 'Harvest: Energy', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_consumer_goods_chain', 'Harvest: Consumer Goods', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_alloys_chain', 'Harvest: Alloys', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_volatile_motes_chain', 'Harvest: Volatile Motes', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_exotic_gases_chain', 'Harvest: Exotic Gases', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_rare_crystals_chain', 'Harvest: Rare Crystals', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_sr_living_metal_chain', 'Harvest: Living Metal', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_harvest_nanites_chain', 'Harvest: Nanites', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_find_resources_energy_internal_chain', 'Energy Cache', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_find_resources_minerals_internal_chain', 'Mineral Cache', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_find_resources_alloys_internal_chain', 'Alloy Cache', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_scientific_observation_physics_research_internal_chain', NULL, 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_scientific_observation_engineering_research_internal_chain', NULL, 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_passenger_1_chain', 'Sun Trip', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_passenger_2_chain', 'Stellar Observatory', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_passenger_3_chain', 'Sunside Regatta', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_passenger_4_chain', 'Solar Spa Retreat', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_passenger_5_chain', 'Starlight Gala', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_crew_1_chain', 'Generator Maintenance', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_crew_2_chain', 'Hull Recalibration', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_crew_3_chain', 'Coolant Flush', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_crew_4_chain', 'Sensor Calibration', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_suntrip_crew_5_chain', 'Water Reclamation Cycle', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_passenger_1_chain', 'Port of Call', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_passenger_2_chain', 'Local Flavors', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_passenger_3_chain', 'Cultural Excursion', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_passenger_4_chain', 'Bazaar Day', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_passenger_5_chain', 'Wildlife Encounter', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_crew_1_chain', 'Shore Leave', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_crew_2_chain', 'Lucky Break', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_crew_3_chain', 'Supply Run', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_crew_4_chain', 'Tech Exchange', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_shoreleave_crew_5_chain', 'Crew Showcase', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_passenger_1_chain', 'Espionage Theater', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_passenger_2_chain', 'The Informant', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_passenger_3_chain', 'Dead Drop', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_passenger_4_chain', 'The Mole Hunt', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_passenger_5_chain', 'Signal Intercept', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_crew_1_chain', 'System Recon', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_crew_2_chain', 'Diplomatic Audit', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_crew_3_chain', 'Route Security', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_crew_4_chain', 'Trade Leverage', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_crew_5_chain', 'Threat Assessment', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_espionage_support_chain', 'Contract: Espionage Support', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_join_war_chain', 'Join Wars', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_deep_scan_chain', 'Deep Scan', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_raid_planet_chain', 'Raid Planet', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_megastructure_support_chain', 'Megastructure Support', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_scan_debris_chain', 'Scan Debris', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_clear_blockers_chain', 'Clear Blockers', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_build_waystation_chain', 'Build Waystation', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_pest_control_chain', 'Pest Control', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nomadic_princess_chain', 'Fragments of the Past', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_diplomatic_support_chain', 'Diplomatic Support', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_prisoner_disposal_chain', 'Prisoner Disposal', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_physics_research_chain', 'Remote Physics Research', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_society_research_chain', 'Remote Society Research', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_engineering_research_chain', 'Remote Engineering Research', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_minerals_resource_chain', 'Remote Mineral Assessment', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_energy_resource_chain', 'Remote Energy Modeling', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_onboard_food_resource_chain', 'Remote Food Evaluation', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_sightseeing_tour_chain', 'Sightseeing Tour', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_colony_startup_chain', 'Colony Startup', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_intercept_raid_heirs_chain', 'Intercept Raid', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_destroy_station_heirs_chain', NULL, 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_host_cfl_tournament_chain', 'Nominate System for CFL Tournament', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('contract_stellar_ignition_chain', 'Stellar Ignition', 'contracts', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nomad_star_journal_chain', 'Star Journal', 'empire_concerns', '[{"key": "star_journal_progress", "max": 50}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('nomad_exploration_chain', 'Nomadic Wanderlust', 'empire_concerns', '[{"key": "categories_completed_progress", "max": 8}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('unknown_resource_usage_chain', 'Unknown Resource Usage', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('star_crossed_lovers_chain', 'Star-Crossed Lovers', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('paragon_origin_promise_chain', 'The Unifying Promise', 'empire_concerns', '[{"key": "promises_delivered", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('paragon_legendary_leader_chain', 'Relic Visions', 'developments', '[{"key": "planets_studied", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_eater_covenant_chain', 'The Eater of Worlds', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('robot_shroud_eater_covenant_chain', 'The Eater of Worlds', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_cradle_covenant_chain', 'Cradle of Souls', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('robot_shroud_cradle_covenant_chain', 'Cradle of Souls', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_composer_covenant_chain', 'The Composer of Strands', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('robot_shroud_composer_covenant_chain', 'The Composer of Strands', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_instrument_covenant_chain', 'The Instrument of Desire', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('robot_shroud_instrument_covenant_chain', 'The Instrument of Desire', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_whisperers_covenant_chain', 'The Whisperers in the Void', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('robot_shroud_whisperers_covenant_chain', 'The Whisperers in the Void', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_reckoning_chain', 'The Reckoning', 'urgent_matters', '[{"key": "reckoning_consumed_worlds", "max": null}, {"key": "reckoning_integrity", "max": null}, {"key": "reckoning_consumed_pops", "max": null}, {"key": "reckoning_remaining_pops_until_next_intensification", "max": null}, {"key": "reckoning_destroyed_ships", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_reckoning_observer_chain', 'Reckoning of', 'urgent_matters', '[{"key": "reckoning_consumed_worlds", "max": null}, {"key": "reckoning_integrity", "max": null}, {"key": "reckoning_consumed_pops", "max": null}, {"key": "reckoning_remaining_pops_until_next_intensification", "max": null}, {"key": "reckoning_destroyed_ships", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('multiple_reckoning_observer_chain', 'Reckonings', 'urgent_matters', '[{"key": "reckoning_consumed_worlds", "max": null}, {"key": "reckoning_consumed_pops", "max": null}, {"key": "reckoning_destroyed_ships", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('ancient_ward_upgrade_chain', 'The Grand Ward', 'empire_concerns', '[{"key": "ancient_ward_upgraded", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_seal_construction_chain', 'Shroud Seal Construction', 'empire_concerns', '[{"key": "tech_psionic_suppression_researched", "max": 1}, {"key": "shroud_seal_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_reclaim_homeworld_chain', 'Reclaiming', 'empire_concerns', '[{"key": "homeworld_reclaimed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('the_psionic_war_chain', 'The Psionic War', 'empire_concerns', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('shroud_seal_reconstruction_chain', 'Shroud Seal Reconstruction', 'empire_concerns', '[{"key": "shroud_seal_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mindwarden_enclave_chain', 'Mindwarden Enclaves', 'empire_concerns', '[{"key": "enclaves_built", "max": null}, {"key": "dividends_received", "max": null}, {"key": "shroud_seals_built", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('chain_aura_suppressors', 'Psionic Aura Impedance', 'developments', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('unplugged_origin_machine_legacy_chain', 'Machine Legacy', 'empire_concerns', '[{"key": "signals_followed", "max": null}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_stop_atrocity_task_chain', 'Task: Stop Atrocities', 'urgent_matters', '[{"key": "atrocities_stopped", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_stop_robots_task_chain', 'Task: End AI Research', 'urgent_matters', '[{"key": "robots_stopped", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_attack_empire_task_chain', 'Task: Attack', 'urgent_matters', '[{"key": "empires_attacked", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_colonize_planet_task_chain', 'Task: Colonize', 'urgent_matters', '[{"key": "colonies_established", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_no_wars_task_chain', 'Compliance: No Wars of Aggression', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('fe_no_colonies_task_chain', 'Compliance: No Colonization', 'urgent_matters', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_miner_chain', 'Miner Mandate', NULL, '[{"key": "mining_stations_built", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_orbresearch_chain', 'Orbital Research Mandate', NULL, '[{"key": "orbresearch_built", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_xenopurge_chain', 'Xenopurge Mandate', NULL, '[{"key": "world_purged", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_shipwright_chain', 'Shipwright Mandate', NULL, '[{"key": "military_presence_maintained", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_fiscal_reserve_chain', 'Fiscal Reserve Mandate', NULL, '[{"key": "mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_emancipation_chain', 'Great Emancipation Mandate', NULL, '[{"key": "mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_emancipation2_chain', 'Populist Emancipation Mandate', NULL, '[{"key": "planet_freed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_separatist_chain', 'Separatist Mandate', NULL, '[{"key": "empire_released", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_peacemaker_chain', 'Peacemaker Mandate', NULL, '[{"key": "no_engagements", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_slaver_chain', 'Slaver Mandate', NULL, '[{"key": "pops_enslaved", "max": 5}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_nationalist_chain', 'Repatriator Mandate', NULL, '[{"key": "planet_ceded", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_monthly_energy_chain', 'Energy Economics', NULL, '[{"key": "generic_mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_monthly_minerals_chain', 'Minerals Refining', NULL, '[{"key": "generic_mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_monthly_food_chain', 'Food Growth', NULL, '[{"key": "generic_mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_monthly_alloys_chain', 'Alloy Metallurgy', NULL, '[{"key": "generic_mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_monthly_consumer_goods_chain', 'Consumer Goods Production', NULL, '[{"key": "generic_mandate_fulfilled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_district_city_chain', 'Urbanizer', NULL, '[{"key": "built_district", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_district_generator_chain', 'Energy Infrastructure', NULL, '[{"key": "built_district", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_district_mining_chain', 'Planetside Mining', NULL, '[{"key": "built_district", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('mandate_district_farming_chain', 'Aggressive Agriculture', NULL, '[{"key": "built_district", "max": 2}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_survey_system_chain', 'Tutorial: Galaxy Map Toggle', 'tutorial', '[{"key": "map_toggled", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_1_chain', 'Tutorial: Survey System', 'tutorial', '[{"key": "system_surveyed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_2_chain', 'Tutorial: Technology Research', 'tutorial', '[{"key": "tech_1_researched", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_3_chain', 'Tutorial: Construction Ship', 'tutorial', '[{"key": "construction_ship_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_4_chain', 'Tutorial: Mining Station', 'tutorial', '[{"key": "mining_station_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_unpause_chain', 'Tutorial: Unpause', 'tutorial', '[{"key": "unpaused_game", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_5_chain', 'Tutorial: Research Station', 'tutorial', '[{"key": "research_station_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_6_chain', 'Tutorial: Colony Buildings', 'tutorial', '[{"key": "building_constructed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_7_chain', 'Tutorial: Clear Blocker', 'tutorial', '[{"key": "blockers_cleared", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_8_chain', 'Tutorial: Survey Systems', 'tutorial', '[{"key": "systems_surveyed", "max": 3}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_9_chain', 'Tutorial: Science Ship', 'tutorial', '[{"key": "science_ship_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_10_chain', 'Tutorial: Recruit Scientist', 'tutorial', '[{"key": "scientist_assigned", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_11_chain', 'Tutorial: Colony Ship', 'tutorial', '[{"key": "colony_ship_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_12_chain', 'Tutorial: Establish Colony', 'tutorial', '[{"key": "colony_established", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_13_chain', 'Tutorial: Recruit Governor', 'tutorial', '[{"key": "governor_recruited", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_14_chain', 'Tutorial: Establish More Colonies', 'tutorial', '[{"key": "colonies_established", "max": 4}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_15_chain', 'Tutorial: Resource Production', 'tutorial', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_16_chain', 'Tutorial: Increase the Fleet', 'tutorial', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_18_chain', 'Tutorial: Sector Governor', 'tutorial', '[{"key": "sector_governor_assigned", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_19_chain', 'Tutorial: Ship Design', 'tutorial', '[{"key": "ships_designed", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_20_chain', 'Tutorial: Observation Posts', 'tutorial', '[{"key": "observation_post_built", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_21_chain', 'Tutorial: Strategic Resources', 'tutorial', '[{"key": "strategic_resource_extracted", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_21b_chain', 'Information: Strategic Resources', 'tutorial', NULL);
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_22_chain', 'Tutorial: Uplift Pre-Sapients', 'tutorial', '[{"key": "species_uplifted", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_23_chain', 'Tutorial: First Contact', 'tutorial', '[{"key": "contact_made", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_24_chain', 'Tutorial: Modify Species', 'tutorial', '[{"key": "species_modified", "max": 1}]');
+INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES ('tutorial_25_chain', 'Tutorial: Claim System', 'tutorial', '[{"key": "frontier_outpost_built", "max": 1}]');
 INSERT OR REPLACE INTO outcome (kind, key, tree_json, flags_json) VALUES ('anomaly', 'AIANOM_CLUE_CAT', '[{"t":"event","id":"aianom.11","title":"L-Gate Insights","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"if","b":[[{"t":"note","text":"The path to the L-Cluster may now be opened."},{"t":"event","id":"distar.10904","title":"L-Gate Insights Gathered","e":[{"t":"event","id":"observer.61","title":"L-Gate Insights Gathered","e":[],"o":[{"name":"OK","cond":false,"e":[]}]}],"o":[{"name":"Good.","cond":false,"e":[{"t":"if","b":[[{"t":"option","k":"tech_lgate_activation","name":"L-Gate Activation"}]],"else":false,"c":[{"leaf":"can_research_technology","value":"tech_lgate_activation"}]}]}]}]],"else":false}]}]}]', '[{"k":"completed_lcluster_chain"}]');
 INSERT OR REPLACE INTO outcome (kind, key, tree_json, flags_json) VALUES ('anomaly', 'AIANOM_LUMP_CAT', '[{"t":"random","b":[{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.1","title":"Mineral Cache","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"minerals","n":6,"min":100,"max":1000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"minerals","n":12,"min":150,"max":2000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"minerals","n":18,"min":250,"max":5000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"minerals","n":24,"min":350,"max":10000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.2","title":"Energy Credits","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"energy","n":6,"min":100,"max":1000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"energy","n":12,"min":150,"max":2000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"energy","n":18,"min":250,"max":5000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"energy","n":24,"min":350,"max":10000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.3","title":"Physics Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"physics_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"physics_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"physics_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"physics_research","n":48,"min":1000,"max":1000000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.4","title":"Society Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"society_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"society_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"society_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"society_research","n":48,"min":1000,"max":1000000}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.5","title":"Engineering Research","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":9,"cond":false,"e":[{"t":"months","r":"engineering_research","n":12,"min":250,"max":100000}]},{"w":6,"cond":false,"e":[{"t":"months","r":"engineering_research","n":18,"min":350,"max":100000}]},{"w":3,"cond":false,"e":[{"t":"months","r":"engineering_research","n":24,"min":500,"max":1000000}]},{"w":1,"cond":false,"e":[{"t":"months","r":"engineering_research","n":48,"min":1000,"max":1000000}]}]}]}]}]}]}]', NULL);
 INSERT OR REPLACE INTO outcome (kind, key, tree_json, flags_json) VALUES ('anomaly', 'AIANOM_MININGDEPO_CAT', '[{"t":"random","b":[{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.6","title":"Mineral Deposit","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":6,"cond":false,"e":[{"t":"deposit","k":"d_minerals_2","name":"Minerals +2"}]},{"w":3,"cond":false,"e":[{"t":"deposit","k":"d_minerals_3","name":"Minerals +3"}]},{"w":1,"cond":false,"e":[{"t":"deposit","k":"d_minerals_4","name":"Minerals +4"}]}]}]}]}]},{"w":1,"cond":false,"e":[{"t":"event","id":"aianom.7","title":"Energy Deposit","e":[],"o":[{"name":"OK","cond":false,"e":[{"t":"random","b":[{"w":6,"cond":false,"e":[{"t":"deposit","k":"d_energy_2","name":"Energy +2"}]},{"w":3,"cond":false,"e":[{"t":"deposit","k":"d_energy_3","name":"Energy +3"}]},{"w":1,"cond":false,"e":[{"t":"deposit","k":"d_energy_4","name":"Energy +4"}]}]}]}]}]}]}]', NULL);

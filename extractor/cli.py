@@ -35,7 +35,7 @@ from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load
 from .politics import extract_politics
 from .precursors import _default_overclocks, extract_deposits, extract_precursor_systems, extract_precursors, extract_static_modifiers
 from .rights import extract_species_rights
-from .situations import extract_situations
+from .situations import extract_event_chains, extract_situations
 from .outcomes import extract_outcomes, load_outcomes
 from .contracts import extract_contracts
 from .system_events import extract_system_entry_events
@@ -572,6 +572,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress, scripted_vars, outcomes.title,
                        script_loader(inline_scripts_dir))
+    print(f"\n[event chains] {install_dir / 'common' / 'event_chains'}", file=progress)
+    extract_event_chains(install_dir, loc, w, progress)
     print(f"\n[outcomes] anomalies, special projects, dig sites → events → effects", file=progress)
     extract_outcomes(install_dir, outcomes, w, progress)
     print(f"\n[contracts] {install_dir / 'common' / 'missions'}", file=progress)

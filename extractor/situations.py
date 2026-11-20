@@ -82,6 +82,32 @@ def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
 
+def chain_counters(data: dict) -> list[dict]:
+    """An event chain's `counter = { <key> = { max = N } }` as [{"key", "max"}], in file order.
+    Pure."""
+    block = data.get('counter')
+    if not isinstance(block, dict):
+        return []
+    return [{'key': k, 'max': int(f) if (f := _resolve_modifier_float(v.get('max'))) is not None else None}
+            for k, v in block.items() if isinstance(v, dict)]
+
+
+def extract_event_chains(install_dir: Path, loc: dict[str, str], w: Writer, progress=sys.stderr) -> None:
+    n = 0
+    for f in _files(install_dir / 'common' / 'event_chains'):
+        for key, data in parse_file(f).items():
+            if key.startswith('@') or not isinstance(data, dict):
+                continue
+            counters = chain_counters(data)
+            w.execute(
+                """INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES (?, ?, ?, ?)""",
+                (key, _text(loc, f'{key}_title'), _key(data.get('situation_log_category')),
+                 json.dumps(counters) if counters else None))
+            n += 1
+    print(f"  {n} event chains", file=progress)
+
+
 def requirements(block) -> dict | None:
     """A project's `requirements = { … }` as plain values: `carries_colony = 1` (an arkship),
     `shipclass_science_ship = 1`, `leader = scientist`. A nested block stays as parsed. Pure."""

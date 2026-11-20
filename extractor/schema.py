@@ -1203,6 +1203,15 @@ CREATE TABLE system_entry_event (
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
+-- Event chains (common/event_chains): the situation log's entries a country runs and completes —
+-- precursors (`vultaum_chain`, 6 artifacts), the L-Cluster (`l_cluster_chain`, 7 insights).
+DROP TABLE IF EXISTS event_chain;
+CREATE TABLE event_chain (
+    key           TEXT PRIMARY KEY,        -- e.g. "cybrex_chain"
+    title         TEXT,                    -- `<key>_title`: "Precursors - The Cybrex"
+    category      TEXT,                    -- `situation_log_category`: precursors / developments / …
+    counters_json TEXT                     -- [{"key":"cybrex_artifacts","max":6}]; NULL: none
+);
 DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;

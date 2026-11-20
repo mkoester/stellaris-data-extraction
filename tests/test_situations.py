@@ -4,7 +4,7 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import (event_ids, is_permanent, outcomes_json, project_number, stage_keys,
+from extractor.situations import (chain_counters, event_ids, is_permanent, outcomes_json, project_number, stage_keys,
                                   stage_modifiers)
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
@@ -18,6 +18,15 @@ on_success = {
 	1 = anomaly.35
 }
 """
+
+
+class TestEventChains(unittest.TestCase):
+    def test_counters(self):
+        # cybrex_chain (common/event_chains/00_event_chains.txt); vultaum_homeworld_chain has none
+        data = Parser(tokenize("""counter = { cybrex_artifacts = { max = 6 } }
+            situation_log_category = precursors""")).parse()
+        self.assertEqual(chain_counters(data), [{'key': 'cybrex_artifacts', 'max': 6}])
+        self.assertEqual(chain_counters(Parser(tokenize('situation_log_category = precursors')).parse()), [])
 
 
 class TestStages(unittest.TestCase):
