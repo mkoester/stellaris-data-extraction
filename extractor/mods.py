@@ -253,7 +253,8 @@ def _link(src: Path, dst: Path) -> None:
 
 def overlay(game_dir: Path, mods: list[Path], out: Path) -> dict[str, int]:
     """Write the merged view of `game_dir` plus `mods` (load order) to the empty folder `out`.
-    Returns per mod folder how many definitions of earlier files it overrode."""
+    Returns per mod folder how many definitions of earlier files it overrode. `game_dir` and
+    `mods` must be absolute: a symlink to a relative path dangles in `out`."""
     files, from_mods = merged_files(game_dir, mods)
     for entry in game_dir.iterdir():
         if entry.name not in OVERLAID:

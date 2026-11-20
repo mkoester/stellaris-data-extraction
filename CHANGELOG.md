@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.22] - 2026-11-21
+
+### Added
+
+- `event_chain`: every event chain's title, its situation-log category and its counters with their
+  maximum — the precursors (6 artifacts each) and the L-Cluster (7 insights).
+- `situation.permanent`: the files' `permanent = yes`, a situation that never ends (4.5.4:
+  Operational Reserves, every nomad's, and the Forever Cruise's Passenger Satisfaction).
+- `contract.location`: whether a contract has a system (`location = yes`).
+- Loc keys handed to a scripted effect that does `set_name = $P$` become prescripted names (a
+  mod's renamed systems, the Ancient Highway's portals and nodes).
+
+### Fixed
+
+- Special projects made of a top-level `inline_script` were skipped (44 in 4.5.4, the onboard
+  contracts' research projects among them).
+- `$key$` references to dotted keys stayed unresolved ("$ancrel.21.name$", the Ruined World dig
+  site, and 412 other texts).
+- `--mod` with a relative path left dangling links.
+
 ## [0.1.21] - 2026-11-18
 
 ### Added

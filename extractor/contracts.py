@@ -211,13 +211,14 @@ def extract_contracts(install_dir: Path, loc: dict[str, str], load, w: Writer,
             w.execute(
                 """INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    reward_json, failed_opinion, operator_techs_json, description, location)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (key, _clean_loc(raw, loc) if raw else None, category,
                  days(m.get('time_to_accept'), variables), days(m.get('time_to_complete'), variables),
                  _key(m.get('event_chain')), steps(m.get('counter')),
                  json.dumps(r) if r else None, failed_opinion(m.get('on_cancel'), variables, load),
                  json.dumps(techs) if techs else None,
-                 _clean_loc(desc_scopes(d), loc) if (d := loc.get(desc_key(m, key))) else None))
+                 _clean_loc(desc_scopes(d), loc) if (d := loc.get(desc_key(m, key))) else None,
+                 int(m.get('location') == 'yes')))
             n += 1
     print(f"  {n} contracts ({len(cats)} contract categories)", file=progress)

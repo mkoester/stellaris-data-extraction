@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 
-_LOC_INLINE_REF = re.compile(r'\$(\w+)\$')
+_LOC_INLINE_REF = re.compile(r'\$([\w.]+)\$')
 _LOC_FMT_CODE   = re.compile(r'§.')          # §X / §! colour codes
 _LOC_ICON       = re.compile(r'£(\w+?)(?:\|\w+)?£')  # £icon£ (or £icon|frame£)
 # Scripted-loc concept tag: ['concept_key'], ['type:key'] (e.g. ['technology:tech_x'],
@@ -238,7 +238,7 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
 _LOC_ENTRY = re.compile(r'^\s*(\w[\w.]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
 
 
-_LOC_REF = re.compile(r'^\$(\w+)\$$')
+_LOC_REF = re.compile(r'^\$([\w.]+)\$$')
 
 
 def load_localisation(loc_dir: Path) -> dict[str, str]:

@@ -507,7 +507,10 @@ the demands added by `pop_faction_types/demand_*` inline scripts (their `$PARAM$
 ## Situations, special projects, anomaly outcomes (situations.py)
 
 `common/situations` → `situation` + `situation_approach`. `common/special_projects` (anonymous
-`special_project = {…}` blocks, `key`) → `special_project`. Anomaly categories
+`special_project = {…}` blocks, `key`) → `special_project`; a block made of a top-level
+`inline_script` is expanded first (`with_inline`, 2026-11-20 — 4.5.4 `06_projects_nomads.txt` defines 44
+that way, among them the contracts' onboard research projects and travel projects; before, they had no
+key and were missing). Anomaly categories
 (`extract_anomaly_levels`) carry name, description and `outcomes_json`, as projects do: the event
 ids their `on_success` fires (`event_ids`: weighted `1 = anomaly.35`, `anomaly_event = …`,
 `ship_event = { id = … }`), each named by the event's own `title` key (`Outcomes.title`; before
@@ -549,7 +552,9 @@ On 4.5.4: 327 anomaly categories, 578 projects, 123 dig sites, 1.6 MB of JSON.
 (`common/missions/mission_categories`) has `is_contract = yes` — the rest are situation-log
 missions (star journals, checklists). Category and `time_to_accept` mostly come from a top-level
 `inline_script = contracts/…` (`with_inline`; nested inline scripts in triggers are not merged),
-times as `@variables` (`@contract_time_base` = 1800). 4.5.2: 73 contracts, 21 categories. The
+times as `@variables` (`@contract_time_base` = 1800). `location`: the game's own `location = yes`
+(the contract has a system; default no) — the dashboard tells a remote contract by its projects, and a
+data DB with this column has the inline-defined projects too. 4.5.2: 73 contracts, 21 categories. The
 empire dashboard joins a save's `missions.<id>.mission` on `key`; a mod's contracts are not in it.
 
 ## System entry events (system_events.py)
@@ -566,8 +571,8 @@ the trigger wants the owner not to have and the event sets itself — such a pop
 empire (apoc.1 `encountered_first_gateway`: only the first abandoned gateway; 26 of the 73). Other
 conditions (a megastructure in the system, global flags) are not kept, so the dashboard calls a
 match likely. Only the event files that define one of the ids are parsed. Titles and the first
-plain `desc` are loc; their `$key.with.dots$` refs are expanded first (`expand_dotted` —
-`_clean_loc`'s `$KEY$` takes no dots), a scope's `[….GetName]` becomes "…". For the empire
+plain `desc` are loc; their `$key.with.dots$` refs are expanded first (`expand_dotted`; `_clean_loc`'s `$KEY$`
+takes dotted keys too since 2026-11-20), a scope's `[….GetName]` becomes "…". For the empire
 dashboard's map and events tab.
 
 ## Action timers (cooldowns.py)

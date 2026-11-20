@@ -41,6 +41,10 @@ class TestCleanLoc(unittest.TestCase):
         self.assertEqual(_clean_loc('$greeting$ world', {'greeting': 'Hello'}),
                          'Hello world')
 
+    def test_dotted_key_expansion(self):
+        self.assertEqual(_clean_loc('$ancrel.21.name$ found', {'ancrel.21.name': 'Ruined World'}),
+                         'Ruined World found')
+
     def test_colour_codes_stripped(self):
         self.assertEqual(_clean_loc('§YShiny§! text', {}), 'Shiny text')
 
@@ -116,6 +120,12 @@ class TestLoadLocalisation(unittest.TestCase):
         labels = self.write_and_load(
             'l_english:\n a:0 "$b$"\n b:0 "$c$"\n c:0 "Real"\n z:0 "$y$"\n y:0 "$x$"\n x:0 "End"\n')
         self.assertEqual([labels[k] for k in 'abcxyz'], ['Real', 'Real', 'Real', 'End', 'End', 'End'])
+
+    def test_ref_to_a_dotted_key_resolved(self):
+        # 4.5.4 omnirelic_site: "$ancrel.21.name$" → "Ruined World"
+        labels = self.write_and_load(
+            'l_english:\n omnirelic_site:0 "$ancrel.21.name$"\n ancrel.21.name:0 "Ruined World"\n')
+        self.assertEqual(labels['omnirelic_site'], 'Ruined World')
 
     def test_ref_cycle_dropped(self):
         labels = self.write_and_load('l_english:\n a:0 "$b$"\n b:0 "$a$"\n')

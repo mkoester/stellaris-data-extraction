@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from .clausewitz import parse_file
+from .contracts import with_inline
 from .localisation import _clean_loc
 from .modifiers import _block_modifier_values, _write_modifier_label
 from .values import _as_blocks, _resolve_modifier_float
@@ -81,6 +82,32 @@ def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
 
+def chain_counters(data: dict) -> list[dict]:
+    """An event chain's `counter = { <key> = { max = N } }` as [{"key", "max"}], in file order.
+    Pure."""
+    block = data.get('counter')
+    if not isinstance(block, dict):
+        return []
+    return [{'key': k, 'max': int(f) if (f := _resolve_modifier_float(v.get('max'))) is not None else None}
+            for k, v in block.items() if isinstance(v, dict)]
+
+
+def extract_event_chains(install_dir: Path, loc: dict[str, str], w: Writer, progress=sys.stderr) -> None:
+    n = 0
+    for f in _files(install_dir / 'common' / 'event_chains'):
+        for key, data in parse_file(f).items():
+            if key.startswith('@') or not isinstance(data, dict):
+                continue
+            counters = chain_counters(data)
+            w.execute(
+                """INSERT OR REPLACE INTO event_chain (key, title, category, counters_json)
+                   VALUES (?, ?, ?, ?)""",
+                (key, _text(loc, f'{key}_title'), _key(data.get('situation_log_category')),
+                 json.dumps(counters) if counters else None))
+            n += 1
+    print(f"  {n} event chains", file=progress)
+
+
 def requirements(block) -> dict | None:
     """A project's `requirements = { … }` as plain values: `carries_colony = 1` (an arkship),
     `shipclass_science_ship = 1`, `leader = scientist`. A nested block stays as parsed. Pure."""
@@ -105,9 +132,18 @@ def _files(d: Path) -> list[Path]:
     return sorted(f for f in d.glob('*.txt') if not f.name.startswith('99_README'))
 
 
+def is_permanent(data: dict) -> bool:
+    """`permanent = yes`: the situation does not end at either extreme (99_README_SITUATIONS.txt).
+    4.5.4: every nomad's Operational Reserves and the Forever Cruise's Passenger Satisfaction."""
+    return data.get('permanent') == 'yes'
+
+
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        progress=sys.stderr, scripted_vars: dict[str, float] | None = None,
-                       title=None) -> None:
+                       title=None, load=None) -> None:
+    """`load`: an inline script's text by name (`script_loader`). A special project made of a
+    top-level `inline_script` (4.5.4 `06_projects_nomads.txt`: 44, the onboard contracts' research
+    projects among them) is expanded with it; without it such projects have no key and are left out."""
     common = install_dir / 'common'
     n_sit = n_appr = n_stage = n_mod = 0
     for f in _files(common / 'situations'):
@@ -122,9 +158,10 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             if key.startswith('@') or not isinstance(data, dict):
                 continue
             w.execute(
-                """INSERT OR REPLACE INTO situation (key, name, description, category)
-                   VALUES (?, ?, ?, ?)""",
-                (key, _text(loc, key), _text(loc, f'{key}_desc', True), _key(data.get('category'))))
+                """INSERT OR REPLACE INTO situation (key, name, description, category, permanent)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (key, _text(loc, key), _text(loc, f'{key}_desc', True), _key(data.get('category')),
+                 1 if is_permanent(data) else 0))
             n_sit += 1
             for order, a in enumerate(_as_blocks(data.get('approach'))):
                 name = _key(a.get('name'))
@@ -158,6 +195,8 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             if k.startswith('@') and (fv := _resolve_modifier_float(v)) is not None:
                 variables[k] = fv
         for p in _as_blocks(parsed.get('special_project')):
+            if load is not None and 'inline_script' in p:
+                p = with_inline(p, load)
             key = _key(p.get('key'))
             if not key:
                 continue

@@ -192,6 +192,44 @@ def set_name_keys(text: str) -> set[str]:
     return set(_SET_NAME.findall(text))
 
 
+_TOP_BLOCK = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\{', re.MULTILINE)
+_SET_NAME_PARAM = re.compile(r'\bset_name\s*=\s*\$(\w+)\$')
+
+
+def set_name_params(text: str) -> dict[str, set[str]]:
+    """Scripted effects that rename by a parameter, `set_name = $KEY$`, with those parameters
+    (our Ancient Highway mod: `ahw_rename_system = { set_name = $KEY$ … }`). Top-level blocks only,
+    bounded by their braces."""
+    out: dict[str, set[str]] = {}
+    for m in _TOP_BLOCK.finditer(text):
+        depth, i = 0, m.end() - 1
+        while i < len(text):
+            depth += {'{': 1, '}': -1}.get(text[i], 0)
+            if depth == 0:
+                break
+            i += 1
+        if params := set(_SET_NAME_PARAM.findall(text[m.end():i])):
+            out[m.group(1)] = params
+    return out
+
+
+def param_name_keys(text: str, effects: dict[str, set[str]], loc_keys) -> set[str]:
+    """The loc keys handed to those effects (`set_name_params`): each call's parameter value, a
+    `$X$` in it (a parameter of the caller) matching any word — `KEY = ahw_portal_$R$_1` gives
+    `ahw_portal_3_1` ("Dovhar 31") and the other reaches'. A save names what they renamed by the key."""
+    out: set[str] = set()
+    for effect, params in effects.items():
+        for call in re.finditer(rf'\b{re.escape(effect)}\s*=\s*\{{([^{{}}]*)\}}', text):
+            for p in params:
+                for v in re.findall(rf'\b{re.escape(p)}\s*=\s*"?([A-Za-z0-9_.$]+)"?', call.group(1)):
+                    if '$' not in v:
+                        out.add(v)
+                        continue
+                    pat = re.compile(re.sub(r'\\\$\w+\\\$', '[A-Za-z0-9_]+', re.escape(v)))
+                    out |= {k for k in loc_keys if pat.fullmatch(k)}
+    return out
+
+
 def extract_prescripted_names(loc: dict[str, str], name_keys: set[str], w: Writer) -> None:
     for key, text in prescripted_names(loc, name_keys):
         w.execute("INSERT INTO prescripted_name (key, text) VALUES (?, ?)", (key, text))

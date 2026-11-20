@@ -160,4 +160,8 @@ and name-list names `<list>_(SHIP|FLEET|ARMY|PLANET)_<tail>` whose text differs 
 the dashboard strips the prefix for the rest. Planets since 0.1.17 ("St. Pomeroy" is not derivable
 from `StPomeroy`; 1556 rows on 4.5.4). **An all-caps tail is a text key** for planets only
 (`ADD_PLANET_DEVASTATION_EFFECT`); ship names can be all caps (`CUTHOLOID_SHIP_COMMON_1`, 240 real
-name-list entries), so the filter must not reach them (2026-11-14).
+name-list entries), so the filter must not reach them (2026-11-14). Keys a script renames by: plain
+`set_name = <key>` (`set_name_keys()`), and since 2026-11-20 a scripted effect's `set_name = $P$`
+with each call's `P = …` value, `$X$` in it matching any word (`set_name_params()` /
+`param_name_keys()`; the Ancient Highway's `ahw_portal_<reach>_<n>`). The block form
+(`set_name = { key = … variable_string = … }`) stays out: its text is filled in at run time.

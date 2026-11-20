@@ -1203,6 +1203,15 @@ CREATE TABLE system_entry_event (
 );
 -- Situations (common/situations) and their approaches and stages, special projects
 -- (common/special_projects).
+-- Event chains (common/event_chains): the situation log's entries a country runs and completes —
+-- precursors (`vultaum_chain`, 6 artifacts), the L-Cluster (`l_cluster_chain`, 7 insights).
+DROP TABLE IF EXISTS event_chain;
+CREATE TABLE event_chain (
+    key           TEXT PRIMARY KEY,        -- e.g. "cybrex_chain"
+    title         TEXT,                    -- `<key>_title`: "Precursors - The Cybrex"
+    category      TEXT,                    -- `situation_log_category`: precursors / developments / …
+    counters_json TEXT                     -- [{"key":"cybrex_artifacts","max":6}]; NULL: none
+);
 DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
@@ -1212,7 +1221,9 @@ CREATE TABLE situation (
     key         TEXT PRIMARY KEY,          -- e.g. "situation_alloys_deficit"
     name        TEXT,
     description TEXT,
-    category    TEXT                       -- positive / negative / neutral
+    category    TEXT,                      -- positive / negative / neutral
+    permanent   INTEGER NOT NULL DEFAULT 0 -- 1: never ends at either extreme (`permanent = yes`:
+                                           -- Operational Reserves, Passenger Satisfaction)
 );
 CREATE TABLE situation_approach (
     situation_key TEXT NOT NULL,
@@ -1285,7 +1296,8 @@ CREATE TABLE contract (
     reward_json      TEXT,                 -- {"scaled":[{"trade","resource","amount"}…] (× contract_bonus_value; a 2nd = partial success), "cruise", "fixed":{res:n}, "trust", "opinion"}; NULL: none found
     failed_opinion   REAL,                 -- the issuer's opinion of us on failure or cancel, e.g. -75
     operator_techs_json TEXT,              -- techs the operator needs (possible_operator), e.g. ["tech_mine_volatile_motes"]
-    description      TEXT                  -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
+    description      TEXT,                 -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
+    location         INTEGER NOT NULL      -- 1: the contract has a system (`location = yes`), 0: none (the game's default)
 );
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;
