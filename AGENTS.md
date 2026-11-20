@@ -165,3 +165,7 @@ name-list entries), so the filter must not reach them (2026-11-14). Keys a scrip
 with each call's `P = …` value, `$X$` in it matching any word (`set_name_params()` /
 `param_name_keys()`; the Ancient Highway's `ahw_portal_<reach>_<n>`). The block form
 (`set_name = { key = … variable_string = … }`) stays out: its text is filled in at run time.
+**A row's text can itself be a template**: `AofB` = "$1$ of $2$" (taken since 2026-11-20), the
+species adjectives "Human $1$". The dashboard fills each `$k$` from the save's name variables
+(`displayName()`); before it did, a contract issuer read "$1$ of $2$" — a reader of this table must do
+the same.
