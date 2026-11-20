@@ -1285,7 +1285,8 @@ CREATE TABLE contract (
     reward_json      TEXT,                 -- {"scaled":[{"trade","resource","amount"}…] (× contract_bonus_value; a 2nd = partial success), "cruise", "fixed":{res:n}, "trust", "opinion"}; NULL: none found
     failed_opinion   REAL,                 -- the issuer's opinion of us on failure or cancel, e.g. -75
     operator_techs_json TEXT,              -- techs the operator needs (possible_operator), e.g. ["tech_mine_volatile_motes"]
-    description      TEXT                  -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
+    description      TEXT,                 -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
+    location         INTEGER NOT NULL      -- 1: the contract has a system (`location = yes`), 0: none (the game's default)
 );
 -- Display names of districts and zones (district specialisations, 4.x), for the empire dashboard.
 DROP TABLE IF EXISTS district;

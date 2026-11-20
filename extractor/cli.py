@@ -28,7 +28,8 @@ from .leaders import extract_leader_traits
 from .megastructures import extract_megastructures
 from .localisation import _LOC_ENTRY, _LOC_REF, load_localisation, scripted_loc_jobs, set_scripted_loc
 from .mods import descriptor, overlay, unpack
-from .misc import (extract_dlc, extract_prescripted_names, host_checks, random_name_keys, set_name_keys,
+from .misc import (extract_dlc, extract_prescripted_names, host_checks, param_name_keys, random_name_keys,
+                   set_name_keys, set_name_params,
                    extract_named_colors, extract_planet_classes, extract_graphical_cultures)
 from .modifiers import _load_scaling_values, _load_scripted_modifier_meta, _load_scripted_variables
 from .politics import extract_politics
@@ -139,11 +140,12 @@ Examples:
     if mods:
         with tempfile.TemporaryDirectory(prefix='stellaris-mods-') as work:
             # a zipped mod is read from a folder of its own; meta names the zip
-            folders = [unpack(m, Path(work, 'zips', str(i))) if m.is_file() else m
+            # absolute: the merged folder links to them (`--mod ../x` dangled, 2026-11-20)
+            folders = [unpack(m, Path(work, 'zips', str(i))) if m.is_file() else m.resolve()
                        for i, m in enumerate(mods)]
             merged = Path(work, 'merged')
             merged.mkdir()
-            overrides = overlay(install_dir, folders, merged)
+            overrides = overlay(install_dir.resolve(), folders, merged)
             mod_meta = json.dumps([{'name': str(descriptor(f).get('name') or (m.name if m.is_dir() else m.stem)).strip('"'),
                                     'version': str(descriptor(f).get('version') or '').strip('"') or None,
                                     'path': str(m), 'overrides': overrides[str(f)]}
@@ -549,8 +551,16 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     name_keys: set[str] = set()
     for f in sorted((install_dir / 'common' / 'random_names').rglob('*.txt')):
         name_keys |= random_name_keys(f.read_text(encoding='utf-8-sig', errors='replace'))
-    for f in sorted([*(install_dir / 'events').glob('*.txt'), *(install_dir / 'common').rglob('*.txt')]):
-        name_keys |= set_name_keys(f.read_text(encoding='utf-8-sig', errors='replace'))
+    script_files = sorted([*(install_dir / 'events').glob('*.txt'), *(install_dir / 'common').rglob('*.txt')])
+    renames: dict[str, set[str]] = {}  # effects that `set_name = $P$` (a mod's own renames)
+    for f in sorted((install_dir / 'common' / 'scripted_effects').glob('*.txt')):
+        for k, v in set_name_params(f.read_text(encoding='utf-8-sig', errors='replace')).items():
+            renames.setdefault(k, set()).update(v)
+    for f in script_files:
+        text = f.read_text(encoding='utf-8-sig', errors='replace')
+        name_keys |= set_name_keys(text)
+        if renames:
+            name_keys |= param_name_keys(text, renames, loc)
     extract_prescripted_names(loc, name_keys, w)
     extract_scripted_triggers(install_dir, w)
     print(f"\n[species rights] {install_dir / 'common' / 'species_rights'}", file=progress)
@@ -560,7 +570,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     print(f"\n[empire focus] {install_dir / 'common' / 'country_focus'}", file=progress)
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
-    extract_situations(install_dir, loc, w, progress, scripted_vars, outcomes.title)
+    extract_situations(install_dir, loc, w, progress, scripted_vars, outcomes.title,
+                       script_loader(inline_scripts_dir))
     print(f"\n[outcomes] anomalies, special projects, dig sites → events → effects", file=progress)
     extract_outcomes(install_dir, outcomes, w, progress)
     print(f"\n[contracts] {install_dir / 'common' / 'missions'}", file=progress)

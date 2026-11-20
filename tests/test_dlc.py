@@ -3,7 +3,8 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.misc import _dlc_rows, host_checks, prescripted_names, random_name_keys, set_name_keys
+from extractor.misc import (_dlc_rows, host_checks, param_name_keys, prescripted_names, random_name_keys,
+                            set_name_keys, set_name_params)
 
 # Shaped like dlc_metadata/dlc_info.txt (note the missing `=` the real file has once).
 INFO = """
@@ -51,6 +52,17 @@ class TestPrescriptedNames(unittest.TestCase):
         keys = random_name_keys('voidworm_star_names = {\n\t\t"VOIDWORM_SYSTEM_12"\n\t\t"Achernar"\n\t}')
         loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
+
+    def test_set_name_by_parameter(self):
+        # our Ancient Highway mod: an effect renames by its KEY, called with the reach as $R$
+        effects = set_name_params('ahw_rename_system = {\n\tset_name = $KEY$\n\tevery_system_planet = {'
+                                  ' set_name = $KEY$ }\n}\nahw_log = { log = "x" }\n')
+        self.assertEqual(effects, {'ahw_rename_system': {'KEY'}})
+        calls = ('a = { event_target:x = { ahw_rename_system = { KEY = ahw_portal_$R$_1 } } }\n'
+                 'b = { ahw_rename_system = { KEY = ahw_hub } }\n')
+        keys = ['ahw_portal_3_1', 'ahw_portal_0_1', 'ahw_portal_3_12', 'ahw_node_1_1', 'ahw_hub']
+        self.assertEqual(param_name_keys(calls, effects, keys),
+                         {'ahw_portal_3_1', 'ahw_portal_0_1', 'ahw_hub'})
 
     def test_set_name_keys(self):
         text = ('immediate = { set_name = grand_archive.2800.name }\n'

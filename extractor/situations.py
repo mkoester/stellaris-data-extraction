@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from .clausewitz import parse_file
+from .contracts import with_inline
 from .localisation import _clean_loc
 from .modifiers import _block_modifier_values, _write_modifier_label
 from .values import _as_blocks, _resolve_modifier_float
@@ -107,7 +108,10 @@ def _files(d: Path) -> list[Path]:
 
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        progress=sys.stderr, scripted_vars: dict[str, float] | None = None,
-                       title=None) -> None:
+                       title=None, load=None) -> None:
+    """`load`: an inline script's text by name (`script_loader`). A special project made of a
+    top-level `inline_script` (4.5.4 `06_projects_nomads.txt`: 44, the onboard contracts' research
+    projects among them) is expanded with it; without it such projects have no key and are left out."""
     common = install_dir / 'common'
     n_sit = n_appr = n_stage = n_mod = 0
     for f in _files(common / 'situations'):
@@ -158,6 +162,8 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             if k.startswith('@') and (fv := _resolve_modifier_float(v)) is not None:
                 variables[k] = fv
         for p in _as_blocks(parsed.get('special_project')):
+            if load is not None and 'inline_script' in p:
+                p = with_inline(p, load)
             key = _key(p.get('key'))
             if not key:
                 continue
