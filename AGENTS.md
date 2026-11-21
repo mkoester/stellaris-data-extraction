@@ -168,4 +168,6 @@ with each call's `P = …` value, `$X$` in it matching any word (`set_name_param
 **A row's text can itself be a template**: `AofB` = "$1$ of $2$" (taken since 2026-11-20), the
 species adjectives "Human $1$". The dashboard fills each `$k$` from the save's name variables
 (`displayName()`); before it did, a contract issuer read "$1$ of $2$" — a reader of this table must do
-the same.
+the same. **A scope command stays as a placeholder** (2026-11-21): `[fotd_country.GetSpeciesName]
+Commune` is stored as "$fotd_country.GetSpeciesName$ Commune" — the save names the value under that
+same key ("Fellnoll Commune"); `_clean_loc` alone dropped it, leaving "Commune".

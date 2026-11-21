@@ -53,6 +53,14 @@ class TestPrescriptedNames(unittest.TestCase):
         loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
 
+    def test_scope_command_stays_a_placeholder(self):
+        # 4.5.4 name loc: the separatists are "<species> Commune"; a save names the species under
+        # the command's key, so the placeholder keeps its place ("Fellnoll Commune", not "Commune")
+        keys = {'NAME_fotd_seperatists'}
+        loc = {'NAME_fotd_seperatists': '[fotd_country.GetSpeciesName] Commune'}
+        self.assertEqual(prescripted_names(loc, keys),
+                         [('NAME_fotd_seperatists', '$fotd_country.GetSpeciesName$ Commune')])
+
     def test_set_name_by_parameter(self):
         # our Ancient Highway mod: an effect renames by its KEY, called with the reach as $R$
         effects = set_name_params('ahw_rename_system = {\n\tset_name = $KEY$\n\tevery_system_planet = {'
