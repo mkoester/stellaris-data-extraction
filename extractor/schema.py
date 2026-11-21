@@ -2024,6 +2024,9 @@ DROP TABLE IF EXISTS crisis_level;
 DROP TABLE IF EXISTS crisis_objective;
 DROP TABLE IF EXISTS menace_perk_modifier;
 DROP TABLE IF EXISTS menace_perk;
+DROP TABLE IF EXISTS specimen_resource;
+DROP TABLE IF EXISTS specimen_modifier;
+DROP TABLE IF EXISTS specimen;
 CREATE TABLE crisis_path (
     key         TEXT PRIMARY KEY,          -- e.g. "nemesis_path"
     currency    TEXT,                      -- the resource earned: menace, integrity, feral_insight, …
@@ -2082,5 +2085,33 @@ CREATE TABLE menace_perk_modifier (
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Grand Archive specimens (common/specimens). Their modifiers apply while the specimen is in an
+-- active exhibit, each × its category's value:<category>_specimens_modifiers_mult (1 + the
+-- category's and the general specimens_produces_mult); resources likewise.
+CREATE TABLE specimen (
+    key        TEXT PRIMARY KEY,           -- e.g. "acidic_spores"
+    name       TEXT,                       -- "Acidic Spores"
+    category   TEXT,                       -- aesthetic_wonder, historical_item, xeno_geology
+    rarity     TEXT,                       -- common, rare, epic, exceptional
+    tradable   INTEGER NOT NULL DEFAULT 1, -- 0: is_tradable = no
+    sellable   INTEGER NOT NULL DEFAULT 1, -- 0: is_sellable = no
+    icon       TEXT,                       -- GFX_specimen_*
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE specimen_modifier (
+    specimen_key   TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    condition      TEXT,                   -- the block's potential, as precursor_relic_modifier's
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (specimen_key) REFERENCES specimen(key)
+);
+CREATE TABLE specimen_resource (
+    specimen_key TEXT NOT NULL,
+    resource     TEXT NOT NULL,            -- produced a month, e.g. unity
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (specimen_key) REFERENCES specimen(key)
 );
 """

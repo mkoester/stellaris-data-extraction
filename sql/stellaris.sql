@@ -2019,6 +2019,9 @@ DROP TABLE IF EXISTS crisis_level;
 DROP TABLE IF EXISTS crisis_objective;
 DROP TABLE IF EXISTS menace_perk_modifier;
 DROP TABLE IF EXISTS menace_perk;
+DROP TABLE IF EXISTS specimen_resource;
+DROP TABLE IF EXISTS specimen_modifier;
+DROP TABLE IF EXISTS specimen;
 CREATE TABLE crisis_path (
     key         TEXT PRIMARY KEY,          -- e.g. "nemesis_path"
     currency    TEXT,                      -- the resource earned: menace, integrity, feral_insight, …
@@ -2077,6 +2080,34 @@ CREATE TABLE menace_perk_modifier (
     modifier_key   TEXT NOT NULL,
     modifier_value REAL NOT NULL,
     sort_order     INTEGER NOT NULL DEFAULT 0
+);
+-- Grand Archive specimens (common/specimens). Their modifiers apply while the specimen is in an
+-- active exhibit, each × its category's value:<category>_specimens_modifiers_mult (1 + the
+-- category's and the general specimens_produces_mult); resources likewise.
+CREATE TABLE specimen (
+    key        TEXT PRIMARY KEY,           -- e.g. "acidic_spores"
+    name       TEXT,                       -- "Acidic Spores"
+    category   TEXT,                       -- aesthetic_wonder, historical_item, xeno_geology
+    rarity     TEXT,                       -- common, rare, epic, exceptional
+    tradable   INTEGER NOT NULL DEFAULT 1, -- 0: is_tradable = no
+    sellable   INTEGER NOT NULL DEFAULT 1, -- 0: is_sellable = no
+    icon       TEXT,                       -- GFX_specimen_*
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE specimen_modifier (
+    specimen_key   TEXT NOT NULL,
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    condition      TEXT,                   -- the block's potential, as precursor_relic_modifier's
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (specimen_key) REFERENCES specimen(key)
+);
+CREATE TABLE specimen_resource (
+    specimen_key TEXT NOT NULL,
+    resource     TEXT NOT NULL,            -- produced a month, e.g. unity
+    amount       REAL NOT NULL,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (specimen_key) REFERENCES specimen(key)
 );
 
 -- Data
@@ -137304,6 +137335,1037 @@ INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_sector_as_vassal', 'Delegating', NULL, '50.0', 54);
 INSERT INTO deed (key, name, description, attunement, sort_order)
                VALUES ('deed_colonize_tomb_world', 'Reclaiming', NULL, '25.0', 55);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('acidic_spores', 'Acidic Spores', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_acidic_spores', 0);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('acidic_spores', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('acidic_spores', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('acidic_spores', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('adakkaria_propaganda_poster', 'adAkkaria Propaganda Poster', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_adakkaria_propaganda_poster', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('adakkaria_propaganda_poster', 'planet_stability_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('advisor_core', 'Advisor Core', 'historical_item', 'epic', 1, 1, 'GFX_specimen_advisor_core', 2);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('advisor_core', 'species_leader_exp_gain', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('alien_brain_scans', 'Alien Brain Scans', 'historical_item', 'rare', 1, 1, 'GFX_specimen_alien_brain_scans', 3);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('alien_brain_scans', 'country_edict_fund_add', '10.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('alien_dining_set', 'Jade Dining Set', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_alien_dining_set', 4);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('alien_dining_set', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('alien_jewelry', 'Alien Jewelry', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_alien_jewelry', 5);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('alien_jewelry', 'planet_jobs_trade_produces_mult', '0.03', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('alien_jewelry', 'planet_jobs_energy_produces_mult', '0.02', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('alien_toy', 'Plastic Toy', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_alien_toy', 6);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('alien_toy', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('altar_to_the_elder_one', 'Altar to the Elder One', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_altar_to_the_elder_one', 7);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('altar_to_the_elder_one', 'pop_government_ethic_attraction', '0.5', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('aluminium_plaque', 'Aluminum Plaque', 'historical_item', 'common', 1, 1, 'GFX_specimen_aluminium_plaque', 8);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('aluminium_plaque', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ammoniaphytus', 'Ammoniaphytus', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_ammoniaphytus', 9);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ammoniaphytus', 'planet_jobs_trade_produces_mult', '0.06', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ammoniaphytus', 'planet_jobs_energy_produces_mult', '0.04', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('amoeba_flagella_gland', 'Amoeba Flagella Gland', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_amoeba_flagella_gland', 10);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('amoeba_flagella_gland', 'space_fauna_ship_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_speed_mult', 'Space Fauna Ship Sublight Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_bust', 'Ancient Bust', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_ancient_bust', 11);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_bust', 'planet_jobs_trade_produces_mult', '0.03', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_bust', 'planet_jobs_energy_produces_mult', '0.02', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_kinetic_launcher', 'Ancient Kinetic Launcher', 'historical_item', 'common', 1, 1, 'GFX_specimen_ancient_kinetic_launcher', 12);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('ancient_kinetic_launcher', 'society_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_laser_pointer', 'Ancient Laser Pointer', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_ancient_laser_pointer', 13);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_laser_pointer', 'planet_jobs_trade_produces_mult', '0.03', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_laser_pointer', 'planet_jobs_energy_produces_mult', '0.02', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_nanites', 'Ancient Nanites', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_ancient_nanites', 14);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_nanites', 'pop_environment_tolerance', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_nuclear_armament', 'Ancient Nuclear Armament', 'historical_item', 'common', 1, 1, 'GFX_specimen_ancient_nuclear_armament', 15);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_nuclear_armament', 'country_unity_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_political_memoir', 'Ancient Political Memoir', 'historical_item', 'common', 1, 1, 'GFX_specimen_ancient_political_memoir', 16);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_political_memoir', 'leaders_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_rift_sphere', 'Ancient Rift Sphere', 'historical_item', 'rare', 1, 1, 'GFX_specimen_ancient_rift_sphere', 17);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_rift_sphere', 'ship_speed_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_satellite', 'Ancient Satellite', 'historical_item', 'rare', 1, 1, 'GFX_specimen_ancient_satellite', 18);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ancient_satellite', 'ship_hull_mult', '0.07', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ancient_sensor', 'Ancient Heat Sensor', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_ancient_sensor', 19);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('ancient_sensor', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('asteroid_fossils', 'Asteroid Fossils', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_asteroid_fossils', 20);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('asteroid_fossils', 'planet_jobs_minerals_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ballad_of_the_sable_knight', 'Ballad of the Sable Knight', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_ballad_of_the_sable_knight', 21);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ballad_of_the_sable_knight', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('beauty_of_planet', 'Beauty of', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_beauty_of_planet', 22);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('beauty_of_planet', 'logistic_growth_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('black_hole_chromatic_anomaly', 'Black Hole Chromatic Anomaly', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_black_hole_chromatic_anomaly', 23);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('black_hole_chromatic_anomaly', 'ship_sensor_range_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('black_needle_ceremonial_sword', 'Black Needle Ceremonial Sword', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_black_needle_ceremonial_sword', 24);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('black_needle_ceremonial_sword', 'planet_jobs_trade_produces_mult', '0.06', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('black_needle_ceremonial_sword', 'planet_jobs_energy_produces_mult', '0.04', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('black_needle_ledger', 'Black Needle Ledger', 'historical_item', 'epic', 1, 1, 'GFX_specimen_black_needle_ledger', 25);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('black_needle_ledger', 'country_edict_fund_add', '15.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('burnt_migratory_trees', 'Living Bark', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_burnt_migratory_trees', 26);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('burnt_migratory_trees', 'physics_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('captain_ness_body', 'Body of Captain Ness', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_captain_ness_body', 27);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('captain_ness_body', 'species_leader_exp_gain', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('captain_ness_logbook', 'Captain Ness''s Logbook', 'historical_item', 'common', 1, 1, 'GFX_specimen_captain_ness_logbook', 28);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('captain_ness_logbook', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('carnivorous_megaflora', 'Carnivorous Megaflora', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_carnivorous_megaflora', 29);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('carnivorous_megaflora', 'planet_jobs_consumer_goods_produces_mult', '0.02', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('carnivorous_megaflora', 'planet_jobs_energy_produces_mult', '0.02', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('castaway_robot', 'Castaway Robot', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_castaway_robot', 30);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('castaway_robot', 'planet_jobs_energy_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cenotaph_display', 'Cenotaph Display', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_cenotaph_display', 31);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('cenotaph_display', 'space_fauna_ship_damage_mult', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_damage_mult', 'Space Fauna Ship Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('centrifugal_container', 'High-Velocity Centrifugal Container', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_centrifugal_container', 32);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('centrifugal_container', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cetana_love', 'Cetana''s Love', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_cetana_love', 33);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('cetana_love', 'physics_research', '40.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('chambered_clay_pot', 'Chambered Clay Pot', 'historical_item', 'common', 1, 1, 'GFX_specimen_chambered_clay_pot', 34);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('chambered_clay_pot', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('claw_of_the_trickster', 'Claw of the Trickster', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_claw_of_the_trickster', 35);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('claw_of_the_trickster', 'planet_stability_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('confessions_benefactors', 'Confessions of the Benefactors', 'historical_item', 'epic', 1, 1, 'GFX_specimen_confessions_benefactors', 36);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('confessions_benefactors', 'country_edict_fund_add', '15.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('coprolite', 'Coprolite', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_coprolite', 37);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('coprolite', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('coprolite', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('coprolite', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cosmic_diamond_fragment', 'Cosmic Diamond Fragment', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_cosmic_diamond_fragment', 38);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('cosmic_diamond_fragment', 'country_rare_crystals_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_rare_crystals_produces_mult', 'Monthly Rare Crystals', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('crimson_nimkips', 'Crimson Nimkips', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_crimson_nimkips', 39);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('crimson_nimkips', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('crystal_core', 'Crystalline Core', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_crystal_core', 40);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('crystal_core', 'space_fauna_growth_rate_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_growth_rate_mult', 'Space Fauna Ship Growth Rate', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('crystal_nest_fragments', 'Crystal Nest Fragments', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_crystal_nest_fragments', 41);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('crystal_nest_fragments', 'planet_jobs_energy_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('crystal_sphere_fragments', 'Crystal Sphere Fragments', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_crystal_sphere_fragments', 42);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('crystal_sphere_fragments', 'country_astral_threads_produces_mult', '0.12', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_threads_produces_mult', 'Monthly Astral Threads', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('crystallized_cutholoid_eye', 'Crystallized Cutholoid Eye', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_crystallized_cutholoid_eye', 43);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('crystallized_cutholoid_eye', 'physics_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cult_pendant', 'Pendant', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_cult_pendant', 44);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('cult_pendant', 'planet_jobs_minerals_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cunning_flora_specimen', 'Symbiotica', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_cunning_flora', 45);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('cunning_flora_specimen', 'physics_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('curator_survey', 'Curator Survey', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_curator_survey', 46);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('curator_survey', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cutholoid_digestive_acids', 'Cutholoid Digestive Acids', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_cutholoid_digestive_acids', 47);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('cutholoid_digestive_acids', 'space_fauna_ship_damage_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_damage_mult', 'Space Fauna Ship Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('cybrex_mining_column', 'Cybrex Mining Column', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_cybrex_mining_column', 48);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('cybrex_mining_column', 'planet_jobs_minerals_produces_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('data_on_infinity', 'Data on the Nature of Infinity', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_data_on_infinity', 49);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('data_on_infinity', 'ship_sensor_range_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('datacore_of_sinople', 'Datacore of Sinople', 'historical_item', 'common', 1, 1, 'GFX_specimen_datacore_of_sinople', 50);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('datacore_of_sinople', 'society_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('dathnak_gas', 'Dathnak Gas', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_dathnak_gas', 51);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('dathnak_gas', 'country_exotic_gases_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_exotic_gases_produces_mult', 'Monthly Exotic Gases', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('dead_god_mantle', 'Mantle of the Dead God', 'historical_item', 'common', 1, 1, 'GFX_specimen_dead_god_mantle', 52);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('dead_god_mantle', 'society_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('decayed_megathrusters', 'Decayed Megathrusters', 'historical_item', 'common', 1, 1, 'GFX_specimen_decayed_megathrusters', 53);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('decayed_megathrusters', 'ship_speed_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('decayed_satellite', 'Decayed Satellite', 'historical_item', 'common', 1, 1, 'GFX_specimen_decayed_satellite', 54);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('decayed_satellite', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('declaration_of_animosity', 'Nivlac Declaration of Animosity', 'historical_item', 'common', 1, 1, 'GFX_specimen_declaration_of_animosity', 55);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('declaration_of_animosity', 'country_edict_fund_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('declaration_of_friendship', 'Nivlac Declaration of Friendship', 'historical_item', 'rare', 1, 1, 'GFX_specimen_declaration_of_friendship', 56);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('declaration_of_friendship', 'unity', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('derelict_cybrex_warform', 'Derelict Cybrex Warform', 'historical_item', 'epic', 1, 1, 'GFX_specimen_derelict_cybrex_warform', 57);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('derelict_cybrex_warform', 'ship_hull_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('desiccated_brain_slug', 'Desiccated Brain Slug', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_desiccated_brain_slug', 58);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('desiccated_brain_slug', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('destroyed_mascot_of_colony', 'Remains of Robot', 'historical_item', 'epic', 1, 1, 'GFX_specimen_destroyed_mascot_of_colony', 59);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('destroyed_mascot_of_colony', 'country_unity_produces_mult', '0.07', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('devolved_baol_drones', 'Devolved Baol Drones', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_devolved_baol_drones', 60);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('devolved_baol_drones', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('dimensional_endothelial_lining', 'Dimensional Endothelial Lining', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_dimensional_endothelial_lining', 61);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('dimensional_endothelial_lining', 'planet_jobs_energy_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('dna_archive', 'DNA Archive', 'historical_item', 'common', 1, 1, 'GFX_specimen_dna_archive', 62);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('dna_archive', 'leaders_upkeep_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('doomsday_scrolls', 'Doomsday Scrolls', 'historical_item', 'rare', 1, 1, 'GFX_specimen_doomsday_scrolls', 63);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('doomsday_scrolls', 'country_unity_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('drone_ship_core', 'Drone Ship Core', 'historical_item', 'epic', 1, 1, 'GFX_specimen_drone_ship_core', 64);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('drone_ship_core', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('electric_life', 'Electric Life', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_electric_life', 65);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('electric_life', 'planet_jobs_energy_produces_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('enormous_scrambled_albumen', 'Enormous Scrambled Albumen', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_enormous_scrambled_albumen', 66);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('enormous_scrambled_albumen', 'planet_jobs_food_produces_mult', '0.04', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('enormous_scrambled_albumen', 'planet_jobs_minerals_produces_mult', '0.04', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('enormous_scrambled_albumen', 'planet_jobs_alloys_produces_mult', '0.01', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('epic_of_zarqlan', 'The Epic of Zarqlan', 'historical_item', 'rare', 1, 1, 'GFX_specimen_epic_of_zarqlan', 67);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('epic_of_zarqlan', 'country_unity_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ethereal_dust', 'Ethereal Dust', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_ethereal_dust', 68);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('ethereal_dust', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('exobiology_compendium', 'Exobiology Compendium', 'historical_item', 'rare', 1, 1, 'GFX_specimen_exobiology_compendium', 69);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('exobiology_compendium', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('extradimensional_ceramic_pot', 'Extra-dimensional Ceramic Pot', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_extradimensional_ceramic_pot', 70);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('extradimensional_ceramic_pot', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('extradimensional_fungus', 'Extradimensional Fungus', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_extradimensional_fungus', 71);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('extradimensional_fungus', 'country_exotic_gases_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_exotic_gases_produces_mult', 'Monthly Exotic Gases', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fevorian_blueprints', 'Fevorian Mass Driver Blueprints', 'historical_item', 'epic', 1, 1, 'GFX_specimen_fevorian_blueprints', 72);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fevorian_blueprints', 'ship_weapon_damage', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('figurehead_hyacinth', 'Figurehead of the Hyacinth', 'historical_item', 'epic', 1, 1, 'GFX_specimen_figurehead_hyacinth', 73);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('figurehead_hyacinth', 'ship_hull_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('first_defiled_astronaut', 'First Astronaut', 'historical_item', 'rare', 1, 1, 'GFX_specimen_first_defiled_astronaut', 74);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('first_defiled_astronaut', 'country_unity_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('first_league_crew_manifest', 'First League Crew Manifest', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_first_league_crew_manifest', 75);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('first_league_crew_manifest', 'planet_jobs_alloys_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fish_in_the_sea_sheet_music', 'Space Shanty', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_fish_in_the_sea_sheet_music', 76);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fish_in_the_sea_sheet_music', 'planet_amenities_add', '700.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('flag_of_the_jaro_lyjo', 'Flag of the Jaro Lyjo', 'historical_item', 'epic', 1, 1, 'GFX_specimen_flag_of_the_jaro_lyjo', 77);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('flag_of_the_jaro_lyjo', 'species_leader_exp_gain', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('flooded_settlement_mound', 'Flooded Settlement Mound', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_flooded_settlement_mound', 78);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('flooded_settlement_mound', 'pop_environment_tolerance', '0.01', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fossilized_endoskeletons', 'Fossilized Endoskeletons', 'historical_item', 'common', 1, 1, 'GFX_specimen_fossilized_endoskeletons', 79);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_endoskeletons', 'army_damage_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fossilized_megastomach', 'Fossilized Megastomach', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_fossilized_megastomach', 80);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('fossilized_megastomach', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fossilized_voidworm_tooth', 'Fossilized Voidworm Tooth', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_fossilized_voidworm_tooth', 81);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_voidworm_tooth', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_voidworm_tooth', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_voidworm_tooth', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fossilized_vultaum_remains', 'Fossilized Vultaum Remains', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_fossilized_vultaum_remains', 82);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_vultaum_remains', 'planet_jobs_consumer_goods_produces_mult', '0.08', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fossilized_vultaum_remains', 'planet_jobs_energy_produces_mult', '0.08', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fractured_planet', 'Fractured Planet', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_fractured_planet', 83);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('fractured_planet', 'country_volatile_motes_produces_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_volatile_motes_produces_mult', 'Monthly Volatile Motes', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fragment_of_reckoning', 'Fragment of Reckoning', 'historical_item', 'epic', 0, 0, 'GFX_fragment_of_reckoning', 84);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('fragment_of_reckoning', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('fragmented_zroni_archive', 'Fragmented Zroni Archive', 'historical_item', 'common', 1, 1, 'GFX_specimen_fragmented_zroni_archive', 85);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('fragmented_zroni_archive', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('galactic_megadrive', 'Galactic Megadrive', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_galactic_megadrive', 86);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('galactic_megadrive', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('gamma_resistant_flora', 'Gammabloom', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_gamma_resistant_flora', 87);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('gamma_resistant_flora', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('gargantua_megalus', 'Gargantua Megalus', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_gargantua_megalus', 88);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('gargantua_megalus', 'planet_jobs_minerals_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('genesis_core', 'Genesis Core', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_genesis_core', 89);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('genesis_core', 'planet_pop_assembly_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('genetic_code', 'Genetic Code', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_genetic_code', 90);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('genetic_code', 'bonus_pop_growth_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('geometric_water_currents', 'Polymer Waterweave', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_geometric_water_currents', 91);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('geometric_water_currents', 'planet_building_build_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('giant_egg_shell', 'Giant Egg Shell', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_giant_egg_shell', 92);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('giant_egg_shell', 'starbase_shipyard_space_fauna_build_cost_mult', '-0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_cost_mult', 'Space Fauna Ship Cloning Cost', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('golden_phonograph_record', 'Golden Phonograph Record', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_golden_phonograph_record', 93);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('golden_phonograph_record', 'unity', '40.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('golem_contortionist_dna', 'Extreme Contortionist DNA', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_golem_contortionist_dna', 94);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('golem_contortionist_dna', 'country_rare_crystals_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_rare_crystals_produces_mult', 'Monthly Rare Crystals', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('grunur_data_crystal', 'Grunur Data Crystal', 'historical_item', 'common', 1, 1, 'GFX_specimen_grunur_data_crystal', 95);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('grunur_data_crystal', 'species_leader_exp_gain', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('head_of_the_beast', 'Head of the Beast', 'historical_item', 'epic', 1, 1, 'GFX_specimen_head_of_the_beast', 96);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('head_of_the_beast', 'leaders_upkeep_mult', '-0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('heart_of_the_pulsar', 'Heart of the Pulsar', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_heart_of_the_pulsar', 97);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('heart_of_the_pulsar', 'planet_jobs_trade_produces_mult', '0.1', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('heart_of_the_pulsar', 'planet_jobs_energy_produces_mult', '0.06', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('hemterine_magnetic_figurehead', 'Hemterine Magnetic Figurehead', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_hemterine_magnetic_figurehead', 98);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('hemterine_magnetic_figurehead', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('high_geode_of_the_molluscoids', 'High Geode of the', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_high_geode_of_the_molluscoids', 99);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('high_geode_of_the_molluscoids', 'planet_jobs_minerals_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('hot_ice', 'Hot Ice', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_hot_ice', 100);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hot_ice', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('hyper_mulch', 'Hyper Mulch', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_hyper_mulch', 101);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyper_mulch', 'planet_jobs_food_produces_mult', '0.08', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyper_mulch', 'planet_jobs_minerals_produces_mult', '0.08', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyper_mulch', 'planet_jobs_alloys_produces_mult', '0.02', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('hyperfertile_soil', 'Hyperfertile Soil', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_hyperfertile_soil', 102);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyperfertile_soil', 'planet_jobs_food_produces_mult', '0.06', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyperfertile_soil', 'planet_jobs_minerals_produces_mult', '0.06', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('hyperfertile_soil', 'planet_jobs_alloys_produces_mult', '0.015', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('illanii_archives', 'Illanii Archives', 'historical_item', 'epic', 1, 1, 'GFX_specimen_illanii_archives', 103);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('illanii_archives', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('impossible_object', 'Impossible Object', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_impossible_object', 104);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('impossible_object', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('index_of_knowledge', 'Index of Knowledge', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_index_of_knowledge', 105);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('index_of_knowledge', 'physics_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('inet_trade_manifesto', 'INET Trade Manifesto', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_inet_trade_manifesto', 106);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('inet_trade_manifesto', 'planet_jobs_trade_produces_mult', '0.06', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('inet_trade_manifesto', 'planet_jobs_energy_produces_mult', '0.04', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('inetian_model_manual', 'Inetian Planetary Model Manual', 'historical_item', 'rare', 1, 1, 'GFX_specimen_inetian_model_manual', 107);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('inetian_model_manual', 'ship_speed_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('infinite_reboot_loop', 'Infinite Reboot Loop', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_data_on_infinity', 108);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('infinite_reboot_loop', 'ship_sensor_range_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('interdimensional_treaty', 'Interdimensional Treaty', 'historical_item', 'rare', 1, 1, 'GFX_specimen_interdimensional_treaty', 109);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('interdimensional_treaty', 'unity', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('intergalactic_projectile', 'Intergalactic Projectile', 'historical_item', 'rare', 1, 1, 'GFX_specimen_intergalactic_projectile', 110);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('intergalactic_projectile', 'ship_weapon_damage', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('invasive_exofungus', 'Invasive Exofungus', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_invasive_exofungus', 111);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('invasive_exofungus', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('irassian_bacterium_javoria', 'Irassian Bacterium Javoria', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_irassian_bacterium_javoria', 112);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('irassian_bacterium_javoria', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('irassian_digital_atlas', 'Irassian Kinder-Atlas', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_irassian_digital_atlas', 113);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('irassian_digital_atlas', 'planet_stability_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('irassian_purge_order', 'Irassian Purge Order', 'historical_item', 'common', 1, 1, 'GFX_specimen_irassian_purge_order', 114);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('irassian_purge_order', 'species_leader_exp_gain', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('key_to_fertility', 'Key to Fertility', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_key_to_fertility', 115);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('key_to_fertility', 'logistic_growth_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('khalanka_crystallized_corpses', 'Kha''lanka Crystallized Corpses', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_khalanka_crystallized_corpses', 116);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('khalanka_crystallized_corpses', 'country_rare_crystals_produces_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_rare_crystals_produces_mult', 'Monthly Rare Crystals', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('khamdai_magil_sha', 'Khamdai Magil-Sha', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_khamdai_magil_sha', 117);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('khamdai_magil_sha', 'planet_stability_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('kuurian_cybrex_blueprints', 'Kuurian Cybrex Blueprints', 'historical_item', 'common', 1, 1, 'GFX_specimen_kuurian_cybrex_blueprints', 118);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('kuurian_cybrex_blueprints', 'army_damage_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('landeer_arm', 'Landeer''s Arm', 'historical_item', 'rare', 1, 1, 'GFX_specimen_landeer_arm', 119);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('landeer_arm', 'society_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('larionessi_cloning_vat', 'Larionessi Cloning Vat', 'historical_item', 'rare', 1, 1, 'GFX_specimen_larionessi_cloning_vat', 120);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('larionessi_cloning_vat', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('last_copy_of_the_prince', 'Last Copy of The Prince', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_last_copy_of_the_prince', 121);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('last_copy_of_the_prince', 'planet_amenities_add', '700.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('last_fragment_fevor', 'Last Fragment of Fevor', 'historical_item', 'epic', 1, 1, 'GFX_specimen_last_fragment_fevor', 122);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('last_fragment_fevor', 'ship_orbital_bombardment_mult', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('last_general_badge', 'The Last General''s Badge', 'historical_item', 'epic', 1, 1, 'GFX_specimen_last_general_badge', 123);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('last_general_badge', 'species_leader_exp_gain', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('last_mharin_kharin', 'The Last Mharin Kharin', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_last_mharin_kharin', 124);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('last_mharin_kharin', 'logistic_growth_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('leviathan_scale', 'Leviathan Scale', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_leviathan_scale', 125);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('leviathan_scale', 'planet_jobs_alloys_produces_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('living_snow_sculpture', 'Living Snow Sculpture', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_living_snow_sculpture', 126);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('living_snow_sculpture', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('localised_aurora_borealis', 'Localized Aurora Borealis', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_localised_aurora_borealis', 127);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('localised_aurora_borealis', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('loopmail', 'Loopmail', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_loopmail', 128);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('loopmail', 'society_research', '40.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('lunatic_broker_therapy_box', 'Lunatic Broker''s Therapy Box', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_lunatic_broker_therapy_box', 129);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('lunatic_broker_therapy_box', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('manifesti_piece', 'Manifesti Social Commentary Piece', 'historical_item', 'rare', 1, 1, 'GFX_specimen_manifesti_piece', 130);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('manifesti_piece', 'pop_factions_produces_mult', '0.05', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('manifesti_piece', 'planet_crime_no_happiness_add', '-3.0', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('manna_fruit', 'Manna Fruit', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_manna_fruit', 131);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('manna_fruit', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('manna_fruit', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('manna_fruit', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('massive_metatarsal', 'Massive Metatarsal', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_massive_metatarsal', 132);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('massive_metatarsal', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('medal_for_services_to_diplomacy', 'Medal for Services to Diplomacy', 'historical_item', 'epic', 1, 1, 'GFX_specimen_medal_for_services_to_diplomacy', 133);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('medal_for_services_to_diplomacy', 'country_edict_fund_add', '15.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('megacorpse_hyperguitar', 'Megacorpse Hyper-Guitar', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_megacorpse_hyperguitar', 134);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('megacorpse_hyperguitar', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('memorial_for_bubbles', 'Memorial for', 'historical_item', 'epic', 1, 1, 'GFX_specimen_memorial_for_bubbles', 135);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('memorial_for_bubbles', 'unity', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('memorial_stone', 'Memorial Stone', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_memorial_stone', 136);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('memorial_stone', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('memorial_to_homeworld', 'Memorial to', 'historical_item', 'epic', 1, 1, 'GFX_specimen_memorial_to_homeworld', 137);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('memorial_to_homeworld', 'country_unity_produces_mult', '0.07', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('memories_of_elik', 'Memories of Elik', 'historical_item', 'rare', 1, 1, 'GFX_specimen_memories_of_elik', 138);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('memories_of_elik', 'leaders_upkeep_mult', '-0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('memory_orbs', 'Memory Orbs', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_memory_orbs', 139);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('memory_orbs', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mercenary_story', 'Tales of a Mercenary', 'historical_item', 'common', 1, 1, 'GFX_specimen_alien_writing', 140);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('mercenary_story', 'unity', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('metallic_snow', 'Metallic Snow', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_metallic_snow', 141);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('metallic_snow', 'planet_jobs_alloys_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('minamar_chandelier', 'Minamar Chandelier', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_minamar_chandelier', 142);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('minamar_chandelier', 'logistic_growth_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mineralized_brain', 'Mineralized Brain', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_mineralized_brain', 143);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('mineralized_brain', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mini_moon_dust', 'Mini Moon Dust', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_mini_moon_dust', 144);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('mini_moon_dust', 'planet_jobs_minerals_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mining_transmitter', 'Ancient Mining Transmitter', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_mining_transmitter', 145);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('mining_transmitter', 'planet_jobs_minerals_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('miracle_cream', NULL, 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_miracle_cream', 146);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('miracle_cream', 'planet_jobs_trade_produces_mult', '0.1', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('miracle_cream', 'planet_jobs_energy_produces_mult', '0.06', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('missile_lone_defender', 'Missile of the Lone Defender', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_missile_lone_defender', 147);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('missile_lone_defender', 'ship_friendly_territory_shield_mult', '0.3', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_friendly_territory_shield_mult', 'Shield Hit Points in Friendly Systems', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('molten_slag', 'Molten Planetary Slag', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_molten_slag', 148);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('molten_slag', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('musings_on_infinity', 'Collective Musings on Infinity', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_musings_on_infinity', 149);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('musings_on_infinity', 'ship_sensor_range_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mutated_fumongus', 'Mutated ''Fumongus''', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_mutated_fumongus', 150);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('mutated_fumongus', 'ship_sensor_range_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('mutative_digestive_fluids', 'Mutative Digestive Fluids', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_mutative_digestive_fluids', 151);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('mutative_digestive_fluids', 'terraform_speed_mult', '0.2', NULL, 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('namarian_colonist_standard', 'Namarian Colonist Standard', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_namarian_colonist_standard', 152);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('namarian_colonist_standard', 'planet_stability_add', '3.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('namarian_sculpture', 'Namarian Sculpture', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_namarian_sculpture', 153);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('namarian_sculpture', 'planet_jobs_trade_produces_mult', '0.03', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('namarian_sculpture', 'planet_jobs_energy_produces_mult', '0.02', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('namarian_vessel_heraldry', 'Namarian Vessel Heraldry', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_namarian_vessel_heraldry', 154);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('namarian_vessel_heraldry', 'planet_stability_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('nanite_sludge', 'Nanite Sludge', 'historical_item', 'common', 1, 1, 'GFX_specimen_nanite_sludge', 155);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('nanite_sludge', 'country_edict_fund_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('obsidian_obelisk_fragment', 'Obsidian Obelisk Fragment', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_obsidian_obelisk_fragment', 156);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('obsidian_obelisk_fragment', 'country_astral_threads_produces_mult', '0.09', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_threads_produces_mult', 'Monthly Astral Threads', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('oiled_fabric', 'Oiled Fabric', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_oiled_fabric', 157);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('oiled_fabric', 'planet_stability_add', '1.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('organic_computer', 'Organic Computer', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_organic_computer', 158);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('organic_computer', 'planet_stability_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('organic_machine_interface_sculpture', 'Organic-Machine Interface Sculpture', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_organic_machine_interface_sculpture', 159);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('organic_machine_interface_sculpture', 'planet_stability_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('orinthi_teeth', 'Orinthi Teeth', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_orinthi_teeth', 160);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('orinthi_teeth', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('osseus_construction_material', 'Osseus Construction Material', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_osseus_construction_material', 161);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('osseus_construction_material', 'engineering_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('path_to_progress', 'The Path to Progress', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_path_to_progress', 162);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('path_to_progress', 'planet_jobs_trade_produces_mult', '0.15', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('path_to_progress', 'planet_jobs_energy_produces_mult', '0.08', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('peerless_atomic_clock', 'Peerless Atomic Clock', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_peerless_atomic_clock', 163);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('peerless_atomic_clock', 'physics_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('perception_of_infinity', 'Perception of Infinity', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_musings_on_infinity', 164);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('perception_of_infinity', 'ship_sensor_range_add', '2.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_sensor_range_add', 'Sensor Range', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('perfectly_faceted_carbon', 'Perfectly Faceted Carbon', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_perfectly_faceted_carbon', 165);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('perfectly_faceted_carbon', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('pet_collar', 'Bejeweled Pet Collar', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_pet_collar', 166);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('pet_collar', 'space_fauna_ship_damage_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_damage_mult', 'Space Fauna Ship Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('perikan_tapico_jewel', 'Perikan Tapico Jewel', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_perikan_tapico_jewel', 167);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('perikan_tapico_jewel', 'country_rare_crystals_produces_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_rare_crystals_produces_mult', 'Monthly Rare Crystals', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('piece_of_invocator', 'Piece of the Invocator', 'historical_item', 'epic', 1, 1, 'GFX_specimen_piece_of_invocator', 168);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('piece_of_invocator', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('pilgrimage_last_days', 'The Pilgrimage of Last Days', 'historical_item', 'common', 1, 1, 'GFX_specimen_pilgrimage_last_days', 169);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('pilgrimage_last_days', 'country_unity_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('planet_crystalose', 'Crystalose', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_planet_crystalose', 170);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_crystalose', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_crystalose', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_crystalose', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('planet_pushing_thruster', 'Planet-Pusher', 'historical_item', 'rare', 1, 1, 'GFX_specimen_planet_pushing_thruster', 171);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_pushing_thruster', 'command_limit_add', '20.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('command_limit_add', 'Fleet Command Limit', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('planet_super_roots', 'Super Roots', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_planet_super_roots', 172);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_super_roots', 'planet_jobs_food_produces_mult', '0.02', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_super_roots', 'planet_jobs_minerals_produces_mult', '0.02', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_super_roots', 'planet_jobs_alloys_produces_mult', '0.005', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('planet_vaccine', 'Vaccine', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_planet_vaccine', 173);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planet_vaccine', 'logistic_growth_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('planetary_sculpture', 'Planetary Sculpture', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_planetary_sculpture', 174);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('planetary_sculpture', 'logistic_growth_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('primitive_mega_electromagnet', 'Primitive Mega-Electromagnet', 'historical_item', 'rare', 1, 1, 'GFX_specimen_primitive_mega_electromagnet', 175);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('primitive_mega_electromagnet', 'ship_orbital_bombardment_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('programmable_puzzle_cube', 'Programmable Puzzle Cube', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_programmable_puzzle_cube', 176);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('programmable_puzzle_cube', 'physics_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('psionic_entity_residue', 'Psionic Entity Residue', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_psionic_entity_residue', 177);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('psionic_entity_residue', 'planet_jobs_energy_produces_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('radiated_remains', 'Radiated Remains', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_radiated_remains', 178);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('radiated_remains', 'terraform_speed_mult', '0.1', NULL, 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('rainaissance', 'Purple Renaissance', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_rainaissance', 179);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('rainaissance', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('reactive_rock', 'Reactive Rock', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_reactive_rock', 180);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('reactive_rock', 'planet_jobs_minerals_produces_mult', '0.04', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('reparation_invoice', 'Reparation Invoice', 'historical_item', 'common', 1, 1, 'GFX_specimen_reparation_invoice', 181);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('reparation_invoice', 'country_edict_fund_add', '5.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('repurposed_cleaning_drone', 'Repurposed Cleaning Drone', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_repurposed_cleaning_drone', 182);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('repurposed_cleaning_drone', 'planet_building_build_speed_mult', '0.25', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('resonant_diffusion_crystal', 'Resonant Diffusion Crystal', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_resonant_diffusion_crystal', 183);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('resonant_diffusion_crystal', 'country_rare_crystals_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_rare_crystals_produces_mult', 'Monthly Rare Crystals', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('retarax_hunting_trophies', 'Retarax Hunting Trophies', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_retarax_hunting_trophies', 184);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('retarax_hunting_trophies', 'starbase_shipyard_space_fauna_build_speed_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_speed_mult', 'Space Fauna Ship Cloning Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('robe_of_the_golden_broker', 'Robe of the Golden Broker', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_robe_of_the_golden_broker', 185);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('robe_of_the_golden_broker', 'planet_jobs_trade_produces_mult', '0.15', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('robe_of_the_golden_broker', 'planet_jobs_energy_produces_mult', '0.08', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('rock_jellies', 'Rock Jellies', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_rock_jellies', 186);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('rock_jellies', 'planet_jobs_minerals_produces_mult', '0.08', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('rudari_death_laser_prototype', 'Rudari Death Laser Prototype', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_rudari_death_laser_prototype', 187);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('rudari_death_laser_prototype', 'ship_weapon_damage', '0.07', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('saariah_guilt', 'Saariah''s Guilt', 'historical_item', 'epic', 1, 1, 'GFX_specimen_saariah_guilt', 188);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('saariah_guilt', 'species_leader_exp_gain', '0.15', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('scent_based_information_device', 'Olfactodrive', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_scent_based_information_device', 189);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('scent_based_information_device', 'planet_amenities_add', '500.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('scientific_treatise_of_telisa', 'Scientific Treatise of Telisa', 'historical_item', 'rare', 1, 1, 'GFX_specimen_scientific_treatise_of_telisa', 190);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('scientific_treatise_of_telisa', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('secrets_black_crown', 'Secrets of the Black Crown', 'historical_item', 'rare', 1, 1, 'GFX_specimen_secrets_black_crown', 191);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('secrets_black_crown', 'society_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('sembelami_alms_basket', 'Sembelami Alms Basket', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_sembelami_alms_basket', 192);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('sembelami_alms_basket', 'planet_jobs_trade_produces_mult', '0.1', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('sembelami_alms_basket', 'planet_jobs_energy_produces_mult', '0.06', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('shallarian_data_core', 'Shallarian Data Core', 'historical_item', 'epic', 1, 1, 'GFX_specimen_shallarian_data_core', 193);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('shallarian_data_core', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('shipyard_schematics', 'Shipyard Schematics', 'historical_item', 'common', 1, 1, 'GFX_specimen_shipyard_schematics', 194);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('shipyard_schematics', 'ship_hull_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_hull_mult', 'Ship Hull Points', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('sky_dragon', 'The Sky Dragon', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_sky_dragon', 195);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('sky_dragon', 'country_vivarium_max_capacity_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_vivarium_max_capacity_add', 'Vivarium Max Capacity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('smeegibb_statue', 'Statue of Smeegibb', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_smeegibb_statue', 196);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('smeegibb_statue', 'planet_stability_add', '3.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('sniran_spikes', 'Sniran Spikes', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_sniran_spikes', 197);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('sniran_spikes', 'engineering_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('sonic_reflective_prism', 'Sonically Reflective Prism', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_sonic_reflective_prism', 198);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('sonic_reflective_prism', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('spaceborne_hunter_handbook', 'Art of the Hunt', 'historical_item', 'epic', 1, 1, 'GFX_specimen_spaceborne_hunter_handbook', 199);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('spaceborne_hunter_handbook', 'ship_damage_against_space_fauna_mult', '0.07', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_damage_against_space_fauna_mult', 'Damage to Space Fauna', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('spaceborne_xeno_encyclopedia', 'Encyclopedia Xenologica', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_spaceborne_xeno_encyclopedia', 200);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('spaceborne_xeno_encyclopedia', 'country_vivarium_max_capacity_add', '50.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_vivarium_max_capacity_add', 'Vivarium Max Capacity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('spiraling_attraction', 'Spiraling Attraction', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_spiraling_attraction', 201);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('spiraling_attraction', 'planet_building_build_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_building_build_speed_mult', 'Infrastructure Build Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('spirit_of_the_unshackled', 'Spirit of the Unshackled', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_spirit_of_the_unshackled', 202);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('spirit_of_the_unshackled', 'planet_stability_add', '4.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('star_mall_map', 'Star Mall Complimentary Map', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_star_mall_map', 203);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('star_mall_map', 'planet_jobs_trade_produces_mult', '0.03', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('star_mall_map', 'planet_jobs_energy_produces_mult', '0.02', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('starmetal', 'Starmetal', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_starmetal', 204);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('starmetal', 'engineering_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('striated_sand', 'Striated Sand', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_striated_sand', 205);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('striated_sand', 'planet_jobs_minerals_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('sullebaster_control_column', 'Sullebaster Control Column', 'historical_item', 'epic', 1, 1, 'GFX_specimen_sullebaster_control_column', 206);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('sullebaster_control_column', 'society_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('symbiotic_fruit', 'Symbiotic Fruit', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_symbiotic_fruit', 207);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('symbiotic_fruit', 'planet_jobs_food_produces_mult', '0.04', 'is_lithoid = no, is_infernal = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_food_produces_mult', 'Food from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('symbiotic_fruit', 'planet_jobs_minerals_produces_mult', '0.04', 'is_lithoid = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_minerals_produces_mult', 'Minerals from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('symbiotic_fruit', 'planet_jobs_alloys_produces_mult', '0.01', 'is_infernal = yes', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('tarblac_shimmer', 'Tarblac Shimmer', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_tarblac_shimmer', 208);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('tarblac_shimmer', 'planet_jobs_consumer_goods_produces_mult', '0.02', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('tarblac_shimmer', 'planet_jobs_energy_produces_mult', '0.02', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('terraforming_case_study', 'Terraforming Case Study', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_terraforming_case_study', 209);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('terraforming_case_study', 'pop_environment_tolerance', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('terraforming_case_study_dry', 'Terraforming Case Study', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_terraforming_case_study_dry', 210);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('terraforming_case_study_dry', 'pop_environment_tolerance', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('terraforming_case_study_frozen', 'Terraforming Case Study', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_terraforming_case_study_frozen', 211);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('terraforming_case_study_frozen', 'pop_environment_tolerance', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('terraforming_machinery', 'Terraforming Machinery', 'historical_item', 'rare', 1, 1, 'GFX_specimen_terraforming_machinery', 212);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('terraforming_machinery', 'society_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('terraforming_records', 'Terraforming Records', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_terraforming_records', 213);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('terraforming_records', 'pop_environment_tolerance', '0.025', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('the_final_sacrifice', 'The Final Sacrifice', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_the_final_sacrifice', 214);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('the_final_sacrifice', 'planet_jobs_trade_produces_mult', '0.1', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('the_final_sacrifice', 'planet_jobs_energy_produces_mult', '0.06', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('the_mask_of_transformation', 'The Mask of Transformation', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_the_mask_of_transformation', 215);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('the_mask_of_transformation', 'planet_jobs_energy_produces_mult', '0.04', 'is_gestalt = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('the_planet_orchestra', 'The Orchestra', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_the_planet_orchestra', 216);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('the_planet_orchestra', 'physics_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('the_writer_sphere', 'The Writer''s Sphere', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_the_writer_sphere', 217);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('the_writer_sphere', 'country_astral_rift_speed_mult', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('tiny_ancient_sarcophagus', 'Tiny Ancient Sarcophagus', 'historical_item', 'rare', 1, 1, 'GFX_specimen_tiny_ancient_sarcophagus', 218);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('tiny_ancient_sarcophagus', 'society_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('tiyanki_radioactive_sac', 'Tiyanki Radioactive Sac', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_tiyanki_radioactive_sac', 219);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('tiyanki_radioactive_sac', 'space_fauna_ship_hull_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('space_fauna_ship_hull_mult', 'Space Fauna Ship Hull', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('torn_solar_sail', 'Torn Solar Sail', 'historical_item', 'common', 1, 1, 'GFX_specimen_torn_solar_sail', 220);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('torn_solar_sail', 'society_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('toxic_bio_engine', 'Toxic Bio-Engine', 'historical_item', 'common', 1, 1, 'GFX_specimen_toxic_bio_engine', 221);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('toxic_bio_engine', 'ship_orbital_bombardment_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_orbital_bombardment_mult', 'Orbital Bombardment Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('tree_of_life_sample', NULL, 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_tree_of_life_sample', 222);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('tree_of_life_sample', 'physics_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('tricorne_of_aussan', 'Tricorne of Aussan', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_tricorne_of_aussan', 223);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('tricorne_of_aussan', 'planet_jobs_trade_produces_mult', '0.1', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('tricorne_of_aussan', 'planet_jobs_energy_produces_mult', '0.06', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('triggerless_gun', 'Arms Dealer''s Triggerless Gun', 'historical_item', 'rare', 1, 1, 'GFX_specimen_triggerless_gun', 224);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('triggerless_gun', 'ship_weapon_damage', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_weapon_damage', 'Ship Weapons Damage', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('uddloran_pelts', 'Uddloran Pelts', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_uddloran_pelts', 225);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('uddloran_pelts', 'planet_jobs_consumer_goods_produces_mult', '0.02', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('uddloran_pelts', 'planet_jobs_energy_produces_mult', '0.02', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('underworld_cantina_sign', 'Underworld Cantina Sign', 'historical_item', 'epic', 1, 1, 'GFX_specimen_underworld_cantina_sign', 226);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('underworld_cantina_sign', 'unity', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('unfinished_manifesto', 'Unfinished Manifesto', 'historical_item', 'rare', 1, 1, 'GFX_specimen_unfinished_manifesto', 227);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('unfinished_manifesto', 'pop_government_ethic_attraction', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('uranium_glassware', 'Uranium Glassware', 'aesthetic_wonder', 'common', 1, 1, 'GFX_specimen_uranium_glassware', 228);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('uranium_glassware', 'planet_amenities_add', '300.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('vault_of_polaris', 'Vault of Polaris', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_vault_of_polaris', 229);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('vault_of_polaris', 'country_vivarium_max_capacity_add', '75.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_vivarium_max_capacity_add', 'Vivarium Max Capacity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('veil_of_selene', 'Veil of Selene', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_veil_of_selene', 230);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('veil_of_selene', 'planet_amenities_add', '700.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('verdingo_tendril_hook', 'Verdingo Tendril Hook', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_verdingo_tendril_hook', 231);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('verdingo_tendril_hook', 'planet_jobs_alloys_produces_mult', '0.06', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('vibrating_crystal', 'Vibrating Crystal', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_vibrating_crystal', 232);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('vibrating_crystal', 'planet_jobs_consumer_goods_produces_mult', '0.06', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('vibrating_crystal', 'planet_jobs_energy_produces_mult', '0.06', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('voidworm_amniotics', 'Voidworm Amniotics', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_voidworm_amniotics', 233);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('voidworm_amniotics', 'starbase_shipyard_space_fauna_build_speed_mult', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_shipyard_space_fauna_build_speed_mult', 'Space Fauna Ship Cloning Speed', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('voidworm_heart', 'Voidworm Heart', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_voidworm_heart', 234);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('voidworm_heart', 'country_unity_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('vultaum_religious_pamphlet', 'Vultaum Religious Pamphlet', 'historical_item', 'rare', 1, 1, 'GFX_specimen_vultaum_religious_pamphlet', 235);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('vultaum_religious_pamphlet', 'pop_government_ethic_attraction', '0.2', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('vultaum_vr_video_game', 'Vultaum VR Video Game', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_vultaum_vr_video_game', 236);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('vultaum_vr_video_game', 'planet_amenities_add', '700.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('warning_monolith', 'Warning Monolith', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_warning_monolith', 237);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('warning_monolith', 'planet_jobs_consumer_goods_produces_mult', '0.02', 'country_uses_consumer_goods = yes', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_consumer_goods_produces_mult', 'Consumer Goods from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('warning_monolith', 'planet_jobs_energy_produces_mult', '0.02', 'country_uses_consumer_goods = no', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('wormhole_anchor', 'Wormhole Anchor', 'historical_item', 'rare', 1, 1, 'GFX_specimen_wormhole_anchor', 238);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('wormhole_anchor', 'society_research', '10.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('wormhole_fur', 'Wormhole Fur', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_wormhole_fur', 239);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('wormhole_fur', 'country_astral_threads_produces_mult', '0.09', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_threads_produces_mult', 'Monthly Astral Threads', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ytterite_preserved_corpse', 'Ytterite Preserved Corpse', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_ytterite_preserved_corpse', 240);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('ytterite_preserved_corpse', 'engineering_research', '40.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ytterite_kaleidoscopic_fascinator', 'Ytterite Kaleidoscopic Fascinator', 'aesthetic_wonder', 'exceptional', 1, 1, 'GFX_specimen_ytterite_kaleidoscopic_fascinator', 241);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ytterite_kaleidoscopic_fascinator', 'planet_amenities_add', '1000.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('ytterite_royal_scepter', 'Ytterite Royal Scepter', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_ytterite_royal_scepter', 242);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('ytterite_royal_scepter', 'country_edict_fund_add', '20.0', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('yuht_audio_console', 'Yuht Audio Console', 'aesthetic_wonder', 'epic', 1, 1, 'GFX_specimen_yuht_audio_console', 243);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('yuht_audio_console', 'physics_research', '20.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('yuht_cryo_pod', 'Yuht Cryo Pod', 'xeno_geology', 'epic', 1, 1, 'GFX_specimen_yuht_cryo_pod', 244);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('yuht_cryo_pod', 'pop_environment_tolerance', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('yuht_crystal_skull', 'Yuht Crystal Skull', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_yuht_crystal_skull', 245);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('yuht_crystal_skull', 'planet_jobs_trade_produces_mult', '0.06', 'is_gestalt = no', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('yuht_crystal_skull', 'planet_jobs_energy_produces_mult', '0.04', 'is_gestalt = yes', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_energy_produces_mult', 'Energy Credits from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('zombie_probe', 'Zombie Probe', 'historical_item', 'common', 1, 1, 'GFX_specimen_zombie_probe', 246);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('zombie_probe', 'society_research', '5.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('zone_a_sedative', 'Zone A Sedative', 'xeno_geology', 'rare', 1, 1, 'GFX_specimen_zone_a_sedative', 247);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('zone_a_sedative', 'terraform_speed_mult', '0.1', NULL, 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('zroni_war_banners', 'Zroni War Banners', 'historical_item', 'rare', 1, 1, 'GFX_specimen_zroni_war_banners', 248);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('zroni_war_banners', 'species_leader_exp_gain', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('zulcor_wings', 'Zulcor Wings', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_zulcor_wings', 249);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('zulcor_wings', 'planet_jobs_alloys_produces_mult', '0.02', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_alloys_produces_mult', 'Alloys from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('infernal_stasispod', 'Ancient Stasis Pod', 'historical_item', 'exceptional', 1, 1, 'GFX_specimen_infernal_stasispod', 250);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('infernal_stasispod', 'planet_researchers_produces_mult', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_researchers_produces_mult', 'Resources Produced from Researchers', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('infernal_figurine', 'Infernal Figurine', 'historical_item', 'rare', 1, 1, 'GFX_specimen_infernal_figurine', 251);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('infernal_figurine', 'planet_jobs_unity_produces_mult', '0.03', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_unity_produces_mult', 'Unity from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('lava_surfboard', 'Lava Surfboard', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_lava_surfboard', 252);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('lava_surfboard', 'planet_amenities_add', '300.0', 'has_country_flag = had_lava_sports', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_amenities_add', 'Amenities', 1);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('lava_surfboard', 'planet_jobs_trade_produces_mult', '0.05', 'NOT', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('infernal_molten_core', 'Molten Core', 'xeno_geology', 'exceptional', 1, 1, 'GFX_specimen_infernal_molten_core', 253);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('infernal_molten_core', 'sr_living_metal', '3.0', 0);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('infernal_burning_gem', 'Burning Gem', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_burning_gem', 254);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('infernal_burning_gem', 'rare_crystals', '3.0', 0);
+INSERT INTO specimen_resource (specimen_key, resource, amount, sort_order) VALUES ('infernal_burning_gem', 'entropy_crystals', '3.0', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('black_crystal', 'Black Crystal', 'xeno_geology', 'common', 1, 1, 'GFX_specimen_black_crystal', 255);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('black_crystal', 'pop_happiness', '0.05', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('caeli_core_conspiracy_specimen', 'C.A.E.L.I.', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_caeli_core_conspiracy_specimen', 256);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('caeli_core_conspiracy_specimen', 'planet_jobs_worker_produces_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_worker_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO specimen (key, name, category, rarity, tradable, sellable, icon, sort_order) VALUES ('steris_core_conspiracy_specimen', 'S.T.E.R.I.S', 'aesthetic_wonder', 'rare', 1, 1, 'GFX_specimen_steris_core_conspiracy_specimen', 257);
+INSERT INTO specimen_modifier (specimen_key, modifier_key, modifier_value, condition, sort_order) VALUES ('steris_core_conspiracy_specimen', 'ship_speed_mult', '0.1', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
 INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('behemoth_path', 'feral_insight', 'Behemoth Crisis', 'Those in the galactic community who chart the arc of history have long predicted a coming Crisis - an existential threat to all sapient life which would require unprecedented unity of purpose, and sacrifice, to overcome. If it can be overcome at all.
 Popular predictions as to the nature of this crisis have been as fanciful as the invasion of an extragalactic glutton, or the galaxy''s machine intelligences rising up in petty rebellion, or a war of succession spilling over from another plane of existence, but...
 It is now clear that it was always going to be us.

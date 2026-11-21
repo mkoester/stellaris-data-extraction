@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `specimen`, `specimen_modifier`, `specimen_resource`: the Grand Archive's 258 specimens with
+  category, rarity, whether they can be traded or sold, the modifiers they give while exhibited
+  (each block's `potential` as `condition`) and the resources they produce.
+
+### Known issues
+
+- A localisation value that starts with a quote inside its quotes (`""Ageless" Miracle Cream"`)
+  reads empty: `_LOC_ENTRY` stops at the first inner quote. Two specimens have no name; the
+  dashboard falls back to the key.
+
 ## [0.1.22] - 2026-11-21
 
 ### Added

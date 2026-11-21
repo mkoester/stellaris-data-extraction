@@ -17,6 +17,7 @@ from .diplomacy import extract_diplomacy
 from .setup import extract_setup_scenarios
 from .federations import extract_federations
 from .shroud import extract_shroud
+from .specimens import extract_specimens
 from .ambitions import extract_ambitions
 from .economy import extract_economy
 from .ships import extract_ship_designs, extract_starbase_parts
@@ -590,6 +591,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     extract_setup_scenarios(install_dir, w, progress)
     print(f"\n[shroud] {install_dir / 'common' / 'patrons'}", file=progress)
     extract_shroud(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[specimens] {install_dir / 'common' / 'specimens'}", file=progress)
+    extract_specimens(install_dir, loc, w, progress)
     print(f"\n[ambitions] {install_dir / 'common' / 'crisis_paths'}", file=progress)
     extract_ambitions(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
@@ -650,6 +653,7 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
         n_term_values   = tmp.execute("SELECT COUNT(*) FROM agreement_term_value").fetchone()[0]
         n_patrons       = tmp.execute("SELECT COUNT(*) FROM patron").fetchone()[0]
         n_deeds         = tmp.execute("SELECT COUNT(*) FROM deed").fetchone()[0]
+        n_specimens     = tmp.execute("SELECT COUNT(*) FROM specimen").fetchone()[0]
         tmp.close()
         print(f"""
 +------------------------------------------+
@@ -701,6 +705,7 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
 |  Agreement term values: {n_term_values:<18}|
 |  Shroud patrons     : {n_patrons:<20}|
 |  Shroud deeds       : {n_deeds:<20}|
+|  Specimens          : {n_specimens:<20}|
 +------------------------------------------+""", file=progress)
     elif sql_path:
         sql_size = Path(sql_path).stat().st_size
