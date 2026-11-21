@@ -12,11 +12,11 @@ All notable changes to this project are documented here. The format follows
   category, rarity, whether they can be traded or sold, the modifiers they give while exhibited
   (each block's `potential` as `condition`) and the resources they produce.
 
-### Known issues
+### Fixed
 
-- A localisation value that starts with a quote inside its quotes (`""Ageless" Miracle Cream"`)
-  reads empty: `_LOC_ENTRY` stops at the first inner quote. Two specimens have no name; the
-  dashboard falls back to the key.
+- Localisation values with quotes inside them were cut at the first one: 1519 texts in 4.5.4, among
+  them descriptions of techs, edicts and modifiers (`An accelerated plume of neutron radiation` for
+  Neutron Sweep) and two specimen names that read empty (`"Ageless" Miracle Cream`).
 
 ## [0.1.22] - 2026-11-21
 

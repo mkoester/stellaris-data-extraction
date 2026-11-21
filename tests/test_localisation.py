@@ -103,6 +103,15 @@ class TestLoadLocalisation(unittest.TestCase):
             (Path(d) / 'test_l_english.yml').write_text(content, encoding='utf-8')
             return load_localisation(Path(d))
 
+    def test_quotes_inside_a_value_are_text(self):
+        loc = self.write_and_load('l_english:\n'
+                                  ' miracle_cream: ""Ageless" Miracle Cream"\n'
+                                  ' a: "So-called "Ghost Signal" here" # a "quoted" comment\n'
+                                  ' b:0 "plain"\n')
+        self.assertEqual(loc['miracle_cream'], '"Ageless" Miracle Cream')
+        self.assertEqual(loc['a'], 'So-called "Ghost Signal" here')
+        self.assertEqual(loc['b'], 'plain')
+
     def test_basic_entries(self):
         labels = self.write_and_load('l_english:\n key1:0 "Label One"\n key2:1 "Label Two"\n')
         self.assertEqual(labels['key1'], 'Label One')
