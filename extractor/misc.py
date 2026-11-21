@@ -164,14 +164,24 @@ def _ship_name(key: str, text: str) -> bool:
     return m.group(1) != 'PLANET' or m.group(2) != m.group(2).upper()
 
 
+# A scope command in a name (`[fotd_country.GetSpeciesName] Commune`): a save names its value
+# under that same key, so it is kept as a `$…$` placeholder the reader fills in.
+_NAME_SCOPE_CMD = re.compile(r'\[(\w+(?:\.\w+)+)\]')
+
+
+def _name_text(text: str, loc: dict[str, str]) -> str:
+    return _clean_loc(_NAME_SCOPE_CMD.sub(r'$\1$', text), loc)
+
+
 def prescripted_names(loc: dict[str, str], name_keys: set[str] = frozenset()) -> list[tuple[str, str]]:
     """The loc of every PRESCRIPTED_* / EMPIRE_DESIGN_* key, of the `name_keys` (random-name
     entries that are localisation keys) and of ship, fleet, army and planet names that differ from their
-    key, sorted (determinism)."""
-    return sorted((k, _clean_loc(v, loc)) for k, v in loc.items()
+    key, sorted (determinism). A scope command in the text stays as a `$scope.Command$` placeholder
+    (`NAME_fotd_seperatists` = "$fotd_country.GetSpeciesName$ Commune"): the save fills it."""
+    return sorted((k, _name_text(v, loc)) for k, v in loc.items()
                   if (k.startswith(('PRESCRIPTED_', 'EMPIRE_DESIGN_')) or k in name_keys
                       or _ship_name(k, v))
-                  and v and _clean_loc(v, loc))
+                  and v and _name_text(v, loc))
 
 
 def random_name_keys(text: str) -> set[str]:

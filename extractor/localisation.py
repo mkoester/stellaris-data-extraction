@@ -234,8 +234,10 @@ def _clean_loc(s: str, loc: dict[str, str], keep_newlines: bool = False,
 
 # Leading whitespace is optional: most files indent entries, but some DLC files
 # (e.g. the Infernals Species Pack) put them at column 0. The `l_english:` header
-# never matches (it has no "value"); `#` comments aren't word-initial.
-_LOC_ENTRY = re.compile(r'^\s*(\w[\w.]*):(\d*)\s+"([^"]*)"', re.MULTILINE)
+# never matches (it has no "value"); `#` comments aren't word-initial. The value runs to the
+# line's last quote before an optional `# comment`: quotes inside it are text
+# (`miracle_cream: ""Ageless" Miracle Cream"`; 1519 values in 4.5.4 were cut at the first one).
+_LOC_ENTRY = re.compile(r'^[ \t]*(\w[\w.]*):(\d*)[ \t]+"(.*?)"[ \t]*(?:#.*)?$', re.MULTILINE)
 
 
 _LOC_REF = re.compile(r'^\$([\w.]+)\$$')
