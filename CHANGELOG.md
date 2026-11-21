@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.23] - 2026-11-21
 
 ### Added
 
@@ -17,6 +17,8 @@ All notable changes to this project are documented here. The format follows
 - Localisation values with quotes inside them were cut at the first one: 1519 texts in 4.5.4, among
   them descriptions of techs, edicts and modifiers (`An accelerated plume of neutron radiation` for
   Neutron Sweep) and two specimen names that read empty (`"Ageless" Miracle Cream`).
+- Prescripted names keep a scope command as a `$…$` placeholder the save fills: a separatist
+  empire read "Commune" instead of "Fellnoll Commune" (`NAME_fotd_seperatists`).
 
 ## [0.1.22] - 2026-11-21
 
