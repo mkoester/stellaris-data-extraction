@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.contracts import (contract_categories, days, desc_key, desc_scopes, failed_opinion, operator_techs, reward,
+from extractor.contracts import (contract_categories, days, desc_key, desc_scopes, failed_opinion, offer_techs, operator_techs, reward,
                                  steps, with_inline)
 from extractor.situations import branches_on_arkship, requirements
 
@@ -113,6 +113,16 @@ class TestContractDetails(unittest.TestCase):
         self.assertEqual(operator_techs(c['possible_operator']), [])
         self.assertEqual(operator_techs(parse("p = { has_technology = tech_mine_volatile_motes }")['p']),
                          ['tech_mine_volatile_motes'])
+
+    def test_offer_techs(self):
+        # Clear Blockers, Deep Scan (4.5.x 02_contracts.txt): one tech; any one of several
+        self.assertEqual(offer_techs(parse("""p = { NOT = { fromfrom = { is_at_war_with = root } }
+            has_technology = tech_planetary_engineering }""")['p']), [['tech_planetary_engineering']])
+        self.assertEqual(offer_techs(parse("""p = { OR = { has_technology = tech_a
+            has_technology = tech_b } }""")['p']), [['tech_a', 'tech_b']])
+        # an OR with anything else in it is not a tech group
+        self.assertEqual(offer_techs(parse("p = { OR = { has_technology = tech_a is_ai = yes } }")['p']), [])
+        self.assertEqual(offer_techs(None), [])
 
     def test_desc_key(self):
         self.assertEqual(desc_key({}, 'contract_x'), 'contract_x_desc')

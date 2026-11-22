@@ -1291,6 +1291,7 @@ CREATE TABLE contract (
     reward_json      TEXT,                 -- {"scaled":[{"trade","resource","amount"}…] (× contract_bonus_value; a 2nd = partial success), "cruise", "fixed":{res:n}, "trust", "opinion"}; NULL: none found
     failed_opinion   REAL,                 -- the issuer's opinion of us on failure or cancel, e.g. -75
     operator_techs_json TEXT,              -- techs the operator needs (possible_operator), e.g. ["tech_mine_volatile_motes"]
+    offer_techs_json TEXT,                 -- techs before it is offered at all (potential_operator), groups of which any one will do, e.g. [["tech_planetary_engineering"]]
     description      TEXT,                 -- what the operator does, e.g. "Transport delegates to [from.capital_scope.GetName] …"
     location         INTEGER NOT NULL      -- 1: the contract has a system (`location = yes`), 0: none (the game's default)
 );
@@ -132350,296 +132351,369 @@ INSERT OR REPLACE INTO dig_site (key, name, description, stages) VALUES ('zroni_
 INSERT OR REPLACE INTO outcome (kind, key, tree_json, flags_json) VALUES ('dig_site', 'zroni_digsite_6', '[{"t":"chapter","n":1,"difficulty":4,"e":[{"t":"event","id":"ancrel.15","title":"Zron","e":[],"o":[{"name":"Investigate it!","cond":false,"e":[{"t":"res","r":"sr_zro","n":2},{"t":"if","b":[[{"t":"random","b":[{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":50}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":150}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":250}]}]}]],"else":false}]}]}]},{"t":"chapter","n":2,"difficulty":5,"e":[{"t":"event","id":"ancrel.16","title":"Strange Crystal","e":[],"o":[{"name":"Continue...","cond":false,"e":[{"t":"months","r":"society_research","n":18,"min":350,"max":100000},{"t":"if","b":[[{"t":"random","b":[{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":50}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":150}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":250}]}]}]],"else":false}]}]}]},{"t":"chapter","n":3,"difficulty":5,"e":[{"t":"event","id":"ancrel.17","title":"Strange Crystal","e":[],"o":[{"name":"Continue...","cond":false,"e":[{"t":"months","r":"society_research","n":18,"min":350,"max":100000},{"t":"if","b":[[{"t":"random","b":[{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":50}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":150}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":250}]}]}]],"else":false}]}]}]},{"t":"chapter","n":4,"difficulty":6,"e":[{"t":"event","id":"ancrel.18","title":"Strange Crystal","e":[{"t":"specimen","k":"the_final_sacrifice","name":"The Final Sacrifice"}],"o":[{"name":"Inconceivable!","cond":false,"e":[{"t":"res","r":"sr_zro","n":5},{"t":"months","r":"society_research","n":24,"min":500,"max":1000000},{"t":"if","b":[[{"t":"random","b":[{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":50}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":150}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":250}]}]}]],"else":false}]}]}]},{"t":"chapter","n":5,"difficulty":6,"e":[{"t":"event","id":"ancrel.19","title":"Strange Crystal","e":[],"o":[{"name":"Take the crystal.","cond":false,"e":[{"t":"if","b":[[{"t":"random","b":[{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":750}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":1000}]},{"w":33,"cond":false,"e":[{"t":"res","r":"minor_artifacts","n":1500}]}]}]],"else":false},{"t":"relic","k":"r_zro_crystal","name":"Psionic Archive"}]}]}]}]', '[{"k":"zroni_completed","ch":4},{"k":"dust_off_achievement","ch":5}]');
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_minerals', 'Harvest: Minerals', 'resource_contract', 1800, NULL, 'contract_harvest_minerals_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'There are valuable Minerals in this system that can be harvested.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_minerals', 'Harvest: Minerals', 'resource_contract', 1800, NULL, 'contract_harvest_minerals_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'There are valuable Minerals in this system that can be harvested.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_energy', 'Harvest: Energy', 'resource_contract', 1800, NULL, 'contract_harvest_energy_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "energy", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Harvest the available Energy in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_energy', 'Harvest: Energy', 'resource_contract', 1800, NULL, 'contract_harvest_energy_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "energy", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Harvest the available Energy in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_consumer_goods', 'Harvest: Consumer Goods', 'resource_contract', 1800, NULL, 'contract_harvest_consumer_goods_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "consumer_goods", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Collect the Consumer Goods available in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_consumer_goods', 'Harvest: Consumer Goods', 'resource_contract', 1800, NULL, 'contract_harvest_consumer_goods_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "consumer_goods", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Collect the Consumer Goods available in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_alloys', 'Harvest: Alloys', 'resource_contract', 1800, NULL, 'contract_harvest_alloys_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "alloys", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Valuable Alloys can be harvested from this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_alloys', 'Harvest: Alloys', 'resource_contract', 1800, NULL, 'contract_harvest_alloys_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "alloys", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Valuable Alloys can be harvested from this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_volatile_motes', 'Harvest: Volatile Motes', 'resource_contract', 1800, NULL, 'contract_harvest_volatile_motes_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "volatile_motes", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_volatile_motes"]', 'Rare Volatile Motes can be found in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_volatile_motes', 'Harvest: Volatile Motes', 'resource_contract', 1800, NULL, 'contract_harvest_volatile_motes_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "volatile_motes", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_volatile_motes"]', NULL, 'Rare Volatile Motes can be found in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_exotic_gases', 'Harvest: Exotic Gases', 'resource_contract', 1800, NULL, 'contract_harvest_exotic_gases_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "exotic_gases", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_exotic_gases"]', 'Rare Exotic Gases can be found here. They should be harvested.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_exotic_gases', 'Harvest: Exotic Gases', 'resource_contract', 1800, NULL, 'contract_harvest_exotic_gases_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "exotic_gases", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_exotic_gases"]', NULL, 'Rare Exotic Gases can be found here. They should be harvested.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_rare_crystals', 'Harvest: Rare Crystals', 'resource_contract', 1800, NULL, 'contract_harvest_rare_crystals_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "rare_crystals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_rare_crystals"]', 'Rare Crystals have been detected in this system. Harvest them.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_rare_crystals', 'Harvest: Rare Crystals', 'resource_contract', 1800, NULL, 'contract_harvest_rare_crystals_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "rare_crystals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_rare_crystals"]', NULL, 'Rare Crystals have been detected in this system. Harvest them.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_sr_living_metal', 'Harvest: Living Metal', 'resource_contract', 1800, NULL, 'contract_harvest_sr_living_metal_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "sr_living_metal", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_living_metal"]', 'According to scans, there is Living Metal in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_sr_living_metal', 'Harvest: Living Metal', 'resource_contract', 1800, NULL, 'contract_harvest_sr_living_metal_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "sr_living_metal", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', '["tech_mine_living_metal"]', NULL, 'According to scans, there is Living Metal in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_harvest_nanites', 'Harvest: Nanites', 'resource_contract', 1800, NULL, 'contract_harvest_nanites_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "nanites", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'There are Nanites here that can be acquired.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_harvest_nanites', 'Harvest: Nanites', 'resource_contract', 1800, NULL, 'contract_harvest_nanites_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "nanites", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'There are Nanites here that can be acquired.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_2', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 2, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_2', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 2, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_3', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 3, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_3', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 3, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_4', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 4, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_4', 'Espionage Support', 'diplomacy_contract', 1800, NULL, 'contract_espionage_support_chain', 4, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, NULL, 'Support the intelligence efforts of the {issuer} by expanding their spy network.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_deep_scan', 'Deep Scan', 'science_contract', 1800, NULL, 'contract_deep_scan_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "physics_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Complete a Deep Scan of this system to assess its resources and strategic relevance.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_deep_scan', 'Deep Scan', 'science_contract', 1800, NULL, 'contract_deep_scan_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "physics_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, '[["tech_arkship_tier_2", "tech_arkship_tier_3", "tech_sensors_2", "tech_arkship_system_scanner"]]', 'Complete a Deep Scan of this system to assess its resources and strategic relevance.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_raid_planet_small', 'Raid Planet', 'military_contract', 1800, NULL, 'contract_raid_planet_chain', 30, '{"scaled": [{"trade": 12500.0, "resource": "alloys", "amount": 2500.0}, {"trade": 8250.0, "resource": "alloys", "amount": 1650.0}], "cruise": null, "fixed": {"influence": 150.0}, "trust": 15, "opinion": 150}', '-175.0', NULL, 'Bombard any colony belonging to the target on behalf of {issuer} to build up Devastation.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_raid_planet_small', 'Raid Planet', 'military_contract', 1800, NULL, 'contract_raid_planet_chain', 30, '{"scaled": [{"trade": 12500.0, "resource": "alloys", "amount": 2500.0}, {"trade": 8250.0, "resource": "alloys", "amount": 1650.0}], "cruise": null, "fixed": {"influence": 150.0}, "trust": 15, "opinion": 150}', '-175.0', NULL, NULL, 'Bombard any colony belonging to the target on behalf of {issuer} to build up Devastation.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_megastructure_support', 'Megastructure Support', 'science_contract', 360, NULL, 'contract_megastructure_support_chain', 1, '{"scaled": [{"trade": 4250.0, "resource": "engineering_research", "amount": 850.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Assist with the construction of a Megastructure.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_megastructure_support', 'Megastructure Support', 'science_contract', 360, NULL, 'contract_megastructure_support_chain', 1, '{"scaled": [{"trade": 4250.0, "resource": "engineering_research", "amount": 850.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Assist with the construction of a Megastructure.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_diplomatic_support', 'Diplomatic Support', 'diplomacy_contract', 1800, NULL, 'contract_diplomatic_support_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "unity", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Transport delegates to {issuer}''s capital in the home system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_diplomatic_support', 'Diplomatic Support', 'diplomacy_contract', 1800, NULL, 'contract_diplomatic_support_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "unity", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Transport delegates to {issuer}''s capital in the home system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_scan_debris', 'Scan Debris', 'science_contract', 360, NULL, 'contract_scan_debris_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "engineering_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0, "engineering_research": 1000.0}, "trust": 5, "opinion": 50}', NULL, NULL, 'Scan the debris left behind after a battle.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_scan_debris', 'Scan Debris', 'science_contract', 360, NULL, 'contract_scan_debris_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "engineering_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0, "engineering_research": 1000.0}, "trust": 5, "opinion": 50}', NULL, NULL, NULL, 'Scan the debris left behind after a battle.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_clear_blockers', 'Clear Blockers', 'resource_contract', 1800, NULL, 'contract_clear_blockers_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Clear every Natural Planetary Blockers from this Empire''s Colony.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_clear_blockers', 'Clear Blockers', 'resource_contract', 1800, NULL, 'contract_clear_blockers_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, '[["tech_planetary_engineering"]]', 'Clear every Natural Planetary Blockers from this Empire''s Colony.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_build_waystation', 'Build Waystation', 'science_contract', 1800, NULL, 'contract_build_waystation_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Build a Waystation in this Empire''s system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_build_waystation', 'Build Waystation', 'science_contract', 1800, NULL, 'contract_build_waystation_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "influence", "amount": 35.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, '[["tech_waystation_1"]]', 'Build a Waystation in this Empire''s system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_pest_control', 'Pest Control', 'military_contract', 1800, NULL, 'contract_pest_control_chain', 1, '{"scaled": [{"trade": 3750.0, "resource": "society_research", "amount": 750.0}, {"trade": 2500.0, "resource": "society_research", "amount": 500.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'The Space Fauna in this system are causing us problems. Please eradicate them.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_pest_control', 'Pest Control', 'military_contract', 1800, NULL, 'contract_pest_control_chain', 1, '{"scaled": [{"trade": 3750.0, "resource": "society_research", "amount": 750.0}, {"trade": 2500.0, "resource": "society_research", "amount": 500.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'The Space Fauna in this system are causing us problems. Please eradicate them.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_prisoner_disposal', 'Prisoner Disposal', 'diplomacy_contract', 1800, NULL, 'contract_prisoner_disposal_chain', 1, '{"scaled": [{"trade": 750.0, "resource": "unity", "amount": 150.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Pick up criminals from {system}. We are to deport them as we see fit, and can choose to either keep them aboard or drop them off on another colony. We are not supposed to bring them back to a planet owned by {issuer}. After collecting the prisoners, choose to either Keep Them aboard or to Drop Them Off at a colony of our choice using the Drop Off Prisoners Arkship action.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_prisoner_disposal', 'Prisoner Disposal', 'diplomacy_contract', 1800, NULL, 'contract_prisoner_disposal_chain', 1, '{"scaled": [{"trade": 750.0, "resource": "unity", "amount": 150.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Pick up criminals from {system}. We are to deport them as we see fit, and can choose to either keep them aboard or drop them off on another colony. We are not supposed to bring them back to a planet owned by {issuer}. After collecting the prisoners, choose to either Keep Them aboard or to Drop Them Off at a colony of our choice using the Drop Off Prisoners Arkship action.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_physics_research', 'Remote Physics Research', 'science_contract', 1800, NULL, 'contract_onboard_physics_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "physics_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Physics Research aboard an Arkship on behalf of the contract issuer.', 0);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_physics_research', 'Remote Physics Research', 'science_contract', 1800, NULL, 'contract_onboard_physics_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "physics_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Physics Research aboard an Arkship on behalf of the contract issuer.', 0);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_society_research', 'Remote Society Research', 'science_contract', 1800, NULL, 'contract_onboard_society_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "society_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Society Research aboard an Arkship on behalf of the contract issuer.', 0);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_society_research', 'Remote Society Research', 'science_contract', 1800, NULL, 'contract_onboard_society_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "society_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Society Research aboard an Arkship on behalf of the contract issuer.', 0);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_engineering_research', 'Remote Engineering Research', 'science_contract', 1800, NULL, 'contract_onboard_engineering_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "engineering_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Engineering Research aboard an Arkship on behalf of the contract issuer.', 0);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_engineering_research', 'Remote Engineering Research', 'science_contract', 1800, NULL, 'contract_onboard_engineering_research_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "engineering_research", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Engineering Research aboard an Arkship on behalf of the contract issuer.', 0);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_minerals_resource', 'Remote Mineral Assessment', 'resource_contract', 1800, NULL, 'contract_onboard_minerals_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Engineering Research aboard an Arkship to improve existing Minerals deposits in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_minerals_resource', 'Remote Mineral Assessment', 'resource_contract', 1800, NULL, 'contract_onboard_minerals_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "minerals", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Engineering Research aboard an Arkship to improve existing Minerals deposits in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_energy_resource', 'Remote Energy Modeling', 'resource_contract', 1800, NULL, 'contract_onboard_energy_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "energy", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Physics Research to improve existing sources of Energy Credits in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_energy_resource', 'Remote Energy Modeling', 'resource_contract', 1800, NULL, 'contract_onboard_energy_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "energy", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Physics Research to improve existing sources of Energy Credits in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_onboard_food_resource', 'Remote Food Evaluation', 'resource_contract', 1800, NULL, 'contract_onboard_food_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "food", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, 'Conduct Society Research aboard an Arkship to improve exploitable deposits of Food in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_onboard_food_resource', 'Remote Food Evaluation', 'resource_contract', 1800, NULL, 'contract_onboard_food_resource_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "food", "amount": 350.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-75.0', NULL, NULL, 'Conduct Society Research aboard an Arkship to improve exploitable deposits of Food in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_sightseeing_tour', 'Sightseeing Tour', 'diplomacy_contract', 1800, NULL, 'contract_sightseeing_tour_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "unity", "amount": 350.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Take a group of tourists on a galactic sightseeing tour.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_sightseeing_tour', 'Sightseeing Tour', 'diplomacy_contract', 1800, NULL, 'contract_sightseeing_tour_chain', 1, '{"scaled": [{"trade": 1750.0, "resource": "unity", "amount": 350.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, NULL, 'Take a group of tourists on a galactic sightseeing tour.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_join_war', 'Join Wars', 'military_contract', 1800, NULL, 'contract_join_war_chain', 1, '{"scaled": [{"trade": 25000.0, "resource": "alloys", "amount": 5000.0}, {"trade": 16750.0, "resource": "alloys", "amount": 3350.0}], "cruise": null, "fixed": {"influence": 150.0}, "trust": 15, "opinion": 150}', '-175.0', NULL, 'Join the {issuer} in all their wars.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_join_war', 'Join Wars', 'military_contract', 1800, NULL, 'contract_join_war_chain', 1, '{"scaled": [{"trade": 25000.0, "resource": "alloys", "amount": 5000.0}, {"trade": 16750.0, "resource": "alloys", "amount": 3350.0}], "cruise": null, "fixed": {"influence": 150.0}, "trust": 15, "opinion": 150}', '-175.0', NULL, NULL, 'Join the {issuer} in all their wars.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_colony_startup', 'Colony Startup', 'diplomacy_contract', 1800, NULL, 'contract_colony_startup_chain', 1, '{"scaled": [{"trade": 750.0, "resource": "society_research", "amount": 150.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-125.0', NULL, 'Help get this new colony up and running efficiently.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_colony_startup', 'Colony Startup', 'diplomacy_contract', 1800, NULL, 'contract_colony_startup_chain', 1, '{"scaled": [{"trade": 750.0, "resource": "society_research", "amount": 150.0}], "cruise": null, "fixed": {"influence": 50.0}, "trust": 5, "opinion": 50}', '-125.0', NULL, NULL, 'Help get this new colony up and running efficiently.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_stellar_ignition', 'Stellar Ignition', 'resource_contract', 1800, NULL, 'contract_stellar_ignition_chain', 1, '{"scaled": [{"trade": 3250.0, "resource": "physics_research", "amount": 650.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, 'Use the Arkship''s Stellar Engine to transform a gas giant into a newborn star, unlocking vast resources for the system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_stellar_ignition', 'Stellar Ignition', 'resource_contract', 1800, NULL, 'contract_stellar_ignition_chain', 1, '{"scaled": [{"trade": 3250.0, "resource": "physics_research", "amount": 650.0}], "cruise": null, "fixed": {"influence": 100.0}, "trust": 10, "opinion": 100}', '-125.0', NULL, '[["tech_arkship_stellar_igniter"]]', 'Use the Arkship''s Stellar Engine to transform a gas giant into a newborn star, unlocking vast resources for the system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_find_resources_energy_internal', 'Energy Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_energy_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"energy": 300.0}, "trust": null, "opinion": null}', NULL, NULL, 'Our engineers suspect that there is an Energy Credits cache in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_find_resources_energy_internal', 'Energy Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_energy_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"energy": 300.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Our engineers suspect that there is an Energy Credits cache in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_find_resources_minerals_internal', 'Mineral Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_minerals_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"minerals": 300.0}, "trust": null, "opinion": null}', NULL, NULL, 'Our engineers suspect that there is a Minerals cache in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_find_resources_minerals_internal', 'Mineral Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_minerals_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"minerals": 300.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Our engineers suspect that there is a Minerals cache in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_find_resources_alloys_internal', 'Alloy Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_alloys_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"alloys": 300.0}, "trust": null, "opinion": null}', NULL, NULL, 'Our engineers suspect that there is an Alloys cache in this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_find_resources_alloys_internal', 'Alloy Cache', 'resource_contract_internal', 1800, NULL, 'contract_find_resources_alloys_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"alloys": 300.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Our engineers suspect that there is an Alloys cache in this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_scientific_observation_physics_research_internal', 'Scientific Physics Observation', 'science_contract_internal', 1800, NULL, 'contract_scientific_observation_physics_research_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"physics_research": 300.0}, "trust": null, "opinion": null}', NULL, NULL, 'Our scientists would like to observe the star of this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_scientific_observation_physics_research_internal', 'Scientific Physics Observation', 'science_contract_internal', 1800, NULL, 'contract_scientific_observation_physics_research_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"physics_research": 300.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Our scientists would like to observe the star of this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_scientific_observation_engineering_research_internal', 'Scientific Engineering Observation', 'science_contract_internal', 1800, NULL, 'contract_scientific_observation_engineering_research_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"engineering_research": 300.0}, "trust": null, "opinion": null}', NULL, NULL, 'Our scientists would like to observe the star of this system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_scientific_observation_engineering_research_internal', 'Scientific Engineering Observation', 'science_contract_internal', 1800, NULL, 'contract_scientific_observation_engineering_research_internal_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"engineering_research": 300.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Our scientists would like to observe the star of this system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_passenger_1', 'Sun Trip', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'We''ll settle into orbit and let the passengers soak in the light of an unfamiliar sun.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_passenger_1', 'Sun Trip', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'We''ll settle into orbit and let the passengers soak in the light of an unfamiliar sun.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_passenger_2', 'Stellar Observatory', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'Amateur astronomers among the passengers have spotted rare solar activity in this system and are petitioning for a front-row viewing from orbit.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_passenger_2', 'Stellar Observatory', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Amateur astronomers among the passengers have spotted rare solar activity in this system and are petitioning for a front-row viewing from orbit.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_passenger_3', 'Sunside Regatta', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The cruise is hosting a shuttle race around this system''s star. Passengers are placing bets and crowding every viewport.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_passenger_3', 'Sunside Regatta', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The cruise is hosting a shuttle race around this system''s star. Passengers are placing bets and crowding every viewport.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_passenger_4', 'Solar Spa Retreat', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The spa requires prolonged exposure to unfiltered stellar radiation for an exotic rejuvenation treatment the passengers have been requesting.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_passenger_4', 'Solar Spa Retreat', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The spa requires prolonged exposure to unfiltered stellar radiation for an exotic rejuvenation treatment the passengers have been requesting.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_passenger_5', 'Starlight Gala', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'A grand formal ball is to be held on the observation decks, bathed in direct starlight. The social event of the voyage.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_passenger_5', 'Starlight Gala', 'passenger_science_contract_special', 1800, NULL, 'contract_suntrip_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'A grand formal ball is to be held on the observation decks, bathed in direct starlight. The social event of the voyage.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_crew_1', 'Generator Maintenance', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_1_chain', 1, NULL, NULL, NULL, 'We need to orbit this system''s star and run on solar power while the main generators undergo scheduled maintenance.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_crew_1', 'Generator Maintenance', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_1_chain', 1, NULL, NULL, NULL, NULL, 'We need to orbit this system''s star and run on solar power while the main generators undergo scheduled maintenance.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_crew_2', 'Hull Recalibration', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_2_chain', 1, NULL, NULL, NULL, 'The outer hull plating requires thermal load testing under sustained stellar exposure. All viewports on the starward side will be shuttered for safety.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_crew_2', 'Hull Recalibration', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_2_chain', 1, NULL, NULL, NULL, NULL, 'The outer hull plating requires thermal load testing under sustained stellar exposure. All viewports on the starward side will be shuttered for safety.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_crew_3', 'Coolant Flush', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_3_chain', 1, NULL, NULL, NULL, 'The coolant system needs a full purge cycle under thermal load. Close stellar orbit will let us flush the lines efficiently, though deck temperatures will fluctuate.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_crew_3', 'Coolant Flush', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_3_chain', 1, NULL, NULL, NULL, NULL, 'The coolant system needs a full purge cycle under thermal load. Close stellar orbit will let us flush the lines efficiently, though deck temperatures will fluctuate.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_crew_4', 'Sensor Calibration', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_4_chain', 1, NULL, NULL, NULL, 'Navigation arrays must be calibrated against a live stellar signature at close range. The process will commandeer bandwidth from entertainment systems.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_crew_4', 'Sensor Calibration', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_4_chain', 1, NULL, NULL, NULL, NULL, 'Navigation arrays must be calibrated against a live stellar signature at close range. The process will commandeer bandwidth from entertainment systems.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_suntrip_crew_5', 'Water Reclamation Cycle', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_5_chain', 1, NULL, NULL, NULL, 'The water recyclers need an intensive UV sterilization run that is only efficient in close stellar orbit. The spa and pool are closed and water is rationed across all decks.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_suntrip_crew_5', 'Water Reclamation Cycle', 'crew_resource_contract_special', 1800, NULL, 'contract_suntrip_crew_5_chain', 1, NULL, NULL, NULL, NULL, 'The water recyclers need an intensive UV sterilization run that is only efficient in close stellar orbit. The spa and pool are closed and water is rationed across all decks.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_passenger_1', 'Port of Call', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The passengers are eager to set foot on solid ground and explore the alien city below. We''ve arranged guided excursions into the city.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_passenger_1', 'Port of Call', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The passengers are eager to set foot on solid ground and explore the alien city below. We''ve arranged guided excursions into the city.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_passenger_2', 'Local Flavors', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The renowned dining districts on the planet below have agreed to host the passengers for a guided tasting tour of local cuisine.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_passenger_2', 'Local Flavors', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The renowned dining districts on the planet below have agreed to host the passengers for a guided tasting tour of local cuisine.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_passenger_3', 'Cultural Excursion', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The planet''s capital hosts a museum of galactic renown. Passengers have been petitioning for a guided tour of its monuments and historical exhibits.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_passenger_3', 'Cultural Excursion', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The planet''s capital hosts a museum of galactic renown. Passengers have been petitioning for a guided tour of its monuments and historical exhibits.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_passenger_4', 'Bazaar Day', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'A sprawling open-air market on the surface deals in goods from across the sector. The passengers are eager to browse and haggle.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_passenger_4', 'Bazaar Day', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'A sprawling open-air market on the surface deals in goods from across the sector. The passengers are eager to browse and haggle.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_passenger_5', 'Wildlife Encounter', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'A nature reserve on the planet below offers guided tours through its alien wilderness. Passengers will observe alien fauna from guided walkways.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_passenger_5', 'Wildlife Encounter', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'A nature reserve on the planet below offers guided tours through its alien wilderness. Passengers will observe alien fauna from guided walkways.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_crew_1', 'Shore Leave', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_1_chain', 1, NULL, NULL, NULL, '', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_crew_1', 'Shore Leave', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_1_chain', 1, NULL, NULL, NULL, NULL, '', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_crew_2', 'Lucky Break', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_2_chain', 1, NULL, NULL, NULL, '', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_crew_2', 'Lucky Break', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_2_chain', 1, NULL, NULL, NULL, NULL, '', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_crew_3', 'Supply Run', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_3_chain', 1, NULL, NULL, NULL, 'Stores are running low. Crew teams will go planetside to source replacement parts, raw materials, and the supplies the ship''s fabricators stopped producing cycles ago.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_crew_3', 'Supply Run', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_3_chain', 1, NULL, NULL, NULL, NULL, 'Stores are running low. Crew teams will go planetside to source replacement parts, raw materials, and the supplies the ship''s fabricators stopped producing cycles ago.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_crew_4', 'Tech Exchange', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_4_chain', 1, NULL, NULL, NULL, 'Local engineers have opened their facilities for inspection. Their solutions to common engineering problems diverge significantly from our own models, and the locals are equally eager to study the Arkship.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_crew_4', 'Tech Exchange', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_4_chain', 1, NULL, NULL, NULL, NULL, 'Local engineers have opened their facilities for inspection. Their solutions to common engineering problems diverge significantly from our own models, and the locals are equally eager to study the Arkship.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_shoreleave_crew_5', 'Crew Showcase', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_5_chain', 1, NULL, NULL, NULL, '', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_shoreleave_crew_5', 'Crew Showcase', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_shoreleave_crew_5_chain', 1, NULL, NULL, NULL, NULL, '', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_passenger_1', 'Espionage Theater', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'To entertain the passengers, we''ll deploy a non-functional "spy satellite" in the indicated system.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_passenger_1', 'Espionage Theater', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_1_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'To entertain the passengers, we''ll deploy a non-functional "spy satellite" in the indicated system.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_passenger_2', 'The Informant', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, '', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_passenger_2', 'The Informant', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_2_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, '', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_passenger_3', 'Dead Drop', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'Passengers are taken on guided excursions to the city below, where crew operatives have planted fake intelligence packages at prearranged locations for them to discover.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_passenger_3', 'Dead Drop', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_3_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'Passengers are taken on guided excursions to the city below, where crew operatives have planted fake intelligence packages at prearranged locations for them to discover.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_passenger_4', 'The Mole Hunt', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'A staged security breach has been announced across all decks. Passengers are recruited to identify planted ''foreign agents'' among the crew in a ship-wide investigation game.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_passenger_4', 'The Mole Hunt', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_4_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'A staged security breach has been announced across all decks. Passengers are recruited to identify planted ''foreign agents'' among the crew in a ship-wide investigation game.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_passenger_5', 'Signal Intercept', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, 'The observation decks have been converted into listening posts. Passengers man the stations, decoding scripted alien transmissions that the crew is secretly broadcasting from below decks.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_passenger_5', 'Signal Intercept', 'passenger_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_passenger_5_chain', 1, '{"scaled": [], "cruise": 2500.0, "fixed": {}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'The observation decks have been converted into listening posts. Passengers man the stations, decoding scripted alien transmissions that the crew is secretly broadcasting from below decks.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_crew_1', 'System Recon', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_1_chain', 1, NULL, NULL, NULL, 'Concerns about interference in this system are legitimate. A surveillance satellite will give us advance warning of anything that might disrupt our itinerary.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_crew_1', 'System Recon', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_1_chain', 1, NULL, NULL, NULL, NULL, 'Concerns about interference in this system are legitimate. A surveillance satellite will give us advance warning of anything that might disrupt our itinerary.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_crew_2', 'Diplomatic Audit', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_2_chain', 1, NULL, NULL, NULL, 'Docking privileges and border access can be revoked without warning. A surveillance satellite monitoring government communications will tell us whether this empire''s hospitality is genuine or conditional.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_crew_2', 'Diplomatic Audit', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_2_chain', 1, NULL, NULL, NULL, NULL, 'Docking privileges and border access can be revoked without warning. A surveillance satellite monitoring government communications will tell us whether this empire''s hospitality is genuine or conditional.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_crew_3', 'Route Security', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_3_chain', 1, NULL, NULL, NULL, 'Fleet movements, border shifts, and military buildups along our projected route could strand the ship in hostile space. A surveillance satellite will give navigation enough lead time to plot alternatives.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_crew_3', 'Route Security', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_3_chain', 1, NULL, NULL, NULL, NULL, 'Fleet movements, border shifts, and military buildups along our projected route could strand the ship in hostile space. A surveillance satellite will give navigation enough lead time to plot alternatives.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_crew_4', 'Trade Leverage', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_4_chain', 1, NULL, NULL, NULL, 'Supply negotiations go better when procurement knows the real prices. A surveillance satellite monitoring trade channels and resource flows will ensure our teams are not overpaying at the next port.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_crew_4', 'Trade Leverage', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_4_chain', 1, NULL, NULL, NULL, NULL, 'Supply negotiations go better when procurement knows the real prices. A surveillance satellite monitoring trade channels and resource flows will ensure our teams are not overpaying at the next port.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_espionage_support_crew_5', 'Threat Assessment', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_5_chain', 1, NULL, NULL, NULL, 'Reports of anti-nomad sentiment have surfaced in this region. A surveillance satellite will confirm whether the talk is just rhetoric or whether it is becoming policy.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_espionage_support_crew_5', 'Threat Assessment', 'crew_diplomacy_contract_special', 1800, NULL, 'contract_espionage_support_crew_5_chain', 1, NULL, NULL, NULL, NULL, 'Reports of anti-nomad sentiment have surfaced in this region. A surveillance satellite will confirm whether the talk is just rhetoric or whether it is becoming policy.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_eternal_chorus', 'Eternal Chorus', 'science_contract_internal', 1800, NULL, 'arkship_eternal_chorus_chain', 1, NULL, NULL, NULL, 'At our capital ''s request, we will move into close orbit of the black hole and attempt to decode the signal.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_eternal_chorus', 'Eternal Chorus', 'science_contract_internal', 1800, NULL, 'arkship_eternal_chorus_chain', 1, NULL, NULL, NULL, NULL, 'At our capital ''s request, we will move into close orbit of the black hole and attempt to decode the signal.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_intercept_raid_heirs', 'Intercept Raid', 'heirs_military_contract_special', 1800, NULL, 'contract_intercept_raid_heirs_chain', 1, NULL, NULL, NULL, 'We have good intelligence that the raiding fleet will be passing through this system. It will be a great opportunity for an ambush.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_intercept_raid_heirs', 'Intercept Raid', 'heirs_military_contract_special', 1800, NULL, 'contract_intercept_raid_heirs_chain', 1, NULL, NULL, NULL, NULL, 'We have good intelligence that the raiding fleet will be passing through this system. It will be a great opportunity for an ambush.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_destroy_station_heirs', 'Raze Station', 'heirs_military_contract_special', 1800, 1800, 'contract_destroy_station_heirs_chain', 1, NULL, NULL, NULL, 'It seems that the have set up an outpost in this system. We should knock it out before they get a foothold.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_destroy_station_heirs', 'Raze Station', 'heirs_military_contract_special', 1800, 1800, 'contract_destroy_station_heirs_chain', 1, NULL, NULL, NULL, NULL, 'It seems that the have set up an outpost in this system. We should knock it out before they get a foothold.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_destroy_station_heirs_start', 'Raze Station', 'heirs_military_contract_special', 1800, 1800, 'contract_destroy_station_heirs_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"trade": 1000.0}, "trust": null, "opinion": null}', NULL, NULL, 'It seems that the have set up an outpost in this system. We should knock it out before they get a foothold.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_destroy_station_heirs_start', 'Raze Station', 'heirs_military_contract_special', 1800, 1800, 'contract_destroy_station_heirs_chain', 1, '{"scaled": [], "cruise": null, "fixed": {"trade": 1000.0}, "trust": null, "opinion": null}', NULL, NULL, NULL, 'It seems that the have set up an outpost in this system. We should knock it out before they get a foothold.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_arkship_diplomatic_envoy', 'Diplomatic Overture', 'diplomacy_contract_internal', 1800, NULL, 'arkship_diplomatic_envoy_chain', 1, '{"scaled": [], "cruise": null, "fixed": {}, "trust": 5, "opinion": 50}', NULL, NULL, 'Travel to the target empire''s home system and conduct a formal diplomatic engagement.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_arkship_diplomatic_envoy', 'Diplomatic Overture', 'diplomacy_contract_internal', 1800, NULL, 'arkship_diplomatic_envoy_chain', 1, '{"scaled": [], "cruise": null, "fixed": {}, "trust": 5, "opinion": 50}', NULL, NULL, NULL, 'Travel to the target empire''s home system and conduct a formal diplomatic engagement.', 1);
 INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES ('contract_host_cfl_tournament', 'Nominate System for CFL Tournament', 'diplomacy_contract_special', 100, NULL, 'contract_host_cfl_tournament_chain', NULL, NULL, NULL, NULL, 'We have purchased the venue rights for the next Champion''s Forge Live! tournament. Perhaps we can use this for our advantage.', 1);
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES ('contract_host_cfl_tournament', 'Nominate System for CFL Tournament', 'diplomacy_contract_special', 100, NULL, 'contract_host_cfl_tournament_chain', NULL, NULL, NULL, NULL, NULL, 'We have purchased the venue rights for the next Champion''s Forge Live! tournament. Perhaps we can use this for our advantage.', 1);
 INSERT INTO system_entry_event (event_id, on_action, title, description, star_flags_json, any_star_flags_json, not_star_flags_json, once_flag, sort_order) VALUES ('graygoo.160', 'on_entering_system_first_time', 'Incoming Transmission', '!
 Your ships have entered …, a star system in the L-Cluster that is off-limits to all non-Dessanu.
 We must insist that you withdraw from this system immediately. Failure to do so in a timely manner would... seriously compromise our relationship.', '["graygoo_factory_system"]', NULL, NULL, 'gate_builders_hostility', 0);
