@@ -39,4 +39,5 @@ DLC_RELEASE_DATES = {
     '3417860': '2025-03-24',  # Stargazer Species Portrait
     '4241410': '2026-04-29',  # Vipra the Vapor Species Portrait
     '4241420': '2026-06-15',  # Nomads
+    '4241440': '2026-11-23',  # Willpower
 }

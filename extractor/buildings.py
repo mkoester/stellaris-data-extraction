@@ -371,13 +371,28 @@ def _building_inline_jobs(bdef: dict, variables: dict[str, float], inline_script
 
     Each jobs script branches by empire type; the first triggered_planet_modifier
     is the regular-empire variant (gestalt/FE empires get calculator/archivist
-    equivalents of the same count). The building supplies the count as `AMOUNT`."""
+    equivalents of the same count). The building supplies the count as `AMOUNT`, or as
+    `COUNT` for `jobs/culture_workers_add` (4.6: monuments and memorials, 100/200/300).
+    A plain `inline_script = buildings/<x>` holding part of the building's body is followed one
+    level (4.6: the ideological buildings' `ideological_building_<n>_common_effects`)."""
     rows: list[tuple[str, float]] = []
-    for ref in _as_blocks(bdef.get('inline_script')):
+    refs = bdef.get('inline_script')
+    for name in (refs if isinstance(refs, list) else [refs]):
+        if isinstance(name, str) and name.strip('"').startswith('buildings/'):
+            path = inline_scripts_dir / (name.strip('"') + '.txt')
+            if path.exists():
+                try:
+                    body = parse_file(path)
+                except Exception:
+                    continue
+                if 'inline_script' in body:
+                    rows += _building_inline_jobs({'inline_script': body['inline_script']},
+                                                  variables, inline_scripts_dir)
+    for ref in _as_blocks(refs):
         script = ref.get('script')
         if not isinstance(script, str) or not script.startswith('jobs/'):
             continue
-        amount = _resolve_var(ref.get('AMOUNT'), variables)
+        amount = _resolve_var(ref.get('AMOUNT', ref.get('COUNT')), variables)
         if amount is None:
             continue
         path = inline_scripts_dir / (script + '.txt')

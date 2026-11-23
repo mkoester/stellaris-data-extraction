@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Game data for 4.6.0 "Corona Borealis" and Willpower: absolute ethics, the new civics and origins,
+  Galactic Halls, ideological buildings and beacons, the Cultural Envoy, the Doctrinal Proxy.
+- `ethic.absolute_variant`: the absolute form of a regular or fanatic ethic (4.6). Absolute ethics
+  cost 3 and sit at the ends of the axis: `category_value` is now 0…6 (4.5: 0…4).
+- Willpower's release date.
+- `building_job`: the Culture Worker slots of monuments, memorials and ideological buildings
+  (4.6: +100/200/300, ideological +200/400/600). Their job script takes `COUNT` instead of
+  `AMOUNT`, and the ideological buildings name it inside a shared body script, which is now
+  followed one level.
+
+### Fixed
+
+- Policy restrictions written with ethic scripted triggers are read: 4.6 writes
+  `is_pacifist = no` or `NOR = { is_fanatic_xenophobe = yes }` instead of `has_ethic`, which had
+  cut the table from 21 rows to 2. Restrictions written that way in 4.5 come back too (the
+  refugee and first-contact policies, purge and AI policy options).
+- Civics and origins gated by a scripted DLC trigger (`has_force_of_will_dlc = yes`) carry their DLC:
+  Willpower, Nomads, The Machine Age, Shadows of the Shroud and others read as base game.
+
 ## [0.1.24] - 2026-11-23
 
 ### Added

@@ -307,7 +307,7 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     po_files = sorted(policies_dir.glob('*.txt')) if policies_dir.exists() else []
     print(f"\n[7/7] policies: {len(po_files)} file(s)", file=progress)
     for f, data in _iter_parsed(po_files, progress, announce=True):
-        extract_policy_restrictions(data, f.name, loc, w, args.verbose)
+        extract_policy_restrictions(data, f.name, loc, w, args.verbose, trait_idx)
 
     # --- precursors ---
     print(f"\n[8/8] precursors", file=progress)
@@ -398,6 +398,7 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
                    ('02_gestalt_civics.txt', 'gestalt'), ('03_corporate_civics.txt', 'corporate'))
     print(f"\n[civics] {civics_dir}", file=progress)
     ascension = compute_ascension_restrictions(install_dir)
+    dlc_triggers = dlc_trigger_map(trait_idx)
     civic_order = 0
     for fn, ctype in civic_files:
         f = civics_dir / fn
@@ -405,7 +406,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
             continue
         try:
             civic_order = extract_civics(parse_file(f), ctype, loc, scripted_vars, w,
-                                         civic_order, args.verbose, ascension)
+                                         civic_order, args.verbose, ascension,
+                                         dlc_triggers)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 
@@ -435,7 +437,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
             continue
         try:
             origin_order = extract_origins(parse_file(f), nonsel, loc, scripted_vars, w,
-                                           origin_order, args.verbose, ascension, init_custom)
+                                           origin_order, args.verbose, ascension, init_custom,
+                                           dlc_triggers)
         except Exception as e:
             print(f"  WARNING: failed to parse {fn}: {e}", file=sys.stderr)
 

@@ -4,7 +4,8 @@ import unittest
 
 from extractor.clausewitz import IfBlock
 from extractor.government import (_civic_requirements, _ethic_axis, _ethic_entries,
-                                  _granted_traits, ascension_restrictions, election_type)
+                                  _find_blocked_ethics, _granted_traits, ascension_restrictions,
+                                  election_type, playable_dlc)
 from extractor.traits import _trait_requirements
 
 
@@ -19,6 +20,58 @@ class TestEthicAxis(unittest.TestCase):
 
     def test_missing(self):
         self.assertEqual(_ethic_axis({}), (None, 0))
+
+
+class TestBlockedEthics(unittest.TestCase):
+    # shaped like common/scripted_triggers/00_scripted_triggers.txt and common/policies (4.6)
+    IDX = {
+        'is_pacifist': {'OR': {'has_ethic': 'ethic_pacifist', 'is_fanatic_pacifist': 'yes'}},
+        'is_fanatic_pacifist': {'OR': {'has_ethic': ['ethic_fanatic_pacifist',
+                                                     'ethic_absolute_pacifist']}},
+        'is_nomadic': {'has_origin': 'origin_nomadic'},
+    }
+
+    def test_has_ethic_in_nor(self):
+        self.assertEqual(_find_blocked_ethics({'NOR': {'has_ethic': ['ethic_a', 'ethic_b']}}),
+                         {'ethic_a', 'ethic_b'})
+
+    def test_scripted_ethic_trigger_expands(self):
+        self.assertEqual(_find_blocked_ethics({'NOR': {'is_pacifist': 'yes'}}, self.IDX),
+                         {'ethic_pacifist', 'ethic_fanatic_pacifist', 'ethic_absolute_pacifist'})
+
+    def test_non_ethic_trigger_ignored(self):
+        self.assertEqual(_find_blocked_ethics({'NOT': {'is_nomadic': 'yes'}}, self.IDX), set())
+
+    def test_top_level_no_blocks(self):
+        # orbital_bombardment_indiscriminate (4.6): valid = { is_pacifist = no }
+        self.assertEqual(_find_blocked_ethics({'is_fanatic_pacifist': 'no'}, self.IDX),
+                         {'ethic_fanatic_pacifist', 'ethic_absolute_pacifist'})
+
+    def test_no_inside_or_is_not_a_block(self):
+        self.assertEqual(_find_blocked_ethics({'OR': {'is_pacifist': 'no', 'is_ai': 'yes'}},
+                                              self.IDX), set())
+
+    def test_positive_check_is_not_a_block(self):
+        self.assertEqual(_find_blocked_ethics({'is_pacifist': 'yes'}, self.IDX), set())
+
+    def test_repeated_nor_blocks_each_count(self):
+        self.assertEqual(_find_blocked_ethics({'NOR': [{'has_ethic': 'ethic_a'},
+                                                       {'has_ethic': 'ethic_b'}]}),
+                         {'ethic_a', 'ethic_b'})
+
+
+class TestPlayableDlc(unittest.TestCase):
+    def test_host_has_dlc(self):
+        self.assertEqual(playable_dlc({'host_has_dlc': '"Utopia"'}), 'Utopia')
+
+    def test_scripted_dlc_trigger(self):
+        # civic_social_concord (4.6): playable = { has_force_of_will_dlc = yes }
+        self.assertEqual(playable_dlc({'has_force_of_will_dlc': 'yes'},
+                                      {'has_force_of_will_dlc': 'Willpower'}), 'Willpower')
+
+    def test_ungated(self):
+        self.assertIsNone(playable_dlc(None))
+        self.assertIsNone(playable_dlc({'is_ai': 'no'}, {'has_force_of_will_dlc': 'Willpower'}))
 
 
 class TestEthicEntries(unittest.TestCase):
