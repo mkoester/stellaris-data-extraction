@@ -139,6 +139,22 @@ def operator_techs(possible_operator) -> list[str]:
     return [t for v in _blocks(possible_operator.get('has_technology')) if (t := _key(v))]
 
 
+def offer_techs(potential_operator) -> list[list[str]]:
+    """The techs `potential_operator` asks for before the game offers the contract at all, as
+    groups of which any one tech will do: each top-level `has_technology` is a group of its own,
+    a top-level `OR` of only `has_technology` one group (Deep Scan: any arkship or sensor tech).
+    Pure."""
+    if not isinstance(potential_operator, dict):
+        return []
+    def techs(b: dict) -> list[str]:
+        return [t for v in _blocks(b.get('has_technology')) if (t := _key(v))]
+    groups = [[t] for t in techs(potential_operator)]
+    for b in _blocks(potential_operator.get('OR')):
+        if isinstance(b, dict) and set(b) == {'has_technology'} and (ts := techs(b)):
+            groups.append(ts)
+    return groups
+
+
 def desc_key(m: dict, key: str) -> str:
     """The operator's description key: `desc_operator` or `desc` (a block's first `text`), else
     `<key>_desc` — the game's default."""
@@ -208,16 +224,18 @@ def extract_contracts(install_dir: Path, loc: dict[str, str], load, w: Writer,
             raw = loc.get(key)
             r = reward(m.get('on_success'), variables, load)
             techs = operator_techs(m.get('possible_operator'))
+            offer = offer_techs(m.get('potential_operator'))
             w.execute(
                 """INSERT OR REPLACE INTO contract
                    (key, name, category, time_to_accept, time_to_complete, event_chain, steps,
-                    reward_json, failed_opinion, operator_techs_json, description, location)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    reward_json, failed_opinion, operator_techs_json, offer_techs_json, description,
+                    location)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (key, _clean_loc(raw, loc) if raw else None, category,
                  days(m.get('time_to_accept'), variables), days(m.get('time_to_complete'), variables),
                  _key(m.get('event_chain')), steps(m.get('counter')),
                  json.dumps(r) if r else None, failed_opinion(m.get('on_cancel'), variables, load),
-                 json.dumps(techs) if techs else None,
+                 json.dumps(techs) if techs else None, json.dumps(offer) if offer else None,
                  _clean_loc(desc_scopes(d), loc) if (d := loc.get(desc_key(m, key))) else None,
                  int(m.get('location') == 'yes')))
             n += 1

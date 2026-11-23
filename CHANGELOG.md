@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.24] - 2026-11-23
+
+### Added
+
+- `contract.offer_techs_json`: the techs a contract needs before the game offers it, read from
+  `potential_operator` as groups of which any one tech will do (Clear Blockers needs Planetary
+  Engineering, Deep Scan any arkship or sensor tech).
+
 ## [0.1.23] - 2026-11-21
 
 ### Added
