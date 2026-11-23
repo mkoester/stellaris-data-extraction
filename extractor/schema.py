@@ -217,12 +217,14 @@ DROP TABLE IF EXISTS ethic;
 CREATE TABLE ethic (
     key             TEXT PRIMARY KEY,   -- e.g. "ethic_authoritarian"
     label           TEXT,               -- from localisation, e.g. "Authoritarian"
-    cost            INTEGER NOT NULL DEFAULT 1,  -- 1 = regular, 2 = fanatic
+    cost            INTEGER NOT NULL DEFAULT 1,  -- 1 = regular, 2 = fanatic, 3 = absolute (4.6)
     category        TEXT,               -- "col" for normal empire ethics
-    fanatic_variant TEXT,               -- key of the fanatic variant (if this is regular)
-    regular_variant TEXT,               -- key of the regular variant (if this is fanatic)
+    fanatic_variant TEXT,               -- key of the fanatic variant (on regular and absolute)
+    regular_variant TEXT,               -- key of the regular variant (on fanatic and absolute)
+    absolute_variant TEXT,              -- key of the absolute variant (on regular and fanatic, 4.6+)
     gestalt         INTEGER DEFAULT 0,  -- 1 for ethic_gestalt_consciousness
-    category_value  INTEGER,            -- place on the category's axis: fanatic 0, regular 1 | 3, fanatic 4
+    category_value  INTEGER,            -- place on the axis; 4.6: absolute 0, fanatic 1, regular 2 |
+                                        -- regular 4, fanatic 5, absolute 6 (4.5: 0, 1 | 3, 4)
     category_opposite INTEGER NOT NULL DEFAULT 0, -- 1 on the axis' second pole (egalitarian, xenophile, …)
     sort_order      INTEGER NOT NULL DEFAULT 0  -- order in the files: the index of a save's per-ethic arrays
 );

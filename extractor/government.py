@@ -15,21 +15,47 @@ from .writer import Writer
 # Extraction: policy restrictions (ethics-based)
 # ---------------------------------------------------------------------------
 
-def _find_blocked_ethics(block) -> set:
+def _trigger_ethics(name: str, idx: dict[str, dict], seen: frozenset = frozenset()) -> set | None:
+    """The ethics that make scripted trigger `name` true, when its body is nothing but
+    `has_ethic` and other such triggers, ORed (4.6: `is_pacifist` = regular, fanatic or
+    absolute pacifist). None for any other trigger: it is not an ethic gate."""
+    body = idx.get(name)
+    if not isinstance(body, dict) or name in seen:
+        return None
+    if list(body) == ['OR'] and isinstance(body['OR'], dict):
+        body = body['OR']
+    out: set = set()
+    for key, value in body.items():
+        for v in (value if isinstance(value, list) else [value]):
+            v = str(v).strip('"')
+            if key == 'has_ethic' and v.startswith('ethic_'):
+                out.add(v)
+            elif v == 'yes' and (sub := _trigger_ethics(key, idx, seen | {name})) is not None:
+                out |= sub
+            else:
+                return None
+    return out or None
+
+
+def _find_blocked_ethics(block, idx: dict[str, dict] | None = None, top: bool = True) -> set:
     """
     Recursively walk a parsed valid{} block and return the set of ethic keys
     that are blocked by NOR/NOT conditions.
 
+    Inside NOR/NOT, an ethic is named by `has_ethic` or (4.6) by a scripted trigger such as
+    `is_fanatic_xenophobe = yes`, expanded through `idx` (see `_trigger_ethics`). At the top
+    level of the block (`top`), `is_egalitarian = no` blocks the same way (4.6).
     The parser promotes duplicate keys to lists, so has_ethic inside a NOR block
     may be a string (single) or list (multiple).
     We recurse into OR blocks because NOR can be nested inside an OR.
     We do NOT recurse into AND/custom_tooltip/etc. to avoid false positives.
     """
+    idx = idx or {}
     blocked = set()
 
     if isinstance(block, list):
         for item in block:
-            blocked |= _find_blocked_ethics(item)
+            blocked |= _find_blocked_ethics(item, idx, top)
         return blocked
 
     if not isinstance(block, dict):
@@ -48,20 +74,26 @@ def _find_blocked_ethics(block) -> set:
                     e = str(e).strip('"')
                     if e.startswith('ethic_'):
                         blocked.add(e)
+                for k, v in value.items():
+                    if any(str(x) == 'yes' for x in (v if isinstance(v, list) else [v])):
+                        blocked |= _trigger_ethics(k, idx) or set()
                 # NOR/NOT may also contain nested NOR/NOT
-                blocked |= _find_blocked_ethics(value)
+                blocked |= _find_blocked_ethics(value, idx, False)
             elif isinstance(value, list):
                 for item in value:
-                    blocked |= _find_blocked_ethics(item)
+                    blocked |= _find_blocked_ethics({key: item}, idx, top)
         elif key == 'OR':
             # OR can contain NOR/NOT sub-blocks — recurse without treating as blocked
-            blocked |= _find_blocked_ethics(value)
+            blocked |= _find_blocked_ethics(value, idx, False)
+        elif top and any(str(x) == 'no' for x in (value if isinstance(value, list) else [value])):
+            blocked |= _trigger_ethics(key, idx) or set()
 
     return blocked
 
 
 def extract_policy_restrictions(data: dict, source_file: str,
-                                loc: dict[str, str], w: Writer, verbose: bool):
+                                loc: dict[str, str], w: Writer, verbose: bool,
+                                idx: dict[str, dict] | None = None):
     for policy_key, policy_data in data.items():
         if policy_key.startswith('@') or not isinstance(policy_data, dict):
             continue
@@ -86,7 +118,7 @@ def extract_policy_restrictions(data: dict, source_file: str,
             if not valid:
                 continue
 
-            blocked = _find_blocked_ethics(valid)
+            blocked = _find_blocked_ethics(valid, idx)
             if not blocked:
                 continue
 
@@ -116,8 +148,9 @@ _ETHIC_SKIP_KEYS = frozenset({
 })
 
 def _ethic_axis(ethic_data: dict) -> tuple[int | None, int]:
-    """An ethic's place on its category's axis (`category_value`, fanatic 0 … fanatic 4) and
-    whether it is the axis' opposite pole (`category_opposite`), per 99_documentation.txt."""
+    """An ethic's place on its category's axis (`category_value`; 4.6: absolute 0, fanatic 1,
+    regular 2 | regular 4, fanatic 5, absolute 6 — 4.5 had fanatic 0 … fanatic 4) and whether it
+    is the axis' opposite pole (`category_opposite`), per common/ethics/00_README.txt."""
     raw = ethic_data.get('category_value')
     try:
         value = int(raw) if raw is not None else None
@@ -172,6 +205,7 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 
         fanatic_variant = ethic_data.get('fanatic_variant') or None
         regular_variant = ethic_data.get('regular_variant') or None
+        absolute_variant = ethic_data.get('absolute_variant') or None
         gestalt = 1 if ethic_key == 'ethic_gestalt_consciousness' else 0
         category_value, category_opposite = _ethic_axis(ethic_data)
 
@@ -180,12 +214,13 @@ def extract_ethics(data: dict, loc: dict[str, str], w: Writer, verbose: bool):
 
         w.execute(
             """INSERT OR REPLACE INTO ethic
-               (key, label, cost, category, fanatic_variant, regular_variant, gestalt,
-                category_value, category_opposite, sort_order)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (key, label, cost, category, fanatic_variant, regular_variant, absolute_variant,
+                gestalt, category_value, category_opposite, sort_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (ethic_key, label, cost, category,
              str(fanatic_variant) if fanatic_variant else None,
              str(regular_variant) if regular_variant else None,
+             str(absolute_variant) if absolute_variant else None,
              gestalt, category_value, category_opposite, index),
         )
 
@@ -317,9 +352,27 @@ def _civic_requirements(cdef: dict) -> list[tuple[str, str, str, int]]:
     return rows
 
 
+def playable_dlc(playable, dlc_triggers: dict[str, str] | None = None) -> str | None:
+    """The DLC a `playable = { … }` block requires: `host_has_dlc = "X"`, or a scripted DLC
+    trigger such as `has_force_of_will_dlc = yes` (→ "Willpower") resolved through
+    `dlc_trigger_map`. None when ungated."""
+    if not isinstance(playable, dict):
+        return None
+    d = playable.get('host_has_dlc')
+    if isinstance(d, list):
+        d = d[0] if d else None
+    if d:
+        return str(d).strip('"')
+    for k, v in playable.items():
+        if str(v) == 'yes' and k in (dlc_triggers or {}):
+            return dlc_triggers[k]
+    return None
+
+
 def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
                    scripted_vars: dict[str, float], w: Writer, order_start: int,
-                   verbose: bool, ascension: dict[str, dict]) -> int:
+                   verbose: bool, ascension: dict[str, dict],
+                   dlc_triggers: dict[str, str] | None = None) -> int:
     """Extract one civics file; all its civics share `civic_type`. Returns the next
     sort_order so successive files keep a stable global order."""
     variables: dict[str, float] = dict(scripted_vars)
@@ -335,12 +388,7 @@ def extract_civics(data: dict, civic_type: str, loc: dict[str, str],
             continue
 
         playable = cdef.get('playable')
-        dlc = None
-        if isinstance(playable, dict):
-            d = playable.get('host_has_dlc')
-            if isinstance(d, list):
-                d = d[0] if d else None
-            dlc = str(d).strip('"') if d else None
+        dlc = playable_dlc(playable, dlc_triggers)
 
         # Not player-pickable when gated to a specific country type (fallen empire,
         # pre-FTL, …) or explicitly playable = no.
@@ -777,7 +825,8 @@ def _custom_empire_initializers(install_dir: Path) -> set[str]:
 def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
                     scripted_vars: dict[str, float], w: Writer, order_start: int,
                     verbose: bool, ascension: dict[str, dict],
-                    init_custom: set[str]) -> int:
+                    init_custom: set[str],
+                    dlc_triggers: dict[str, str] | None = None) -> int:
     """Extract one origins file. `force_nonselectable` marks every origin in it
     non-selectable (the non-playable file). Returns the next sort_order."""
     variables: dict[str, float] = dict(scripted_vars)
@@ -795,12 +844,7 @@ def extract_origins(data: dict, force_nonselectable: bool, loc: dict[str, str],
             continue
 
         playable = odef.get('playable')
-        dlc = None
-        if isinstance(playable, dict):
-            d = playable.get('host_has_dlc')
-            if isinstance(d, list):
-                d = d[0] if d else None
-            dlc = str(d).strip('"') if d else None
+        dlc = playable_dlc(playable, dlc_triggers)
 
         # Not player-pickable: the non-playable file; swap-variant forms (potential
         # gated on already having an origin); country-type-gated; or playable = no.
