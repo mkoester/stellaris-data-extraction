@@ -17,7 +17,7 @@ def _concept_sub(m: re.Match) -> str:
     token, inline = m.group(1), m.group(2)
     if inline:
         return inline
-    key = token.split(':', 1)[1] if ':' in token else token
+    key = token.rsplit(':', 1)[1] if ':' in token else token   # policy:<policy>:<option> → option
     return f'${key}$'
 # A job-scope name command, e.g. [foundry.GetNamePlural] — resolvable to the job's loc
 # name ("Metallurgists"). Used in swap tooltips ("X are replaced with Y").

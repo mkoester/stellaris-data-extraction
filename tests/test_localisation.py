@@ -204,5 +204,12 @@ class TestJoinTexts(unittest.TestCase):
         self.assertIsNone(join_texts([None, '']))
 
 
+class TestConceptTags(unittest.TestCase):
+    def test_policy_option_link_names_the_option(self):
+        loc = {'trade_policy_knowledge_exchange': 'Knowledge Exchange'}
+        self.assertEqual(_clean_loc("the ['policy:trade_policy:trade_policy_knowledge_exchange'] policy",
+                                    loc), 'the Knowledge Exchange policy')
+
+
 if __name__ == '__main__':
     unittest.main()
