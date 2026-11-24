@@ -155,7 +155,9 @@ Keep pure helpers (parser, localisation cleanup, value helpers, SQL escaping) fr
 are what `scripts/test` covers, and the coverage only holds while that boundary does.
 
 **`prescripted_name` is how the dashboard names what a save stores by loc key** (`misc.py`
-`prescripted_names()`): `PRESCRIPTED_*` / `EMPIRE_DESIGN_*`, quoted `common/random_names` entries,
+`prescripted_names()`): `PRESCRIPTED_*` / `EMPIRE_DESIGN_*`, quoted `common/random_names` entries, the
+`common/species_names` keys (name, plural, home planet and system: `SPEC_Backatta_system` is
+"Ba Grax", an empire's "Authority of Ba Grax"; since 2026-11-24),
 and name-list names `<list>_(SHIP|FLEET|ARMY|PLANET)_<tail>` whose text differs from the tail —
 the dashboard strips the prefix for the rest. Planets since 0.1.17 ("St. Pomeroy" is not derivable
 from `StPomeroy`; 1556 rows on 4.5.4). **An all-caps tail is a text key** for planets only
