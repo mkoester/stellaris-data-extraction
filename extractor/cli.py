@@ -19,6 +19,7 @@ from .federations import extract_federations
 from .shroud import extract_shroud
 from .specimens import extract_specimens
 from .ambitions import extract_ambitions
+from .ideologies import extract_ideologies
 from .economy import extract_economy
 from .ships import extract_ship_designs, extract_starbase_parts
 from .focus import extract_focus
@@ -598,6 +599,8 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     extract_specimens(install_dir, loc, w, progress)
     print(f"\n[ambitions] {install_dir / 'common' / 'crisis_paths'}", file=progress)
     extract_ambitions(install_dir, loc, scripted_vars, w, progress)
+    print(f"\n[ideologies] {install_dir / 'common' / 'ideologies'}", file=progress)
+    extract_ideologies(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[economy] {install_dir / 'common' / 'strategic_resources'}, personalities, …", file=progress)
     extract_economy(install_dir, loc, scripted_vars, w, progress)
     print(f"\n[starbase parts] {install_dir / 'common' / 'starbase_modules'}, starbase_buildings", file=progress)

@@ -78,6 +78,11 @@ DEFINE_KEYS += tuple(f'RESEARCH_AGREEMENT_ACCEPTANCE_{t}'
 DEFINE_KEYS += tuple(f'COMMERCIAL_PACT_ACCEPTANCE_{t}'
                      for t in ('GIVEN_VALUE', 'GIVEN_VALUE_MIN', 'GIVEN_VALUE_MAX', 'TAKEN_VALUE',
                                'TAKEN_VALUE_MIN', 'TAKEN_VALUE_MAX'))
+# the planner's Ideologies page: tenet tiers, choices, reroll and amendment costs (an amendment
+# costs one entry per tier: TENET_AMENDMENT_INFLUENCE_COST_1 … _3)
+DEFINE_KEYS += ('TENETS_TIER_MIN', 'TENETS_TIER_MAX', 'TENETS_SELECTION_AMOUNT',
+                'TENET_REROLL_DAYS_COOLDOWN', 'TENET_AMENDMENT_DAYS_COOLDOWN', 'TENET_REROLL_AMOUNT',
+                'MAX_TENET_REROLL_COUNT_COST_INCREASE', 'TENET_AMENDMENT_INFLUENCE_COST')
 # the cosmic storms' maximum per game stage, a default per galaxy size
 DEFINE_KEYS += tuple(f'COSMIC_STORM_{stage}_GAME_SPAWN_MAX_CAP_DEFAULT_{size}_GALAXY'
                      for size in ('TINY', 'SMALL', 'MEDIUM', 'LARGE', 'HUGE')
@@ -88,7 +93,8 @@ DEFINE_KEYS += tuple(f'COSMIC_STORM_{stage}_GAME_SPAWN_MAX_CAP_DEFAULT_{size}_GA
 
 def pick_defines(defines: dict, keys=DEFINE_KEYS) -> dict[str, float]:
     """The whitelisted numeric defines anywhere in a parsed defines file. A block value
-    (`TRADITION_COST_AMOUNTS = { 300 }`) takes its first entry."""
+    (`TRADITION_COST_AMOUNTS = { 300 }`) takes its first entry; one with several also gives
+    each as `<KEY>_<n>`, 1-based (`TENET_AMENDMENT_INFLUENCE_COST = { 100 200 300 }`)."""
     out: dict[str, float] = {}
 
     def walk(node):
@@ -101,6 +107,12 @@ def pick_defines(defines: dict, keys=DEFINE_KEYS) -> dict[str, float]:
                     out[k] = float(str(raw))
                 except ValueError:
                     pass
+                if isinstance(v, list) and len(v) > 1:
+                    for i, x in enumerate(v):
+                        try:
+                            out[f'{k}_{i + 1}'] = float(str(x))
+                        except ValueError:
+                            pass
             elif isinstance(v, dict):
                 walk(v)
 

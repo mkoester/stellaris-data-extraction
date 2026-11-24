@@ -81,6 +81,7 @@ extractor/
   shroud.py              Shroud patrons, accords, callings and deeds
   specimens.py           Grand Archive specimens: category, rarity, modifiers, resources
   ambitions.py           ambitions (crisis paths, levels, objectives, menace perks)
+  ideologies.py          ideologies (4.6): types, strength levels and sources, tenets and their tiers
 tests/                   unit tests (stdlib unittest) for the pure helpers
 scripts/test             test-runner wrapper (`python3 -m unittest discover`)
 build-sqlite.sh          rebuild sqlite/ from the committed dump (no game files needed)
@@ -129,6 +130,7 @@ Cross-module imports keep the original (underscore-prefixed) helper names; the p
 | Fallen empire techs         | `common/technology/00_fallen_empire_tech.txt` + `localisation/english/fallen_empire_l_english.yml` |
 | Traditions + ascension perks| `common/tradition_categories/`, `common/traditions/`, `common/ascension_perks/`, `common/defines/00_defines.txt` (whitelisted keys) |
 | Federations                 | `common/federation_types/`, `common/federation_perks/`, `common/federation_law_categories/`, `common/federation_laws/` |
+| Ideologies (after ambitions)| `common/ideologies/` (types, `tenets/`), `common/inline_scripts/ideologies/`, `…/forceofwill/tenet_*`, `common/buildings/` (ideological) |
 
 Localisation: `localisation/english/*.yml`. A text that is only a reference (`key: "$other$"`) is resolved through chains of them, from the raw labels so the visiting order does not matter (`load_localisation`); before 2026-11-01 one level deep, which left 28 names and descriptions NULL on 4.5.2 (a Shroud tradition, the arkship techs, nine starbase modules …). A label that stays empty is kept as `''`, a reference to one dropped.
 
@@ -154,7 +156,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `technology_unlock`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `crisis_path`, `crisis_path_perk`, `crisis_path_level`, `crisis_path_objective`, `crisis_level`, `crisis_level_perk`, `crisis_objective`, `menace_perk`, `menace_perk_modifier`, `specimen`, `specimen_modifier`, `specimen_resource`, `building_conditional_modifier`, `starbase_part`, `starbase_part_modifier`, `ship_size`, `section_template`, `component_template`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `megastructure`, `megastructure_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `technology_unlock`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `crisis_path`, `crisis_path_perk`, `crisis_path_level`, `crisis_path_objective`, `crisis_level`, `crisis_level_perk`, `crisis_objective`, `menace_perk`, `menace_perk_modifier`, `ideology`, `ideology_strength_level`, `ideology_modifier`, `ideology_strength_source`, `ideology_concept`, `tenet`, `tenet_swap`, `tenet_tier`, `tenet_tier_modifier`, `tenet_unlock`, `ideology_building`, `specimen`, `specimen_modifier`, `specimen_resource`, `building_conditional_modifier`, `starbase_part`, `starbase_part_modifier`, `ship_size`, `section_template`, `component_template`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `megastructure`, `megastructure_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
 
 Drop order matters for FK integrity:
 ```sql
@@ -681,7 +683,7 @@ For the dashboard. The game calls them crisis paths in its keys (`common/crisis_
 `crisis_levels`, `crisis_objectives`, `menace_perks`) and Ambitions in its texts. `crisis_path`:
 the currency (a strategic resource: `menace`, `integrity` = Valor, `feral_insight`,
 `advanced_logic`, `entropy_crystals`), name from `<currency>_crisis_description_title`;
-`crisis_path_perk` from each ascension perk's `activate_crisis_progression` — on 4.5.3 only
+(Force of Will has none: its perk's name and description); `crisis_path_perk` from each ascension perk's `activate_crisis_progression` — on 4.5.3 only
 `ap_defender_of_the_galaxy_nomads` starts the Defender path, the plain Defender perk none.
 `crisis_level`: `required_crisis_currency`, `requirements_json` = the `custom_tooltip`s of
 `allow` (success text, `$TRIGGER_PASS$` dropped; hidden triggers skipped), `allow_json`
@@ -689,6 +691,30 @@ normalised. `crisis_objective.reward_json`: the reward's steps in **file order**
 since the game applies them in order — `by` a count only the game knows (`num_galaxy_systems`,
 `count_playable_country`, `galaxy_setup:<setting>`), `var` a country variable or script value
 (Hyperthermia's `root.hyperthermia_volcanic_var`), `@variables` resolved.
+
+## Ideologies (`extract_ideologies`, ideologies.py)
+
+For the planner's Ideologies page. `common/ideologies/00_ideology_types.txt` names 9 types for 8
+ethics: xenophobe twice (`xenophobe_militarist` / `_pacifist`, picked by the empire's secondary
+ethic — `SEC_ETHIC` / `OPPOSED_SEC_ETHIC` of `xenophobe_data`). Each body is inline scripts
+(`ideology_ethic_data` → `ideology_common_data`, …), expanded recursively by `inline_expanded()`,
+parameters filled. `ideology.ethic` is the regular ethic (the file names the fanatic one).
+`ideology_strength_level`: the `strength_level` blocks, 0-based as the trigger
+`adopted_ideology_level`. `ideology_modifier`: the `triggered_*_modifier`s, `level` from an
+`adopted_ideology_level` in the potential, `header` from `trigger_true_key_override`, `scaled_by`
+a `mult` only the game knows. `ideology_strength_source` is written once (every type inlines the
+same common data); its values are mostly script values (formulas of counts and skills), kept as
+`value_ref` — `ideology_concept.concept_ideological_strength_sources` gives the per-unit rates.
+
+Tenets (`common/ideologies/tenets`): 87 blocks plus 8 Propagandism from top-level inline scripts
+(appended after the others); Strategism's tiers and some tiers' modifiers are inline scripts too.
+Tier numbers count from `first_tier`. `tenet_tier_modifier.possible_json`: shown always, active
+only while it holds (Self-Sufficiency outside the Galactic Community). Texts are the
+`custom_tooltip`s (`hidden_effect` skipped): `on_unlock`/`on_lock` on `tenet`, a tier's on
+`tenet_tier`; `tenet_unlock` takes the `['kind:key']` links in those texts' raw loc, `$refs$`
+expanded. Clauses a running game fills in ("If Rival Ideology: +%", "(Max. +)") are dropped
+(`drop_unresolved`). Engine-only, in no file: which strength level opens a tenet slot or raises
+its Intensity. `ideology_building`: buildings whose `potential` mentions `ideology`.
 
 ## The Shroud (`extract_shroud`, shroud.py)
 
