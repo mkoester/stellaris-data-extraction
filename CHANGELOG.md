@@ -4,6 +4,29 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.26] - 2026-11-24
+
+### Added
+
+- Ideologies (4.6, `extractor/ideologies.py`): `ideology` (one per ethic, xenophobe twice by
+  secondary ethic, with faction and reach), `ideology_strength_level` (0…3, ending at
+  250/500/750/1000), `ideology_modifier` (what adopting gives per strength level, inside the reach
+  and to followers), `ideology_strength_source` (the `monthly_increase` sources by category),
+  `ideology_concept` (the game's concept tooltips, numbers filled), `tenet` with `tenet_swap`
+  (hive and machine variants), `tenet_tier` / `tenet_tier_modifier` (Intensity 1–3) and
+  `tenet_unlock` (the edicts, policies and agendas a tenet's tooltips link), and
+  `ideology_building`. Which strength level opens which tenet slot is engine logic, in no file.
+- `game_define`: the tenet defines, and a block define with several entries also as `<KEY>_<n>`
+  (`TENET_AMENDMENT_INFLUENCE_COST_1` … `_3`).
+
+### Fixed
+
+- `crisis_path`: Force of Will has a name and description (its ascension perk's; the path has no
+  `<currency>_crisis_description_title`).
+- A three-part concept link (`['policy:trade_policy:trade_policy_knowledge_exchange']`,
+  `['diplomatic_stance:diplo_stance_animosity']`) resolves to its last part: Enmity's finisher
+  read "Unlocks the $diplomatic_stance:diplo_stance_animosity$ Diplomatic Stance".
+
 ## [0.1.25] - 2026-11-23
 
 ### Added

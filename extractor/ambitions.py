@@ -171,12 +171,16 @@ def extract_ambitions(install_dir: Path, loc: dict[str, str], scripted_vars: dic
     objective_data = _parse_dir(common / 'crisis_objectives')
     perks = _parse_dir(common / 'menace_perks')
 
+    path_perks = crisis_paths_of_perks(_parse_dir(common / 'ascension_perks'))
     for order, (key, data) in enumerate(paths.items()):
         currency = data.get('crisis_currency') if isinstance(data.get('crisis_currency'), str) else None
+        # Force of Will (4.6) has no `<currency>_crisis_description(_title)`: name and describe
+        # it as the ascension perk that starts it
+        perk = next((p for p, path in path_perks if path == key and text(p)), None)
+        name = text(f'{currency}_crisis_description_title') or (text(perk) if perk else None)
+        desc = text(f'{currency}_crisis_description', True) or (text(f'{perk}_desc', True) if perk else None)
         w.execute("INSERT INTO crisis_path (key, currency, name, description, sort_order) "
-                  "VALUES (?, ?, ?, ?, ?)",
-                  (key, currency, text(f'{currency}_crisis_description_title'),
-                   text(f'{currency}_crisis_description', True), order))
+                  "VALUES (?, ?, ?, ?, ?)", (key, currency, name, desc, order))
         for n, lv in enumerate(x for x in _to_list(data.get('levels')) if isinstance(x, str)):
             w.execute("INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) "
                       "VALUES (?, ?, ?, ?)", (key, lv, n + 1, n))
@@ -184,7 +188,7 @@ def extract_ambitions(install_dir: Path, loc: dict[str, str], scripted_vars: dic
             w.execute("INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) "
                       "VALUES (?, ?, ?)", (key, ob, n))
 
-    for perk, path in crisis_paths_of_perks(_parse_dir(common / 'ascension_perks')):
+    for perk, path in path_perks:
         w.execute("INSERT INTO crisis_path_perk (path_key, perk_key) VALUES (?, ?)", (path, perk))
 
     for order, (key, data) in enumerate(levels.items()):

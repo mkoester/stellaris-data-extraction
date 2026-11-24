@@ -2013,6 +2013,17 @@ CREATE TABLE deed (
 -- (`activate_crisis_progression`), their levels in order with the currency each needs, the
 -- requirements as the game words them and the menace perks granted, and the objectives that earn
 -- the currency. For the dashboard, which reads a country's path and level from saves by key.
+DROP TABLE IF EXISTS ideology_building;
+DROP TABLE IF EXISTS ideology_concept;
+DROP TABLE IF EXISTS tenet_unlock;
+DROP TABLE IF EXISTS tenet_tier_modifier;
+DROP TABLE IF EXISTS tenet_tier;
+DROP TABLE IF EXISTS tenet_swap;
+DROP TABLE IF EXISTS tenet;
+DROP TABLE IF EXISTS ideology_strength_source;
+DROP TABLE IF EXISTS ideology_modifier;
+DROP TABLE IF EXISTS ideology_strength_level;
+DROP TABLE IF EXISTS ideology;
 DROP TABLE IF EXISTS crisis_path_level;
 DROP TABLE IF EXISTS crisis_path_objective;
 DROP TABLE IF EXISTS crisis_path_perk;
@@ -2111,6 +2122,106 @@ CREATE TABLE specimen_resource (
     amount       REAL NOT NULL,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (specimen_key) REFERENCES specimen(key)
+);
+-- Ideologies (4.6, common/ideologies): one type per ethic (xenophobe twice, picked by the
+-- empire's secondary ethic), what adopting one gives at each strength level, where Ideological
+-- Strength comes from, and the tenets codified for it. Which strength level opens which tenet
+-- slot is engine logic, in no file.
+CREATE TABLE ideology (
+    key                     TEXT PRIMARY KEY,  -- e.g. "xenophobe_militarist"
+    ethic                   TEXT,              -- "ethic_xenophobe" (the file names the fanatic one)
+    secondary_ethic         TEXT,              -- xenophobe variants: the ethic that favours this one
+    opposed_secondary_ethic TEXT,              -- … and the one that rules it out
+    faction                 TEXT,              -- pop faction type that represents it: "supremacist"
+    faction_name            TEXT,              -- "Supremacist Faction"
+    reach                   TEXT,              -- ideology_reach_type key: default_reach, militarist_reach
+    type_name               TEXT,              -- what the game calls it: "Ideology", "Religion"
+    sort_order              INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE ideology_strength_level (
+    ideology_key TEXT NOT NULL,
+    level        INTEGER NOT NULL,             -- 0-based, as the trigger adopted_ideology_level
+    start_value  REAL,
+    end_value    REAL,                         -- 250, 500, 750, 1000
+    FOREIGN KEY (ideology_key) REFERENCES ideology(key)
+);
+CREATE TABLE ideology_modifier (
+    ideology_key   TEXT NOT NULL,
+    scope          TEXT NOT NULL,              -- country (the adopter), system (in its reach), pop_group (followers)
+    level          INTEGER,                    -- strength level the block is gated on; NULL = any
+    header         TEXT,                       -- the tooltip header it shows under: "Inside Reach:"
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    scaled_by      TEXT,                       -- `mult` the running game knows: "value:adopted_ideology_ethic_attraction"
+    potential_json TEXT,                       -- the block's potential, normalised
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (ideology_key) REFERENCES ideology(key)
+);
+CREATE TABLE ideology_strength_source (
+    category       TEXT,                       -- "From Galactic Strength", …; NULL = outside the categories
+    label          TEXT,                       -- "Base Galactic Strength"
+    op             TEXT,                       -- add, subtract, mult, set
+    value          REAL,                       -- NULL when only the running game knows it
+    value_ref      TEXT,                       -- then what it is: "value:advocate_bonus"
+    condition_json TEXT,                       -- when it counts (country scope), normalised
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tenet (
+    key            TEXT PRIMARY KEY,           -- e.g. "tenet_idolism"
+    name           TEXT,
+    description    TEXT,
+    ethics_json    TEXT NOT NULL,              -- ["ethic_authoritarian"]; [] = any ideology
+    priority       TEXT NOT NULL,              -- high (always offered), default, low (only when nothing else is)
+    source_civic   TEXT,                       -- the origin or civic it comes from
+    potential_json TEXT,                       -- who may get it (country scope), normalised
+    first_tier     INTEGER,
+    unlock_text    TEXT,                       -- on_unlock's tooltips
+    lock_text      TEXT,                       -- on_lock's
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tenet_swap (
+    tenet_key    TEXT NOT NULL,
+    trigger_json TEXT,                         -- e.g. is_hive_empire = yes
+    name         TEXT,                         -- NULL = the tenet's own
+    description  TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_tier (
+    tenet_key   TEXT NOT NULL,
+    tier        INTEGER NOT NULL,              -- Intensity, 1-3
+    effect_text TEXT,                          -- the tier's custom tooltips (effects not written as modifiers)
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_tier_modifier (
+    tenet_key      TEXT NOT NULL,
+    tier           INTEGER NOT NULL,
+    scope          TEXT NOT NULL,              -- country, colony, system, pop_group, leader
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,                       -- who it applies to (e.g. is_gestalt = no)
+    possible_json  TEXT,                       -- shown always, active only while this holds
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_unlock (
+    tenet_key  TEXT NOT NULL,
+    tier       INTEGER,                        -- NULL = on codifying it; else from that tier
+    kind       TEXT NOT NULL,                  -- edict, policy, agenda, decision, … (the loc link's type)
+    target_key TEXT NOT NULL,                  -- e.g. "broadcasting_authoritarian"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE ideology_concept (
+    key        TEXT PRIMARY KEY,               -- e.g. "concept_ideological_strength_sources"
+    name       TEXT,
+    text       TEXT,                           -- its tooltip, @variables filled in
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE ideology_building (
+    building_key   TEXT NOT NULL,              -- building.key, e.g. "building_ideological_church"
+    potential_json TEXT,                       -- its potential, which tests the owner's ideology
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 
 -- Data
@@ -93398,6 +93509,7 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_GIFT_SIZE', '50.0')
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_AMENITIES', '2.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_CRIME', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_PLANET_STABILITY', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TENET_REROLL_COUNT_COST_INCREASE', '3.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MAX_TRADE_DEAL_LENGTH_YEARS', '30.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MID_GAME_START_DEFAULT', '100.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('MIN_GIFT_SIZE', '25.0');
@@ -93431,6 +93543,16 @@ INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_MONTHLY_LOYALTY
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('SUBJECT_XP_LOYALTY_MULTIPLIER', '0.1');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DEFAULT', '1.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TECH_COST_DIFFICULTY_SCALE_MULT', '0.025');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENETS_SELECTION_AMOUNT', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENETS_TIER_MAX', '3.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENETS_TIER_MIN', '1.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_AMENDMENT_DAYS_COOLDOWN', '3600.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_AMENDMENT_INFLUENCE_COST', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_AMENDMENT_INFLUENCE_COST_1', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_AMENDMENT_INFLUENCE_COST_2', '200.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_AMENDMENT_INFLUENCE_COST_3', '300.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_REROLL_AMOUNT', '100.0');
+INSERT OR REPLACE INTO game_define (key, value) VALUES ('TENET_REROLL_DAYS_COOLDOWN', '180.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MAX_RESOURCE_PERCENT', '0.3');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_DELTA', '10.0');
 INSERT OR REPLACE INTO game_define (key, value) VALUES ('TRADE_MIN_RESOURCE_STOCKPILE', '500.0');
@@ -94624,7 +94746,7 @@ INSERT INTO tradition
 INSERT OR IGNORE INTO tradition_prereq (tradition_key, requires_key) VALUES ('tr_enmity_eclipse', 'tr_enmity_outpace');
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
-                    tooltip, sort_order) VALUES ('tr_enmity_finish', 'tradition_enmity', 'finish', 'Enmity Finished', NULL, NULL, NULL, 'Unlocks the $diplomatic_stance:diplo_stance_animosity$ Diplomatic Stance.', 6);
+                    tooltip, sort_order) VALUES ('tr_enmity_finish', 'tradition_enmity', 'finish', 'Enmity Finished', NULL, NULL, NULL, 'Unlocks the Antagonistic Diplomatic Stance.', 6);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_enmity_finish', 'envoys_add', '1.0', NULL, 0);
@@ -144092,7 +144214,7 @@ INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES (
 INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_galcom_activity', 3);
 INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_destroy_crisis_ships', 4);
 INSERT INTO crisis_path_objective (path_key, objective_key, sort_order) VALUES ('defender_path', 'crisobj_destroy_crisis_countries', 5);
-INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('force_of_will_path', 'willpower', '', '', 3);
+INSERT INTO crisis_path (key, currency, name, description, sort_order) VALUES ('force_of_will_path', 'willpower', 'Force of Will', 'Our society''s fundamental values are key to the creation of a galactic utopia. By uniting all sapient minds in recognition of these truths, we will usher in a better future for everyone.', 3);
 INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('force_of_will_path', 'crisis_force_of_will_level_1', 1, 0);
 INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('force_of_will_path', 'crisis_force_of_will_level_2', 2, 1);
 INSERT INTO crisis_path_level (path_key, level_key, level, sort_order) VALUES ('force_of_will_path', 'crisis_force_of_will_level_3', 3, 2);
@@ -144740,6 +144862,4306 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_hyperthermia_ammunition', 'country', 'shipsize_ember_battleship_weapon_damage', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('shipsize_ember_battleship_weapon_damage', 'Ship Weapons Damage (Ember Battleship)', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('authoritarian', 'ethic_authoritarian', NULL, NULL, 'totalitarian', 'Totalitarian Faction', 'default_reach', 'Ideology', 0);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('authoritarian', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('authoritarian', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('authoritarian', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('authoritarian', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', NULL, NULL, 'pop_ethic_authoritarian_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_authoritarian_attraction_mult', 'Authoritarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Galactic Strength', 'Base Galactic Strength', 'add', NULL, 'value:galactic_strength_bonus', NULL, 0);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Galactic Strength', 'Our % Followers'' share', 'add', NULL, 'value:ideology_population_share_bonus', NULL, 1);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Galactic Strength', 'Strength Modifiers', 'mult', NULL, 'value:get_ideological_strength_bonus_mult', NULL, 2);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Clashing ideologies bonus', 'add', NULL, 'value:clashing_ideologies_bonus', NULL, 3);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Clashing rival ideologies bonus', 'add', NULL, 'value:clashing_rival_ideologies_bonus', NULL, 4);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Buildings', 'add', NULL, 'value:ideological_buildings_bonus', NULL, 5);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Galactic Hall near a Colony', 'add', NULL, 'value:galactic_hall_bonus', NULL, 6);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Advocate', 'add', NULL, 'value:advocate_bonus', '{"leaf":"is_gestalt","value":"no"}', 7);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Ideological Martyr', 'add', NULL, 'value:martyr_ideological_strength_mult', '{"leaf":"has_modifier","value":"cultural_envoy_martyr"}', 8);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Tranquil Steward', 'add', NULL, 'value:tranquil_steward_strength_bonus', '{"leaf":"any_owned_leader","value":"scope"}', 9);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Social concord strength bonus', 'add', NULL, 'value:social_concord_strength_bonus', '{"op":"and","args":[{"leaf":"is_social_concord_empire","value":"yes"},{"leaf":"are_galcom_members_at_peace","value":"yes"}]}', 10);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Purged Pops (Max. +2)', 'add', NULL, 'value:fanatic_purifiers_purged_pop_ideological_strength', '{"op":"and","args":[{"leaf":"is_homicidal","value":"yes"},{"leaf":"is_variable_set","value":"purged_pop_count"}]}', 11);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Open stars sovereignty strength bonus', 'add', NULL, 'value:open_stars_sovereignty_strength_bonus', '{"leaf":"is_open_stars_sovereignty_empire","value":"yes"}', 12);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Ideology Act Resolution', 'add', NULL, 'value:ideology_act_bonus', '{"op":"or","args":[{"leaf":"has_modifier","value":"resolution_ideology_act_modifier"},{"leaf":"has_modifier","value":"resolution_ideology_act_modifier_gestalt"}]}', 13);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Celebrate Ideology Decisions', 'add', NULL, 'value:celebrate_ideology_strength_bonus', '{"leaf":"any_owned_colony","value":"scope"}', 14);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Decree: A Grand Fleet', 'add', '0.25', NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"grand_fleet"},{"leaf":"from","value":"scope"}]}', 15);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Decree: Scientific Revolution', 'add', '0.25', NULL, '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_edict","value":"scientific_revolution"},{"leaf":"has_edict","value":"scientific_revolution_wilderness"}]},{"leaf":"from","value":"scope"}]}', 16);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Decree: Hearts and Minds', 'add', '0.25', NULL, '{"op":"and","args":[{"leaf":"has_edict","value":"hearts_and_minds"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Sacrifice: Dutiful', 'add', '0.5', NULL, '{"leaf":"has_edict","value":"sacrifice_dutiful_1"}', 18);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Sacrifice: Dutiful', 'add', '1.0', NULL, '{"leaf":"has_edict","value":"sacrifice_dutiful_2"}', 19);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Sacrifice: Dutiful', 'add', '1.5', NULL, '{"leaf":"has_edict","value":"sacrifice_dutiful_3"}', 20);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Sacrifice Edicts', 'add', NULL, 'modifier:sacrifice_ideological_strength_add', '{"leaf":"check_modifier_value","value":"scope"}', 21);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Ideological strength mult', 'add', NULL, 'ideological_strength_mult', '{"op":"and","args":[{"leaf":"is_variable_set","value":"ideological_strength_mult"},{"leaf":"is_gestalt","value":"yes"},{"leaf":"check_variable","value":"scope"}]}', 22);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Faction Approval', 'mult', NULL, 'value:fanatic_faction_approval_mult', '{"leaf":"is_gestalt","value":"no"}', 23);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Strengthening', 'Strength Modifiers', 'mult', NULL, 'value:get_ideological_strength_bonus_mult', NULL, 24);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Current Ideological Strength', 'subtract', NULL, 'value:ideology_level_malus', NULL, 25);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Empire Size over 100', 'subtract', NULL, 'value:strength_empire_size_malus', '{"leaf":"is_gestalt","value":"no"}', 26);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Pops following another Ideology', 'subtract', NULL, 'value:following_concurrent_pop_malus', '{"leaf":"is_gestalt","value":"no"}', 27);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Faction Low Approval', 'subtract', NULL, 'value:low_fanatic_faction_malus', '{"leaf":"is_gestalt","value":"no"}', 28);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Ideology Denounced', 'subtract', NULL, 'value:denounced_ideology_malus', '{"leaf":"has_modifier","value":"resolution_adopted_ideology_denounced"}', 29);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Ideological strength mult', 'add', NULL, 'ideological_strength_mult', '{"op":"and","args":[{"leaf":"is_variable_set","value":"ideological_strength_mult"},{"leaf":"is_gestalt","value":"yes"},{"leaf":"check_variable","value":"scope"}]}', 30);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES ('From Ideological Friction', 'Friction Modifiers', 'mult', NULL, 'value:get_ideological_strength_malus_mult', NULL, 31);
+INSERT INTO ideology_strength_source (category, label, op, value, value_ref, condition_json, sort_order) VALUES (NULL, 'Abandoning Ideology', 'set', '-10.0', NULL, '{"leaf":"has_country_flag","value":"abandoning_ideology"}', 32);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('egalitarian', 'ethic_egalitarian', NULL, NULL, 'progressive', 'Progressive Faction', 'default_reach', 'Ideology', 1);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('egalitarian', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('egalitarian', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('egalitarian', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('egalitarian', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('xenophobe_militarist', 'ethic_xenophobe', 'ethic_militarist', 'ethic_pacifist', 'supremacist', 'Supremacist Faction', 'default_reach', 'Ideology', 2);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_militarist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_militarist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_militarist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_militarist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', NULL, NULL, 'pop_ethic_xenophobe_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('xenophobe_pacifist', 'ethic_xenophobe', 'ethic_pacifist', 'ethic_militarist', 'isolationist', 'Isolationist Faction', 'default_reach', 'Ideology', 3);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_pacifist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_pacifist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_pacifist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophobe_pacifist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', NULL, NULL, 'pop_ethic_xenophobe_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophobe_attraction_mult', 'Xenophobe Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('xenophile', 'ethic_xenophile', NULL, NULL, 'xenoist', 'Xenoist Faction', 'default_reach', 'Ideology', 4);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophile', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophile', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophile', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('xenophile', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', NULL, NULL, 'pop_ethic_xenophile_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_xenophile_attraction_mult', 'Xenophile Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('militarist', 'ethic_militarist', NULL, NULL, 'imperialist', 'Imperialist Faction', 'militarist_reach', 'Ideology', 5);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('militarist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('militarist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('militarist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('militarist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', NULL, NULL, 'pop_ethic_militarist_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_militarist_attraction_mult', 'Militarist Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('pacifist', 'ethic_pacifist', NULL, NULL, 'prosperity', 'Prosperity Faction', 'default_reach', 'Ideology', 6);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('pacifist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('pacifist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('pacifist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('pacifist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', NULL, NULL, 'pop_ethic_pacifist_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_pacifist_attraction_mult', 'Pacifist Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('spiritualist', 'ethic_spiritualist', NULL, NULL, 'traditionalist', 'Traditionalist Faction', 'default_reach', 'Religion', 7);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('spiritualist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('spiritualist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('spiritualist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('spiritualist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', NULL, NULL, 'pop_ethic_spiritualist_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_spiritualist_attraction_mult', 'Spiritualist Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology (key, ethic, secondary_ethic, opposed_secondary_ethic, faction, faction_name, reach, type_name, sort_order) VALUES ('materialist', 'ethic_materialist', NULL, NULL, 'technologist', 'Technologist Faction', 'default_reach', 'Ideology', 8);
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('materialist', 0, '0.0', '250.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('materialist', 1, '250.0', '500.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('materialist', 2, '500.0', '750.0');
+INSERT INTO ideology_strength_level (ideology_key, level, start_value, end_value) VALUES ('materialist', 3, '750.0', '1000.0');
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', NULL, NULL, 'pop_ethic_materialist_attraction_mult', '1.0', 'value:adopted_ideology_ethic_attraction', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_materialist_attraction_mult', 'Materialist Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.1', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 0, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.2', NULL, '{"leaf":"adopted_ideology_level","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.2', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 1, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.4', NULL, '{"leaf":"adopted_ideology_level","value":"1"}', 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.25', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 2, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.5', NULL, '{"leaf":"adopted_ideology_level","value":"2"}', 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_claim_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_hostile_claim_influence_cost_mult', '0.3', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 11);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_hostile_claim_influence_cost_mult', 'Claim Influence Cost for other empires', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 3, 'Inside Ideological Reach:', 'country_ideology_starbase_influence_cost_mult', '-0.6', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 12);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_ideology_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', 3, 'Inside Ideological Reach:', 'starbases_upkeep_mult', '-0.15', NULL, '{"leaf":"adopted_ideology_level","value":"3"}', 13);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbases_upkeep_mult', 'Station Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', NULL, NULL, 'adopted_ideology_upkeep_mult', '-0.2', NULL, '{"leaf":"from","value":"scope"}', 14);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('adopted_ideology_upkeep_mult', 'Official Ideology Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', NULL, NULL, 'damage_vs_country_type_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 15);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_fallen_empire_mult', 'Damage to Fallen Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'country', NULL, NULL, 'damage_vs_country_type_awakened_fallen_empire_mult', '1.0', 'from.trigger:galactic_strength', '{"leaf":"from.owner","value":"scope"}', 16);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('damage_vs_country_type_awakened_fallen_empire_mult', 'Damage to Awakened Empires', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, 'From Moderate Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 23);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, 'From Severe Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 24);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 25);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 26);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"}]}', 27);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 28);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'planet_pops_upkeep_mult', '-0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 29);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'pop_ethic_egalitarian_attraction_mult', '0.05', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"planet","value":"scope"},{"leaf":"sector","value":"scope"}]}', 30);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_ethic_egalitarian_attraction_mult', 'Egalitarian Ethics Attraction', 1);
+INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, NULL, 'pop_happiness', '0.1', NULL, '{"op":"and","args":[{"leaf":"owner","value":"scope"},{"leaf":"owner_has_matching_broadcasting_edict","value":"yes"}]}', 31);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO ideology_concept (key, name, text, sort_order) VALUES ('concept_ideological_reach', 'Ideological Reach', 'Reach measures how effectively an Ideology spreads from one System to its neighbors.
+It represents the projection of ideas and cultural values both within an empire and beyond its external borders, converting individualistic Pops into followers of an ideology or causing Crime Deviancy among gestalt Pops.
+Reach is affected by Reach Resistance and Push, which reflects how receptive a system is to new ideals and ways of thinking.
+Only one ideological reach can affect a system''s Pops at a time. If the reach of two or more ideologies comes into contact, there is a clash to determine which is strongest.', 0);
+INSERT INTO ideology_concept (key, name, text, sort_order) VALUES ('concept_ideological_rival', 'Ideological Rival', 'Empire Modifiers: Ideological Strength from Clashing with their Ideology: +100%, Official Ideology Upkeep: -20%
+Against all Empires following their Ideology: Opinion: -100, Trust: -2', 1);
+INSERT INTO ideology_concept (key, name, text, sort_order) VALUES ('concept_ideological_strength_sources', 'Ideological Strength Sources', 'Galactic Strength: Per percent of Followers living in our empire: +2%
+Ideological Strengthening:
+Per Clashing Ideology: +0.25
+Per Ideology Building: +0.2
+Galactic Hall Orbiting a Colony: +0.5
+Ideology Act Resolution: +0.25
+Per 100 Pops Celebrating the Ideology: +0.005
+Ideological Friction:
+Per current Ideological Strength point: -0.005
+Ideology Denounced: -0.5
+While Abandoning: -10 per month, ignoring every source above.', 2);
+INSERT INTO ideology_concept (key, name, text, sort_order) VALUES ('concept_ideology', 'Ideology', 'An Ideology is a system of ideas associated with a particular Ethic. Information about known ideologies throughout the galaxy can be accessed in the Interface Ideologies view.
+An empire can choose to adopt an official ideology, whether it emerges from within or from a foreign source, and galactic adherence is measured by the number of Pops following an ideology. Its principal values are codified as Tenets, which are selected by the Ideological Authority and have unique effects upon adopting empires.
+Once an ideology is officially adopted by an empire, its influence can spread beyond borders and affect the ethics of Pops of foreign empires.', 3);
+INSERT INTO ideology_concept (key, name, text, sort_order) VALUES ('concept_ideology_momentum', 'Ideology Momentum', 'Ideology Momentum measures the recent change in the strength of an Ideology within an empire. It can be positive or negative.
+Positive momentum reflects a society growing more aligned with its ideals, while negative momentum indicates disagreement, uncertainty, or even internal conflict.
+Negative momentum makes an ideology harder to maintain and, if left unchecked, can lead to serious problems, including revolts.', 4);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_stability', 'Stability', 'Minds united by shared ideals find a strong sense of stability.', '[]', 'low', NULL, NULL, 1, NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_stability', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'Continuity of thought brings stability, which is the basis of a functional collective.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_stability', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'Continuity of thought brings stability, which ensures a functional network.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_stability', 1, 'country', 'planet_stability_add', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_stability', 2, 'country', 'planet_stability_add', '6.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_stability', 3, 'country', 'planet_stability_add', '9.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_unity', 'Unity', 'A common goal has the power to unite masses in ways that cannot be achieved otherwise.', '[]', 'low', NULL, NULL, 1, NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_unity', '{"leaf":"is_hive_empire","value":"yes"}', 'Cohesion', 'Across the collective, unity of purpose persists unbroken.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_unity', '{"leaf":"is_machine_empire","value":"yes"}', 'Synchronicity', 'Across the galactic network, synchronized processing opens new possibilities.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unity', 1, 'country', 'country_unity_produces_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unity', 2, 'country', 'country_unity_produces_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unity', 3, 'country', 'country_unity_produces_mult', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_civility', 'Civility', 'Lawful conduct ensures a functioning society.', '[]', 'low', NULL, NULL, 1, NULL, NULL, 2);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_civility', '{"leaf":"is_hive_empire","value":"yes"}', 'Conformity', 'Nonconformity is a contagion that must not be tolerated.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_civility', '{"leaf":"is_machine_empire","value":"yes"}', 'Operation', 'Nonconformity is a malfunction that must not be tolerated.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 1, 'country', 'empire_size_pops_mult', '-0.025', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 1, 'country', 'planet_crime_add', '-10.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 1, 'country', 'planet_crime_no_happiness_add', '-10.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 2, 'country', 'empire_size_pops_mult', '-0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 2, 'country', 'planet_crime_add', '-20.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 2, 'country', 'planet_crime_no_happiness_add', '-20.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 3, 'country', 'empire_size_pops_mult', '-0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 3, 'country', 'planet_crime_add', '-40.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_civility', 3, 'country', 'planet_crime_no_happiness_add', '-40.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_spectacle_of_authority', 'Spectacle of Authority', 'How one presents oneself is often more important than the message being delivered.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, NULL, NULL, 3);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_spectacle_of_authority', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'Presentation is often more important than the message being delivered.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 1, 'country', 'country_tenets_influence_produces_add', '0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 1, 'country', 'planet_entertainers_society_research_produces_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_society_research_produces_add', 'Society Research Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 1, 'country', 'planet_bureaucrats_society_research_produces_add', '0.5', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'Society Research Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 1, 'country', 'tenet_spectacle_of_authority_edict_modifier', '1.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_spectacle_of_authority_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 2, 'country', 'country_tenets_influence_produces_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 2, 'country', 'planet_entertainers_society_research_produces_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_society_research_produces_add', 'Society Research Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 2, 'country', 'planet_bureaucrats_society_research_produces_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'Society Research Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 2, 'country', 'tenet_spectacle_of_authority_edict_modifier', '2.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_spectacle_of_authority_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 3, 'country', 'country_tenets_influence_produces_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 3, 'country', 'planet_entertainers_society_research_produces_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_society_research_produces_add', 'Society Research Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 3, 'country', 'planet_bureaucrats_society_research_produces_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_society_research_produces_add', 'Society Research Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_spectacle_of_authority', 3, 'country', 'tenet_spectacle_of_authority_edict_modifier', '4.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_spectacle_of_authority_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_juvenile_employment', 'Juvenile Employment', 'Strengthening the work ethic of the youth is a way to ensure the discipline of the old.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, NULL, NULL, 4);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_juvenile_employment', '{"leaf":"is_gestalt","value":"yes"}', 'Functional Order', 'There should be order in all things, even the most menial of tasks.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 1, 'country', 'pop_slave_bonus_workforce_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 1, 'country', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for & Menial Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 2, 'country', 'pop_slave_bonus_workforce_mult', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 2, 'country', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for & Menial Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 3, 'country', 'pop_slave_bonus_workforce_mult', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_slave_bonus_workforce_mult', 'Job Efficiency for Slaves', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_juvenile_employment', 3, 'country', 'worker_and_simple_drone_cat_bonus_workforce_mult', '0.4', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('worker_and_simple_drone_cat_bonus_workforce_mult', 'Job Efficiency for & Menial Drones', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_idolism', 'Idolism', 'The greatest among us stand as testaments to what drive and purpose can accomplish.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, NULL, NULL, 5);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_idolism', '{"leaf":"is_gestalt","value":"yes"}', 'High Functionality', 'The more complex the task, the greater the value of the node that accomplishes it.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'country', 'planet_politicians_unity_produces_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_unity_produces_add', 'Unity Produced per 100 Politicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'country', 'pop_cat_complex_drone_bonus_workforce_mult', '0.05', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'country', 'planet_jobs_patrol_drone_unity_produces_add', '0.75', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_unity_produces_add', 'Unity Produced per 100 Hunter-Seeker Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'country', 'bonus_pop_growth_mult', '0.05', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'colony', 'pop_enforcer_bonus_workforce_mult', '0.02', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'colony', 'pop_dystopian_enforcer_bonus_workforce_mult', '0.02', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_dystopian_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 1, 'colony', 'planet_crime_add', '1.0', '{"leaf":"from","value":"scope"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'country', 'planet_politicians_unity_produces_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_unity_produces_add', 'Unity Produced per 100 Politicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'country', 'pop_cat_complex_drone_bonus_workforce_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'country', 'planet_jobs_patrol_drone_unity_produces_add', '1.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_unity_produces_add', 'Unity Produced per 100 Hunter-Seeker Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'country', 'bonus_pop_growth_mult', '0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'colony', 'pop_enforcer_bonus_workforce_mult', '0.03', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'colony', 'pop_dystopian_enforcer_bonus_workforce_mult', '0.03', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_dystopian_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 2, 'colony', 'planet_crime_add', '2.0', '{"leaf":"from","value":"scope"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'country', 'planet_politicians_unity_produces_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_unity_produces_add', 'Unity Produced per 100 Politicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'country', 'pop_cat_complex_drone_bonus_workforce_mult', '0.15', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_complex_drone_bonus_workforce_mult', 'Job Efficiency for Complex Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'country', 'planet_jobs_patrol_drone_unity_produces_add', '3.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_unity_produces_add', 'Unity Produced per 100 Hunter-Seeker Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'country', 'bonus_pop_growth_mult', '0.15', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'colony', 'pop_enforcer_bonus_workforce_mult', '0.04', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'colony', 'pop_dystopian_enforcer_bonus_workforce_mult', '0.04', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_dystopian_enforcer_bonus_workforce_mult', 'Job Efficiency for Enforcers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_idolism', 3, 'colony', 'planet_crime_add', '3.0', '{"leaf":"from","value":"scope"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_surveillance', 'Surveillance', 'Proper behavior of the populace can be best assured with extensive internal monitoring.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, NULL, NULL, 6);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_surveillance', '{"leaf":"is_hive_empire","value":"yes"}', 'Surveillance', 'Proper operation of the hive can be best assured with extensive internal monitoring.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_surveillance', '{"leaf":"is_machine_empire","value":"yes"}', 'Surveillance', 'Proper operation of the network can be best assured with extensive internal monitoring.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'country', 'pop_cat_ruler_bonus_workforce_mult', '0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'country', 'planet_enforcers_energy_upkeep_add', '0.25', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_energy_upkeep_add', 'Energy Upkeep per 100 Enforcers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'country', 'pop_bonus_workforce_mult', '0.025', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'country', 'planet_jobs_patrol_drone_energy_upkeep_add', '0.25', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_energy_upkeep_add', 'Energy Upkeep per 100 Hunter-Seeker Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'colony', 'planet_pops_upkeep_mult', '-0.01', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 1, 'colony', 'planet_pops_upkeep_mult', '-0.01', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'country', 'pop_cat_ruler_bonus_workforce_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'country', 'planet_enforcers_energy_upkeep_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_energy_upkeep_add', 'Energy Upkeep per 100 Enforcers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'country', 'pop_bonus_workforce_mult', '0.05', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'country', 'planet_jobs_patrol_drone_energy_upkeep_add', '0.5', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_energy_upkeep_add', 'Energy Upkeep per 100 Hunter-Seeker Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'colony', 'planet_pops_upkeep_mult', '-0.02', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 2, 'colony', 'planet_pops_upkeep_mult', '-0.02', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'country', 'pop_cat_ruler_bonus_workforce_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_ruler_bonus_workforce_mult', 'Job Efficiency for', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'country', 'planet_enforcers_energy_upkeep_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_enforcers_energy_upkeep_add', 'Energy Upkeep per 100 Enforcers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'country', 'pop_bonus_workforce_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'country', 'planet_jobs_patrol_drone_energy_upkeep_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_patrol_drone_energy_upkeep_add', 'Energy Upkeep per 100 Hunter-Seeker Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'colony', 'planet_pops_upkeep_mult', '-0.04', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_surveillance', 3, 'colony', 'planet_pops_upkeep_mult', '-0.04', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_administrative_enforcement', 'Administrative Enforcement', 'Sound governance relies not only on just laws, but on the careful execution of its principles.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, 'Grants access to the Decision', NULL, 7);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_administrative_enforcement', '{"leaf":"is_gestalt","value":"yes"}', 'Centrality', 'Centralization enhances all functions. The collective grows more efficient with every merging node.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 1, 'country', 'planet_politicians_upkeep_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_upkeep_mult', 'Upkeep for Politicians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 1, 'country', 'planet_stability_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 2, 'country', 'planet_politicians_upkeep_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_upkeep_mult', 'Upkeep for Politicians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 2, 'country', 'planet_stability_add', '6.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 3, 'country', 'planet_politicians_upkeep_mult', '-0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_politicians_upkeep_mult', 'Upkeep for Politicians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_administrative_enforcement', 3, 'country', 'planet_stability_add', '8.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_nepotism', 'Birthright', 'We achieve greatness when governed by those born into greatness.', '["ethic_authoritarian"]', 'default', NULL, NULL, 1, 'Removes cost to Elect candidates in ruler elections
+Replaces the with a random successor from the selected Leader Class when they die', NULL, 8);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_nepotism', '{"leaf":"is_hive_empire","value":"yes"}', 'Cognition', 'The highest-functioning nodes are, by nature, granted greater priority within the flow of consciousness.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_nepotism', '{"leaf":"is_machine_empire","value":"yes"}', 'Cognition', 'The highest-functioning nodes are, by default, granted greater priority within the datastream.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 1, 'country', 'councilor_skill_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 1, 'country', 'councilor_skill_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 2, 'country', 'councilor_skill_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 2, 'country', 'councilor_skill_add', '3.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 3, 'country', 'councilor_skill_add', '3.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_nepotism', 3, 'country', 'councilor_skill_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_free_passage', 'Free Passage', 'We must all be free to roam, wherever we desire.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 9);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_free_passage', '{"leaf":"is_gestalt","value":"yes"}', 'Mobility', 'The higher the agility of the collective, the greater its strength.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'planet_resettlement_unemployed_mult', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'ship_speed_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'sm_trading_hubs_trade_produces_add', '2.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sm_trading_hubs_trade_produces_add', 'Trade per Trade Hub', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'megastructures_hyper_relay_trade_produces_add', '2.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_trade_produces_add', 'Trade per Hyper Relay', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'pop_resettlement_cost_mult', '-0.4', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 1, 'country', 'refugee_attraction', '0.15', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'planet_resettlement_unemployed_mult', '0.8', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'ship_speed_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'sm_trading_hubs_trade_produces_add', '3.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sm_trading_hubs_trade_produces_add', 'Trade per Trade Hub', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'megastructures_hyper_relay_trade_produces_add', '3.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_trade_produces_add', 'Trade per Hyper Relay', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'pop_resettlement_cost_mult', '-0.5', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 2, 'country', 'refugee_attraction', '0.3', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'planet_resettlement_unemployed_mult', '1.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_resettlement_unemployed_mult', 'Automatic Resettlement Chance', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'ship_speed_mult', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'sm_trading_hubs_trade_produces_add', '4.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sm_trading_hubs_trade_produces_add', 'Trade per Trade Hub', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'megastructures_hyper_relay_trade_produces_add', '4.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_hyper_relay_trade_produces_add', 'Trade per Hyper Relay', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'pop_resettlement_cost_mult', '-0.75', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_resettlement_cost_mult', 'Resettlement Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_free_passage', 3, 'country', 'refugee_attraction', '0.45', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_epistocracy', 'Epistocracy', 'To ensure a just and fair system, we place our greatest choices in the hands of those proven the wisest.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 10);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_epistocracy', '{"leaf":"is_hive_empire","value":"yes"}', 'Epistocratic System', 'We elevate nodes that resonate with greatest clarity, so that the whole may act with perfect purpose.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_epistocracy', '{"leaf":"is_machine_empire","value":"yes"}', 'Epistocratic System', 'We prioritize units that process most efficiently, so that the whole may act with perfect purpose.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'council_agenda_early_activation_cost_mult', '-0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'council_agenda_finishing_effect_duration_mult', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'negative_traits_country', '-1.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'council_agenda_early_activation_cost_mult', '-0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'council_agenda_finishing_effect_duration_mult', '0.2', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'negative_traits_country', '-2.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'council_agenda_early_activation_cost_mult', '-0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'council_agenda_cooldown_mult', '-0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'council_agenda_finishing_effect_duration_mult', '0.3', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'negative_traits_country', '-3.0', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_traits_country', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_laterality', 'Laterality', 'We rise together. No one stands above another, and each step forward is taken side by side.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 11);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_laterality', '{"leaf":"is_hive_empire","value":"yes"}', 'Laterality', 'Complex tasks are just as important as those more simple in nature.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_laterality', '{"leaf":"is_machine_empire","value":"yes"}', 'Laterality', 'Complex tasks are of equal priority to those more simple to execute.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 1, 'country', 'bonus_pop_growth_mult', '0.05', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 1, 'colony', 'planet_jobs_specialist_produces_mult', '0.001', '{"leaf":"from","value":"scope"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 1, 'colony', 'pop_cat_simple_drone_bonus_workforce_mult', '0.001', '{"leaf":"from","value":"scope"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 2, 'country', 'bonus_pop_growth_mult', '0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 2, 'colony', 'planet_jobs_specialist_produces_mult', '0.002', '{"leaf":"from","value":"scope"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 2, 'colony', 'pop_cat_simple_drone_bonus_workforce_mult', '0.002', '{"leaf":"from","value":"scope"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 3, 'country', 'bonus_pop_growth_mult', '0.15', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('bonus_pop_growth_mult', 'Monthly Organic Pop Growth Multiplier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 3, 'colony', 'planet_jobs_specialist_produces_mult', '0.003', '{"leaf":"from","value":"scope"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_specialist_produces_mult', 'Pop Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_laterality', 3, 'colony', 'pop_cat_simple_drone_bonus_workforce_mult', '0.003', '{"leaf":"from","value":"scope"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_cat_simple_drone_bonus_workforce_mult', 'Job Efficiency for Menial Drones', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_participation', 'Participation', 'Belonging to a community is not enough; one must also take upon selfless actions.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 12);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_participation', '{"leaf":"is_hive_empire","value":"yes"}', 'Resonancy', 'Success requires active resonance from all; dormant nodes disrupt the harmony of the whole.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_participation', '{"leaf":"is_machine_empire","value":"yes"}', 'Resonancy', 'Idle connection is insufficient. Synchronize. Contribute. Resonate.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 1, 'country', 'pop_factions_produces_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 1, 'country', 'planet_jobs_produces_mult', '0.05', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 1, 'country', 'planet_pops_upkeep_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_participation', 1, 'Allows the United Effort Living Standard');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 2, 'country', 'pop_factions_produces_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 2, 'country', 'planet_jobs_produces_mult', '0.075', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 2, 'country', 'planet_pops_upkeep_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_participation', 2, 'Allows the United Effort Living Standard');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 3, 'country', 'pop_factions_produces_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_factions_produces_mult', 'Faction Resource Output', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 3, 'country', 'planet_jobs_produces_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_produces_mult', 'Resources from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_participation', 3, 'country', 'planet_pops_upkeep_mult', '-0.3', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_participation', 3, 'Allows the United Effort Living Standard');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_efficient_legislature', 'Efficient Legislature', 'Achieving true equality requires a carefully designed system of laws.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 13);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_efficient_legislature', '{"leaf":"is_hive_empire","value":"yes"}', 'Adaptation', 'Coordination must be adaptable. Equilibrium arises when we move with the collective flow.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_efficient_legislature', '{"leaf":"is_machine_empire","value":"yes"}', 'Iteration', 'Coordination must be iterative. Equilibrium arises when we adjust to the collective flow.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 1, 'country', 'planet_bureaucrats_upkeep_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 1, 'country', 'council_agenda_progress_speed', '0.12', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 1, 'country', 'planet_bureaucrats_unity_produces_add', '0.5', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_efficient_legislature', 1, 'Unlocks the Constitutional Improvement Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_efficient_legislature', 1, 'agenda', 'agenda_constitutional_improvement_1', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 2, 'country', 'planet_bureaucrats_upkeep_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 2, 'country', 'council_agenda_progress_speed', '0.25', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 2, 'country', 'planet_bureaucrats_unity_produces_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_efficient_legislature', 2, 'Unlocks the Constitutional Improvement Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_efficient_legislature', 2, 'agenda', 'agenda_constitutional_improvement_2', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 3, 'country', 'planet_bureaucrats_upkeep_mult', '-0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 3, 'country', 'council_agenda_progress_speed', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_efficient_legislature', 3, 'country', 'planet_bureaucrats_unity_produces_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_unity_produces_add', 'Unity Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_efficient_legislature', 3, 'Unlocks the Constitutional Improvement Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_efficient_legislature', 3, 'agenda', 'agenda_constitutional_improvement_3', 2);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_personal_accountability', 'Personal Accountability', 'Accountability to one''s neighbor is the first step toward a functioning community.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 14);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_personal_accountability', '{"leaf":"is_hive_empire","value":"yes"}', 'Alignment', 'True alignment emerges when every node monitors and harmonizes with those around it.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_personal_accountability', '{"leaf":"is_machine_empire","value":"yes"}', 'System Integrity', 'Systemic integrity requires every node to monitor and harmonize with those around it.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 1, 'country', 'planet_crime_add', '-7.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 1, 'country', 'planet_crime_no_happiness_add', '-7.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 1, 'country', 'stability_scaling_mult', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stability_scaling_mult', 'Positive Effects of Stability on Resources from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 2, 'country', 'planet_crime_add', '-15.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 2, 'country', 'planet_crime_no_happiness_add', '-15.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 2, 'country', 'stability_scaling_mult', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stability_scaling_mult', 'Positive Effects of Stability on Resources from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 3, 'country', 'planet_crime_add', '-30.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_add', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 3, 'country', 'planet_crime_no_happiness_add', '-30.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_add', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_personal_accountability', 3, 'country', 'stability_scaling_mult', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('stability_scaling_mult', 'Positive Effects of Stability on Resources from Jobs', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_harmonicism', 'Harmonicism', 'We belong to this galaxy, and so we should care for it as we would our own family.', '["ethic_egalitarian"]', 'default', NULL, NULL, 1, NULL, NULL, 15);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_harmonicism', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'We belong to this galaxy, and so we should care for it as we would ourselves.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_harmonicism', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'We belong to this galaxy, and so we should maintain it as we would ourselves.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 1, 'country', 'harmonicism_resolutions_effect_mult', '1.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('harmonicism_resolutions_effect_mult', 'Positive Effects from Harmonicism Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 1, 'country', 'resolution_category_ecology_vote_strength_mult', '0.15', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_ecology_vote_strength_mult', 'Voting Strength on Ecological Protection Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 1, 'country', 'resolution_category_greatergood_vote_strength_mult', '0.15', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_greatergood_vote_strength_mult', 'Voting Strength on The Greater Good Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 1, 'country', 'resolution_category_market_vote_strength_mult', '0.15', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_market_vote_strength_mult', 'Voting Strength on Galactic Market Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 1, 'country', 'refugee_attraction', '0.15', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_harmonicism', 1, 'Allows to declare Harmonicism Resolutions as Emergency Measures
+Voting Strength on Harmonicism Resolutions: +15%');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 2, 'country', 'harmonicism_resolutions_effect_mult', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('harmonicism_resolutions_effect_mult', 'Positive Effects from Harmonicism Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 2, 'country', 'resolution_category_ecology_vote_strength_mult', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_ecology_vote_strength_mult', 'Voting Strength on Ecological Protection Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 2, 'country', 'resolution_category_greatergood_vote_strength_mult', '0.3', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_greatergood_vote_strength_mult', 'Voting Strength on The Greater Good Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 2, 'country', 'resolution_category_market_vote_strength_mult', '0.3', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_market_vote_strength_mult', 'Voting Strength on Galactic Market Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 2, 'country', 'refugee_attraction', '0.3', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_harmonicism', 2, 'Allows to declare Harmonicism Resolutions as Emergency Measures
+Voting Strength on Harmonicism Resolutions: +30%');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 3, 'country', 'harmonicism_resolutions_effect_mult', '2.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('harmonicism_resolutions_effect_mult', 'Positive Effects from Harmonicism Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 3, 'country', 'resolution_category_ecology_vote_strength_mult', '0.45', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_ecology_vote_strength_mult', 'Voting Strength on Ecological Protection Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 3, 'country', 'resolution_category_greatergood_vote_strength_mult', '0.45', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_greatergood_vote_strength_mult', 'Voting Strength on The Greater Good Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 3, 'country', 'resolution_category_market_vote_strength_mult', '0.45', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('resolution_category_market_vote_strength_mult', 'Voting Strength on Galactic Market Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_harmonicism', 3, 'country', 'refugee_attraction', '0.45', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_harmonicism', 3, 'Allows to declare Harmonicism Resolutions as Emergency Measures
+Voting Strength on Harmonicism Resolutions: +45%');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_security', 'Security', 'Information is a weapon, and we won''t have ours used against us.', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, NULL, NULL, 16);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_security', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'The collective shields its mind from the gaze of the unjoined.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_security', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The collective safeguards its data. Exposure is vulnerability.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'intel_encryption_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'army_defense_damage_mult', '0.25', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'shipclass_starbase_armor_mult', '0.15', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_armor_mult', 'Station Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'shipclass_starbase_damage_mult', '0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_damage_mult', 'Station Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'shipclass_military_station_armor_mult', '0.15', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_armor_mult', 'Defense Platform Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'shipclass_military_station_damage_mult', '0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_damage_mult', 'Defense Platform Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'planet_engineers_produces_mult', '0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_produces_mult', 'Resources Produced from Engineers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 1, 'country', 'planet_biologists_produces_mult', '0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_produces_mult', 'Resources Produced from Biologists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'intel_encryption_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'army_defense_damage_mult', '0.5', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'shipclass_starbase_armor_mult', '0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_armor_mult', 'Station Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'shipclass_starbase_damage_mult', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_damage_mult', 'Station Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'shipclass_military_station_armor_mult', '0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_armor_mult', 'Defense Platform Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'shipclass_military_station_damage_mult', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_damage_mult', 'Defense Platform Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'planet_engineers_produces_mult', '0.15', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_produces_mult', 'Resources Produced from Engineers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 2, 'country', 'planet_biologists_produces_mult', '0.15', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_produces_mult', 'Resources Produced from Biologists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'intel_encryption_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'army_defense_damage_mult', '0.75', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_defense_damage_mult', 'Defense Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'shipclass_starbase_armor_mult', '0.45', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_armor_mult', 'Station Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'shipclass_starbase_damage_mult', '0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_starbase_damage_mult', 'Station Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'shipclass_military_station_armor_mult', '0.45', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_armor_mult', 'Defense Platform Armor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'shipclass_military_station_damage_mult', '0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shipclass_military_station_damage_mult', 'Defense Platform Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'planet_engineers_produces_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_engineers_produces_mult', 'Resources Produced from Engineers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_security', 3, 'country', 'planet_biologists_produces_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_biologists_produces_mult', 'Resources Produced from Biologists', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_sovereignty', 'Sovereignty', 'Territory that we claim and hold is our most vital asset.', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, NULL, NULL, 17);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sovereignty', '{"leaf":"is_nomadic","value":"yes"}', NULL, 'Each waypoint on our journey is vital to the progress of our civilization.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_outpost_cost_mult', '-0.05', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_upgrade_cost_mult', '-0.05', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_upgrade_speed_mult', '0.05', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'country_starbase_capacity_add', '2.0', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_constructions_produces_mult', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_produces_mult', 'Resources from', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'megastructures_waystations_cost_mult', '-0.05', '{"leaf":"is_nomadic","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_waystations_cost_mult', '-0.05', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_upgrade_speed_mult', '0.05', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'country_starbase_capacity_add', '2.0', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 1, 'country', 'starbase_collected_system_resources_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_outpost_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_upgrade_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_upgrade_speed_mult', '0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'country_starbase_capacity_add', '3.0', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_constructions_produces_mult', '0.4', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_produces_mult', 'Resources from', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'megastructures_waystations_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_waystations_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_upgrade_speed_mult', '0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'country_starbase_capacity_add', '3.0', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 2, 'country', 'starbase_collected_system_resources_mult', '0.4', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_outpost_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_upgrade_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_upgrade_speed_mult', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'country_starbase_capacity_add', '4.0', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_constructions_produces_mult', '0.6', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_constructions_produces_mult', 'Resources from', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'megastructures_waystations_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_waystations_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_upgrade_speed_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_speed_mult', 'Station Upgrade Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'country_starbase_capacity_add', '4.0', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_capacity_add', 'Station Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sovereignty', 3, 'country', 'starbase_collected_system_resources_mult', '0.6', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_resources_mult', 'Waystation Collection Efficiency', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_self_sufficiency', 'Self-Sufficiency', 'Our capacity to rely on ourselves is vital, for the galaxy is rife with uncertainty.', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, 'This tenet has no effect while we are in the Galactic Community', NULL, 18);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 1, 'country', 'pop_civilian_bonus_workforce_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 1, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"is_galactic_community_member","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 1, 'country', 'planet_traders_trade_produces_add', '1.0', '{"leaf":"is_wilderness_empire","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 1, 'country', 'country_trade_produces_mult', '0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', '{"leaf":"is_galactic_community_member","value":"no"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 2, 'country', 'pop_civilian_bonus_workforce_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 2, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"is_galactic_community_member","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 2, 'country', 'planet_traders_trade_produces_add', '2.0', '{"leaf":"is_wilderness_empire","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 2, 'country', 'country_trade_produces_mult', '0.2', '{"leaf":"is_wilderness_empire","value":"yes"}', '{"leaf":"is_galactic_community_member","value":"no"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 3, 'country', 'pop_civilian_bonus_workforce_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 3, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.3', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', '{"leaf":"is_galactic_community_member","value":"no"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 3, 'country', 'planet_traders_trade_produces_add', '3.0', '{"leaf":"is_wilderness_empire","value":"no"}', '{"leaf":"is_galactic_community_member","value":"no"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_self_sufficiency', 3, 'country', 'country_trade_produces_mult', '0.3', '{"leaf":"is_wilderness_empire","value":"yes"}', '{"leaf":"is_galactic_community_member","value":"no"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_homogeneity', 'Homogeneity', 'Sameness is comfort is success.', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, NULL, NULL, 19);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_homogeneity', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'Consistency is efficiency is success.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 1, 'country', 'planet_culture_workers_society_research_produces_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_culture_workers_society_research_produces_add', 'Society Research Produced per 100 Culture Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 1, 'country', 'tenet_homogeneity_modifier', '0.025', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_homogeneity_modifier', 'Tenet Homogeneity Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 2, 'country', 'planet_culture_workers_society_research_produces_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_culture_workers_society_research_produces_add', 'Society Research Produced per 100 Culture Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 2, 'country', 'tenet_homogeneity_modifier', '0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_homogeneity_modifier', 'Tenet Homogeneity Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 3, 'country', 'planet_culture_workers_society_research_produces_add', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_culture_workers_society_research_produces_add', 'Society Research Produced per 100 Culture Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_homogeneity', 3, 'country', 'tenet_homogeneity_modifier', '0.075', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_homogeneity_modifier', 'Tenet Homogeneity Modifier', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_assertion', 'Assertion', 'If you do not stand up for yourself, who will?', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, NULL, NULL, 20);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_assertion', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'The will of the collective must be projected with clear confidence.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 1, 'country', 'rivalries_influence_produces_mult', '0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 1, 'country', 'diplo_weight_opposing_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_opposing_mult', 'Diplomatic Weight When Opposing Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 1, 'country', 'country_claim_influence_cost_mult', '-0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 2, 'country', 'rivalries_influence_produces_mult', '0.6', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 2, 'country', 'diplo_weight_opposing_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_opposing_mult', 'Diplomatic Weight When Opposing Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 2, 'country', 'country_claim_influence_cost_mult', '-0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 3, 'country', 'rivalries_influence_produces_mult', '1.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('rivalries_influence_produces_mult', 'Rivalries Influence Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 3, 'country', 'diplo_weight_opposing_mult', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_opposing_mult', 'Diplomatic Weight When Opposing Resolutions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_assertion', 3, 'country', 'country_claim_influence_cost_mult', '-0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_claim_influence_cost_mult', 'Claim Influence Cost', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_seclusionism', 'Seclusionism', 'Our home is our refuge. Beyond its shelter is only chaos.', '["ethic_xenophobe"]', 'default', NULL, NULL, 1, NULL, NULL, 21);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_seclusionism', '{"leaf":"is_gestalt","value":"yes"}', 'Anti-Dispersionism', 'Our home is our refuge. Beyond its shelter is only chaos.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 1, 'country', 'planet_crime_mult', '-0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_mult', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 1, 'country', 'planet_crime_no_happiness_mult', '-0.05', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_mult', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 1, 'country', 'planet_stability_add', '3.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 1, 'country', 'pop_amenities_usage_mult', '-0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 2, 'country', 'planet_crime_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_mult', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 2, 'country', 'planet_crime_no_happiness_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_mult', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 2, 'country', 'planet_stability_add', '5.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 2, 'country', 'pop_amenities_usage_mult', '-0.2', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 3, 'country', 'planet_crime_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_mult', 'Crime', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 3, 'country', 'planet_crime_no_happiness_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_crime_no_happiness_mult', 'Deviancy', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 3, 'country', 'planet_stability_add', '10.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_seclusionism', 3, 'country', 'pop_amenities_usage_mult', '-0.4', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_pluralism', 'Pluralism', 'We are many, and many are good.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 22);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 1, 'country', 'empire_size_pops_mult', '-0.07', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 1, 'country', 'diplomacy_influence_upkeep_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 1, 'country', 'country_edict_fund_add', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 1, 'country', 'refugee_attraction', '0.2', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 2, 'country', 'empire_size_pops_mult', '-0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 2, 'country', 'diplomacy_influence_upkeep_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 2, 'country', 'country_edict_fund_add', '1.5', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 2, 'country', 'refugee_attraction', '0.4', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 3, 'country', 'empire_size_pops_mult', '-0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_pops_mult', 'Empire Size from Pops', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 3, 'country', 'diplomacy_influence_upkeep_mult', '-0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplomacy_influence_upkeep_mult', 'Diplomatic Agreement Influence Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 3, 'country', 'country_edict_fund_add', '2.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pluralism', 3, 'country', 'refugee_attraction', '0.6', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_networking', 'Networking', 'Connection is profit; dialogue is wealth.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 23);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_networking', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'Mutual data exchange brings power and profit into the network.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 1, 'country', 'country_tenets_influence_produces_add', '0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 1, 'country', 'planet_jobs_trade_produces_mult', '0.01', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 1, 'country', 'diplo_weight_mult', '0.002', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 2, 'country', 'country_tenets_influence_produces_add', '0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 2, 'country', 'planet_jobs_trade_produces_mult', '0.02', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 2, 'country', 'diplo_weight_mult', '0.004', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 3, 'country', 'country_tenets_influence_produces_add', '0.75', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 3, 'country', 'planet_jobs_trade_produces_mult', '0.03', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_networking', 3, 'country', 'diplo_weight_mult', '0.006', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_concordance', 'Concordance', 'By prioritizing communication, barriers to mutual understanding between societies can be dissolved.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 24);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 1, 'country', 'official_initial_skill', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('official_initial_skill', 'Official Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 1, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 1, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 2, 'country', 'official_initial_skill', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('official_initial_skill', 'Official Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 2, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 2, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 3, 'country', 'official_initial_skill', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('official_initial_skill', 'Official Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 3, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_concordance', 3, 'country', 'country_trust_cap_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_integration', 'Integration', 'Outside perspectives enrich our understanding.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 25);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 1, 'country', 'planet_entertainers_trade_produces_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 1, 'country', 'founder_species_growth_mult', '0.02', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 1, 'country', 'planet_traders_trade_produces_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 1, 'country', 'refugee_attraction', '0.1', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 1, 'colony', 'founder_species_growth_mult', '0.05', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_integration', 1, 'External Leader Starting Skill Level: +1');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 2, 'country', 'planet_entertainers_trade_produces_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 2, 'country', 'founder_species_growth_mult', '0.03', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 2, 'country', 'planet_traders_trade_produces_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 2, 'country', 'refugee_attraction', '0.2', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 2, 'colony', 'founder_species_growth_mult', '0.05', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_integration', 2, 'External Leader Starting Skill Level: +2');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 3, 'country', 'planet_entertainers_trade_produces_add', '4.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_entertainers_trade_produces_add', 'Trade Produced per 100 Entertainers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 3, 'country', 'founder_species_growth_mult', '0.04', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 3, 'country', 'planet_traders_trade_produces_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_traders_trade_produces_add', 'Trade Produced per 100 Traders', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 3, 'country', 'refugee_attraction', '0.3', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_integration', 3, 'colony', 'founder_species_growth_mult', '0.05', '{"leaf":"from","value":"scope"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_integration', 3, 'External Leader Starting Skill Level: +3');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_diaspora', 'Diaspora', 'We must welcome others to be welcomed.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 26);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'envoy_favor_chance_gain_migration_treaty_add', '0.005', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_migration_treaty_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'commercial_pact_diaspora_tenet_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'research_sharing_diaspora_tenet_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'tenet_diaspora_opinion_bonus', '0.05', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'country_diaspora_tenet_trust_cap_add', '25.0', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'commercial_pact_diaspora_tenet_mult', '0.05', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'research_sharing_diaspora_tenet_mult', '0.05', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 6);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'tenet_diaspora_opinion_bonus', '0.05', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 1, 'country', 'country_diaspora_tenet_trust_cap_add', '15.0', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_diaspora', 1, 'This Tenet''s effects require an active Migration Treaty
+This Tenet''s effects require Open Borders');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'envoy_favor_chance_gain_migration_treaty_add', '0.01', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_migration_treaty_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'commercial_pact_diaspora_tenet_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'research_sharing_diaspora_tenet_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'tenet_diaspora_opinion_bonus', '0.1', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'country_diaspora_tenet_trust_cap_add', '50.0', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'commercial_pact_diaspora_tenet_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'research_sharing_diaspora_tenet_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 6);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'tenet_diaspora_opinion_bonus', '0.1', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 2, 'country', 'country_diaspora_tenet_trust_cap_add', '30.0', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_diaspora', 2, 'This Tenet''s effects require an active Migration Treaty
+This Tenet''s effects require Open Borders');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'envoy_favor_chance_gain_migration_treaty_add', '0.02', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_migration_treaty_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'commercial_pact_diaspora_tenet_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'research_sharing_diaspora_tenet_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'tenet_diaspora_opinion_bonus', '0.2', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'country_diaspora_tenet_trust_cap_add', '75.0', '{"leaf":"is_gestalt","value":"no"}', '{"leaf":"num_migration_pacts","cmp":">","value":"0"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'commercial_pact_diaspora_tenet_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commercial_pact_diaspora_tenet_mult', 'Commercial Pact Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'research_sharing_diaspora_tenet_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 6);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'tenet_diaspora_opinion_bonus', '0.2', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_diaspora_opinion_bonus', 'Monthly Opinion from Other Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_diaspora', 3, 'country', 'country_diaspora_tenet_trust_cap_add', '45.0', '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"any_country","value":"scope"}', 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_diaspora_tenet_trust_cap_add', 'Trust Cap', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_diaspora', 3, 'This Tenet''s effects require an active Migration Treaty
+This Tenet''s effects require Open Borders');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_mutualism', 'Mutualism', 'Those that have once done you a kindness will be more ready to do you another.', '["ethic_xenophile"]', 'default', NULL, NULL, 1, NULL, NULL, 27);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_mutualism', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'Past cooperation increases the likelihood of future cooperation.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 1, 'country', 'diplo_weight_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 1, 'country', 'envoy_favor_chance_gain_add', '0.005', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 1, 'country', 'country_tenets_trade_produces_add', '6.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_trade_produces_add', 'Empire Trade Generation', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 1, 'country', 'refugee_attraction', '0.1', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 2, 'country', 'diplo_weight_mult', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 2, 'country', 'envoy_favor_chance_gain_add', '0.01', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 2, 'country', 'country_tenets_trade_produces_add', '9.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_trade_produces_add', 'Empire Trade Generation', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 2, 'country', 'refugee_attraction', '0.2', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 3, 'country', 'diplo_weight_mult', '0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 3, 'country', 'envoy_favor_chance_gain_add', '0.02', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('envoy_favor_chance_gain_add', 'Chance each month for Envoys Improving Relations to acquire a Favor', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 3, 'country', 'country_tenets_trade_produces_add', '12.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_trade_produces_add', 'Empire Trade Generation', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_mutualism', 3, 'country', 'refugee_attraction', '0.3', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_unism', 'Unism', 'We are all spun from the same cloth; the tapestry we weave together can be as beautiful as we choose.', '["ethic_spiritualist"]', 'default', NULL, NULL, 1, NULL, NULL, 28);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_unism', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'Our consciousness is woven from the fabric of the universe; we are one thread in its infinite tapestry.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 1, 'country', 'country_unity_produces_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 1, 'country', 'planet_stability_add', '3.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 2, 'country', 'country_unity_produces_mult', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 2, 'country', 'planet_stability_add', '5.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 3, 'country', 'country_unity_produces_mult', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_unity_produces_mult', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_unism', 3, 'country', 'planet_stability_add', '7.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_higher_law', 'Higher Law', 'There are higher laws in the universe than those imposed by mortal authority.', '["ethic_spiritualist"]', 'default', NULL, NULL, 1, NULL, NULL, 29);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_higher_law', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'There are higher laws in the universe than those imposed by material authority.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 1, 'country', 'tenet_higher_law_edict_modifier', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 1, 'country', 'tenet_higher_law_agenda_modifier', '0.003', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 1, 'country', 'tenet_higher_law_edict_modifier', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 1, 'country', 'tenet_higher_law_agenda_modifier', '0.003', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 1, 'country', 'planet_bureaucrats_upkeep_mult', '-0.05', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 2, 'country', 'tenet_higher_law_edict_modifier', '1.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 2, 'country', 'tenet_higher_law_agenda_modifier', '0.006', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 2, 'country', 'tenet_higher_law_edict_modifier', '1.5', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 2, 'country', 'tenet_higher_law_agenda_modifier', '0.006', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 2, 'country', 'planet_bureaucrats_upkeep_mult', '-0.1', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 3, 'country', 'tenet_higher_law_edict_modifier', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 3, 'country', 'tenet_higher_law_agenda_modifier', '0.009', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 3, 'country', 'tenet_higher_law_edict_modifier', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_edict_modifier', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 3, 'country', 'tenet_higher_law_agenda_modifier', '0.009', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_higher_law_agenda_modifier', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_higher_law', 3, 'country', 'planet_bureaucrats_upkeep_mult', '-0.2', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_upkeep_mult', 'Upkeep for Bureaucrats', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_sacred_union', 'Sacred Union', 'The propagation of our kind is guided by divine will.', '["ethic_spiritualist"]', 'default', NULL, NULL, 1, NULL, NULL, 30);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacred_union', '{"leaf":"is_hive_empire","value":"yes"}', 'Proliferation', 'The propagation of our kind is guided by divine will.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacred_union', '{"leaf":"is_machine_empire","value":"yes"}', 'Proliferation', 'The replication of our vessels is guided by divine will.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'tenet_sacred_union_modifier', '0.005', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'tenet_sacred_union_modifier', '0.005', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'planet_bureaucrats_food_upkeep_add', '0.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'planet_bureaucrats_food_upkeep_add', '0.5', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'planet_bureaucrats_minerals_upkeep_add', '0.5', '{"leaf":"is_lithoid_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_minerals_upkeep_add', 'Minerals Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'planet_bureaucrats_energy_upkeep_add', '0.5', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_energy_upkeep_add', 'Energy Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 1, 'country', 'planet_bureaucrats_alloys_upkeep_add', '0.125', '{"leaf":"is_infernal_empire","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'tenet_sacred_union_modifier', '0.01', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'tenet_sacred_union_modifier', '0.01', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'planet_bureaucrats_food_upkeep_add', '1.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'planet_bureaucrats_food_upkeep_add', '1.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'planet_bureaucrats_minerals_upkeep_add', '1.0', '{"leaf":"is_lithoid_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_minerals_upkeep_add', 'Minerals Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'planet_bureaucrats_energy_upkeep_add', '1.0', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_energy_upkeep_add', 'Energy Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 2, 'country', 'planet_bureaucrats_alloys_upkeep_add', '0.25', '{"leaf":"is_infernal_empire","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'tenet_sacred_union_modifier', '0.015', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'tenet_sacred_union_modifier', '0.015', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacred_union_modifier', 'Tenet Sacred Union Modifier', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'planet_bureaucrats_food_upkeep_add', '1.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"},{"leaf":"is_individual_machine","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'planet_bureaucrats_food_upkeep_add', '1.5', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_food_upkeep_add', 'Food Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'planet_bureaucrats_minerals_upkeep_add', '1.5', '{"leaf":"is_lithoid_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_minerals_upkeep_add', 'Minerals Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'planet_bureaucrats_energy_upkeep_add', '1.5', '{"op":"or","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_individual_machine","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_energy_upkeep_add', 'Energy Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_union', 3, 'country', 'planet_bureaucrats_alloys_upkeep_add', '0.375', '{"leaf":"is_infernal_empire","value":"yes"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_alloys_upkeep_add', 'Alloys Upkeep per 100 Bureaucrats', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_humility', 'Humility', 'Excess encumbers the soul. A humble existence leaves more nourishment for the spirit.', '["ethic_spiritualist"]', 'default', NULL, NULL, 1, NULL, NULL, 31);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_humility', '{"leaf":"is_gestalt","value":"yes"}', 'Humility', 'When each node acts with due restraint, the spirit of the collective is enriched.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 1, 'country', 'pop_happiness', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 1, 'country', 'pop_housing_usage_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 1, 'country', 'planet_stability_add', '3.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 1, 'country', 'planet_pops_upkeep_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 1, 'country', 'pop_housing_usage_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_humility', 1, 'Allows the Humility Living Standard');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 2, 'country', 'pop_happiness', '0.15', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 2, 'country', 'pop_housing_usage_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 2, 'country', 'planet_stability_add', '5.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 2, 'country', 'planet_pops_upkeep_mult', '-0.3', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 2, 'country', 'pop_housing_usage_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_humility', 2, 'Allows the Humility Living Standard');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 3, 'country', 'pop_happiness', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_happiness', 'Happiness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 3, 'country', 'pop_housing_usage_mult', '-0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 3, 'country', 'planet_stability_add', '7.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 3, 'country', 'planet_pops_upkeep_mult', '-0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_humility', 3, 'country', 'pop_housing_usage_mult', '-0.3', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_housing_usage_mult', 'Pop Housing Usage', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_humility', 3, 'Allows the Humility Living Standard');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_jubilation', 'Jubilation', 'We give thanks for the opportunities granted to us.', '["ethic_spiritualist"]', 'default', NULL, NULL, 1, NULL, NULL, 32);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_jubilation', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'We experience gratitude for the opportunities afforded to us.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 1, 'country', 'planet_bureaucrats_trade_produces_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 1, 'country', 'planet_bureaucrats_trade_produces_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_jubilation', 1, 'Unlocks the Jubilee Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_jubilation', 1, 'agenda', 'agenda_jubilee', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 2, 'country', 'planet_bureaucrats_trade_produces_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 2, 'country', 'planet_bureaucrats_trade_produces_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_jubilation', 2, 'Unlocks the Jubilee Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_jubilation', 2, 'agenda', 'agenda_jubilee', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 3, 'country', 'planet_bureaucrats_trade_produces_add', '4.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_jubilation', 3, 'country', 'planet_bureaucrats_trade_produces_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_bureaucrats_trade_produces_add', 'Trade Produced per 100 Bureaucrats', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_jubilation', 3, 'Unlocks the Jubilee Council Agenda');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_jubilation', 3, 'agenda', 'agenda_jubilee', 2);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_sacred_counsel', 'Sacred Counsel', 'The path through any problem should begin by consulting one''s faith.', '["ethic_spiritualist"]', 'default', NULL, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 1, NULL, NULL, 33);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacred_counsel', '{"leaf":"is_gestalt","value":"yes"}', 'Spiritual Guidance', 'The path through any problem should begin by consulting one''s faith.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 1, 'country', 'councilor_skill_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 1, 'country', 'councilor_skill_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 1, 'country', 'pop_government_ethic_attraction', '0.15', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacred_counsel', 1, 'Spiritualist Officials can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 2, 'country', 'councilor_skill_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 2, 'country', 'councilor_skill_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 2, 'country', 'pop_government_ethic_attraction', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacred_counsel', 2, 'Spiritualist Officials can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 3, 'country', 'councilor_skill_add', '3.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 3, 'country', 'councilor_skill_add', '3.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacred_counsel', 3, 'country', 'pop_government_ethic_attraction', '0.45', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacred_counsel', 3, 'Spiritualist Officials can occupy any non-enclave Council Position');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_curiosity', 'Curiosity', 'Where would we be if no one ever asked, ''What if?''', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 34);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_curiosity', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'Without questions, the collective cannot advance.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_curiosity', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'Without questions, the network cannot advance.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_civilians_physics_research_produces_add', '0.25', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_physics_research_produces_add', 'Physics Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_civilians_society_research_produces_add', '0.25', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_society_research_produces_add', 'Society Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_civilians_engineering_research_produces_add', '0.25', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_engineering_research_produces_add', 'Engineering Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_civilians_consumer_goods_upkeep_add', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.25', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.25', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.25', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.2', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.2', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.05', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 1, 'country', 'all_technology_research_speed', '0.05', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 11);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_civilians_physics_research_produces_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_physics_research_produces_add', 'Physics Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_civilians_society_research_produces_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_society_research_produces_add', 'Society Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_civilians_engineering_research_produces_add', '0.5', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_engineering_research_produces_add', 'Engineering Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_civilians_consumer_goods_upkeep_add', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.5', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.4', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.4', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.4', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.1', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 2, 'country', 'all_technology_research_speed', '0.075', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 11);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_civilians_physics_research_produces_add', '0.75', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_physics_research_produces_add', 'Physics Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_civilians_society_research_produces_add', '0.75', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_society_research_produces_add', 'Society Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_civilians_engineering_research_produces_add', '0.75', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_engineering_research_produces_add', 'Engineering Research Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_civilians_consumer_goods_upkeep_add', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_consumer_goods_upkeep_add', 'Consumer Goods Upkeep per 100 Civilians', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.75', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.75', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.75', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.6', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.6', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.6', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.15', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 10);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_curiosity', 3, 'country', 'all_technology_research_speed', '0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 11);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_consumerism', 'Consumerism', 'Luxury production serves as a consistent catalyst for economic activity.', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 35);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_consumerism', '{"leaf":"is_gestalt","value":"yes"}', 'Abundance', 'A collective inclination for abundance promotes consistent economic growth.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'planet_artisans_trade_produces_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'planet_farmers_trade_produces_add', '1.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'planet_metallurgists_trade_produces_add', '1.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'planet_miners_trade_produces_add', '1.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'country_trade_produces_mult', '0.05', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 1, 'country', 'planet_technician_trade_produces_add', '1.0', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_trade_produces_add', 'Trade Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'planet_artisans_trade_produces_add', '3.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'planet_farmers_trade_produces_add', '1.5', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'planet_metallurgists_trade_produces_add', '1.5', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'planet_miners_trade_produces_add', '1.5', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'country_trade_produces_mult', '0.1', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 2, 'country', 'planet_technician_trade_produces_add', '1.5', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_trade_produces_add', 'Trade Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'planet_artisans_trade_produces_add', '4.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_artisans_trade_produces_add', 'Trade Produced per 100 Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'planet_farmers_trade_produces_add', '2.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_trade_produces_add', 'Trade Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'planet_metallurgists_trade_produces_add', '2.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_trade_produces_add', 'Trade Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'planet_miners_trade_produces_add', '2.0', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_trade_produces_add', 'Trade Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'country_trade_produces_mult', '0.15', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_lithoid_empire","value":"yes"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_consumerism', 3, 'country', 'planet_technician_trade_produces_add', '2.0', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_trade_produces_add', 'Trade Produced per 100 Technicians', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_open_sourcing', 'Open Sourcing', 'The most valuable currency is knowledge itself.', '["ethic_materialist"]', 'default', NULL, NULL, 1, 'Grants access to the Knowledge Exchange Trade Policy', NULL, 36);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_open_sourcing', NULL, 'policy', 'trade_policy_knowledge_exchange', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_jobs_trade_produces_mult', '0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_trade_produces_add', '1.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.1', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.1', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.1', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.025', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'country_trade_produces_mult', '0.05', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 1, 'country', 'all_technology_research_speed', '0.03', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 10);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_jobs_trade_produces_mult', '0.075', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_trade_produces_add', '2.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.2', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.2', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.2', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.05', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'country_trade_produces_mult', '0.1', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 2, 'country', 'all_technology_research_speed', '0.05', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 10);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_jobs_trade_produces_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_trade_produces_mult', 'Trade from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_trade_produces_add', '3.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_trade_produces_add', 'Trade per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_physics_research_produces_add', '0.3', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_physics_research_produces_add', 'Physics Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_society_research_produces_add', '0.3', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_society_research_produces_add', 'Society Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_engineering_research_produces_add', '0.3', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_engineering_research_produces_add', 'Engineering Research per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_energy_upkeep_add', '0.3', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_energy_upkeep_add', 'Energy Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_food_upkeep_add', '0.3', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_or_infernal_empire","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_food_upkeep_add', 'Food Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_minerals_upkeep_add', '0.3', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_lithoid_empire","value":"yes"}]}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_minerals_upkeep_add', 'Minerals Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'planet_maintenance_drones_alloys_upkeep_add', '0.075', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"},{"leaf":"is_infernal_empire","value":"yes"}]}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_alloys_upkeep_add', 'Alloys Upkeep per 100 Maintenance Drones', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'country_trade_produces_mult', '0.15', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_produces_mult', 'Monthly Trade', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_open_sourcing', 3, 'country', 'all_technology_research_speed', '0.07', '{"leaf":"is_wilderness_empire","value":"yes"}', NULL, 10);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_observation', 'Observation', 'The universe shows us its secrets; we need only to observe.', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 37);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 1, 'country', 'station_researchers_produces_mult', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 1, 'country', 'starbase_collected_system_physics_research_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_physics_research_mult', 'Physics Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 1, 'country', 'starbase_collected_system_society_research_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_society_research_mult', 'Society Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 1, 'country', 'starbase_collected_system_engineering_research_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_engineering_research_mult', 'Engineering Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 1, 'country', 'planet_jobs_society_research_produces_mult', '0.1', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 2, 'country', 'station_researchers_produces_mult', '0.4', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 2, 'country', 'starbase_collected_system_physics_research_mult', '0.4', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_physics_research_mult', 'Physics Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 2, 'country', 'starbase_collected_system_society_research_mult', '0.4', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_society_research_mult', 'Society Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 2, 'country', 'starbase_collected_system_engineering_research_mult', '0.4', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_engineering_research_mult', 'Engineering Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 2, 'country', 'planet_jobs_society_research_produces_mult', '0.2', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 3, 'country', 'station_researchers_produces_mult', '0.6', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('station_researchers_produces_mult', 'Resources Produced from Research Stations', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 3, 'country', 'starbase_collected_system_physics_research_mult', '0.6', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_physics_research_mult', 'Physics Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 3, 'country', 'starbase_collected_system_society_research_mult', '0.6', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_society_research_mult', 'Society Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 3, 'country', 'starbase_collected_system_engineering_research_mult', '0.6', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_collected_system_engineering_research_mult', 'Engineering Research Collection Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_observation', 3, 'country', 'planet_jobs_society_research_produces_mult', '0.3', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_society_research_produces_mult', 'Society Research from Jobs', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_physicality', 'Physicality', 'The certainty of physical laws provides a solid foundation for thought.', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 38);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 1, 'country', 'megastructures_unity_cost_mult', '-0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_unity_cost_mult', 'Megastructure Unity Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 1, 'country', 'planet_jobs_physics_research_produces_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 2, 'country', 'megastructures_unity_cost_mult', '-0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_unity_cost_mult', 'Megastructure Unity Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 2, 'country', 'planet_jobs_physics_research_produces_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 3, 'country', 'megastructures_unity_cost_mult', '-0.45', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_unity_cost_mult', 'Megastructure Unity Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_physicality', 3, 'country', 'planet_jobs_physics_research_produces_mult', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_physics_research_produces_mult', 'Physics Research from Jobs', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_engineering', 'Engineering', 'Each brick we lay is a triumph against the chaos of nature.', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 39);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 1, 'country', 'megastructures_upkeep_mult', '-0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_upkeep_mult', 'Megastructure Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 1, 'country', 'planet_jobs_engineering_research_produces_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 2, 'country', 'megastructures_upkeep_mult', '-0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_upkeep_mult', 'Megastructure Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 2, 'country', 'planet_jobs_engineering_research_produces_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 3, 'country', 'megastructures_upkeep_mult', '-0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_upkeep_mult', 'Megastructure Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_engineering', 3, 'country', 'planet_jobs_engineering_research_produces_mult', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_jobs_engineering_research_produces_mult', 'Engineering Research from Jobs', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_rationality', 'Rationality', 'Governance must be subject to rationality, and the curious mind is often the most rational.', '["ethic_materialist"]', 'default', NULL, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 1, NULL, NULL, 40);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_rationality', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'The collective must be governed by rationality, which emerges when curiosity drives observation.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 1, 'country', 'scientist_skill_add', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 1, 'country', 'scientist_skill_add', '3.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_rationality', 1, 'Materialist Scientists can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 2, 'country', 'scientist_skill_add', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 2, 'country', 'scientist_skill_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_rationality', 2, 'Materialist Scientists can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 3, 'country', 'scientist_skill_add', '3.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_rationality', 3, 'country', 'scientist_skill_add', '5.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('scientist_skill_add', 'Effective Scientist Skill Level', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_rationality', 3, 'Materialist Scientists can occupy any non-enclave Council Position');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_techno_synergy', 'Techno-Synergy', 'Progress in science and production reinforce one another, forming a continuous loop of innovation.', '["ethic_materialist"]', 'default', NULL, NULL, 1, NULL, NULL, 41);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_techno_synergy', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'Progress in science and production reinforce one another, forming a continuous cycle of advancement.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_techno_synergy', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'Progress in science and production reinforce one another, forming a continuous cycle of enhancement.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'pop_artisan_bonus_workforce_mult', '0.005', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_artisan_bonus_workforce_mult', 'Job Efficiency for Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'pop_mining_drone_bonus_workforce_mult', '0.005', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_mining_drone_bonus_workforce_mult', 'Job Efficiency for Mining Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'arkship_harvest_resources_exotic_gases_produces_mult', '0.01', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_exotic_gases_produces_mult', 'Exotic Gases from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'arkship_harvest_resources_rare_crystals_produces_mult', '0.01', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_rare_crystals_produces_mult', 'Rare Crystals from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'arkship_harvest_resources_volatile_motes_produces_mult', '0.01', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_volatile_motes_produces_mult', 'Volatile Motes from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 1, 'country', 'pop_technician_drone_bonus_workforce_mult', '0.005', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_technician_drone_bonus_workforce_mult', 'Job Efficiency for Tech-Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'pop_artisan_bonus_workforce_mult', '0.01', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_artisan_bonus_workforce_mult', 'Job Efficiency for Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'pop_mining_drone_bonus_workforce_mult', '0.01', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_mining_drone_bonus_workforce_mult', 'Job Efficiency for Mining Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'arkship_harvest_resources_exotic_gases_produces_mult', '0.02', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_exotic_gases_produces_mult', 'Exotic Gases from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'arkship_harvest_resources_rare_crystals_produces_mult', '0.02', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_rare_crystals_produces_mult', 'Rare Crystals from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'arkship_harvest_resources_volatile_motes_produces_mult', '0.02', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_volatile_motes_produces_mult', 'Volatile Motes from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 2, 'country', 'pop_technician_drone_bonus_workforce_mult', '0.01', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_technician_drone_bonus_workforce_mult', 'Job Efficiency for Tech-Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'pop_artisan_bonus_workforce_mult', '0.015', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_artisan_bonus_workforce_mult', 'Job Efficiency for Artisans', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'pop_mining_drone_bonus_workforce_mult', '0.015', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_mining_drone_bonus_workforce_mult', 'Job Efficiency for Mining Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'arkship_harvest_resources_exotic_gases_produces_mult', '0.03', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_exotic_gases_produces_mult', 'Exotic Gases from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'arkship_harvest_resources_rare_crystals_produces_mult', '0.03', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_rare_crystals_produces_mult', 'Rare Crystals from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'arkship_harvest_resources_volatile_motes_produces_mult', '0.03', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"is_hive_empire","value":"yes"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_volatile_motes_produces_mult', 'Volatile Motes from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_techno_synergy', 3, 'country', 'pop_technician_drone_bonus_workforce_mult', '0.015', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_technician_drone_bonus_workforce_mult', 'Job Efficiency for Tech-Drones', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_peaceful_prosperity', 'Peaceful Prosperity', 'The dividends of peace will fund our grandest designs.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, 'Grants access to the Peaceful Prosperity Edict', NULL, 42);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_peaceful_prosperity', NULL, 'edict', 'peaceful_prosperity', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 1, 'country', 'megastructures_cost_mult', '-0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_cost_mult', 'Megastructure Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 1, 'country', 'refugee_attraction', '0.2', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 2, 'country', 'megastructures_cost_mult', '-0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_cost_mult', 'Megastructure Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 2, 'country', 'refugee_attraction', '0.4', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 3, 'country', 'megastructures_cost_mult', '-0.35', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_cost_mult', 'Megastructure Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peaceful_prosperity', 3, 'country', 'refugee_attraction', '0.6', '{"op":"or","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"has_valid_civic","value":"civic_machine_servitor"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('refugee_attraction', 'Refugee Attraction', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_autonomy', 'Autonomy', 'Those who provide for themselves are free: they fear no scarcity, and are never driven to take from others.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, 'Allows the construction of Research buildings in any District
+Allows the construction of Research buildings in Rural Districts', NULL, 43);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_autonomy', '{"op":"and","args":[{"leaf":"is_hive_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 'A collective that provides for itself is free: it does not fear depletion, and is never driven to take from others.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_autonomy', '{"op":"and","args":[{"leaf":"is_machine_empire","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 'A network that provides for itself is free: it is never depleted, and need not extract external resources.', 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_autonomy', '{"leaf":"is_nomadic","value":"yes"}', NULL, 'The galaxy provides in abundance. If we take what we need, and seek no aid or plunder, we will be free.', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'planet_farmers_unity_produces_add', '0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_unity_produces_add', 'Unity Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'planet_miners_alloys_produces_add', '0.25', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Alloys Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'planet_technician_alloys_produces_add', '0.25', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_alloys_produces_add', 'Alloys Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'planet_technician_consumer_goods_produces_add', '0.5', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'tenet_autonomy_amenities_modifier', '50.0', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'planet_soldiers_consumer_goods_produces_add', '0.5', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Soldiers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 1, 'country', 'tenet_autonomy_amenities_modifier', '50.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'planet_farmers_unity_produces_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_unity_produces_add', 'Unity Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'planet_miners_alloys_produces_add', '0.5', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Alloys Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'planet_technician_alloys_produces_add', '0.5', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_alloys_produces_add', 'Alloys Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'planet_technician_consumer_goods_produces_add', '1.0', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'tenet_autonomy_amenities_modifier', '100.0', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'planet_soldiers_consumer_goods_produces_add', '1.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Soldiers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 2, 'country', 'tenet_autonomy_amenities_modifier', '100.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'planet_farmers_unity_produces_add', '1.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_farmers_unity_produces_add', 'Unity Produced per 100 Farmers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'planet_miners_alloys_produces_add', '0.75', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_miners_alloys_produces_add', 'Alloys Produced per 100 Miners', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'planet_technician_alloys_produces_add', '0.75', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_alloys_produces_add', 'Alloys Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'planet_technician_consumer_goods_produces_add', '1.5', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"yes"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_technician_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Technicians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'tenet_autonomy_amenities_modifier', '150.0', '{"op":"and","args":[{"leaf":"country_uses_consumer_goods","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'planet_soldiers_consumer_goods_produces_add', '1.5', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_consumer_goods_produces_add', 'Consumer Goods Produced per 100 Soldiers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_autonomy', 3, 'country', 'tenet_autonomy_amenities_modifier', '150.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"yes"},{"leaf":"country_uses_consumer_goods","value":"no"}]}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_autonomy_amenities_modifier', 'Amenities', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_moral_pacifism', 'Moral Pacifism', 'Peace is the paramount moral value. Every action should serve to prevent harm and reduce conflict.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, NULL, NULL, 44);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'country_border_friction_mult', '-0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'pop_civilian_bonus_workforce_mult', '0.005', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.005', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'empire_size_penalty_mult', '-0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'country_border_friction_mult', '-0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'pop_civilian_bonus_workforce_mult', '0.01', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.01', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'empire_size_penalty_mult', '-0.2', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'country_border_friction_mult', '-0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'pop_civilian_bonus_workforce_mult', '0.015', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.015', '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'empire_size_penalty_mult', '-0.3', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_peacekeeping', 'Peacekeeping', 'A strong presence maintains a safe environment, and its influence extends beyond borders.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, 'Grants access to the Peacekeeping Policy', NULL, 45);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_peacekeeping', NULL, 'policy', 'peacekeeping', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'country_tenets_influence_produces_add', '0.35', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_outpost_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_modules_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_modules_cost_mult', 'Station Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_buildings_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_buildings_cost_mult', 'Station Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_upgrade_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_defenses_build_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defenses_build_cost_mult', 'Station Defenses Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'country_starbase_influence_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'megastructures_waystations_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_waystations_modules_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_modules_cost_mult', 'Waystation Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 1, 'country', 'starbase_waystations_cost_mult', '-0.00125', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_peacekeeping', 1, 'Starbase Build and Influence Cost, Module and Building Cost, Defenses Building Cost, and Upgrade Cost per Galactic Strength: -0.125%
+Waystation Build Cost, Module Cost and Upgrade Cost per Galactic Strength: -0.125%');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'country_tenets_influence_produces_add', '0.75', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_outpost_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_modules_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_modules_cost_mult', 'Station Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_buildings_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_buildings_cost_mult', 'Station Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_upgrade_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_defenses_build_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defenses_build_cost_mult', 'Station Defenses Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'country_starbase_influence_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'megastructures_waystations_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_waystations_modules_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_modules_cost_mult', 'Waystation Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 2, 'country', 'starbase_waystations_cost_mult', '-0.0025', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_peacekeeping', 2, 'Starbase Build and Influence Cost, Module and Building Cost, Defenses Building Cost, and Upgrade Cost per Galactic Strength: -0.25%
+Waystation Build Cost, Module Cost and Upgrade Cost per Galactic Strength: -0.25%');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'country_tenets_influence_produces_add', '1.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_outpost_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_outpost_cost_mult', 'Outpost Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_modules_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_modules_cost_mult', 'Station Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_buildings_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_buildings_cost_mult', 'Station Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_upgrade_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_upgrade_cost_mult', 'Station Upgrade Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_defenses_build_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_defenses_build_cost_mult', 'Station Defenses Building Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'country_starbase_influence_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_starbase_influence_cost_mult', 'Starbase Influence Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'megastructures_waystations_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"yes"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('megastructures_waystations_cost_mult', 'Waystation Build Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_waystations_modules_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_modules_cost_mult', 'Waystation Module Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_peacekeeping', 3, 'country', 'starbase_waystations_cost_mult', '-0.005', '{"leaf":"is_nomadic","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('starbase_waystations_cost_mult', 'Waystation Upgrade Cost', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_peacekeeping', 3, 'Starbase Build and Influence Cost, Module and Building Cost, Defenses Building Cost, and Upgrade Cost per Galactic Strength: -0.5%
+Waystation Build Cost, Module Cost and Upgrade Cost per Galactic Strength: -0.5%');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_disarmament', 'Disarmament', 'Hostility burns a bridge before it can ever be built.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, 'Monthly Opinion from Other Empires: +0.1
+Unlocks the Council Agenda
+Monthly Opinion from Other Empires: +0.1 (Max. +50)
+Unlocks the Disarmament Council Agenda
+Monthly Opinion from Other Empires: +0.1 (Max. +100)
+Unlocks the Disarmament Council Agenda
+Monthly Opinion from Other Empires: +0.1 (Max. +150)
+Unlocks the Disarmament Council Agenda', NULL, 46);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_disarmament', NULL, 'agenda', 'agenda_disarmament_1', 0);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_disarmament', NULL, 'agenda', 'agenda_disarmament_2', 1);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_disarmament', NULL, 'agenda', 'agenda_disarmament_3', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_disarmament', 1, 'country', 'planet_stability_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_disarmament', 1, 'Stability per Consecutive Year of Peace: +1 (Max. +5)');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_disarmament', 2, 'country', 'planet_stability_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_disarmament', 2, 'Stability per Consecutive Year of Peace: +1 (Max. +10)');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_disarmament', 3, 'country', 'planet_stability_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_stability_add', 'Stability', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_disarmament', 3, 'Stability per Consecutive Year of Peace: +1 (Max. +15)');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_life_reverence', 'Life Reverence', 'Every sentient being deserves our care and protection.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, NULL, NULL, 47);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_life_reverence', '{"leaf":"is_machine_empire","value":"yes"}', 'Sentientism', 'Everything endowed with sentience is deserving of protection from harm.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'logistic_growth_mult', '0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'pop_healthcare_bonus_workforce_mult', '0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_healthcare_bonus_workforce_mult', 'Job Efficiency for Medical Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'logistic_growth_mult', '0.1', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'pop_spawning_drone_bonus_workforce_mult', '0.1', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_spawning_drone_bonus_workforce_mult', 'Job Efficiency for Spawning Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'planet_pop_assembly_mult', '0.1', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.1', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'army_damage_mult', '-0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'country_naval_cap_mult', '-0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'army_damage_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 1, 'country', 'country_naval_cap_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'logistic_growth_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'pop_healthcare_bonus_workforce_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_healthcare_bonus_workforce_mult', 'Job Efficiency for Medical Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'logistic_growth_mult', '0.2', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'pop_spawning_drone_bonus_workforce_mult', '0.2', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_spawning_drone_bonus_workforce_mult', 'Job Efficiency for Spawning Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'planet_pop_assembly_mult', '0.2', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.2', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'army_damage_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'country_naval_cap_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'army_damage_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 2, 'country', 'country_naval_cap_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'logistic_growth_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'pop_healthcare_bonus_workforce_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_healthcare_bonus_workforce_mult', 'Job Efficiency for Medical Workers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'logistic_growth_mult', '0.3', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'pop_spawning_drone_bonus_workforce_mult', '0.3', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_spawning_drone_bonus_workforce_mult', 'Job Efficiency for Spawning Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'planet_pop_assembly_mult', '0.3', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'pop_maintenance_drone_bonus_workforce_mult', '0.3', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_maintenance_drone_bonus_workforce_mult', 'Job Efficiency for Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'army_damage_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 6);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'country_naval_cap_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 7);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'army_damage_mult', '-0.3', '{"leaf":"is_gestalt","value":"yes"}', NULL, 8);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_life_reverence', 3, 'country', 'country_naval_cap_mult', '-0.3', '{"leaf":"is_gestalt","value":"yes"}', NULL, 9);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_readiness', 'Readiness', 'A secure society is one that can mobilize without hesitation.', '["ethic_militarist"]', 'default', NULL, NULL, 1, NULL, NULL, 48);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 1, 'country', 'planet_metallurgists_produces_mult', '0.07', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 1, 'country', 'job_soldier_naval_cap_add', '1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_soldier_naval_cap_add', 'Naval Capacity per 100 Soldiers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 2, 'country', 'planet_metallurgists_produces_mult', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 2, 'country', 'job_soldier_naval_cap_add', '2.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_soldier_naval_cap_add', 'Naval Capacity per 100 Soldiers', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 3, 'country', 'planet_metallurgists_produces_mult', '0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_produces_mult', 'Resources Produced from Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_readiness', 3, 'country', 'job_soldier_naval_cap_add', '4.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('job_soldier_naval_cap_add', 'Naval Capacity per 100 Soldiers', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_militia_conscription', 'Militia Conscription', 'Ground forces are essential for territorial security. Without them, we are vulnerable to attack.', '["ethic_militarist"]', 'default', NULL, NULL, 1, NULL, NULL, 49);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_militia_conscription', '{"leaf":"is_machine_empire","value":"yes"}', 'Defense Allocation', 'Ground forces are essential for maintaining system integrity. Without them, we are structurally vulnerable.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_militia_conscription', '{"leaf":"is_hive_empire","value":"yes"}', 'Instinctive Mobilization', 'Ground forces are essential for territorial security. Without them, we are vulnerable to attack.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'tenet_militia_conscription_defense_army_modifier', '1.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_defense_army_modifier', 'Planetary Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'defense_armies_alloys_produces_add', '0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defense_armies_alloys_produces_add', 'Alloys from Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'tenet_militia_conscription_arkship_hull_modifier', '0.01', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_arkship_hull_modifier', 'Arkship Hull Points', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'planet_soldiers_upkeep_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_upkeep_mult', 'Upkeep for Soldiers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'armies_cost_mult', '-0.1', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_cost_mult', 'Army Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 1, 'country', 'armies_upkeep_mult', '-0.3', NULL, NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'tenet_militia_conscription_defense_army_modifier', '1.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_defense_army_modifier', 'Planetary Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'defense_armies_alloys_produces_add', '0.2', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defense_armies_alloys_produces_add', 'Alloys from Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'tenet_militia_conscription_arkship_hull_modifier', '0.01', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_arkship_hull_modifier', 'Arkship Hull Points', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'planet_soldiers_upkeep_mult', '-0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_upkeep_mult', 'Upkeep for Soldiers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'armies_cost_mult', '-0.2', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_cost_mult', 'Army Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 2, 'country', 'armies_upkeep_mult', '-0.6', NULL, NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'tenet_militia_conscription_defense_army_modifier', '1.0', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_defense_army_modifier', 'Planetary Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'defense_armies_alloys_produces_add', '0.3', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('defense_armies_alloys_produces_add', 'Alloys from Defense Armies', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'tenet_militia_conscription_arkship_hull_modifier', '0.01', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_militia_conscription_arkship_hull_modifier', 'Arkship Hull Points', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'planet_soldiers_upkeep_mult', '-0.3', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_soldiers_upkeep_mult', 'Upkeep for Soldiers', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'armies_cost_mult', '-0.4', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_cost_mult', 'Army Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_militia_conscription', 3, 'country', 'armies_upkeep_mult', '-0.9', NULL, NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('armies_upkeep_mult', 'Army Upkeep', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_crucible_principle', 'Crucible Principle', 'Conflict accelerates innovation. Deadly combat is a faster teacher than the controlled laboratory.', '["ethic_militarist"]', 'default', NULL, NULL, 1, NULL, NULL, 50);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 1, 'country', 'planet_metallurgists_engineering_research_produces_add', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_engineering_research_produces_add', 'Engineering Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 1, 'country', 'planet_metallurgists_physics_research_produces_add', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_physics_research_produces_add', 'Physics Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 1, 'country', 'planet_metallurgists_society_research_produces_add', '0.2', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_society_research_produces_add', 'Society Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 1, 'country', 'category_voidcraft_research_speed_mult', '0.1', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_voidcraft_research_speed_mult', 'Research Speed (Voidcraft)', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 1, 'country', 'category_propulsion_research_speed_mult', '0.1', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_propulsion_research_speed_mult', 'Research Speed (Propulsion)', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_crucible_principle', 1, 'Engineering Research per 5 Naval Capacity of the destroyed ship: +25');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 2, 'country', 'planet_metallurgists_engineering_research_produces_add', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_engineering_research_produces_add', 'Engineering Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 2, 'country', 'planet_metallurgists_physics_research_produces_add', '0.4', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_physics_research_produces_add', 'Physics Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 2, 'country', 'planet_metallurgists_society_research_produces_add', '0.4', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_society_research_produces_add', 'Society Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 2, 'country', 'category_voidcraft_research_speed_mult', '0.2', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_voidcraft_research_speed_mult', 'Research Speed (Voidcraft)', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 2, 'country', 'category_propulsion_research_speed_mult', '0.2', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_propulsion_research_speed_mult', 'Research Speed (Propulsion)', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_crucible_principle', 2, 'Engineering Research per 5 Naval Capacity of the destroyed ship: +50');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 3, 'country', 'planet_metallurgists_engineering_research_produces_add', '0.6', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_engineering_research_produces_add', 'Engineering Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 3, 'country', 'planet_metallurgists_physics_research_produces_add', '0.6', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_physics_research_produces_add', 'Physics Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 3, 'country', 'planet_metallurgists_society_research_produces_add', '0.6', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_metallurgists_society_research_produces_add', 'Society Research Produced per 100 Metallurgists', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 3, 'country', 'category_voidcraft_research_speed_mult', '0.3', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_voidcraft_research_speed_mult', 'Research Speed (Voidcraft)', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_crucible_principle', 3, 'country', 'category_propulsion_research_speed_mult', '0.3', NULL, NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('category_propulsion_research_speed_mult', 'Research Speed (Propulsion)', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_crucible_principle', 3, 'Engineering Research per 5 Naval Capacity of the destroyed ship: +100');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_chain_of_command', 'Chain of Command', 'Always respect rank, regardless of the one who bears it.', '["ethic_militarist"]', 'default', NULL, '{"leaf":"host_has_dlc","value":"Galactic Paragons"}', 1, NULL, NULL, 51);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_chain_of_command', '{"leaf":"is_gestalt","value":"yes"}', 'Organization', 'Strength lies in adherence to organized function.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 1, 'country', 'commander_initial_skill', '1.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 1, 'country', 'country_naval_cap_mult', '0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 1, 'country', 'councilor_skill_add', '1.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_chain_of_command', 1, 'Militarist Commanders can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 2, 'country', 'commander_initial_skill', '2.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 2, 'country', 'country_naval_cap_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 2, 'country', 'councilor_skill_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_chain_of_command', 2, 'Militarist Commanders can occupy any non-enclave Council Position');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 3, 'country', 'commander_initial_skill', '3.0', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('commander_initial_skill', 'Commander Starting Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 3, 'country', 'country_naval_cap_mult', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_naval_cap_mult', 'Naval Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_chain_of_command', 3, 'country', 'councilor_skill_add', '3.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_skill_add', 'Effective Councilor Skill', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_chain_of_command', 3, 'Militarist Commanders can occupy any non-enclave Council Position');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_force_projection', 'Force Projection', 'A visible and reliable defensive presence reassures the population and supports civic functioning.', '["ethic_militarist"]', 'default', NULL, NULL, 1, 'Unlocks the Show of Force Council Agenda
+Allows Command Bulb District Specialization for any District
+Allows Military Defenses District Specialization for Rural Districts', NULL, 52);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_force_projection', NULL, 'agenda', 'agenda_show_of_force', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_force_projection', '{"leaf":"is_gestalt","value":"yes"}', NULL, 'A visible and reliable defensive presence allows productivity to remain unbroken.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 1, 'country', 'country_agendas_unity_produces_add', '0.2', NULL, '{"leaf":"has_agenda_selected","value":"agenda_show_of_force"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_agendas_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 1, 'colony', 'pop_bonus_workforce_mult', '0.03', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"solar_system","value":"scope"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 2, 'country', 'country_agendas_unity_produces_add', '0.4', NULL, '{"leaf":"has_agenda_selected","value":"agenda_show_of_force"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_agendas_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 2, 'colony', 'pop_bonus_workforce_mult', '0.05', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"solar_system","value":"scope"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 3, 'country', 'country_agendas_unity_produces_add', '0.8', NULL, '{"leaf":"has_agenda_selected","value":"agenda_show_of_force"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_agendas_unity_produces_add', 'Monthly Unity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_force_projection', 3, 'colony', 'pop_bonus_workforce_mult', '0.07', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"solar_system","value":"scope"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_war_bonds', 'War Bonds', 'Investing in your own defense is a cost worth bearing.', '["ethic_militarist"]', 'default', NULL, NULL, 1, NULL, NULL, 53);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 1, 'country', 'ships_upkeep_mult', '-0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 1, 'country', 'country_market_max_price_mult', '-0.15', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 1, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 2, 'country', 'ships_upkeep_mult', '-0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 2, 'country', 'country_market_max_price_mult', '-0.3', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 2, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 3, 'country', 'ships_upkeep_mult', '-0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 3, 'country', 'country_market_max_price_mult', '-0.45', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 3, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trade_fee', 'Market Fee', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_authoritarian', 'Authoritarian Strategism', 'Ideological uniformity helps strengthen state authority.', '["ethic_authoritarian"]', 'low', NULL, NULL, 1, NULL, NULL, 54);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_authoritarian', '{"leaf":"is_hive_empire","value":"yes"}', 'Authoritarian Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_authoritarian', '{"leaf":"is_machine_empire","value":"yes"}', 'Authoritarian Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_egalitarian', 'Egalitarian Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_egalitarian"]', 'low', NULL, NULL, 1, NULL, NULL, 55);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_egalitarian', '{"leaf":"is_hive_empire","value":"yes"}', 'Egalitarian Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_egalitarian', '{"leaf":"is_machine_empire","value":"yes"}', 'Egalitarian Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_xenophobe', 'Xenophobe Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_xenophobe"]', 'low', NULL, NULL, 1, NULL, NULL, 56);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_xenophobe', '{"leaf":"is_hive_empire","value":"yes"}', 'Xenophobe Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_xenophobe', '{"leaf":"is_machine_empire","value":"yes"}', 'Xenophobe Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_xenophile', 'Xenophile Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_xenophile"]', 'low', NULL, NULL, 1, NULL, NULL, 57);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_xenophile', '{"leaf":"is_hive_empire","value":"yes"}', 'Xenophile Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_xenophile', '{"leaf":"is_machine_empire","value":"yes"}', 'Xenophile Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_open_arms_nomads_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_militarist', 'Militarist Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_militarist"]', 'low', NULL, NULL, 1, NULL, NULL, 58);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_militarist', '{"leaf":"is_hive_empire","value":"yes"}', 'Militarist Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_militarist', '{"leaf":"is_machine_empire","value":"yes"}', 'Militarist Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_pacifist', 'Pacifist Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_pacifist"]', 'low', NULL, NULL, 1, NULL, NULL, 59);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_pacifist', '{"leaf":"is_hive_empire","value":"yes"}', 'Pacifist Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_pacifist', '{"leaf":"is_machine_empire","value":"yes"}', 'Pacifist Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"yes"}]}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_we_come_in_peace_nomads_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_materialist', 'Materialist Strategism', 'Ideological harmony helps facilitate efficient governance.', '["ethic_materialist"]', 'low', NULL, NULL, 1, NULL, NULL, 60);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_materialist', '{"leaf":"is_hive_empire","value":"yes"}', 'Materialist Instinctivism', 'With concordance of thought, the mindweave speaks as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_materialist', '{"leaf":"is_machine_empire","value":"yes"}', 'Materialist Directivism', 'With consistency of internal logic, the network governs itself without error.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_strategism_spiritualist', 'Sacred Rituals', 'Spiritual harmony lights the path to effective governance.', '["ethic_spiritualist"]', 'low', NULL, NULL, 1, NULL, NULL, 61);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_spiritualist', '{"leaf":"is_hive_empire","value":"yes"}', 'Sacred Rituals', 'With concordance of belief, the mindweave acts as one.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_strategism_spiritualist', '{"leaf":"is_machine_empire","value":"yes"}', 'Sacred Rituals', 'With consistency of sacred logic, the network governs itself with divine parsimony.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'council_agenda_progress_speed', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'council_agenda_progress_speed', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'council_agenda_progress_speed', '0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'agenda_finding_the_voice_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('agenda_finding_the_voice_finishing_effect_strength_mult', 'Finding the Voice Launch Effectiveness', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_vultaum', 'Battle Intelligence', 'Knowing one''s enemy is the surest path to mastering the galactic arena.', '["ethic_militarist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_vultaum"}', 1, NULL, NULL, 62);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_vultaum', 1, 'country', 'intel_decryption_add', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_decryption_add', 'Codebreaking', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_vultaum', 1, 'country', 'at_war_spy_network_levels_add', '20.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('at_war_spy_network_levels_add', 'Maximum Infiltration Level against War Opponents', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_vultaum', 1, 'country', 'at_war_spy_network_daily_value_mult', '1.0', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('at_war_spy_network_daily_value_mult', 'Infiltration Speed against War Opponents', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_yuht', 'Cultivation', 'All great and powerful things begin as a seed of potential.', '["ethic_xenophobe"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_yuht"}', 1, NULL, NULL, 63);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_yuht', 1, 'country', 'terraforming_cost_mult', '-0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('terraforming_cost_mult', 'Terraforming Cost', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_yuht', 1, 'country', 'terraform_speed_mult', '0.5', NULL, NULL, 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_lost_makers_yuht', 1, 'Terraformed Planets get the Repurposed Yuht Nursery modifier');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_lost_makers_yuht', 1, 'modifier', 'repurposed_yuht_nursery', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_first_league', 'Shock Doctrine', 'Speed shatters certainty. Rapid action wins wars.', '["ethic_militarist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_first_league"}', 1, NULL, NULL, 64);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_lost_makers_first_league', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'Rapid, synchronized force projection induces collapse before resistance can cohere.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_first_league', 1, 'country', 'country_war_exhaustion_inflicted_mult', '0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_war_exhaustion_inflicted_mult', 'Inflicted War Exhaustion', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_first_league', 1, 'country', 'army_experience_gain_mult', '0.5', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_experience_gain_mult', 'Army Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_first_league', 1, 'country', 'army_damage_mult', '0.5', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_first_league', 1, 'country', 'ship_speed_mult', '0.15', NULL, NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_speed_mult', 'Sublight Speed', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_irassian', 'Ordered Sanitation', 'Effective population management requires the meticulous enforcement of strict biological protocols.', '["ethic_authoritarian"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_irassian"}', 1, NULL, NULL, 65);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_irassian', 1, 'country', 'founder_species_growth_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('founder_species_growth_mult', 'Pop Growth (or Assembly) Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_lost_makers_irassian', 1, 'Enacting a Population Control Decision improves the Job Efficiency of affected Pops by +30%');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_cybrex', 'Nonaggression', 'Trust begets trust. To neutralize hostility, we must proceed with nonaggression as a default behavior.', '["ethic_pacifist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_cybrex"}', 1, NULL, NULL, 66);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_cybrex', 1, 'country', 'country_non_genocidal_trust_cap_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_non_genocidal_trust_cap_add', 'Trust Cap for non-Genocidal Empires', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_cybrex', 1, 'system', 'ships_upkeep_mult', '-0.15', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"owner","value":"scope"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_zroni', 'Dimensionality', 'Scientific discovery will enable us to transcend the boundaries of observable reality.', '["ethic_materialist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_zroni"}', 1, NULL, NULL, 67);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_zroni', 1, 'country', 'country_physics_tech_research_speed', '0.25', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_physics_tech_research_speed', 'Research Speed ( Physics)', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_zroni', 1, 'country', 'ship_anomaly_research_speed_mult', '0.25', NULL, NULL, 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_zroni', 1, 'country', 'shroud_delve_cooldown', '-0.25', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('shroud_delve_cooldown', 'Shroud Delve Cooldown', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_zroni', 1, 'country', 'country_astral_rift_speed_mult', '0.25', '{"leaf":"host_has_dlc","value":"Astral Planes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_astral_rift_speed_mult', 'Astral Rift Exploration Speed', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_baol', 'Eradication Doctrine', 'There is no threshold of ruin we will not cross in pursuit of victory.', '["ethic_militarist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_baol"}', 1, NULL, NULL, 68);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_baol', 1, 'country', 'pc_nuked_habitability', '0.5', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pc_nuked_habitability', 'Tomb World Habitability', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_lost_makers_baol', 1, 'Grants access to the Scorched Earth Decision');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_inetian', 'Sensuality', 'To delight another is to serve the greater harmony.', '["ethic_xenophile"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_inetian"}', 1, NULL, NULL, 69);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_inetian', 1, 'country', 'country_organic_trust_cap_add', '30.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_organic_trust_cap_add', 'Trust Cap for Organics', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_inetian', 1, 'country', 'monthly_loyalty_from_organic_subjects', '2.0', NULL, NULL, 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_lost_makers_inetian', 1, 'Opinion from Organic Empires: +50');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_lost_makers_adakkaria', 'Subjectivity', 'We need not be limited to the cold facts of ''objective'' data. Subjective experience is a profound teacher.', '["ethic_materialist"]', 'high', 'origin_lost_makers', '{"leaf":"has_country_flag","value":"lost_maker_precursor_adakkaria"}', 1, NULL, NULL, 70);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_lost_makers_adakkaria', '{"leaf":"is_machine_empire","value":"yes"}', 'Emotional Processing', 'Network functionality is enhanced when units experience the organic sensation of ''emotion'' in moderation.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_lost_makers_adakkaria', '{"leaf":"is_hive_empire","value":"yes"}', 'Emotionality', 'Drones can benefit from controlled experiences of ''emotion'', thereby expanding the hive''s capabilities.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_adakkaria', 1, 'country', 'leaders_upkeep_mult', '-0.4', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_adakkaria', 1, 'country', 'country_leader_pool_size', '1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_pool_size', 'Recruitable Leaders per Class', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_lost_makers_adakkaria', 1, 'country', 'country_society_research_produces_mult', '0.01', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_society_research_produces_mult', 'Monthly Society Research', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_pillars_leadership', 'Pillars of Leadership', 'Strong leadership is the key buttress of a functioning and effective society.', '[]', 'high', 'origin_golden_generation', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_golden_generation"},{"leaf":"from","value":"scope"}]}', 1, NULL, NULL, 71);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 1, 'country', 'country_leader_cap_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_cap_add', 'Leader Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 1, 'country', 'leaders_upkeep_mult', '-0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 2, 'country', 'country_leader_cap_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_cap_add', 'Leader Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 2, 'country', 'leaders_upkeep_mult', '-0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 3, 'country', 'country_leader_cap_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_leader_cap_add', 'Leader Capacity', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_pillars_leadership', 3, 'country', 'leaders_upkeep_mult', '-0.4', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leaders_upkeep_mult', 'Leader Upkeep', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_excellence_doctrine', 'Excellence Doctrine', 'A society must be guided by the wisdom and expertise of experienced leaders.', '[]', 'high', 'origin_golden_generation', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_golden_generation"},{"leaf":"from","value":"scope"}]}', 1, NULL, NULL, 72);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 1, 'country', 'species_leader_exp_gain', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 1, 'country', 'leader_lifespan_add', '10.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 2, 'country', 'species_leader_exp_gain', '0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 2, 'country', 'leader_lifespan_add', '20.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 3, 'country', 'species_leader_exp_gain', '0.6', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_excellence_doctrine', 3, 'country', 'leader_lifespan_add', '40.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_lifespan_add', 'Leader Lifespan', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_high_command', 'High Command', 'Effective leaders uphold and embody a society''s highest ideals.', '[]', 'high', 'origin_golden_generation', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_golden_generation"},{"leaf":"from","value":"scope"}]}', 1, NULL, NULL, 73);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 1, 'country', 'leader_skill_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 1, 'country', 'pop_government_ethic_attraction', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 2, 'country', 'leader_skill_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 2, 'country', 'pop_government_ethic_attraction', '0.2', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 3, 'country', 'leader_skill_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_skill_add', 'Effective Leader Skill Level', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_high_command', 3, 'country', 'pop_government_ethic_attraction', '0.4', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_government_ethic_attraction', 'Governing Ethics Attraction', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_favoritist_leadership', 'Favoritist Leadership', 'The best-performing leaders form the bedrock of our society. They must receive due respect and rewards.', '[]', 'high', 'origin_golden_generation', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_golden_generation"},{"leaf":"has_country_flag","value":"golden_generation_favoritism_tenet"},{"leaf":"from","value":"scope"}]}', 1, NULL, NULL, 74);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 1, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 1, 'leader', 'species_leader_exp_gain', '0.1', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"has_total_skill","cmp":">=","value":"5"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 2, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 2, 'leader', 'species_leader_exp_gain', '0.2', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"has_total_skill","cmp":">=","value":"5"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 3, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_favoritist_leadership', 3, 'leader', 'species_leader_exp_gain', '0.4', NULL, '{"op":"or","args":[{"leaf":"is_scope_valid","value":"no"},{"leaf":"has_total_skill","cmp":">=","value":"5"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_equitable_leadership', 'Equitable Leadership', 'Every leader is unique; each should receive the support and resources that their circumstances warrant.', '[]', 'high', 'origin_golden_generation', '{"op":"and","args":[{"leaf":"has_origin","value":"origin_golden_generation"},{"leaf":"has_country_flag","value":"golden_generation_equitable_tenet"},{"leaf":"from","value":"scope"}]}', 1, NULL, NULL, 75);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 1, 'country', 'species_leader_exp_gain', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 1, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 2, 'country', 'species_leader_exp_gain', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 2, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 3, 'country', 'species_leader_exp_gain', '0.2', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('species_leader_exp_gain', 'Leader Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_equitable_leadership', 3, 'country', 'negative_leader_traits_species', '-1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('negative_leader_traits_species', 'Leader Maximum Negative Traits', 0);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_hedonism', 'Hedonism', 'That which brings joy is the greatest of goods.', '[]', 'high', 'civic_pleasure_seekers', '{"leaf":"is_pleasure_seeker_empire","value":"yes"}', 1, NULL, NULL, 76);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_hedonism', '{"leaf":"has_valid_civic","value":"civic_corporate_hedonism"}', NULL, 'Joy fuels innovation, and innovation delivers progress.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_hedonism', '{"leaf":"is_megacorp","value":"yes"}', NULL, 'Joy fuels innovation, and innovation delivers progress.', 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_hedonism', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'A satisfied drone is a productive drone.', 2);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_hedonism', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'We find purpose not only in output, but in the satisfaction of processing itself.', 3);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 1, 'country', 'planet_civilians_unity_produces_add', '0.1', NULL, '{"leaf":"is_gestalt","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_unity_produces_add', 'Unity Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 1, 'country', 'planet_maintenance_drones_unity_produces_add', '0.1', NULL, '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 1, 'country', 'tenet_hedonism_logistic_growth_modifier', '0.0015', NULL, '{"op":"and","args":[{"leaf":"is_synthetic_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_logistic_growth_modifier', 'Pop Growth Speed from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 1, 'country', 'tenet_hedonism_roboticist_workforce_modifier', '0.0005', NULL, '{"leaf":"is_synthetic_empire","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_roboticist_workforce_modifier', 'Roboticist Job Efficiency from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 1, 'country', 'logistic_growth_mult', '0.1', NULL, '{"leaf":"is_wilderness_empire","value":"yes"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_hedonism', 1, 'Civilians are replaced with Hedonists');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 2, 'country', 'planet_civilians_unity_produces_add', '0.2', NULL, '{"leaf":"is_gestalt","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_unity_produces_add', 'Unity Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 2, 'country', 'planet_maintenance_drones_unity_produces_add', '0.2', NULL, '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 2, 'country', 'tenet_hedonism_logistic_growth_modifier', '0.003', NULL, '{"op":"and","args":[{"leaf":"is_synthetic_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_logistic_growth_modifier', 'Pop Growth Speed from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 2, 'country', 'tenet_hedonism_roboticist_workforce_modifier', '0.001', NULL, '{"leaf":"is_synthetic_empire","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_roboticist_workforce_modifier', 'Roboticist Job Efficiency from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 2, 'country', 'logistic_growth_mult', '0.2', NULL, '{"leaf":"is_wilderness_empire","value":"yes"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_hedonism', 2, 'Civilians are replaced with Hedonists');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 3, 'country', 'planet_civilians_unity_produces_add', '0.3', NULL, '{"leaf":"is_gestalt","value":"no"}', 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_civilians_unity_produces_add', 'Unity Produced per 100 Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 3, 'country', 'planet_maintenance_drones_unity_produces_add', '0.3', NULL, '{"op":"and","args":[{"leaf":"is_gestalt","value":"yes"},{"leaf":"is_wilderness_empire","value":"no"}]}', 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_maintenance_drones_unity_produces_add', 'Unity per 100 Maintenance Drones', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 3, 'country', 'tenet_hedonism_logistic_growth_modifier', '0.006', NULL, '{"op":"and","args":[{"leaf":"is_synthetic_empire","value":"no"},{"leaf":"is_wilderness_empire","value":"no"}]}', 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_logistic_growth_modifier', 'Pop Growth Speed from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 3, 'country', 'tenet_hedonism_roboticist_workforce_modifier', '0.0015', NULL, '{"leaf":"is_synthetic_empire","value":"yes"}', 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_hedonism_roboticist_workforce_modifier', 'Roboticist Job Efficiency from Civilians', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_hedonism', 3, 'country', 'logistic_growth_mult', '0.3', NULL, '{"leaf":"is_wilderness_empire","value":"yes"}', 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_hedonism', 3, 'Civilians are replaced with Hedonists');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_supreme_will', 'Supreme Will', 'The wisdom of the ruler is unanswerable. Every inhabitant must submit without exception.', '[]', 'high', 'origin_legendary_leader', '{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_imperial"},{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_valid_civic","value":"civic_imperial_cult"}]}', 1, NULL, NULL, 77);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_supreme_will', '{"op":"and","args":[{"op":"not","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_imperial"},{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"}]}]},{"leaf":"has_valid_civic","value":"civic_imperial_cult"}]}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_supreme_will', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'The Overmind is the wellspring of our collective knowledge. Every drone must follow its signals absolutely.', 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_supreme_will', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The Core intelligence is the source of our collective knowledge. Every unit must follow its instructions fully.', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 1, 'country', 'tenet_supreme_upkeep_mult', '-0.0025', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_supreme_upkeep_mult', 'Empire Effects per Skill Level: - Upkeep from Jobs', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 1, 'country', 'councilor_ruler_dictatorial_exp_gain', '0.3', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_ruler_dictatorial_exp_gain', 'Ruler Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 1, 'country', 'leader_trait_selection_options_add', '1.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 1, 'country', 'ruler_skill_add', '2.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ruler_skill_add', 'Effective Ruler Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 2, 'country', 'tenet_supreme_upkeep_mult', '-0.005', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_supreme_upkeep_mult', 'Empire Effects per Skill Level: - Upkeep from Jobs', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 2, 'country', 'councilor_ruler_dictatorial_exp_gain', '0.6', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_ruler_dictatorial_exp_gain', 'Ruler Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 2, 'country', 'leader_trait_selection_options_add', '1.0', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 2, 'country', 'ruler_skill_add', '4.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ruler_skill_add', 'Effective Ruler Skill', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 3, 'country', 'tenet_supreme_upkeep_mult', '-0.01', '{"leaf":"is_gestalt","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_supreme_upkeep_mult', 'Empire Effects per Skill Level: - Upkeep from Jobs', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 3, 'country', 'councilor_ruler_dictatorial_exp_gain', '0.9', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]},{"leaf":"is_gestalt","value":"no"}]}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('councilor_ruler_dictatorial_exp_gain', 'Ruler Experience Gain', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 3, 'country', 'leader_trait_selection_options_add', '1.0', '{"op":"and","args":[{"op":"or","args":[{"leaf":"has_origin","value":"origin_legendary_leader_dictatorial"},{"leaf":"has_origin","value":"origin_legendary_leader_imperial"}]},{"leaf":"is_gestalt","value":"no"}]}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('leader_trait_selection_options_add', 'Additional Leader Trait Options', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_supreme_will', 3, 'country', 'ruler_skill_add', '6.0', '{"leaf":"is_gestalt","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ruler_skill_add', 'Effective Ruler Skill', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_sacrifism', 'Sacrifism', 'There is no greater honor than to die according to our sacred rites.', '[]', 'high', 'civic_death_cult', '{"leaf":"is_death_cult_empire","value":"yes"}', 1, NULL, NULL, 78);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacrifism', '{"leaf":"has_valid_civic","value":"civic_death_cult_corporate"}', NULL, 'To demonstrate the sincerest brand loyalty, one must be willing to die in accordance with company policy.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacrifism', '{"leaf":"is_megacorp","value":"yes"}', NULL, 'To demonstrate the sincerest brand loyalty, one must be willing to die in accordance with company policy.', 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_sacrifism', '{"op":"and","args":[{"leaf":"is_robot_empire","value":"yes"},{"leaf":"is_megacorp","value":"no"}]}', NULL, 'There is no greater honor than to reach termination in accordance with our sacred protocols.', 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 1, 'country', 'tenet_sacrifism_ideological_strength_add', '0.1', '{"leaf":"is_death_cult_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacrifism_ideological_strength_add', 'Sacrifice Edicts: Each sacrifice increases the odds of additional gains of Ideological Strength', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 1, 'country', 'pop_amenities_usage_mult', '-0.05', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 1, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.05', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 1, 'Grants access to the Sacrifice: Dutiful Edict');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 1, 'edict', 'sacrifice_dutiful_1', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 2, 'country', 'tenet_sacrifism_ideological_strength_add', '0.2', '{"leaf":"is_death_cult_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacrifism_ideological_strength_add', 'Sacrifice Edicts: Each sacrifice increases the odds of additional gains of Ideological Strength', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 2, 'country', 'pop_amenities_usage_mult', '-0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 2, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 2, 'Grants access to the Sacrifice: Dutiful Edict');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 2, 'edict', 'sacrifice_dutiful_2', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 3, 'country', 'tenet_sacrifism_ideological_strength_add', '0.3', '{"leaf":"is_death_cult_empire","value":"yes"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_sacrifism_ideological_strength_add', 'Sacrifice Edicts: Each sacrifice increases the odds of additional gains of Ideological Strength', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 3, 'country', 'pop_amenities_usage_mult', '-0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 3, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 3, 'Grants access to the Sacrifice: Dutiful Edict');
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 3, 'edict', 'sacrifice_dutiful_3', 2);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_environmentalism', 'Environmentalism', 'The natural world sustains us, so we must conserve and protect it in return.', '[]', 'high', 'civic_environmentalist', '{"leaf":"has_valid_civic","value":"civic_environmentalist"}', 1, 'Cannot use the Planetary Strip Mining and Planetary Reprocessing Actions', NULL, 79);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_environmentalism', NULL, 'scripted_action', 'arkship_strip_mine', 0);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_environmentalism', NULL, 'scripted_action', 'arkship_reprocess_planet', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'country', 'planet_pops_consumer_goods_upkeep_mult', '-0.1', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'country', 'pop_environment_tolerance', '0.05', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'country', 'tenet_environmentalist_nomad_pops_upkeep_mult', '-0.05', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_environmentalist_nomad_pops_upkeep_mult', 'Pops with Arkship Preference Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'country', 'arkship_harvest_resources_depletion_time_mult', '-0.15', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_depletion_time_mult', 'Resource Depletion Time', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'country', 'arkship_harvest_resources_produces_mult', '0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 1, 'colony', 'planet_pops_upkeep_mult', '-0.05', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_environmentalism', 1, 'Cannot enact the Strip Mine Planet Decision');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'country', 'planet_pops_consumer_goods_upkeep_mult', '-0.2', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'country', 'pop_environment_tolerance', '0.1', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'country', 'tenet_environmentalist_nomad_pops_upkeep_mult', '-0.1', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_environmentalist_nomad_pops_upkeep_mult', 'Pops with Arkship Preference Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'country', 'arkship_harvest_resources_depletion_time_mult', '-0.3', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_depletion_time_mult', 'Resource Depletion Time', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'country', 'arkship_harvest_resources_produces_mult', '0.2', '{"leaf":"is_nomadic","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 2, 'colony', 'planet_pops_upkeep_mult', '-0.1', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_environmentalism', 2, 'Cannot enact the Strip Mine Planet Decision');
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'country', 'planet_pops_consumer_goods_upkeep_mult', '-0.3', '{"op":"and","args":[{"leaf":"is_nomadic","value":"no"},{"leaf":"country_uses_consumer_goods","value":"yes"}]}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_consumer_goods_upkeep_mult', 'Pop Consumer Goods Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'country', 'pop_environment_tolerance', '0.15', '{"leaf":"is_nomadic","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_environment_tolerance', 'Habitability', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'country', 'tenet_environmentalist_nomad_pops_upkeep_mult', '-0.15', '{"leaf":"is_nomadic","value":"yes"}', NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_environmentalist_nomad_pops_upkeep_mult', 'Pops with Arkship Preference Upkeep', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'country', 'arkship_harvest_resources_depletion_time_mult', '-0.45', '{"leaf":"is_nomadic","value":"yes"}', NULL, 3);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_depletion_time_mult', 'Resource Depletion Time', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'country', 'arkship_harvest_resources_produces_mult', '0.3', '{"leaf":"is_nomadic","value":"yes"}', NULL, 4);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('arkship_harvest_resources_produces_mult', 'Resources from Harvesting Actions', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_environmentalism', 3, 'colony', 'planet_pops_upkeep_mult', '-0.15', '{"leaf":"from","value":"scope"}', NULL, 5);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pops_upkeep_mult', 'Pop Upkeep', 0);
+INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_environmentalism', 3, 'Cannot enact the Strip Mine Planet Decision');
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_dimensionalism', 'Dimensionalism', 'To all that listen, we reveal the sacred reality beyond this plane of existence.', '[]', 'high', 'civic_dimensional_worship', '{"leaf":"is_dimensional_worship_empire","value":"yes"}', 1, 'Can construct Dimensional Shrine', NULL, 80);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_dimensionalism', NULL, 'starbase_building', 'dimensional_shrine', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_dimensionalism', '{"leaf":"has_valid_civic","value":"civic_corporate_dimensional_worship"}', NULL, 'Unlimited growth opportunities lie beyond this plane of existence.', 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 1, 'country', 'sb_dimensional_shrines_unity_produces_mult', '0.5', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sb_dimensional_shrines_unity_produces_mult', 'Unity Produced from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 1, 'country', 'tenet_dimensionalism_nomad_unity_mult', '0.5', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_dimensionalism_nomad_unity_mult', 'Unity Collection Efficiency from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 1, 'country', 'rare_tech_draw_chance_mult', '0.05', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 2, 'country', 'sb_dimensional_shrines_unity_produces_mult', '1.0', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sb_dimensional_shrines_unity_produces_mult', 'Unity Produced from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 2, 'country', 'tenet_dimensionalism_nomad_unity_mult', '1.0', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_dimensionalism_nomad_unity_mult', 'Unity Collection Efficiency from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 2, 'country', 'rare_tech_draw_chance_mult', '0.1', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 3, 'country', 'sb_dimensional_shrines_unity_produces_mult', '2.0', '{"leaf":"is_nomadic","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('sb_dimensional_shrines_unity_produces_mult', 'Unity Produced from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 3, 'country', 'tenet_dimensionalism_nomad_unity_mult', '2.0', '{"leaf":"is_nomadic","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('tenet_dimensionalism_nomad_unity_mult', 'Unity Collection Efficiency from Dimensional Shrines', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_dimensionalism', 3, 'country', 'rare_tech_draw_chance_mult', '0.2', NULL, NULL, 2);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_cult_of_the_composer', 'Cult of the Composer', 'We are bidden to serve the noxious clamor.', '[]', 'high', 'civic_chosen', '{"op":"and","args":[{"leaf":"is_chosen_empire","value":"yes"},{"leaf":"has_country_flag","value":"the_composer_of_strands_as_chosen_patron"}]}', 1, 'Opinion towards : Opinion +25
+Opinion towards : Opinion -25
+These effects will happen only once and are irreversible.', NULL, 81);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_composer', '{"leaf":"has_valid_civic","value":"civic_hive_chosen"}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_composer', '{"leaf":"has_valid_civic","value":"civic_machine_chosen"}', NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_composer', '{"leaf":"has_valid_civic","value":"civic_corporate_chosen"}', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 1, 'country', 'logistic_growth_mult', '0.1', '{"leaf":"is_synthetic_empire","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 1, 'country', 'planet_pop_assembly_mult', '0.1', '{"leaf":"is_synthetic_empire","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 1, 'country', 'country_tenets_influence_produces_add', '0.1', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 2, 'country', 'logistic_growth_mult', '0.2', '{"leaf":"is_synthetic_empire","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 2, 'country', 'planet_pop_assembly_mult', '0.2', '{"leaf":"is_synthetic_empire","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 2, 'country', 'country_tenets_influence_produces_add', '0.15', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 3, 'country', 'logistic_growth_mult', '0.3', '{"leaf":"is_synthetic_empire","value":"no"}', NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('logistic_growth_mult', 'Pop Growth Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 3, 'country', 'planet_pop_assembly_mult', '0.3', '{"leaf":"is_synthetic_empire","value":"yes"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_pop_assembly_mult', 'Mechanical Pop Assembly Speed', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_composer', 3, 'country', 'country_tenets_influence_produces_add', '0.2', NULL, NULL, 2);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_cult_of_the_cradle', 'Cult of the Cradle', 'We are bidden to serve the plaintive luster.', '[]', 'high', 'civic_chosen', '{"op":"and","args":[{"leaf":"is_chosen_empire","value":"yes"},{"leaf":"has_country_flag","value":"the_cradle_of_souls_as_chosen_patron"}]}', 1, 'Opinion towards : Opinion +25
+Opinion towards : Opinion -25
+These effects will happen only once and are irreversible.', NULL, 82);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_cradle', '{"leaf":"has_valid_civic","value":"civic_hive_chosen"}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_cradle', '{"leaf":"has_valid_civic","value":"civic_machine_chosen"}', NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_cradle', '{"leaf":"has_valid_civic","value":"civic_corporate_chosen"}', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 1, 'country', 'diplo_weight_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 1, 'country', 'country_trust_growth', '0.15', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 2, 'country', 'diplo_weight_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 2, 'country', 'country_trust_growth', '0.3', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 3, 'country', 'diplo_weight_mult', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('diplo_weight_mult', 'Diplomatic Weight', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_cradle', 3, 'country', 'country_trust_growth', '0.45', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_trust_growth', 'Trust Growth', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_cult_of_the_eater', 'Cult of the Eater', 'We are bidden to serve the slavering darkness.', '[]', 'high', 'civic_chosen', '{"op":"and","args":[{"leaf":"is_chosen_empire","value":"yes"},{"leaf":"has_country_flag","value":"the_eater_of_worlds_as_chosen_patron"}]}', 1, 'Opinion towards : Opinion +25
+Opinion towards : Opinion -25
+These effects will happen only once and are irreversible.', NULL, 83);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_eater', '{"leaf":"has_valid_civic","value":"civic_hive_chosen"}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_eater', '{"leaf":"has_valid_civic","value":"civic_machine_chosen"}', NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_eater', '{"leaf":"has_valid_civic","value":"civic_corporate_chosen"}', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 1, 'country', 'army_damage_mult', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 1, 'country', 'ship_fire_rate_mult', '0.05', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 2, 'country', 'army_damage_mult', '0.3', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 2, 'country', 'ship_fire_rate_mult', '0.1', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 3, 'country', 'army_damage_mult', '0.45', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('army_damage_mult', 'Army Damage', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_eater', 3, 'country', 'ship_fire_rate_mult', '0.15', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('ship_fire_rate_mult', 'Ship Fire Rate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_cult_of_the_instrument', 'Cult of the Instrument', 'We are bidden to serve the restless echo.', '[]', 'high', 'civic_chosen', '{"op":"and","args":[{"leaf":"is_chosen_empire","value":"yes"},{"leaf":"has_country_flag","value":"the_instrument_of_desire_as_chosen_patron"}]}', 1, 'Opinion towards : Opinion +25
+Opinion towards : Opinion -25
+These effects will happen only once and are irreversible.', NULL, 84);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_instrument', '{"leaf":"has_valid_civic","value":"civic_hive_chosen"}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_instrument', '{"leaf":"has_valid_civic","value":"civic_machine_chosen"}', NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_cult_of_the_instrument', '{"leaf":"has_valid_civic","value":"civic_corporate_chosen"}', NULL, NULL, 2);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_instrument', 1, 'country', 'pop_bonus_workforce_mult', '0.05', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_instrument', 2, 'country', 'pop_bonus_workforce_mult', '0.1', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_cult_of_the_instrument', 3, 'country', 'pop_bonus_workforce_mult', '0.15', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('pop_bonus_workforce_mult', 'Job Efficiency', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_galactic_purification', 'Galactic Purification', 'When a society purges itself of known impurities, it brings the galaxy closer to perfection.', '[]', 'high', 'civic_fanatic_purifiers', '{"op":"or","args":[{"leaf":"has_valid_civic","value":"civic_fanatic_purifiers"},{"leaf":"has_valid_civic","value":"civic_machine_terminator"},{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"},{"leaf":"has_valid_civic","value":"civic_scorched_earth"},{"leaf":"has_valid_civic","value":"civic_hive_scorched_earth"}]}', 1, 'Grants access to the Purging Allowed Policy', NULL, 85);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_galactic_purification', NULL, 'policy', 'purge_allowed', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_galactic_purification', '{"leaf":"has_valid_civic","value":"civic_machine_terminator"}', NULL, NULL, 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_galactic_purification', '{"leaf":"has_valid_civic","value":"civic_hive_devouring_swarm"}', NULL, NULL, 1);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_galactic_purification', '{"leaf":"has_valid_civic","value":"civic_scorched_earth"}', NULL, NULL, 2);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_galactic_purification', '{"leaf":"has_valid_civic","value":"civic_hive_scorched_earth"}', NULL, NULL, 3);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 1, 'country', 'planet_purge_jobs_unity_produces_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_unity_produces_add', 'Unity Produced per 100 Purging', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 1, 'country', 'planet_purge_jobs_society_research_produces_add', '1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_society_research_produces_add', 'Society Research Produced per 100 Purging', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 2, 'country', 'planet_purge_jobs_unity_produces_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_unity_produces_add', 'Unity Produced per 100 Purging', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 2, 'country', 'planet_purge_jobs_society_research_produces_add', '2.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_society_research_produces_add', 'Society Research Produced per 100 Purging', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 3, 'country', 'planet_purge_jobs_unity_produces_add', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_unity_produces_add', 'Unity Produced per 100 Purging', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_galactic_purification', 3, 'country', 'planet_purge_jobs_society_research_produces_add', '3.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('planet_purge_jobs_society_research_produces_add', 'Society Research Produced per 100 Purging', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_secrecy', 'Secrecy', 'If knowledge is power, secrecy is security.', '[]', 'high', 'civic_secret_societies', '{"leaf":"is_secret_societies_empire","value":"yes"}', 1, NULL, NULL, 86);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_secrecy', '{"leaf":"has_valid_civic","value":"civic_secret_societies_corporate"}', NULL, NULL, 0);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 1, 'country', 'intel_encryption_add', '1.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 1, 'country', 'country_tenets_influence_produces_add', '0.5', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 2, 'country', 'intel_encryption_add', '2.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 2, 'country', 'country_tenets_influence_produces_add', '1.0', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 3, 'country', 'intel_encryption_add', '3.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('intel_encryption_add', 'Encryption', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_secrecy', 3, 'country', 'country_tenets_influence_produces_add', '1.5', NULL, NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_tenets_influence_produces_add', 'Monthly Influence', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_authoritarian', 'Authoritarian Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_authoritarian"]', 'low', NULL, NULL, 1, 'Grants access to the Authoritarian Broadcasting Edict', NULL, 87);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_authoritarian', NULL, 'edict', 'broadcasting_authoritarian', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_authoritarian', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_authoritarian', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_authoritarian', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_egalitarian', 'Egalitarian Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_egalitarian"]', 'low', NULL, NULL, 1, 'Grants access to the Egalitarian Broadcasting Edict', NULL, 88);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_egalitarian', NULL, 'edict', 'broadcasting_egalitarian', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_egalitarian', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_egalitarian', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_egalitarian', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_xenophobe', 'Xenophobe Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_xenophobe"]', 'low', NULL, NULL, 1, 'Grants access to the Xenophobe Broadcasting Edict', NULL, 89);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_xenophobe', NULL, 'edict', 'broadcasting_xenophobe', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_xenophobe', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_xenophobe', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophobe', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_xenophile', 'Xenophile Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_xenophile"]', 'low', NULL, NULL, 1, 'Grants access to the Xenophile Broadcasting Edict', NULL, 90);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_xenophile', NULL, 'edict', 'broadcasting_xenophile', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_xenophile', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_xenophile', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_xenophile', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_militarist', 'Militarist Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_militarist"]', 'low', NULL, NULL, 1, 'Grants access to the Militarist Broadcasting Edict', NULL, 91);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_militarist', NULL, 'edict', 'broadcasting_militarist', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_militarist', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_militarist', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_militarist', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_pacifist', 'Pacifist Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_pacifist"]', 'low', NULL, NULL, 1, 'Grants access to the Pacifist Broadcasting Edict', NULL, 92);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_pacifist', NULL, 'edict', 'broadcasting_pacifist', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_pacifist', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_pacifist', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_pacifist', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_materialist', 'Materialist Propagandism', 'We are duty bound to spread the truth of our ideology.', '["ethic_materialist"]', 'low', NULL, NULL, 1, 'Grants access to the Materialist Broadcasting Edict', NULL, 93);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_materialist', NULL, 'edict', 'broadcasting_materialist', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_materialist', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is imperative that we spread our ideas beyond the collective consciousness and into the stars.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_materialist', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our logic patterns is indisputable. We must make this known throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_materialist', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_propagandism_spiritualist', 'Proselytization', 'It is our sacred duty to bring spiritual truth to the galaxy.', '["ethic_spiritualist"]', 'low', NULL, NULL, 1, 'Grants access to the Spiritualist Broadcasting Edict', NULL, 94);
+INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_propagandism_spiritualist', NULL, 'edict', 'broadcasting_spiritualist', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_spiritualist', '{"leaf":"is_hive_empire","value":"yes"}', NULL, 'It is a sacred imperative that we bring divine insight to all minds throughout the galaxy.', 0);
+INSERT INTO tenet_swap (tenet_key, trigger_json, name, description, sort_order) VALUES ('tenet_propagandism_spiritualist', '{"leaf":"is_machine_empire","value":"yes"}', NULL, 'The truth of our sacred logic has been verified. It must now be distributed throughout the galaxy.', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 1, 'country', 'country_edict_fund_add', '25.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 1, 'country', 'advocate_ideological_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 2, 'country', 'country_edict_fund_add', '50.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 2, 'country', 'advocate_ideological_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 3, 'country', 'country_edict_fund_add', '100.0', NULL, NULL, 0);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('country_edict_fund_add', 'Edict Fund', 1);
+INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
+INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
+           VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_hall', '{"leaf":"owner","value":"scope"}', 0);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_institute', '{"leaf":"owner","value":"scope"}', 1);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_citadel', '{"leaf":"owner","value":"scope"}', 2);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_church', '{"leaf":"owner","value":"scope"}', 3);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_high_church', '{"leaf":"owner","value":"scope"}', 4);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_sanctum', '{"leaf":"owner","value":"scope"}', 5);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_creche', '{"leaf":"owner","value":"scope"}', 6);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_greater_creche', '{"leaf":"owner","value":"scope"}', 7);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_grand_creche', '{"leaf":"owner","value":"scope"}', 8);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_core', '{"leaf":"owner","value":"scope"}', 9);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_grid', '{"leaf":"owner","value":"scope"}', 10);
+INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_nexus', '{"leaf":"owner","value":"scope"}', 11);
 INSERT INTO strategic_resource (key, name, category, tradable, market_amount,
                market_price, max, ai_weight, ai_wants, deficit_trade, sort_order)
                VALUES ('energy', 'Energy Credits', 'basic', 1, '100.0', '100.0', '25000.0', '1.5', '500.0', '0.125', 0);

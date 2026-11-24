@@ -2018,6 +2018,17 @@ CREATE TABLE deed (
 -- (`activate_crisis_progression`), their levels in order with the currency each needs, the
 -- requirements as the game words them and the menace perks granted, and the objectives that earn
 -- the currency. For the dashboard, which reads a country's path and level from saves by key.
+DROP TABLE IF EXISTS ideology_building;
+DROP TABLE IF EXISTS ideology_concept;
+DROP TABLE IF EXISTS tenet_unlock;
+DROP TABLE IF EXISTS tenet_tier_modifier;
+DROP TABLE IF EXISTS tenet_tier;
+DROP TABLE IF EXISTS tenet_swap;
+DROP TABLE IF EXISTS tenet;
+DROP TABLE IF EXISTS ideology_strength_source;
+DROP TABLE IF EXISTS ideology_modifier;
+DROP TABLE IF EXISTS ideology_strength_level;
+DROP TABLE IF EXISTS ideology;
 DROP TABLE IF EXISTS crisis_path_level;
 DROP TABLE IF EXISTS crisis_path_objective;
 DROP TABLE IF EXISTS crisis_path_perk;
@@ -2116,5 +2127,105 @@ CREATE TABLE specimen_resource (
     amount       REAL NOT NULL,
     sort_order   INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (specimen_key) REFERENCES specimen(key)
+);
+-- Ideologies (4.6, common/ideologies): one type per ethic (xenophobe twice, picked by the
+-- empire's secondary ethic), what adopting one gives at each strength level, where Ideological
+-- Strength comes from, and the tenets codified for it. Which strength level opens which tenet
+-- slot is engine logic, in no file.
+CREATE TABLE ideology (
+    key                     TEXT PRIMARY KEY,  -- e.g. "xenophobe_militarist"
+    ethic                   TEXT,              -- "ethic_xenophobe" (the file names the fanatic one)
+    secondary_ethic         TEXT,              -- xenophobe variants: the ethic that favours this one
+    opposed_secondary_ethic TEXT,              -- … and the one that rules it out
+    faction                 TEXT,              -- pop faction type that represents it: "supremacist"
+    faction_name            TEXT,              -- "Supremacist Faction"
+    reach                   TEXT,              -- ideology_reach_type key: default_reach, militarist_reach
+    type_name               TEXT,              -- what the game calls it: "Ideology", "Religion"
+    sort_order              INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE ideology_strength_level (
+    ideology_key TEXT NOT NULL,
+    level        INTEGER NOT NULL,             -- 0-based, as the trigger adopted_ideology_level
+    start_value  REAL,
+    end_value    REAL,                         -- 250, 500, 750, 1000
+    FOREIGN KEY (ideology_key) REFERENCES ideology(key)
+);
+CREATE TABLE ideology_modifier (
+    ideology_key   TEXT NOT NULL,
+    scope          TEXT NOT NULL,              -- country (the adopter), system (in its reach), pop_group (followers)
+    level          INTEGER,                    -- strength level the block is gated on; NULL = any
+    header         TEXT,                       -- the tooltip header it shows under: "Inside Reach:"
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    scaled_by      TEXT,                       -- `mult` the running game knows: "value:adopted_ideology_ethic_attraction"
+    potential_json TEXT,                       -- the block's potential, normalised
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (ideology_key) REFERENCES ideology(key)
+);
+CREATE TABLE ideology_strength_source (
+    category       TEXT,                       -- "From Galactic Strength", …; NULL = outside the categories
+    label          TEXT,                       -- "Base Galactic Strength"
+    op             TEXT,                       -- add, subtract, mult, set
+    value          REAL,                       -- NULL when only the running game knows it
+    value_ref      TEXT,                       -- then what it is: "value:advocate_bonus"
+    condition_json TEXT,                       -- when it counts (country scope), normalised
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tenet (
+    key            TEXT PRIMARY KEY,           -- e.g. "tenet_idolism"
+    name           TEXT,
+    description    TEXT,
+    ethics_json    TEXT NOT NULL,              -- ["ethic_authoritarian"]; [] = any ideology
+    priority       TEXT NOT NULL,              -- high (always offered), default, low (only when nothing else is)
+    source_civic   TEXT,                       -- the origin or civic it comes from
+    potential_json TEXT,                       -- who may get it (country scope), normalised
+    first_tier     INTEGER,
+    unlock_text    TEXT,                       -- on_unlock's tooltips
+    lock_text      TEXT,                       -- on_lock's
+    sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tenet_swap (
+    tenet_key    TEXT NOT NULL,
+    trigger_json TEXT,                         -- e.g. is_hive_empire = yes
+    name         TEXT,                         -- NULL = the tenet's own
+    description  TEXT,
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_tier (
+    tenet_key   TEXT NOT NULL,
+    tier        INTEGER NOT NULL,              -- Intensity, 1-3
+    effect_text TEXT,                          -- the tier's custom tooltips (effects not written as modifiers)
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_tier_modifier (
+    tenet_key      TEXT NOT NULL,
+    tier           INTEGER NOT NULL,
+    scope          TEXT NOT NULL,              -- country, colony, system, pop_group, leader
+    modifier_key   TEXT NOT NULL,
+    modifier_value REAL NOT NULL,
+    potential_json TEXT,                       -- who it applies to (e.g. is_gestalt = no)
+    possible_json  TEXT,                       -- shown always, active only while this holds
+    sort_order     INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_unlock (
+    tenet_key  TEXT NOT NULL,
+    tier       INTEGER,                        -- NULL = on codifying it; else from that tier
+    kind       TEXT NOT NULL,                  -- edict, policy, agenda, decision, … (the loc link's type)
+    target_key TEXT NOT NULL,                  -- e.g. "broadcasting_authoritarian"
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE ideology_concept (
+    key        TEXT PRIMARY KEY,               -- e.g. "concept_ideological_strength_sources"
+    name       TEXT,
+    text       TEXT,                           -- its tooltip, @variables filled in
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE ideology_building (
+    building_key   TEXT NOT NULL,              -- building.key, e.g. "building_ideological_church"
+    potential_json TEXT,                       -- its potential, which tests the owner's ideology
+    sort_order     INTEGER NOT NULL DEFAULT 0
 );
 """

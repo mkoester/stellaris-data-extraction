@@ -30,6 +30,13 @@ class TestPickDefines(unittest.TestCase):
         self.assertEqual(pick_defines(d), {'TRADITION_COST_TRADITION_EXP': 1.8,
                                            'TRADITION_COST_AMOUNTS': 300.0})
 
+    def test_several_entries_numbered(self):
+        d = block('NGameplay = { TENET_AMENDMENT_INFLUENCE_COST = { 100 200 300 } }')
+        self.assertEqual(pick_defines(d), {'TENET_AMENDMENT_INFLUENCE_COST': 100.0,
+                                           'TENET_AMENDMENT_INFLUENCE_COST_1': 100.0,
+                                           'TENET_AMENDMENT_INFLUENCE_COST_2': 200.0,
+                                           'TENET_AMENDMENT_INFLUENCE_COST_3': 300.0})
+
 
 class TestRequiredDlc(unittest.TestCase):
     def test_top_level_only(self):
