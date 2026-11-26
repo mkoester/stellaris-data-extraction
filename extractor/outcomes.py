@@ -18,8 +18,10 @@ Effect nodes (`t` is the kind; names resolved from localisation where the game h
   random {b: [{w, cond, w_if?, c?, e}]}  a random_list (locked too), a weighted anomaly outcome,
                         `random = { chance }`; w_if: a conditional branch's weight when its
                         modifiers' `add`s hold
-  if {b: [e…], else, c?: [trigger|null…]}  an if/else_if/else chain (branches whose effects are
-                        all equal collapse); c: each branch's `limit`
+  if {b: [e…], else, c?: [trigger|null…], d?: [trigger|null…]}  an if/else_if/else chain
+                        (branches whose effects are all equal collapse); c: each branch's `limit`
+                        as far as it asks something of our empire; d: each `limit` as written,
+                        whatever its scope (the planet's, the ship's), for display only
   event {id, title, delay?, c?, e, o: [{name, cond, c?, e}]}  a visible event: immediate/after
                         in e; c: the event's own `trigger`, an option's its conditions
 
@@ -312,6 +314,16 @@ class Outcomes:
         t = _ours(t, ship)
         return t if _asks(t) else None
 
+    def shown_cond(self, block) -> dict | None:
+        """A condition block as written, normalised, in any scope: for display only."""
+        if block is None:
+            return None
+        try:
+            t = normalize_trigger(as_trigger_dict(block), self.dlc_triggers, self.variables)
+        except (TypeError, AttributeError, ValueError):
+            return None
+        return t if t and t != COMPLEX else None
+
     def _in(self, scope: str | None, fn):
         prev, self.scope = self.scope, scope
         try:
@@ -372,6 +384,12 @@ class Outcomes:
                   else None for i, b in enumerate(chain)]
         if any(limits):
             node['c'] = limits
+        # every branch's limit as written, whatever its scope: for display only (the planet's,
+        # the ship's), where `c` keeps what asks something of our empire
+        shown = [self.shown_cond(_get(b, 'limit')) if _is_block(b) and not (has_else and i == len(chain) - 1)
+                 else None for i, b in enumerate(chain)]
+        if any(shown):
+            node['d'] = shown
         return [node]
 
     def _random(self, weighted: list[tuple[float, object]], depth, ctx, sdepth=0) -> list[dict]:

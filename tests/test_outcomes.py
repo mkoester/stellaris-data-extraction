@@ -130,6 +130,17 @@ class TestConditions(unittest.TestCase):
                            scope='country')
         self.assertEqual(tree[0]['c'], [{'leaf': 'has_ethic', 'value': 'e'}])
 
+    def test_every_limit_is_kept_for_display(self):
+        # Living Metal Marvel's shape (strange_worlds.2050): a planet's limit asks nothing of us
+        tree = make().root(block('x = { if = { limit = { has_deposit_for = shipclass_research_station } '
+                                 'clear_deposits = yes } }'))
+        self.assertNotIn('c', tree[0])
+        self.assertEqual(tree[0]['d'], [{'leaf': 'has_deposit_for',
+                                         'value': 'shipclass_research_station'}])
+        tree = make().root(block('x = { if = { limit = { has_ethic = e } add_resource = { a = 1 } } '
+                                 'else = { add_resource = { a = 2 } } }'))
+        self.assertEqual(tree[0]['d'], [{'leaf': 'has_ethic', 'value': 'e'}, None])
+
     def test_a_ship_condition_on_the_ship_alone_is_dropped(self):
         on_success = block('on_success = { 0 = { modifier = { add = 1 leader = { x = y } } '
                            'anomaly_event = anomaly.2015 } 1 = anomaly.2020 }')
