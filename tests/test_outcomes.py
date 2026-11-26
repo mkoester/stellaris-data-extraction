@@ -146,6 +146,16 @@ class TestConditions(unittest.TestCase):
                            'anomaly_event = anomaly.2015 } 1 = anomaly.2020 }')
         (r,) = make().root(on_success, 'anomaly')
         self.assertNotIn('c', r['b'][0])
+        # kept for display: what the branch's weight hangs on
+        self.assertEqual(r['b'][0]['d'], {'leaf': 'leader.x', 'value': 'y'})
+
+    def test_an_option_condition_is_kept_for_display(self):
+        (ev,) = make().root('orb.1', 'anomaly')
+        # the owner is our empire: its tests unprefixed; the scientist's named after its scope
+        self.assertEqual(ev['o'][1]['d'], {'op': 'and', 'args': [
+            {'leaf': 'has_civic', 'value': 'civic_hive_devouring_swarm'},
+            {'leaf': 'leader.has_trait', 'value': 'x'}]})
+        self.assertNotIn('d', ev['o'][0])
 
 
 class TestOutcomes(unittest.TestCase):

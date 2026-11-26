@@ -15,15 +15,16 @@ Effect nodes (`t` is the kind; names resolved from localisation where the game h
   deposit {k, name}, clear_deposits, modifier {k, name, days}, trait {k, name}, xp {n},
   specimen {k, name}, relic {k, name}, pc {k, name}, megastructure {k, name}, leader, pops,
   species, fleet {mine}, kill_leader, destroy, project {k, name}, note {text}
-  random {b: [{w, cond, w_if?, c?, e}]}  a random_list (locked too), a weighted anomaly outcome,
-                        `random = { chance }`; w_if: a conditional branch's weight when its
-                        modifiers' `add`s hold
+  random {b: [{w, cond, w_if?, c?, d?, e}]}  a random_list (locked too), a weighted anomaly
+                        outcome, `random = { chance }`; w_if: a conditional branch's weight when
+                        its modifiers' `add`s hold; d: their conditions as written, any scope
   if {b: [e…], else, c?: [trigger|null…], d?: [trigger|null…]}  an if/else_if/else chain
                         (branches whose effects are all equal collapse); c: each branch's `limit`
                         as far as it asks something of our empire; d: each `limit` as written,
                         whatever its scope (the planet's, the ship's), for display only
-  event {id, title, delay?, c?, e, o: [{name, cond, c?, e}]}  a visible event: immediate/after
-                        in e; c: the event's own `trigger`, an option's its conditions
+  event {id, title, delay?, c?, e, o: [{name, cond, c?, d?, e}]}  a visible event:
+                        immediate/after in e; c: the event's own `trigger`, an option's its
+                        conditions; d: an option's conditions as written, any scope
 
 `c` is a condition as `triggers.normalize_trigger` writes it, present only where it asks something
 of our empire: in a country-scope event as written, in a ship or fleet event only what is inside
@@ -315,11 +316,30 @@ class Outcomes:
         return t if _asks(t) else None
 
     def shown_cond(self, block) -> dict | None:
-        """A condition block as written, normalised, in any scope: for display only."""
+        """A condition block as written, normalised, in any scope: for display only. A scope
+        block is opened, its tests named after it (`owner = { is_xenophobe = no }` →
+        `owner.is_xenophobe`); in a ship's event the owner (and controller) is our empire, its tests unprefixed."""
         if block is None:
             return None
+        ship = self.scope == 'ship'
+
+        def rename(t, prefix):
+            if t is None or 'leaf' not in t:
+                return t and {**t, 'args': [rename(a, prefix) for a in t['args']]}
+            return {**t, 'leaf': f'{prefix}.{t["leaf"]}'}
+
+        def opened(depth):
+            def go(k, v):
+                if not isinstance(v, (dict, list)) or depth > 3:
+                    return None
+                inner = normalize_trigger(v, self.dlc_triggers, self.variables, opened(depth + 1))
+                if inner is None:
+                    return {'leaf': k, 'value': 'scope'}
+                return inner if ship and depth == 0 and k in ('owner', 'controller') else rename(inner, k)
+            return go
+
         try:
-            t = normalize_trigger(as_trigger_dict(block), self.dlc_triggers, self.variables)
+            t = normalize_trigger(as_trigger_dict(block), self.dlc_triggers, self.variables, opened(0))
         except (TypeError, AttributeError, ValueError):
             return None
         return t if t and t != COMPLEX else None
@@ -411,6 +431,11 @@ class Outcomes:
                     if len(mods) == 1 else None
                 if c:
                     b['c'] = c
+                # the modifiers' conditions as written, whatever their scope: for display only
+                d = _and([self.shown_cond([x for x in m if x[0] not in ('add', 'factor')])
+                          for m in mods])
+                if d:
+                    b['d'] = d
             branches.append(b)
         if len(branches) == 1 and not branches[0]['cond']:
             return branches[0]['e']
@@ -577,6 +602,9 @@ class Outcomes:
                 c = _and([self.cond(_get(v, k)) for k in _OPTION_CONDITIONS])
                 if c:
                     o['c'] = c
+                d = _and([self.shown_cond(_get(v, k)) for k in _OPTION_CONDITIONS])
+                if d:
+                    o['d'] = d
                 o['e'] = self.walk(v, depth + 1, ctx, sdepth)
                 options.append(o)
         finally:
