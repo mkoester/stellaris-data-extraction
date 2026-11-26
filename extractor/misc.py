@@ -191,6 +191,16 @@ def random_name_keys(text: str) -> set[str]:
     return set(re.findall(r'"([A-Za-z][A-Za-z0-9_]*)"', text))
 
 
+_SPECIES_NAME = re.compile(r'\b(?:name|plural|home_planet|home_system)\s*=\s*"?([A-Za-z][A-Za-z0-9_-]*)"?')
+
+
+def species_name_keys(text: str) -> set[str]:
+    """The keys of a common/species_names file: a species' name, plural, home planet and home
+    system. A save names an empire by them (`AofB` with `SPEC_Backatta_system` = "Authority of
+    Ba Grax"), and the home system's text is no shortening of its key."""
+    return set(_SPECIES_NAME.findall(text))
+
+
 _SET_NAME = re.compile(r'\bset_name\s*=\s*"?([A-Za-z][A-Za-z0-9_.]*)"?')
 
 

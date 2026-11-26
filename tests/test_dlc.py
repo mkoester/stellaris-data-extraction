@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.misc import (_dlc_rows, host_checks, param_name_keys, prescripted_names, random_name_keys,
+from extractor.misc import (_dlc_rows, host_checks, param_name_keys, prescripted_names, random_name_keys, species_name_keys,
                             set_name_keys, set_name_params)
 
 # Shaped like dlc_metadata/dlc_info.txt (note the missing `=` the real file has once).
@@ -52,6 +52,16 @@ class TestPrescriptedNames(unittest.TestCase):
         keys = random_name_keys('voidworm_star_names = {\n\t\t"VOIDWORM_SYSTEM_12"\n\t\t"Achernar"\n\t}')
         loc = {'VOIDWORM_SYSTEM_12': 'Papqaqtet', 'tech_lasers_1': 'Red Lasers'}
         self.assertEqual(prescripted_names(loc, keys), [('VOIDWORM_SYSTEM_12', 'Papqaqtet')])
+
+    def test_species_names_are_localisation_keys(self):
+        # 4.6.0 common/species_names/species_01.txt; a save named an empire "AofB" with
+        # SPEC_Backatta_system, which the game shows as "Authority of Ba Grax" (2026-11-24)
+        keys = species_name_keys('backatta = {\n\t\tname = SPEC_Backatta\n\t\tplural = SPEC_Backatta_pl\n'
+                                 '\t\thome_planet = SPEC_Backatta_planet\n\t\thome_system = SPEC_Backatta_system\n'
+                                 '\t\tname_list =  "ART2"\n\t}')
+        self.assertEqual(keys, {'SPEC_Backatta', 'SPEC_Backatta_pl', 'SPEC_Backatta_planet', 'SPEC_Backatta_system'})
+        loc = {'SPEC_Backatta_system': 'Ba Grax', 'SPEC_Backatta': 'Backatta'}
+        self.assertEqual(prescripted_names(loc, keys), [('SPEC_Backatta', 'Backatta'), ('SPEC_Backatta_system', 'Ba Grax')])
 
     def test_scope_command_stays_a_placeholder(self):
         # 4.5.4 name loc: the separatists are "<species> Commune"; a save names the species under
