@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.27] - 2026-11-26
+
+### Added
+
+- `outcome` effects: `d`, every condition as written, whatever its scope, for display only —
+  each `if` branch's `limit` (planet and ship conditions were dropped: Living Metal Marvel's
+  `has_deposit_for` read as depending on your empire), weighted random branches and event
+  options. A scope block opens as `scope.test` (`leader.has_trait`) instead of staying opaque; in
+  a ship's event the owner and controller are our empire. `c` is unchanged.
+- `prescripted_name`: the `common/species_names` keys — name, plural, home planet and home
+  system (`SPEC_Backatta_system` is "Ba Grax", so `AofB` reads "Authority of Ba Grax"); 2006 rows
+  on 4.6.0.
+
 ## [0.1.26] - 2026-11-24
 
 ### Added
