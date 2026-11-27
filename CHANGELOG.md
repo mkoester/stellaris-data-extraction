@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `tenet_council_bypass`: the tenets that let one leader class of one ethic take any non-enclave
+  council position (Sacred Counsel, Chain of Command, Rationality), from the game rule
+  `can_leader_bypass_councilor_conditions`.
+
+### Fixed
+
+- `modifier_label.positive_is_good`: lower is better for every cooldown, empire size, amenities
+  usage, border friction and maximum market price increase key. 13 keys were coloured the wrong
+  way, among them Council Agenda Cooldown, Border Friction, Maximum Market Price Increase and
+  the ideologies' Empire Size from System.
+
 ## [0.1.27] - 2026-11-26
 
 ### Added

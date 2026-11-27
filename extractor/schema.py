@@ -2021,6 +2021,7 @@ CREATE TABLE deed (
 DROP TABLE IF EXISTS ideology_building;
 DROP TABLE IF EXISTS ideology_concept;
 DROP TABLE IF EXISTS tenet_unlock;
+DROP TABLE IF EXISTS tenet_council_bypass;
 DROP TABLE IF EXISTS tenet_tier_modifier;
 DROP TABLE IF EXISTS tenet_tier;
 DROP TABLE IF EXISTS tenet_swap;
@@ -2215,6 +2216,12 @@ CREATE TABLE tenet_unlock (
     kind       TEXT NOT NULL,                  -- edict, policy, agenda, decision, … (the loc link's type)
     target_key TEXT NOT NULL,                  -- e.g. "broadcasting_authoritarian"
     sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_council_bypass (
+    tenet_key    TEXT NOT NULL,                -- while active, this leader class of this ethic
+    leader_class TEXT,                         -- may occupy any non-enclave council position
+    ethic        TEXT,                         -- (game rule can_leader_bypass_councilor_conditions)
     FOREIGN KEY (tenet_key) REFERENCES tenet(key)
 );
 CREATE TABLE ideology_concept (

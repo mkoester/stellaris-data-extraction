@@ -2016,6 +2016,7 @@ CREATE TABLE deed (
 DROP TABLE IF EXISTS ideology_building;
 DROP TABLE IF EXISTS ideology_concept;
 DROP TABLE IF EXISTS tenet_unlock;
+DROP TABLE IF EXISTS tenet_council_bypass;
 DROP TABLE IF EXISTS tenet_tier_modifier;
 DROP TABLE IF EXISTS tenet_tier;
 DROP TABLE IF EXISTS tenet_swap;
@@ -2210,6 +2211,12 @@ CREATE TABLE tenet_unlock (
     kind       TEXT NOT NULL,                  -- edict, policy, agenda, decision, … (the loc link's type)
     target_key TEXT NOT NULL,                  -- e.g. "broadcasting_authoritarian"
     sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_council_bypass (
+    tenet_key    TEXT NOT NULL,                -- while active, this leader class of this ethic
+    leader_class TEXT,                         -- may occupy any non-enclave council position
+    ethic        TEXT,                         -- (game rule can_leader_bypass_councilor_conditions)
     FOREIGN KEY (tenet_key) REFERENCES tenet(key)
 );
 CREATE TABLE ideology_concept (
@@ -11629,7 +11636,7 @@ INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('leader_trait_spacebender', 'ship_jumpdrive_cooldown_mult', '-0.9', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 0);
 INSERT OR IGNORE INTO trait_modifier
                        (trait_key, modifier_key, modifier_value, sort_order)
                    VALUES ('trait_plasmic', 'logistic_growth_mult', '0.15', 0);
@@ -24951,7 +24958,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'pop_amenities_usage_no_happiness_mult', '-0.15', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_hive_ascetic', 'add_attunement_the_composer_of_strands', '60.0', 3);
@@ -26697,7 +26704,7 @@ INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'pop_amenities_usage_no_happiness_mult', '-0.15', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO civic_modifier
                            (civic_key, modifier_key, modifier_value, sort_order)
                        VALUES ('civic_machine_built_to_last', 'add_attunement_the_composer_of_strands', '60.0', 2);
@@ -43623,7 +43630,7 @@ INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_medical_2', 'planet', 'pop_amenities_usage_organic_mult', '-0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_medical_2', 'planet', 'clone_soldiers_sustained', '500.0', NULL, 2);
@@ -43652,7 +43659,7 @@ INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_medical_3', 'planet', 'pop_amenities_usage_organic_mult', '-0.1', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 0);
 INSERT OR IGNORE INTO building_modifier
                            (building_key, scope, modifier_key, value, condition, sort_order)
                        VALUES ('building_medical_3', 'planet', 'pop_environment_tolerance', '0.1', NULL, 2);
@@ -56771,7 +56778,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_pioneer_politics_finish', 'veto_cooldown_mult', '-0.2', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('agenda_preserve_the_order_finish', 'Preserve the Order Agenda', 'For us to truly prosper as a society, people must respect the judgment of the regime.', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_preserve_the_order_finish', 'planet_jobs_worker_produces_mult', '0.1', 0);
@@ -56983,7 +56990,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_self_maintenance_finish', 'pop_amenities_usage_no_happiness_mult', '-0.2', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('agenda_strong_on_our_own_finish', 'Strong on Our Own Agenda', 'We cannot rely on others, and must focus on making ourselves stronger.', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_strong_on_our_own_finish', 'logistic_growth_mult', '0.1', 0);
@@ -57083,7 +57090,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_we_come_in_peace_finish', 'country_border_friction_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_we_come_in_peace_finish', 'country_trust_cap_add', '25.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -57100,7 +57107,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_we_come_in_peace_forceofwill_finish', 'country_border_friction_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('agenda_we_come_in_peace_forceofwill_finish', 'country_trust_cap_add', '25.0', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -59469,7 +59476,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('champs_of_empire_gov_effect', 'empire_size_add', '-2.0', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('empire_size_add', 'Empire Size', 1);
+           VALUES ('empire_size_add', 'Empire Size', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('champs_of_empire_mil_effect', 'Champions of the Empire', NULL, NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('champs_of_empire_mil_effect', 'country_naval_cap_add', '2.0', 0);
@@ -61238,7 +61245,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_1_gestalt', 'pop_amenities_usage_no_happiness_mult', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('cs_storm_chasers_storm_frenzy_2', 'Storm Frenzy', 'The advent of the Big One sets us in a state of frenzy.', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_2', 'pop_happiness', '0.05', 0);
@@ -61252,7 +61259,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_2_gestalt', 'pop_amenities_usage_no_happiness_mult', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_2_gestalt', 'country_unity_produces_mult', '0.05', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -61270,7 +61277,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_3_gestalt', 'pop_amenities_usage_no_happiness_mult', '-0.05', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_frenzy_3_gestalt', 'country_unity_produces_mult', '0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -61292,7 +61299,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_storm_fruition_gestalt', 'pop_amenities_usage_no_happiness_mult', '-0.1', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('cs_storm_chasers_the_code', 'The Code', 'It is not supremacy that drives us, nor material gain. We live to test our limits, disciples of the bleeding edge of existence.', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_the_code', 'pop_happiness', '0.1', 0);
@@ -61306,7 +61313,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_the_code_gestalt', 'pop_amenities_usage_no_happiness_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('cs_storm_chasers_the_code_gestalt', 'country_unity_produces_mult', '0.2', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -66585,11 +66592,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_custodian', 'veto_cooldown_mult', '-0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_custodian', 'emergency_measures_cooldown_mult', '-0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('galactic_emperor', 'Galactic Emperor', '', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_emperor', 'veto_cost_mult', '-0.5', 0);
@@ -66598,11 +66605,11 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_emperor', 'veto_cooldown_mult', '-0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_emperor', 'emergency_measures_cooldown_mult', '-0.5', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('galactic_landmark_modifier', 'Galactic Tourist', 'The roads are dotted with landmarks. They offer us shelter, guidance, and make up the fabric of our stories.', NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('galactic_landmark_modifier', 'engineer_jobs_bonus_workforce_mult', '0.1', 0);
@@ -71965,7 +71972,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_relic_wormhole_key', 'ship_jumpdrive_cooldown_mult', '-0.5', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('paragon_relic_wormhole_key', 'ship_disengage_chance_mult', '0.75', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -72595,7 +72602,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('planet_growth_discouraged', 'pop_amenities_usage_organic_mult', '0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_organic_mult', 'Organic Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('planet_growth_discouraged', 'planet_pops_organics_upkeep_mult', '0.25', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -75845,7 +75852,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('relay_network_amenities_gestalt_edict_modifier', 'pop_amenities_usage_no_happiness_mult', '-0.1', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES ('relay_network_movement_edict_modifier', 'Networked Movement', NULL, NULL);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('relay_network_movement_edict_modifier', 'planet_resettlement_unemployed_mult', '0.5', 0);
@@ -78192,7 +78199,7 @@ INSERT OR REPLACE INTO static_modifier (key, name, description, tooltip) VALUES 
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('shattered_frontier_storm_gestalt_mod', 'pop_amenities_usage_no_happiness_mult', '-0.3', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('shattered_frontier_storm_gestalt_mod', 'planet_pop_assembly_mult', '-0.2', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -82338,7 +82345,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('unbidden_ritual', 'ship_jumpdrive_cooldown_mult', '-0.5', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 0);
 INSERT OR REPLACE INTO static_modifier_modifier
                          (static_key, modifier_key, modifier_value, sort_order) VALUES ('unbidden_ritual', 'catapult_spread_mult', '0.75', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -93926,7 +93933,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_archivism_exhibition_specialization', 'country_specimen_storage_cooldown_mult', '-0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_specimen_storage_cooldown_mult', 'Specimen Exhibition Cooldown Duration', 1);
+           VALUES ('country_specimen_storage_cooldown_mult', 'Specimen Exhibition Cooldown Duration', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_archivism_finish', 'tradition_archivism', 'finish', 'Archivism Traditions Finished', NULL, NULL, NULL, 'Each completed Category in your Collection grants -15% Relic Activation Cost', 6);
@@ -94070,7 +94077,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_diplomacy_entente_coordination', 'country_border_friction_mult', '-0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_diplomacy_entente_coordination#0', 'tr_diplomacy_entente_coordination', NULL, 'Entente Coordination', NULL, '{"leaf":"is_nomadic","value":"yes"}', 0, '1.0', NULL, 0);
@@ -94488,7 +94495,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_domination_adopt#0', 'pop_amenities_usage_no_happiness_mult', '-0.15', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_domination_colonial_viceroys', 'tradition_domination', 'normal', 'Colonial Viceroys', 'Our control over the colonies is dependent upon us finding capable and loyal individuals that can be trusted to enforce the will of the government.', NULL, NULL, NULL, 1);
@@ -95464,12 +95471,12 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_extraordinary_powers', 'veto_cooldown_mult', '-0.25', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_politics_extraordinary_powers', 'emergency_measures_cooldown_mult', '-0.25', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_politics_finish', 'tradition_politics', 'finish', 'Politics Traditions Finished', NULL, NULL, NULL, NULL, 6);
@@ -96194,7 +96201,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_versatility_spatial_optimization', 'pop_amenities_usage_no_happiness_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tradition
                    (key, category_key, role, name, description, possible_json, unlocks_agenda,
                     tooltip, sort_order) VALUES ('tr_versatility_material_analysis', 'tradition_versatility', 'normal', 'Material Analysis', 'Spatial phenomena are an interesting distraction, but the true wonders of the cosmos are found exclusively in the field of materials science.', '{"leaf":"has_tradition","value":"tr_versatility_spatial_optimization"}', NULL, NULL, 4);
@@ -97245,7 +97252,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('tr_synthetics_maintenance_protocols', 'pop_amenities_usage_robotic_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_robotic_mult', 'Robotic Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_robotic_mult', 'Robotic Pop Amenities Usage', 0);
 INSERT INTO tradition_swap
                    (id, owner_key, loc_key, name, description, trigger_json, inherit_effects,
                     weight, tooltip, sort_order) VALUES ('tr_synthetics_maintenance_protocols#0', 'tr_synthetics_maintenance_protocols', 'tr_synthetics_maintenance_protocols_situation', 'Maintenance Protocols', NULL, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"The Machine Age"},{"op":"not","args":[{"op":"or","args":[{"leaf":"has_country_flag","value":"synthetics_traditions_unlocked"},{"leaf":"has_origin","value":"origin_synthetic_fertility"}]}]}]}', 0, '1.0', 'During Synthesization
@@ -98792,7 +98799,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('drone_overdrive', 'pop_amenities_usage_no_happiness_mult', '0.15', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO edict (key, name, description, category, length, cost_json,
                potential_json, allow_json, unlocked_by_json, prerequisites_json, tooltip, sort_order)
                VALUES ('drone_overdrive_wilderness', 'Symbiont Overdrive', 'Our biomes will be made more competitive, as more resources are required.', 'edicts', -1, '{"cost": {"unity": 10.0}, "upkeep": {"unity": 10.0}}', '{"op":"and","args":[{"leaf":"is_wilderness_empire","value":"yes"},{"op":"or","args":[{"leaf":"has_active_tradition","value":"tr_domination_drone_network"},{"leaf":"has_active_tradition","value":"tr_domination_wilderness_network"}]}]}', NULL, '["tr_domination_drone_network", "tr_domination_wilderness_network"]', NULL, NULL, 18);
@@ -98805,7 +98812,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('drone_overdrive_wilderness', 'pop_amenities_usage_no_happiness_mult', '0.15', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO edict (key, name, description, category, length, cost_json,
                potential_json, allow_json, unlocked_by_json, prerequisites_json, tooltip, sort_order)
                VALUES ('capacity_subsidies', 'Capacity Subsidies', 'This Edict allows short-term overloading of energy grids, letting power plants across our empire run at increased capacity.', 'edicts', -1, '{"cost": {"unity": 30.0}, "upkeep": {"unity": 30.0}}', '{"leaf":"is_wilderness_empire","value":"no"}', NULL, NULL, '["tech_power_hub_1"]', NULL, 19);
@@ -99540,7 +99547,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('sight_beyond_sight', 'ship_jumpdrive_cooldown_mult', '-0.15', NULL, 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('sight_beyond_sight', 'catapult_spread_mult', '0.15', NULL, 4);
@@ -100867,7 +100874,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace', 'country_border_friction_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace', 'country_trust_cap_add', '25.0', NULL, 1);
@@ -100887,7 +100894,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace#finish', 'country_border_friction_mult', '-0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace#finish', 'country_trust_cap_add', '25.0', NULL, 1);
@@ -100910,7 +100917,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace_forceofwill', 'country_border_friction_mult', '-0.1', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace_forceofwill', 'country_trust_cap_add', '25.0', NULL, 1);
@@ -100940,7 +100947,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace_forceofwill#finish', 'country_border_friction_mult', '-0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_we_come_in_peace_forceofwill#finish', 'country_trust_cap_add', '25.0', NULL, 1);
@@ -102278,7 +102285,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_pioneer_politics', 'veto_cooldown_mult', '-0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_pioneer_politics#finish', 'resolutions_cost_mult', '-0.2', NULL, 0);
@@ -102288,7 +102295,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_pioneer_politics#finish', 'veto_cooldown_mult', '-0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 1);
+           VALUES ('veto_cooldown_mult', 'Veto Cooldown', 0);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
                VALUES ('agenda_self_maintenance', 'Self Maintenance', 'Permit local clustering and patching of environmental adaptation protocols.', '7000.0', 3600, 10800, '{"op":"and","args":[{"leaf":"host_has_dlc","value":"Galactic Paragons"},{"leaf":"is_machine_empire","value":"yes"}]}', '{"leaf":"has_tradition","value":"tr_versatility_adopt"}', '["tr_versatility_adopt"]', NULL, 55);
@@ -102301,7 +102308,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_self_maintenance', 'pop_amenities_usage_no_happiness_mult', '-0.05', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_self_maintenance#finish', 'planet_pop_assembly_mult', '0.1', NULL, 0);
@@ -102311,7 +102318,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('agenda_self_maintenance#finish', 'pop_amenities_usage_no_happiness_mult', '-0.2', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO council_agenda (key, name, description, cost, finish_days, cooldown_days,
                potential_json, allow_json, unlocked_by_json, effect_tooltip, sort_order)
                VALUES ('agenda_gestalt_boost_growth', 'Growth Revision', 'Coordinating our and colonies must be prioritized.', '7000.0', 3600, 10800, '{"leaf":"is_gestalt","value":"yes"}', '{"leaf":"has_tradition","value":"tr_synchronicity_adopt"}', '["tr_synchronicity_adopt"]', NULL, 56);
@@ -103729,7 +103736,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_cooperative', 'country_border_friction_mult', '-0.5', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_cooperative', 'operations_cost_mult', '0.25', NULL, 3);
@@ -103780,7 +103787,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_isolationist', 'country_border_friction_mult', '2.0', NULL, 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_isolationist', 'external_leader_pool_add', '-2.0', NULL, 5);
@@ -103815,7 +103822,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_expansionist', 'country_border_friction_mult', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_expansionist', 'ideological_push_mult', '0.1', NULL, 3);
@@ -103840,7 +103847,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_expansionist_wilderness', 'country_border_friction_mult', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_expansionist_wilderness', 'ideological_push_mult', '0.1', NULL, 3);
@@ -103939,7 +103946,7 @@ INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_animosity', 'country_border_friction_mult', '1.0', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tradition_modifier
                    (owner_key, modifier_key, modifier_value, potential_json, sort_order)
                    VALUES ('diplo_stance_animosity', 'diplo_weight_rivals_mult', '0.05', NULL, 3);
@@ -119844,7 +119851,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_amenities_usage_base', '0.5', 4);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_base', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_base', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO species_right_modifier (right_key, modifier, value,
                            sort_order) VALUES ('living_standard_decadent', 'pop_cat_ruler_political_power', '7.0', 5);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -124779,7 +124786,7 @@ INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate', 'planet', 'pop_amenities_usage_no_happiness_mult', '0.1', '{"leaf":"trait_is_gestalt_check","value":"yes"}', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate', 'sector', 'planet_jobs_consumer_goods_upkeep_mult', '0.05', '{"leaf":"trait_is_gestalt_check","value":"no"}', 2);
@@ -124789,7 +124796,7 @@ INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate', 'sector', 'pop_amenities_usage_no_happiness_mult', '0.05', '{"leaf":"trait_is_gestalt_check","value":"yes"}', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO leader_trait (key, name, description, leader_classes, sort_order)
                    VALUES ('leader_trait_profligate_2', NULL, NULL, 'commander,official,scientist', 290);
 INSERT INTO leader_trait_modifier
@@ -124801,7 +124808,7 @@ INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate_2', 'planet', 'pop_amenities_usage_no_happiness_mult', '0.25', '{"leaf":"trait_is_gestalt_check","value":"yes"}', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate_2', 'sector', 'planet_jobs_consumer_goods_upkeep_mult', '0.125', '{"leaf":"trait_is_gestalt_check","value":"no"}', 2);
@@ -124811,7 +124818,7 @@ INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_profligate_2', 'sector', 'pop_amenities_usage_no_happiness_mult', '0.125', '{"leaf":"trait_is_gestalt_check","value":"yes"}', 3);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT OR REPLACE INTO leader_trait (key, name, description, leader_classes, sort_order)
                    VALUES ('leader_trait_procrastinator', 'Procrastinator', 'This leader prefers to spend their time on non-essential tasks.', 'commander,official,scientist', 291);
 INSERT INTO leader_trait_modifier
@@ -131428,7 +131435,7 @@ INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_disciple_of_the_end', 'fleet', 'ship_jumpdrive_cooldown_mult', '-0.5', NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 1);
+           VALUES ('ship_jumpdrive_cooldown_mult', 'Jump Drive Cooldown', 0);
 INSERT INTO leader_trait_modifier
                        (trait_key, scope, modifier_key, modifier_value, potential_json, sort_order)
                        VALUES ('leader_trait_disciple_of_the_end', 'fleet', 'ship_damage_against_starbases_mult', '0.5', NULL, 1);
@@ -146555,7 +146562,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_influence_produces_mult', 'Monthly Influence', 1);
 INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_galcom_2', 'country', 'emergency_measures_cooldown_mult', '-0.25', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 1);
+           VALUES ('emergency_measures_cooldown_mult', 'Emergency Measures Cooldown', 0);
 INSERT INTO menace_perk (key, name, description, sort_order) VALUES ('menp_defender_federation_2', 'Comrades in Arms', 'We protect the galaxy, but it is good to know that others protect us too. By relying upon each other, we all become stronger.', 23);
 INSERT INTO menace_perk_modifier (perk_key, scope, modifier_key, modifier_value, sort_order) VALUES ('menp_defender_federation_2', 'country', 'ship_federation_territory_fire_rate_mult', '0.15', 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
@@ -146927,16 +146934,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('authoritarian', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147059,16 +147066,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('egalitarian', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147158,16 +147165,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_militarist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147257,16 +147264,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophobe_pacifist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147356,16 +147363,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('xenophile', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147455,16 +147462,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('militarist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147554,16 +147561,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('pacifist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147653,16 +147660,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('spiritualist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -147752,16 +147759,16 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', NULL, NULL, 'pop_ethics_shift_speed_mult', '1.0', NULL, '{"op":"and","args":[{"leaf":"exists","value":"owner"},{"leaf":"from","value":"scope"}]}', 17);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', NULL, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 18);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 1, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.05', NULL, '{"leaf":"owner","value":"scope"}', 19);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 2, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.1', NULL, '{"leaf":"owner","value":"scope"}', 20);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'system', 3, 'Inside Owned Systems:', 'system_empire_size_mult', '-0.15', NULL, '{"leaf":"owner","value":"scope"}', 21);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('system_empire_size_mult', 'Empire Size from System', 1);
+           VALUES ('system_empire_size_mult', 'Empire Size from System', 0);
 INSERT INTO ideology_modifier (ideology_key, scope, level, header, modifier_key, modifier_value, scaled_by, potential_json, sort_order) VALUES ('materialist', 'pop_group', NULL, 'From Ideological Disruption:', 'planet_pops_unity_upkeep_add', '0.5', 'owner.disruption_effect_multiplier', '{"leaf":"owner","value":"scope"}', 22);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('planet_pops_unity_upkeep_add', 'Unity Upkeep per 100 Pops', 0);
@@ -148155,7 +148162,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 1, 'country', 'council_agenda_finishing_effect_duration_mult', '0.1', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
@@ -148167,7 +148174,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 2, 'country', 'council_agenda_finishing_effect_duration_mult', '0.2', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
@@ -148179,7 +148186,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_early_activation_cost_mult', 'Council Agenda Early Launch Cost', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'council_agenda_cooldown_mult', '-0.3', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_epistocracy', 3, 'country', 'council_agenda_finishing_effect_duration_mult', '0.3', NULL, NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_finishing_effect_duration_mult', 'Council Agenda Effect Duration', 1);
@@ -149669,7 +149676,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_moral_pacifism', 'Moral Pacifism', 'Peace is the paramount moral value. Every action should serve to prevent harm and reduce conflict.', '["ethic_pacifist"]', 'default', NULL, NULL, 1, NULL, NULL, 44);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'country_border_friction_mult', '-0.1', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 1, 'country', 'pop_civilian_bonus_workforce_mult', '0.005', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
@@ -149681,7 +149688,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'country_border_friction_mult', '-0.2', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 2, 'country', 'pop_civilian_bonus_workforce_mult', '0.01', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
@@ -149693,7 +149700,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('empire_size_penalty_mult', 'Empire Size Effect', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'country_border_friction_mult', '-0.3', NULL, NULL, 0);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_border_friction_mult', 'Border Friction', 1);
+           VALUES ('country_border_friction_mult', 'Border Friction', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_moral_pacifism', 3, 'country', 'pop_civilian_bonus_workforce_mult', '0.015', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_civilian_bonus_workforce_mult', 'Job Efficiency for Civilians', 1);
@@ -150102,7 +150109,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 1, 'country', 'country_market_max_price_mult', '-0.15', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 1, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_trade_fee', 'Market Fee', 0);
@@ -150111,7 +150118,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 2, 'country', 'country_market_max_price_mult', '-0.3', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 2, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_trade_fee', 'Market Fee', 0);
@@ -150120,7 +150127,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('ships_upkeep_mult', 'Ship Upkeep', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 3, 'country', 'country_market_max_price_mult', '-0.45', NULL, '{"leaf":"is_at_war","value":"yes"}', 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 1);
+           VALUES ('country_market_max_price_mult', 'Maximum Market Price Increase', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_war_bonds', 3, 'country', 'country_trade_fee', '-0.05', NULL, '{"leaf":"is_at_war","value":"yes"}', 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('country_trade_fee', 'Market Fee', 0);
@@ -150132,7 +150139,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 1, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
@@ -150144,7 +150151,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 2, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
@@ -150156,7 +150163,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_authoritarian', 3, 'country', 'agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_preserve_the_order_forceofwill_finishing_effect_strength_mult', 'Preserve the Order Launch Effectiveness', 1);
@@ -150171,7 +150178,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 1, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
@@ -150183,7 +150190,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 2, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
@@ -150195,7 +150202,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_egalitarian', 3, 'country', 'agenda_give_and_take_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_give_and_take_forceofwill_finishing_effect_strength_mult', 'Give and Take Launch Effectiveness', 1);
@@ -150210,7 +150217,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 1, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
@@ -150222,7 +150229,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 2, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
@@ -150234,7 +150241,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophobe', 3, 'country', 'agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_strong_on_our_own_forceofwill_finishing_effect_strength_mult', 'Strong on Our Own Launch Effectiveness', 1);
@@ -150249,7 +150256,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 1, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
@@ -150264,7 +150271,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 2, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
@@ -150279,7 +150286,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_xenophile', 3, 'country', 'agenda_open_arms_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_open_arms_forceofwill_finishing_effect_strength_mult', 'Open Arms Launch Effectiveness', 1);
@@ -150297,7 +150304,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 1, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
@@ -150309,7 +150316,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 2, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
@@ -150321,7 +150328,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_militarist', 3, 'country', 'agenda_display_of_power_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_display_of_power_forceofwill_finishing_effect_strength_mult', 'Display of Power Launch Effectiveness', 1);
@@ -150336,7 +150343,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 1, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.1', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
@@ -150351,7 +150358,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 2, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.2', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
@@ -150366,7 +150373,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_pacifist', 3, 'country', 'agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', '0.4', '{"op":"and","args":[{"leaf":"is_gestalt","value":"no"},{"leaf":"is_nomadic","value":"no"}]}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_we_come_in_peace_forceofwill_finishing_effect_strength_mult', 'We Come in Peace Launch Effectiveness', 1);
@@ -150384,7 +150391,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 1, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
@@ -150396,7 +150403,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 2, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
@@ -150408,7 +150415,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_materialist', 3, 'country', 'agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_progressive_growth_forceofwill_finishing_effect_strength_mult', 'Progressive Growth Launch Effectiveness', 1);
@@ -150423,7 +150430,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'council_agenda_cooldown_mult', '-0.05', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 1, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.1', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
@@ -150435,7 +150442,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'council_agenda_cooldown_mult', '-0.1', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 2, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.2', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
@@ -150447,7 +150454,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('council_agenda_progress_speed', 'Council Agenda Speed', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'council_agenda_cooldown_mult', '-0.2', NULL, NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 1);
+           VALUES ('council_agenda_cooldown_mult', 'Council Agenda Cooldown', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_strategism_spiritualist', 3, 'country', 'agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', '0.4', '{"leaf":"is_gestalt","value":"no"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('agenda_a_higher_purpose_forceofwill_finishing_effect_strength_mult', 'A Higher Purpose Launch Effectiveness', 1);
@@ -150731,7 +150738,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 1, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.05', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 1, 'Grants access to the Sacrifice: Dutiful Edict');
 INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 1, 'edict', 'sacrifice_dutiful_1', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 2, 'country', 'tenet_sacrifism_ideological_strength_add', '0.2', '{"leaf":"is_death_cult_empire","value":"yes"}', NULL, 0);
@@ -150742,7 +150749,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 2, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.1', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 2, 'Grants access to the Sacrifice: Dutiful Edict');
 INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 2, 'edict', 'sacrifice_dutiful_2', 1);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 3, 'country', 'tenet_sacrifism_ideological_strength_add', '0.3', '{"leaf":"is_death_cult_empire","value":"yes"}', NULL, 0);
@@ -150753,7 +150760,7 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('pop_amenities_usage_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_sacrifism', 3, 'country', 'pop_amenities_usage_no_happiness_mult', '-0.2', '{"leaf":"is_gestalt","value":"yes"}', NULL, 2);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
-           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 1);
+           VALUES ('pop_amenities_usage_no_happiness_mult', 'Pop Amenities Usage', 0);
 INSERT INTO tenet_tier (tenet_key, tier, effect_text) VALUES ('tenet_sacrifism', 3, 'Grants access to the Sacrifice: Dutiful Edict');
 INSERT INTO tenet_unlock (tenet_key, tier, kind, target_key, sort_order) VALUES ('tenet_sacrifism', 3, 'edict', 'sacrifice_dutiful_3', 2);
 INSERT INTO tenet (key, name, description, ethics_json, priority, source_civic, potential_json, first_tier, unlock_text, lock_text, sort_order) VALUES ('tenet_environmentalism', 'Environmentalism', 'The natural world sustains us, so we must conserve and protect it in return.', '[]', 'high', 'civic_environmentalist', '{"leaf":"has_valid_civic","value":"civic_environmentalist"}', 1, 'Cannot use the Planetary Strip Mining and Planetary Reprocessing Actions', NULL, 79);
@@ -151156,6 +151163,9 @@ INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
 INSERT INTO tenet_tier_modifier (tenet_key, tier, scope, modifier_key, modifier_value, potential_json, possible_json, sort_order) VALUES ('tenet_propagandism_spiritualist', 3, 'country', 'advocate_ideological_strength_mult', '0.3', '{"leaf":"is_gestalt","value":"no"}', NULL, 1);
 INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)
            VALUES ('advocate_ideological_strength_mult', 'Ideological Strength from Advocate', 1);
+INSERT INTO tenet_council_bypass (tenet_key, leader_class, ethic) VALUES ('tenet_sacred_counsel', 'official', 'ethic_spiritualist');
+INSERT INTO tenet_council_bypass (tenet_key, leader_class, ethic) VALUES ('tenet_chain_of_command', 'commander', 'ethic_militarist');
+INSERT INTO tenet_council_bypass (tenet_key, leader_class, ethic) VALUES ('tenet_rationality', 'scientist', 'ethic_materialist');
 INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_hall', '{"leaf":"owner","value":"scope"}', 0);
 INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_institute', '{"leaf":"owner","value":"scope"}', 1);
 INSERT INTO ideology_building (building_key, potential_json, sort_order) VALUES ('building_ideological_citadel', '{"leaf":"owner","value":"scope"}', 2);

@@ -156,7 +156,7 @@ Clausewitz script → nested Python dicts/lists.
 
 All tables use `CREATE TABLE IF NOT EXISTS` except those that are fully regenerated each run (use `DROP TABLE IF EXISTS` first):
 
-**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `technology_unlock`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `crisis_path`, `crisis_path_perk`, `crisis_path_level`, `crisis_path_objective`, `crisis_level`, `crisis_level_perk`, `crisis_objective`, `menace_perk`, `menace_perk_modifier`, `ideology`, `ideology_strength_level`, `ideology_modifier`, `ideology_strength_source`, `ideology_concept`, `tenet`, `tenet_swap`, `tenet_tier`, `tenet_tier_modifier`, `tenet_unlock`, `ideology_building`, `specimen`, `specimen_modifier`, `specimen_resource`, `building_conditional_modifier`, `starbase_part`, `starbase_part_modifier`, `ship_size`, `section_template`, `component_template`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `megastructure`, `megastructure_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
+**Regenerated each run:** `modifier_label`, `ethic_tag_label`, `ethic`, `ethic_modifier`, `ethic_tag`, `ethic_policy_restriction`, `civic`, `civic_modifier`, `civic_requirement`, `granted_trait`, `origin`, `origin_modifier`, `origin_requirement`, `planet_class`, `prescripted_empire`, `prescripted_empire_item`, `precursor`, `precursor_relic`, `precursor_relic_modifier`, `precursor_relic_passive_text`, `precursor_relic_resource`, `precursor_relic_active_modifier`, `precursor_reward_modifier`, `precursor_building`, `precursor_building_resource`, `precursor_building_modifier`, `precursor_technology`, `precursor_homeworld_reward`, `deposit`, `deposit_resource`, `deposit_modifier`, `precursor_system`, `precursor_planet`, `precursor_planet_deposit`, `precursor_planet_modifier`, `precursor_megastructure`, `technology`, `technology_unlock`, `tech_repeatable`, `tech_repeatable_modifier`, `tech_fallen_empire`, `game_define`, `tradition_category`, `tradition_category_desc`, `tradition`, `tradition_prereq`, `tradition_swap`, `tradition_modifier`, `ascension_perk`, `edict`, `council_agenda`, `federation_type`, `federation_type_perk`, `federation_perk`, `federation_perk_modifier`, `federation_law_category`, `federation_law`, `resolution_group`, `resolution_category`, `resolution`, `agreement_term`, `agreement_term_value`, `agreement_preset`, `patron`, `patron_accord`, `patron_accord_modifier`, `patron_calling_of`, `patron_deed_of`, `calling`, `calling_tier`, `deed`, `crisis_path`, `crisis_path_perk`, `crisis_path_level`, `crisis_path_objective`, `crisis_level`, `crisis_level_perk`, `crisis_objective`, `menace_perk`, `menace_perk_modifier`, `ideology`, `ideology_strength_level`, `ideology_modifier`, `ideology_strength_source`, `ideology_concept`, `tenet`, `tenet_swap`, `tenet_tier`, `tenet_tier_modifier`, `tenet_unlock`, `tenet_council_bypass`, `ideology_building`, `specimen`, `specimen_modifier`, `specimen_resource`, `building_conditional_modifier`, `starbase_part`, `starbase_part_modifier`, `ship_size`, `section_template`, `component_template`, `starbase_level`, `starbase_module_resource`, `starbase_building_resource`, `megastructure`, `megastructure_resource`, `strategic_resource`, `personality`, `attitude`, `opinion_modifier`
 
 Drop order matters for FK integrity:
 ```sql
@@ -175,15 +175,19 @@ Full schema: see the `SCHEMA` string in `extractor/schema.py`.
 ## Key Constants (extend as new cases are found)
 
 ### `INVERTED_MODIFIERS` (frozenset)
-Modifier keys where a more positive value is WORSE (stored with `positive_is_good = 0`):
+Modifier keys where a more positive value is WORSE (stored with `positive_is_good = 0`) that the
+heuristic in `_write_modifier_label` misses. The heuristic, used where `common/scripted_modifiers`
+sets no `good` flag: a key matching `_(cost|upkeep|fee)(_|$)`, `crime`, `devastation`, `cooldown`,
+`empire_size` (not `fallen_empire_size`, a ship size's damage factor), `amenities_usage`, `friction`
+or `max_price` (checked against every key in 4.6's `modifiers.log`, 2026-11-27).
 - Upkeep/cost: `leaders_upkeep_mult`, `planet_pops_*_upkeep_mult`, `pop_resettlement_cost_mult`
-- Resource consumption: `pop_amenities_usage_add`, `pop_amenities_usage_mult`, `pop_housing_usage_mult`
-- Administrative: `species_empire_size_mult`, `empire_size_pops_mult`
+- Resource consumption: `pop_housing_usage_mult`
+- Factions: `faction_demands_unmet_mult`
 - Influence costs: `country_claim_influence_cost_mult`, `country_starbase_influence_cost_mult`
 - Edict costs: `edicts_upkeep_mult`, `edicts_cost_mult`
 - Costs / fees: `terraforming_cost_mult`, `country_trade_fee`
 - War: `country_war_exhaustion_mult`
-- Combat: `army_damage_taken_mult`, `gravity_snare_cooldown_mult`, `gravity_snare_cost_mult`, `ships_upkeep_mult`, `shroud_delve_cooldown`
+- Combat: `army_damage_taken_mult`, `gravity_snare_cost_mult`, `ships_upkeep_mult`
 - Trait slots: `negative_leader_traits_species`
 
 ### `MODIFIER_LOC_OVERRIDES` (dict)
@@ -714,7 +718,10 @@ only while it holds (Self-Sufficiency outside the Galactic Community). Texts are
 `tenet_tier`; `tenet_unlock` takes the `['kind:key']` links in those texts' raw loc, `$refs$`
 expanded. Clauses a running game fills in ("If Rival Ideology: +%", "(Max. +)") are dropped
 (`drop_unresolved`). Engine-only, in no file: which strength level opens a tenet slot or raises
-its Intensity. `ideology_building`: buildings whose `potential` mentions `ideology`.
+its Intensity. `tenet_council_bypass`: the game rule `can_leader_bypass_councilor_conditions`
+(`common/game_rules`), one row per `AND { leader_class has_ethic owner? = { has_active_tenet } }`:
+while the tenet is active, that leader class of that ethic may take any non-enclave council
+position (Sacred Counsel, Chain of Command, Rationality on 4.6). `ideology_building`: buildings whose `potential` mentions `ideology`.
 
 ## The Shroud (`extract_shroud`, shroud.py)
 

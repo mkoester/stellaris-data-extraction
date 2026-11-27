@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.ideologies import (adopted_level, concept_links, custom_tooltips, drop_unresolved,
+from extractor.ideologies import (adopted_level, concept_links, council_bypasses, custom_tooltips, drop_unresolved,
                                   ethic_of, humanize_ref, inline_expanded, strength_source,
                                   tier_blocks)
 
@@ -96,6 +96,25 @@ class TestDropUnresolved(unittest.TestCase):
         self.assertEqual(drop_unresolved('Opinion: ++0.1 (Max. +)'), 'Opinion: +0.1')
         self.assertEqual(drop_unresolved('Martyr ()'), 'Martyr')
         self.assertEqual(drop_unresolved('Opinion: +0.1 (Max. +50)'), 'Opinion: +0.1 (Max. +50)')
+
+
+class TestCouncilBypasses(unittest.TestCase):
+    def test_one_row_per_and_naming_a_tenet(self):
+        rule = parse('r = { OR = { '
+                     'AND = { leader_class = official has_ethic = ethic_spiritualist '
+                     'owner? = { has_active_tenet = tenet_sacred_counsel } } '
+                     'AND = { leader_class = scientist has_ethic = ethic_materialist '
+                     'owner? = { has_active_tenet = tenet_rationality } } '
+                     'AND = { leader_class = envoy } } }')['r']
+        self.assertEqual(council_bypasses(rule), [
+            ('tenet_sacred_counsel', 'official', 'ethic_spiritualist'),
+            ('tenet_rationality', 'scientist', 'ethic_materialist')])
+
+    def test_single_and_and_missing_rule(self):
+        rule = parse('r = { AND = { leader_class = commander '
+                     'owner = { has_active_tenet = tenet_x } } }')['r']
+        self.assertEqual(council_bypasses(rule), [('tenet_x', 'commander', None)])
+        self.assertEqual(council_bypasses(None), [])
 
 
 if __name__ == '__main__':
