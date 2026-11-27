@@ -47,9 +47,25 @@ class TechUnlocksTest(unittest.TestCase):
         }
         self.assertEqual(unlock_rows(techs, sources, LOC), [
             ('tech_dyson', 'line', 'allow_dyson_swarm', 'Unlocks Megastructure: Dyson Swarm',
-             'Harvest a star.', 0),
-            ('tech_physics_1', 'building', 'building_field_dynamics', 'Field Dynamics Center', None, 0),
-            ('tech_shields_2', 'component', 'SHIELD_2', 'Improved Deflectors', None, 0),
+             'Harvest a star.', 0, None),
+            ('tech_physics_1', 'building', 'building_field_dynamics', 'Field Dynamics Center', None, 0, None),
+            ('tech_shields_2', 'component', 'SHIELD_2', 'Improved Deflectors', None, 0, None),
+        ])
+
+    def test_an_object_shown_only_for_some_empires_carries_its_condition(self):
+        # 4.6 buildings/21_wilderness_buildings.txt: the Chloroplastic Cyst beside the Energy Nexus
+        techs = {'tech_power_hub_2': {'area': 'physics'}}
+        sources = {'building': [{
+            'building_energy_nexus': {'prerequisites': ['tech_power_hub_2'],
+                                      'show_tech_unlock_if': {'is_wilderness_empire': 'no'}},
+            'building_bioelectric_stimulator_4': {'prerequisites': ['tech_power_hub_2'],
+                                                  'show_tech_unlock_if': {'is_wilderness_empire': 'yes'}},
+        }]}
+        loc = {'building_energy_nexus': 'Energy Nexus',
+               'building_bioelectric_stimulator_4': 'Chloroplastic Cyst'}
+        self.assertEqual([(r[2], r[6]) for r in unlock_rows(techs, sources, loc)], [
+            ('building_bioelectric_stimulator_4', '{"leaf":"is_wilderness_empire","value":"yes"}'),
+            ('building_energy_nexus', '{"leaf":"is_wilderness_empire","value":"no"}'),
         ])
 
     def test_features_named_and_a_derived_object_named_by_an_own_line_left_out(self):

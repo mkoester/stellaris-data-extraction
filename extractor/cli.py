@@ -578,7 +578,7 @@ def _extract(install_dir: Path, args, sql_path, sqlite_path, stdout_mode, branch
     extract_focus(install_dir, loc, w, progress)
     print(f"\n[situations + special projects] {install_dir / 'common' / 'situations'}", file=progress)
     extract_situations(install_dir, loc, w, progress, scripted_vars, outcomes.title,
-                       script_loader(inline_scripts_dir))
+                       script_loader(inline_scripts_dir), outcomes.events)
     print(f"\n[event chains] {install_dir / 'common' / 'event_chains'}", file=progress)
     extract_event_chains(install_dir, loc, w, progress)
     print(f"\n[outcomes] anomalies, special projects, dig sites → events → effects", file=progress)

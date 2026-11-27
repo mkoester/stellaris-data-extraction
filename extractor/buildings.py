@@ -12,7 +12,7 @@ from .modifiers import _write_modifier_label
 from .politics import expand_inline
 from .situations import outcomes_json
 from .traditions import dumps
-from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
+from .triggers import _scripted_trigger_index, dlc_trigger_map, empire_trigger, normalize_trigger
 from .values import _as_blocks, _flatten_text, _resolve_modifier_float, _resolve_var, _to_list
 from .writer import Writer
 
@@ -58,9 +58,10 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
             owner_type = bdef.get('owner_type')
             owner_type = owner_type if owner_type in OWNER_TYPES else None
             req = owned_requirements(bdef, dlc, variables) if owner_type else (None,) * 4
+            potential = None if owner_type else dumps(empire_trigger(bdef.get('potential'), dlc, variables))
             w.execute(
-                "INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (key, name, category, desc, owner_type, *req, order))
+                "INSERT OR REPLACE INTO building (key, name, category, description, owner_type, owner_trigger_json, host_trigger_json, allow_json, prerequisites_json, potential_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (key, name, category, desc, owner_type, *req, potential, order))
             order += 1
             for r_order, (kind, resource, amt) in enumerate(
                     _building_resources(bdef, variables, script_loader(inline_scripts_dir))):
@@ -68,6 +69,8 @@ def extract_buildings_ref(install_dir: Path, loc: dict[str, str],
                     """INSERT OR IGNORE INTO building_resource
                            (building_key, kind, resource, amount, sort_order) VALUES (?, ?, ?, ?, ?)""",
                     (key, kind, resource, amt, r_order))
+            _write_variants(w, 'building_resource', key,
+                            resource_variants(bdef, variables, script_loader(inline_scripts_dir), dlc))
             _write_build_time(w, key, bdef, variables)
             for j_order, (jk, amt) in enumerate(_building_inline_jobs(bdef, variables, inline_scripts_dir)):
                 job = re.sub(r'^job_', '', re.sub(r'_add$', '', jk))
@@ -118,6 +121,7 @@ def extract_resources(directory: Path, table: str, scripted_vars: dict[str, floa
     `@variables` resolve per file (4.5.2 `@base_cost`: 300 in rural districts, 30 in wilderness
     ones)."""
     n = 0
+    dlc = dlc_trigger_map(_scripted_trigger_index(directory.parents[1]))
     for f in sorted(directory.glob('*.txt')):
         try:
             data = parse_file(f)
@@ -137,6 +141,8 @@ def extract_resources(directory: Path, table: str, scripted_vars: dict[str, floa
                 w.execute(f"INSERT OR REPLACE INTO {table} (key, kind, resource, amount) VALUES (?, ?, ?, ?)",
                           (key, kind, resource, amt))
                 n += 1
+            _write_variants(w, table, key,
+                            resource_variants(ddef, variables, script_loader(inline_scripts_dir), dlc))
             _write_build_time(w, key, ddef, variables)
             if jobs_table:
                 for jk, amt in _building_inline_jobs(ddef, variables, inline_scripts_dir):
@@ -146,6 +152,15 @@ def extract_resources(directory: Path, table: str, scripted_vars: dict[str, floa
     w.commit()
     if verbose:
         print(f"  {table}: {n} rows")
+
+
+def _write_variants(w: Writer, source: str, key: str,
+                    rows: list[tuple[str, int, str, float, str | None]]) -> None:
+    """`resource_variants` rows of one definition → resource_variant, under its `*_resource`
+    table's name."""
+    for order, (kind, block, resource, amt, trig) in enumerate(rows):
+        w.execute("INSERT OR REPLACE INTO resource_variant (source, key, kind, block, resource, amount, trigger_json, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                  (source, key, kind, block, resource, amt, trig, order))
 
 
 def _write_build_time(w: Writer, key: str, ddef: dict, variables: dict[str, float]) -> None:
@@ -195,6 +210,39 @@ def _building_resources(bdef: dict, variables: dict[str, float], load_script=Non
             amt = _resolve_var(raw, variables)
             if amt is not None:
                 rows.append((kind, resource, amt))
+    return rows
+
+
+def resource_variants(bdef: dict, variables: dict[str, float], load_script=None,
+                      dlc: dict[str, str] | None = None
+                      ) -> list[tuple[str, int, str, float, str | None]]:
+    """Every block of a kind (cost, upkeep, produces) that has a triggered block, each on its own:
+    [(kind, block, resource, amount, trigger_json)], `block` numbering the kind's blocks in file
+    order (inline scripts after the definition's own), the amount times the block's `mult`. The
+    game sums every block whose trigger holds; an untriggered one (trigger_json NULL) always
+    applies. A kind whose blocks are all untriggered is left out: its `*_resource` row is all
+    there is (4.6: the Augmentation Center's minerals for a settled empire, rare crystals ×0.1 for
+    a nomad)."""
+    res = bdef.get('resources')
+    if isinstance(res, list):
+        res = next((b for b in reversed(res) if isinstance(b, dict)), None)
+    if not isinstance(res, dict):
+        return []
+    inlined = _expand_inline_refs(res, load_script)
+    rows: list[tuple[str, int, str, float, str | None]] = []
+    for kind in ('cost', 'upkeep', 'produces'):
+        blocks = [b for src in (res, *inlined) for b in _as_blocks(src.get(kind)) if isinstance(b, dict)]
+        if not any('trigger' in b for b in blocks):
+            continue
+        for i, block in enumerate(blocks):
+            mult = _resolve_var(block.get('mult'), variables) if 'mult' in block else 1.0
+            trig = dumps(empire_trigger(block.get('trigger'), dlc, variables))
+            for resource, raw in block.items():
+                if resource in ('category', 'trigger', 'mult'):
+                    continue
+                amt = _resolve_var(raw, variables)
+                if amt is not None and mult is not None:
+                    rows.append((kind, i, resource, round(amt * mult, 6), trig))
     return rows
 
 

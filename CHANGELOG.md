@@ -8,6 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `resource_variant`: every conditional cost, upkeep and output block of buildings, districts,
+  ship sizes and starbase parts with its condition, so a reader can give each empire its own cost
+  (a nomad's Augmentation Center: 80 rare crystals, not 800 minerals; bio ships, wilderness,
+  megacorp surcharges).
+- `technology_unlock.condition_json`: the empires a research card lists a building, district or
+  component for (`show_tech_unlock_if`: Planetary Power Grid's Chloroplastic Cyst is the
+  wilderness empire's Energy Nexus).
+- `building.potential_json` for every building, and `situation_stage_flag`: the country flags a
+  situation stage sets — how an empire gets a building such as the Augmentation Center.
 - `tenet_council_bypass`: the tenets that let one leader class of one ethic take any non-enclave
   council position (Sacred Counsel, Chain of Command, Rationality), from the game rule
   `can_leader_bypass_councilor_conditions`.

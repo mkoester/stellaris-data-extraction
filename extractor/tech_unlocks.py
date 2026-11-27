@@ -8,13 +8,18 @@ Two sources, as on the card:
   `line`), whose localised titles carry their own prefix ("Unlocks Megastructure: Dyson Swarm");
 - its `feature_flags` ("Unlocks Feature: Auto-Research Technologies"), named `feature_<flag>`.
 A derived object an own line already names (Science Ship) is left out, as the card has it once.
-Variants for other kinds of empire stay in (bio-ship components, the habitat's or the nomads'
-districts): their `potential` is a planet- or ship-scoped trigger that no empire-wide view decides.
+An object the card lists only for some empires (`show_tech_unlock_if`: the wilderness empire's
+Chloroplastic Cyst beside the Energy Nexus, bio-ship components, the nomads' districts) carries
+that condition, normalised (`empire_trigger`), for the reader to decide; a component set whose
+templates disagree on it has none.
 Megastructures, edicts and deposits also name techs as prerequisites, but the game shows them only
 through such lines, so they are not derived here (a derived row would double the line).
 """
 
+import json
+
 from .localisation import _clean_loc
+from .triggers import empire_trigger
 from .writer import Writer
 
 # The kinds the engine derives from `prerequisites`, in the order they are listed.
@@ -68,12 +73,13 @@ def _flags(tech: dict) -> list[str]:
 
 def unlock_rows(technologies: dict, sources: dict[str, list[dict]],
                 loc: dict[str, str]) -> list[tuple]:
-    """Rows (tech_key, kind, item_key, label, detail, sort_order). `sources`: derived kind → its
+    """Rows (tech_key, kind, item_key, label, detail, sort_order, condition_json). `sources`: derived kind → its
     parsed files. Per tech: its own lines first (file order), its features, then the derived
     objects by kind and label."""
     techs = {k: v for k, v in technologies.items()
              if isinstance(v, dict) and not k.startswith('@')}
     derived: dict[str, dict[tuple[str, str], str]] = {}
+    shown_if: dict[tuple[str, str], str | None] = {}  # (kind, item) → condition JSON
     for kind in DERIVED_KINDS:
         for parsed in sources.get(kind, []):
             for key, block in objects_of(parsed):
@@ -85,6 +91,13 @@ def unlock_rows(technologies: dict, sources: dict[str, list[dict]],
                     label = _name(loc, item, key)
                 else:
                     item, label = key, _name(loc, key)
+                cond = block.get('show_tech_unlock_if')
+                cond = empire_trigger(cond) if isinstance(cond, dict) else None
+                cond = json.dumps(cond, separators=(',', ':')) if cond else None
+                if (kind, item) in shown_if and shown_if[(kind, item)] != cond:
+                    shown_if[(kind, item)] = None  # templates of one set disagree: always shown
+                else:
+                    shown_if.setdefault((kind, item), cond)
                 for t in sorted(set(refs)):
                     if t in techs and kind not in _hidden(techs[t]):
                         derived.setdefault(t, {}).setdefault((kind, item), label or item)
@@ -99,20 +112,20 @@ def unlock_rows(technologies: dict, sources: dict[str, list[dict]],
                 title = e['title'].strip('"')
                 desc = e.get('desc').strip('"') if isinstance(e.get('desc'), str) else None
                 rows.append((t, 'line', title, _name(loc, title) or title,
-                             _name(loc, desc) if desc else None, order))
+                             _name(loc, desc) if desc else None, order, None))
                 order += 1
         own_labels = [r[3] for r in rows if r[0] == t]
         for flag in _flags(techs[t]):
             label = _name(loc, _FEATURE_LOC.get(flag, ''), f'feature_{flag}')
             if label:
-                rows.append((t, 'feature', flag, label, _name(loc, f'feature_{flag}_desc'), order))
+                rows.append((t, 'feature', flag, label, _name(loc, f'feature_{flag}_desc'), order, None))
                 order += 1
         for (kind, item), label in sorted(
                 derived.get(t, {}).items(),
                 key=lambda kv: (DERIVED_KINDS.index(kv[0][0]), kv[1], kv[0][1])):
             if any(label in own for own in own_labels):
                 continue
-            rows.append((t, kind, item, label, None, order))
+            rows.append((t, kind, item, label, None, order, shown_if.get((kind, item))))
             order += 1
     return rows
 
@@ -121,6 +134,6 @@ def extract_tech_unlocks(technologies: dict, sources: dict[str, list[dict]],
                          loc: dict[str, str], w: Writer, verbose: bool) -> None:
     rows = unlock_rows(technologies, sources, loc)
     for r in rows:
-        w.execute("INSERT OR REPLACE INTO technology_unlock (tech_key, kind, item_key, label, detail, sort_order) VALUES (?, ?, ?, ?, ?, ?)", r)
+        w.execute("INSERT OR REPLACE INTO technology_unlock (tech_key, kind, item_key, label, detail, sort_order, condition_json) VALUES (?, ?, ?, ?, ?, ?, ?)", r)
     if verbose:
         print(f"  {len(rows)} tech unlocks")
