@@ -4,7 +4,8 @@ import unittest
 
 from extractor.clausewitz import Parser, tokenize
 from extractor.politics import (attraction_base, attraction_rules, attraction_structured,
-                                council_value, expand_inline, owner_scope)
+                                council_value, demand_condition, expand_inline,
+                                owner_scope)
 from extractor.triggers import normalize_trigger
 
 # Shaped like common/inline_scripts/pop_faction_types/demand_faction_pleased.txt.
@@ -41,6 +42,35 @@ class TestPolitics(unittest.TestCase):
     def test_owner_scope_keeps_other_triggers(self):
         block = {'owner': {'is_at_war': 'yes'}, 'num_pops': '5'}
         self.assertIs(owner_scope(block), block)
+
+
+class TestDemandCondition(unittest.TestCase):
+    def cond(self, text):
+        # inside a block, as in the game: at the top level `>=` does not parse as a comparison
+        block = Parser(tokenize(f'potential = {{ {text} }}')).parse()['potential']
+        return demand_condition(block, {}, {})
+
+    def test_an_owner_block_beside_faction_conditions_is_followed(self):
+        # the Cybernetic Creed demands (00_machine_age_traditionalist.txt, 4.6.0)
+        self.assertEqual(
+            self.cond('owner = { has_country_flag = cybernetic_creed_labor } support >= 0.1'),
+            {'op': 'and', 'args': [
+                {'leaf': 'has_country_flag', 'value': 'cybernetic_creed_labor'},
+                {'leaf': 'support', 'cmp': '>=', 'value': '0.1'}]})
+
+    def test_owner_blocks_inside_an_or_are_followed(self):
+        self.assertEqual(
+            self.cond('OR = { owner = { is_at_war = yes } owner? = { has_policy_flag = x } }'),
+            {'op': 'or', 'args': [{'leaf': 'is_at_war', 'value': 'yes'},
+                                  {'leaf': 'has_policy_flag', 'value': 'x'}]})
+
+    def test_a_lone_owner_block_is_unwrapped(self):
+        self.assertEqual(self.cond('exists = owner owner = { is_at_war = yes }'),
+                         {'leaf': 'is_at_war', 'value': 'yes'})
+
+    def test_other_scopes_stay_opaque(self):
+        self.assertEqual(self.cond('capital_scope = { num_pops > 5 }'),
+                         {'leaf': 'capital_scope', 'value': 'scope'})
 
 
 class TestAttractionRules(unittest.TestCase):

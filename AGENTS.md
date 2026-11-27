@@ -95,6 +95,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   `{'OR': ['a', 'b', ['d', 'e']]}` — `c` is gone, and so is the grouping. Mega-Engineering and six
   other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
   `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
+- **A comparison parses only inside a block**: at the top level `support >= 0.1` becomes
+  `{'>': '0.1'}`. Game files never have one there, but a test parsing a fragment must wrap it
+  (`potential = { … }`, `TestDemandCondition` in `tests/test_politics.py`, 2026-11-27).
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
 - **A quoted key keeps its quotes** — `section_slots = { "mid" = { … } }` gives the key `'"mid"'`,
   while quoted values are stripped. Strip keys you read as data (`size_row` in ships.py,

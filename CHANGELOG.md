@@ -20,7 +20,9 @@ All notable changes to this project are documented here. The format follows
   the ideologies' Empire Size from System.
 - `faction_demand`: a condition wrapped in `owner? = { … }` is read as the owner's conditions.
   It used to be an opaque `owner` scope, which affected 122 of 340 demands on 4.6.1, many of
-  them on 4.6.0 too (the technologist's research restrictions, among others).
+  them on 4.6.0 too (the technologist's research restrictions, among others). An owner block
+  beside the faction's own conditions, or inside an `OR`, is now followed in place too, so no
+  demand keeps an opaque `owner` (22 more, among them all 18 Cybernetic Creed demands).
 - `deposit.clear_time`: a `time` given as a scripted variable is resolved. 4.6.1's Deprecated
   Cryo-Pods (360 days) read as NULL.
 
