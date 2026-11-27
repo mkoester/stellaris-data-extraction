@@ -122,7 +122,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   aside): `solar_system = { … }` becomes `{"leaf": "solar_system", "value": "scope"}`, its content
   gone. One part may hold several such blocks that ask different things (the waystation Research
   Observatory's: a pre-FTL planet, or a trade pact with it); a consumer answers them per part and
-  modifier (the dashboard's `#lib/waylines.ts` `SOLAR_SYSTEM`).
+  modifier (the dashboard's `#lib/waylines.ts` `SOLAR_SYSTEM`). To keep one readable, pass a
+  `structured` hook: `traditions.owner_scope` follows `owner`, `situations.progress_blocks` also
+  turns a colony scope holding only building checks into `owns_building` (2026-11-27).
 
 ## ⚠ After a game update: diff the data, not only the run
 
