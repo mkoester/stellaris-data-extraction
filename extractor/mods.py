@@ -17,7 +17,8 @@ one in a folder of its own first, and from there it is a mod like any other.
 
 Localisation: a mod's English files outside `localisation/english/` (older layout,
 `localisation/<x>_l_english.yml`) are moved under it; other languages are dropped. Keys under a
-`replace/` folder win (`localisation.load_localisation`).
+`replace/` folder win (`localisation.load_localisation`); otherwise the game's text beats a mod's
+(`after_game`).
 """
 
 from collections import Counter
@@ -94,9 +95,22 @@ def _files(root: Path, mod: bool) -> dict[str, Path]:
     return out
 
 
+def after_game(rel: str, game: set[str]) -> str:
+    """A mod's localisation file of its own (no file of the game at that path) renamed to sort after
+    every file of the game: `load_localisation` takes a key's first text, and in game a mod's key
+    does not beat the game's outside `replace/` (Sort Those Buildings' `!stb_l_english.yml`
+    "building_energy_nexus Placeholder" read instead of "Energy Nexus", 2026-11-27). Pure."""
+    parts = rel.split('/')
+    if parts[0] != 'localisation' or len(parts) < 3 or rel in game or parts[2] == 'replace':
+        return rel
+    # the part right under the language folder: a file, or a subfolder that would sort first
+    return '/'.join([*parts[:2], '~' + parts[2], *parts[3:]])
+
+
 def merged_files(game_dir: Path, mods: list[Path]) -> tuple[dict[str, Path], dict[str, str]]:
     """Relative path → source file after all mods, and for each path a mod supplied, that mod."""
     files = _files(game_dir, mod=False)
+    game = set(files)
     from_mods: dict[str, str] = {}
     for mod in mods:
         for folder in _list(descriptor(mod).get('replace_path')):
@@ -104,7 +118,7 @@ def merged_files(game_dir: Path, mods: list[Path]) -> tuple[dict[str, Path], dic
             for rel in [r for r in files if r.rsplit('/', 1)[0] == folder]:
                 del files[rel]
                 from_mods.pop(rel, None)
-        own = _files(mod, mod=True)
+        own = {after_game(rel, game): path for rel, path in _files(mod, mod=True).items()}
         files.update(own)
         from_mods.update(dict.fromkeys(own, str(mod)))
     return files, from_mods

@@ -246,9 +246,13 @@ _LOC_REF = re.compile(r'^\$([\w.]+)\$$')
 def load_localisation(loc_dir: Path) -> dict[str, str]:
     """
     Parse all .yml localisation files, returning {key: label}.
-    When the same key appears multiple times, the entry with the lowest
-    version number wins (e.g. :0 beats :1), and a key in a `replace/` folder (a
-    mod's override) wins over all. Single-token $KEY$ references
+    When the same key appears multiple times, the entry with the highest
+    version number wins (`:2` beats `:0`: the game's way to win the load-order fight,
+    `stellaris-modding-insights` doc 06; 4.6.1 vanilla never repeats a key at another
+    version, so it decides only between a mod and the game — Sort Those Buildings'
+    `building_mineral_purification_hub:0 "… Placeholder"` against the game's `:2`), on a tie
+    the first file read (a mod's own files sort after the game's, `mods.after_game`), and a
+    key in a `replace/` folder (a mod's override) wins over all. Single-token $KEY$ references
     are resolved through chains of them (4.5.2 `tr_psionics_shroud_psi_corps` →
     `$tr_psionics_psi_corps$` → `$building_psi_corps$` → "Psi Corps"); unresolvable ones — a
     missing key, a cycle — are dropped (NULL).
@@ -267,7 +271,7 @@ def load_localisation(loc_dir: Path) -> dict[str, str]:
             if replace and key not in replaced:
                 best[key] = (ver, label)
                 replaced.add(key)
-            elif key not in replaced and (key not in best or ver < best[key][0]):
+            elif key not in replaced and (key not in best or ver > best[key][0]):
                 best[key] = (ver, label)
     raw = {k: lbl for k, (_, lbl) in best.items()}
 

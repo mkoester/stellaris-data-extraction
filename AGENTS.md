@@ -53,7 +53,9 @@ with those mods: `extractor/mods.py` builds a merged copy of the install folder 
 game's rules: a file replaces the file at the same path; in a `common/` folder a key defined in two
 files takes the later file's (`zzz_` prefixes), in `scripted_variables` the first (`!!`);
 `on_actions`, `defines` (every file now merged, later value wins) and `inline_scripts` are left to
-merge; English localisation outside `english/` is moved in, `replace/` keys win. `meta.mods` lists
+merge; English localisation outside `english/` is moved in, `replace/` keys win; otherwise the
+game's text beats a mod's (a mod's own files sort last, `after_game`), and of one key the highest
+version wins (Sort Those Buildings' "… Placeholder" names, 2026-11-27). `meta.mods` lists
 name, version, folder and how many definitions each overrode. **Refused for `sql/stellaris.sql` and
 `sqlite/stellaris.sqlite`** — the release outputs are the unmodded game's. Without `--mod` the dump
 is byte-identical to before (checked 2026-11-08). The empire dashboard passes its playset's mods.

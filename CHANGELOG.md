@@ -19,6 +19,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- With `--mod`, a mod's localisation no longer beats the game's outside `replace/`: a mod's own
+  files sort after the game's, and of one key's texts the highest version wins (before: the
+  lowest). Sort Those Buildings' fallback names ("building_energy_nexus Placeholder") had
+  replaced 10 vanilla building names, Energy Nexus and Mineral Purification Hubs among them.
+  The unmodded dump is unchanged.
+
 - `modifier_label.positive_is_good`: lower is better for every cooldown, empire size, amenities
   usage, border friction and maximum market price increase key. 13 keys were coloured the wrong
   way, among them Council Agenda Cooldown, Border Friction, Maximum Market Price Increase and
