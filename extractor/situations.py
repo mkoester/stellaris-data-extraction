@@ -5,10 +5,12 @@ from pathlib import Path
 import json
 import re
 import sys
-from .clausewitz import parse_file
+from .clausewitz import Cmp, parse_file
 from .contracts import with_inline
 from .localisation import _clean_loc
 from .modifiers import _block_modifier_values, _write_modifier_label
+from .traditions import dumps, owner_scope
+from .triggers import normalize_trigger
 from .values import _as_blocks, _resolve_modifier_float
 from .writer import Writer
 
@@ -78,6 +80,63 @@ def stage_modifiers(stage: dict, variables: dict[str, float]) -> list[tuple[str,
     return _block_modifier_values(block, variables) if isinstance(block, dict) else []
 
 
+_PROGRESS_KEYS = ('mult', 'factor', 'add', 'set', 'desc')
+
+
+def _building_count(k: str, v):
+    """`num_buildings = { type = building_x value < 1 }` as a leaf the dashboard can read
+    (normalize_trigger keeps any block opaque): `{leaf, building, cmp, value}`."""
+    if k == 'num_buildings' and isinstance(v, dict) and isinstance(v.get('type'), str):
+        c = v.get('value')
+        op, n = (c.op, c.value) if isinstance(c, Cmp) else ('=', c)
+        return {'leaf': 'num_buildings', 'building': v['type'], 'cmp': op, 'value': str(n)}
+    return None
+
+
+_COLONY_SCOPES = ('any_owned_colony', 'any_owned_planet')
+_BUILDING_LEAVES = ('has_building', 'has_active_building')
+
+
+def _owns_building(tree):
+    """A colony scope's conditions → the same tree with each building check as
+    `{leaf: owns_building, value: building}`, or None when it asks anything else."""
+    if tree is None:
+        return None
+    if 'leaf' in tree:
+        return {'leaf': 'owns_building', 'value': tree['value']} if tree['leaf'] in _BUILDING_LEAVES else None
+    if tree.get('op') not in ('and', 'or'):
+        return None
+    args = [_owns_building(a) for a in tree['args']]
+    return None if None in args else {**tree, 'args': args}
+
+
+def progress_blocks(data: dict, variables: dict[str, float] | None = None) -> list[tuple[str | None, dict]]:
+    """What stops a situation: each `monthly_progress` modifier that sets its progress to nothing
+    (`mult = 0`, `factor = 0`) while its conditions hold → (its `desc` loc key, the conditions
+    normalised). 4.6.1: genetic ascension without Gene Tailoring or a Genomic Facility, cyberization
+    without an Augmentation Center, Breach the Shroud without an active Psi Corps in stage 2.
+    `owner = { … }` is followed, the conditions being the country's; a colony scope holding only
+    building checks reads as `owns_building` (`_owns_building`). Pure."""
+    def hooks(k, v):
+        if k in _COLONY_SCOPES and isinstance(v, dict):
+            # a colony of ours with a building (the Augmentation Center, the Genomic Facility)
+            return _owns_building(normalize_trigger(v, None, variables))
+        return _building_count(k, v) or owner(k, v)
+
+    def norm(b):
+        return normalize_trigger(b, None, variables, hooks)
+    owner = owner_scope(norm)
+    out = []
+    mp = data.get('monthly_progress')
+    for m in (_as_blocks(mp.get('modifier')) if isinstance(mp, dict) else []):
+        if not any(str(m.get(k)).strip() in ('0', '0.0') for k in ('mult', 'factor')):
+            continue
+        cond = norm({k: v for k, v in m.items() if k not in _PROGRESS_KEYS})
+        if cond:
+            out.append((_key(m.get('desc')), cond))
+    return out
+
+
 def _key(v) -> str | None:
     return v.strip('"') if isinstance(v, str) else None
 
@@ -145,7 +204,7 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
     top-level `inline_script` (4.5.4 `06_projects_nomads.txt`: 44, the onboard contracts' research
     projects among them) is expanded with it; without it such projects have no key and are left out."""
     common = install_dir / 'common'
-    n_sit = n_appr = n_stage = n_mod = 0
+    n_sit = n_appr = n_stage = n_mod = n_block = 0
     for f in _files(common / 'situations'):
         parsed = parse_file(f)
         variables = dict(scripted_vars or {})
@@ -174,6 +233,11 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                     (key, name, _text(loc, name), _text(loc, f'{name}_tooltip', True),
                      1 if a.get('default') == 'yes' else 0, order))
                 n_appr += 1
+            for order, (desc, cond) in enumerate(progress_blocks(data, variables)):
+                w.execute(
+                    "INSERT OR REPLACE INTO situation_block (situation_key, sort_order, text, trigger_json) VALUES (?, ?, ?, ?)",
+                    (key, order, _text(loc, desc), dumps(cond)))
+                n_block += 1
             for order, stage in enumerate(stage_keys(data)):
                 w.execute(
                     """INSERT OR REPLACE INTO situation_stage (situation_key, key, name, sort_order)
@@ -215,6 +279,6 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
             n_proj += 1
 
     print(f"  {n_sit} situations, {n_appr} approaches, {n_stage} stages ({n_mod} modifiers), "
-          f"{n_proj} special projects",
+          f"{n_block} progress blocks, {n_proj} special projects",
           file=progress)
     w.commit()

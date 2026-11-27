@@ -11,6 +11,11 @@ All notable changes to this project are documented here. The format follows
 - `tenet_council_bypass`: the tenets that let one leader class of one ethic take any non-enclave
   council position (Sacred Counsel, Chain of Command, Rationality), from the game rule
   `can_leader_bypass_councilor_conditions`.
+- `situation_block`: what stops a situation, from each `monthly_progress` modifier with
+  `mult = 0` or `factor = 0`: its text and conditions, `owner` blocks followed, a colony scope
+  holding only building checks as `owns_building`, `num_buildings` as a leaf with its building
+  (47 on 4.6.1: an ascension's Genomic Research Facility, Augmentation Center, Identity Complex,
+  Gene Tailoring, Psi Corps, Great Awakening, Chamber of Silence).
 
 ### Fixed
 
