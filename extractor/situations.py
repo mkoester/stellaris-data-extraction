@@ -37,6 +37,16 @@ def event_ids(block) -> list[str]:
     return out
 
 
+_SET_FLAG = re.compile(r'\bset_country_flag\s*=\s*"?(\w+)')
+
+
+def flags_set(event_text: str) -> list[str]:
+    """The country flags an event's own text sets, sorted, once each (comments ignored). Any
+    branch counts: an `if` or an option that sets it is still how the flag comes."""
+    text = re.sub(r'#[^\n]*', '', event_text)
+    return sorted(set(_SET_FLAG.findall(text)))
+
+
 def outcomes_json(block, loc: dict[str, str], title=None) -> str | None:
     """The events an outcome block fires, with their titles where they have one: `title(id)`
     (the event's own `title` key, `Outcomes.title`), else `<id>.name`."""
@@ -140,8 +150,10 @@ def is_permanent(data: dict) -> bool:
 
 def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                        progress=sys.stderr, scripted_vars: dict[str, float] | None = None,
-                       title=None, load=None) -> None:
-    """`load`: an inline script's text by name (`script_loader`). A special project made of a
+                       title=None, load=None, events: dict[str, str] | None = None) -> None:
+    """`events`: an event's own text by id (`Outcomes.events`), for the country flags each
+    stage's `on_first_enter` events set (`situation_stage_flag`). `load`: an inline script's text
+    by name (`script_loader`). A special project made of a
     top-level `inline_script` (4.5.4 `06_projects_nomads.txt`: 44, the onboard contracts' research
     projects among them) is expanded with it; without it such projects have no key and are left out."""
     common = install_dir / 'common'
@@ -186,6 +198,10 @@ def extract_situations(install_dir: Path, loc: dict[str, str], w: Writer,
                         (key, stage, mk, mv, m_order))
                     _write_modifier_label(w, loc, mk)
                     n_mod += 1
+                for ev in event_ids(data['stages'][stage].get('on_first_enter')):
+                    for flag in flags_set((events or {}).get(ev, '')):
+                        w.execute("INSERT OR IGNORE INTO situation_stage_flag (situation_key, stage_key, flag, event_id) VALUES (?, ?, ?, ?)",
+                                  (key, stage, flag, ev))
 
     n_proj = 0
     for f in _files(common / 'special_projects'):

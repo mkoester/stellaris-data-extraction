@@ -3,7 +3,9 @@
 import unittest
 
 from extractor.buildings import (_building_modifiers, _building_resources, _write_build_time,
-                                 building_unlocks, conditional_modifiers, owned_requirements)
+                                 building_unlocks, conditional_modifiers, owned_requirements,
+                                 resource_variants)
+from extractor.triggers import empire_trigger
 
 TRIGGERS = {'is_toxic_baths_empire': {'OR': {'has_valid_civic': ['civic_toxic_baths',
                                                                  'civic_hive_toxic_baths']}}}
@@ -63,6 +65,47 @@ class TestBuildingResources(unittest.TestCase):
             'upkeep': {'energy': '1'}}}
         self.assertEqual(_building_resources(s, {'@civilian_station_cost': 100.0}),
                          [('cost', 'minerals', 100.0), ('upkeep', 'energy', 1.0)])
+
+    def test_variants_keep_every_block_of_a_triggered_kind(self):
+        # 4.6 building_augmentation_center: 800 minerals, or 800 rare crystals × 0.1 for a nomad
+        b = {'resources': {'category': 'planet_buildings',
+                           'inline_script': {'script': 'buildings/nomadic_cost_switcher',
+                                             'REGULAR_RESOURCE': 'minerals',
+                                             'NOMADIC_RESOURCE': 'rare_crystals', 'COST': '@b3_minerals',
+                                             'NOMADIC_COST_MULT': '@nomadic_minerals_to_strategic_ratio'},
+                           'upkeep': {'energy': '@b3_upkeep'}}}
+        load = {'buildings/nomadic_cost_switcher': SWITCHER}.get
+        v = {'@b3_minerals': 800.0, '@b3_upkeep': 8.0, '@nomadic_minerals_to_strategic_ratio': 0.1}
+        self.assertEqual(resource_variants(b, v, load), [
+            ('cost', 0, 'minerals', 800.0, '{"leaf":"is_nomadic","value":"no"}'),
+            ('cost', 1, 'rare_crystals', 80.0, '{"leaf":"is_nomadic","value":"yes"}'),
+        ])
+
+    def test_no_variants_without_a_triggered_block(self):
+        b = {'resources': {'cost': {'minerals': '100'}, 'upkeep': {'energy': '1'}}}
+        self.assertEqual(resource_variants(b, {}), [])
+
+    def test_an_untriggered_block_beside_triggered_ones_always_applies(self):
+        # Shaped like 4.6's megacorp surcharge: a base cost plus one for megacorps
+        b = {'resources': {'cost': [{'minerals': '100'},
+                                    {'trigger': {'owner': {'is_megacorp': 'yes'}}, 'energy': '50'}]}}
+        self.assertEqual(resource_variants(b, {}), [
+            ('cost', 0, 'minerals', 100.0, None),
+            ('cost', 1, 'energy', 50.0, '{"leaf":"is_megacorp","value":"yes"}'),
+        ])
+
+
+class TestEmpireTrigger(unittest.TestCase):
+    def test_follows_owner_and_from_and_drops_exists(self):
+        self.assertEqual(empire_trigger({'exists': 'owner', 'owner': {'is_wilderness_empire': 'yes'}}),
+                         {'leaf': 'is_wilderness_empire', 'value': 'yes'})
+        self.assertEqual(empire_trigger({'from?': {'is_nomadic': 'no'}}),
+                         {'leaf': 'is_nomadic', 'value': 'no'})
+
+    def test_a_planet_test_stays_a_leaf(self):
+        self.assertEqual(empire_trigger({'has_deposit': 'd_x', 'owner': {'is_megacorp': 'yes'}}),
+                         {'op': 'and', 'args': [{'leaf': 'has_deposit', 'value': 'd_x'},
+                                                {'leaf': 'is_megacorp', 'value': 'yes'}]})
 
 
 

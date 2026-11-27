@@ -4,7 +4,7 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import (chain_counters, event_ids, is_permanent, outcomes_json, project_number, stage_keys,
+from extractor.situations import (chain_counters, event_ids, flags_set, is_permanent, outcomes_json, project_number, stage_keys,
                                   stage_modifiers)
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
@@ -77,6 +77,24 @@ class TestOutcomes(unittest.TestCase):
 
     def test_no_events_is_none(self):
         self.assertIsNone(outcomes_json({'add_resource': {'energy': '100'}}, {}))
+
+
+class TestFlagsSet(unittest.TestCase):
+    def test_every_branch_counts_and_comments_do_not(self):
+        # shaped like 4.6 cyber.200 (events/machine_age_situation_events_1.txt)
+        text = """situation_event = {
+	id = cyber.200
+	immediate = {
+		owner = {
+			# set_country_flag = commented_out
+			set_country_flag = augmentation_center_available
+			set_country_flag = augmentation_center_needed
+		}
+	}
+	option = { owner = { set_country_flag = "cyber_control_government" } }
+}"""
+        self.assertEqual(flags_set(text), ['augmentation_center_available',
+                                           'augmentation_center_needed', 'cyber_control_government'])
 
 
 if __name__ == '__main__':
