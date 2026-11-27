@@ -832,6 +832,13 @@ def _primary_resource_block(blocks: list, signals, default_overclocks: set[str])
     return next((b for b in dicts if signals(b['trigger'])[0] & want), None)
 
 
+def _clear_time(raw, variables: dict[str, float]) -> int | None:
+    """A blocker's `time` in days: a literal, or an `@variable` (4.6.1's Deprecated Cryo-Pods,
+    `@deep_sleep_cryo_pod_clear_days`)."""
+    value = _resolve_var(raw, variables)
+    return int(value) if value is not None else None
+
+
 def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
                      variables: dict[str, float], signals, default_overclocks: set[str],
                      w: Writer, verbose: bool):
@@ -848,11 +855,7 @@ def extract_deposits(data: dict, source_file: str, loc: dict[str, str],
         # Category can be top-level (blockers) or inside the resources block.
         category = d.get('category') or resources.get('category')
         is_blocker = 1 if (isinstance(category, str) and 'blocker' in category) else 0
-        clear_time = None
-        try:
-            clear_time = int(d.get('time')) if d.get('time') is not None else None
-        except (ValueError, TypeError):
-            pass
+        clear_time = _clear_time(d.get('time'), variables)
 
         # technologies a blocker needs before it can be cleared (12 blockers in 4.5.2)
         prerequisites = ','.join(str(t).strip('"') for t in _to_list(d.get('prerequisites'))) or None

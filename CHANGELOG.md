@@ -18,6 +18,11 @@ All notable changes to this project are documented here. The format follows
   usage, border friction and maximum market price increase key. 13 keys were coloured the wrong
   way, among them Council Agenda Cooldown, Border Friction, Maximum Market Price Increase and
   the ideologies' Empire Size from System.
+- `faction_demand`: a condition wrapped in `owner? = { … }` is read as the owner's conditions.
+  It used to be an opaque `owner` scope, which affected 122 of 340 demands on 4.6.1, many of
+  them on 4.6.0 too (the technologist's research restrictions, among others).
+- `deposit.clear_time`: a `time` given as a scripted variable is resolved. 4.6.1's Deprecated
+  Cryo-Pods (360 days) read as NULL.
 
 ## [0.1.27] - 2026-11-26
 

@@ -19,14 +19,16 @@ def _unquote(v) -> str | None:
 
 def owner_scope(block):
     """A faction demand's trigger reads the faction's owner: `owner = { … }`, maybe beside
-    `exists = owner` (always true for a faction, so dropped). Unwrapped to the owner's block,
-    since a scope is kept opaque otherwise."""
+    `exists = owner` (always true for a faction, so dropped), or `owner? = { … }` (4.5.3; 142 of
+    4.6.0's 340 demands). Unwrapped to the owner's block, since a scope is kept opaque otherwise."""
     if not isinstance(block, dict):
         return block
     if block.get('exists') == 'owner':
         block = {k: v for k, v in block.items() if k != 'exists'}
-    if isinstance(block.get('owner'), dict) and set(block) == {'owner'}:
-        return block['owner']
+    if len(block) == 1:
+        (k, v), = block.items()
+        if k in ('owner', 'owner?') and isinstance(v, dict):
+            return v
     return block or None
 
 

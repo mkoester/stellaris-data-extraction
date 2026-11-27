@@ -28,6 +28,13 @@ class TestPolitics(unittest.TestCase):
             'exists = owner owner = { has_policy_flag = unrestricted_wars }')).parse()
         self.assertEqual(owner_scope(block), {'has_policy_flag': 'unrestricted_wars'})
 
+    def test_owner_scope_unwraps_an_owner_if_it_exists(self):
+        # 4.6.0's technologist demands: `owner? = { … }`
+        block = Parser(tokenize(
+            'owner? = { NOT = { has_policy_flag = research_restriction_dangerous_encouraged } }')).parse()
+        self.assertEqual(owner_scope(block),
+                         {'NOT': {'has_policy_flag': 'research_restriction_dangerous_encouraged'}})
+
     def test_owner_scope_drops_a_lone_exists(self):
         self.assertIsNone(owner_scope({'exists': 'owner'}))
 
