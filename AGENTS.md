@@ -53,7 +53,9 @@ with those mods: `extractor/mods.py` builds a merged copy of the install folder 
 game's rules: a file replaces the file at the same path; in a `common/` folder a key defined in two
 files takes the later file's (`zzz_` prefixes), in `scripted_variables` the first (`!!`);
 `on_actions`, `defines` (every file now merged, later value wins) and `inline_scripts` are left to
-merge; English localisation outside `english/` is moved in, `replace/` keys win. `meta.mods` lists
+merge; English localisation outside `english/` is moved in, `replace/` keys win; otherwise the
+game's text beats a mod's (a mod's own files sort last, `after_game`), and of one key the highest
+version wins (Sort Those Buildings' "… Placeholder" names, 2026-11-27). `meta.mods` lists
 name, version, folder and how many definitions each overrode. **Refused for `sql/stellaris.sql` and
 `sqlite/stellaris.sqlite`** — the release outputs are the unmodded game's. Without `--mod` the dump
 is byte-identical to before (checked 2026-11-08). The empire dashboard passes its playset's mods.
@@ -95,6 +97,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   `{'OR': ['a', 'b', ['d', 'e']]}` — `c` is gone, and so is the grouping. Mega-Engineering and six
   other techs read as needing no tech until 2026-10-31 (`prerequisite_blocks` in tech.py now uses
   `parse_ordered()`). Suspect this wherever a list can hold an `OR`/`AND`/`NOT` group.
+- **A comparison parses only inside a block**: at the top level `support >= 0.1` becomes
+  `{'>': '0.1'}`. Game files never have one there, but a test parsing a fragment must wrap it
+  (`potential = { … }`, `TestDemandCondition` in `tests/test_politics.py`, 2026-11-27).
 - **`key { }` without `=` is valid** and parses the same as `key = { }`.
 - **A quoted key keeps its quotes** — `section_slots = { "mid" = { … } }` gives the key `'"mid"'`,
   while quoted values are stripped. Strip keys you read as data (`size_row` in ships.py,
@@ -117,7 +122,9 @@ The game's script format has quirks that produce silently wrong trees rather tha
   aside): `solar_system = { … }` becomes `{"leaf": "solar_system", "value": "scope"}`, its content
   gone. One part may hold several such blocks that ask different things (the waystation Research
   Observatory's: a pre-FTL planet, or a trade pact with it); a consumer answers them per part and
-  modifier (the dashboard's `#lib/waylines.ts` `SOLAR_SYSTEM`).
+  modifier (the dashboard's `#lib/waylines.ts` `SOLAR_SYSTEM`). To keep one readable, pass a
+  `structured` hook: `traditions.owner_scope` follows `owner`, `situations.progress_blocks` also
+  turns a colony scope holding only building checks into `owns_building` (2026-11-27).
 
 ## ⚠ After a game update: diff the data, not only the run
 

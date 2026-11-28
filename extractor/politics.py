@@ -6,6 +6,7 @@ import re
 import sys
 from .clausewitz import Parser, parse_file, tokenize
 from .traditions import _Ctx, _load, dumps
+from .traditions import owner_scope as owner_hook
 from .triggers import _scripted_trigger_index, dlc_trigger_map, normalize_trigger
 from .values import _as_blocks, _resolve_var, _to_list
 from .writer import Writer
@@ -19,15 +20,27 @@ def _unquote(v) -> str | None:
 
 def owner_scope(block):
     """A faction demand's trigger reads the faction's owner: `owner = { … }`, maybe beside
-    `exists = owner` (always true for a faction, so dropped). Unwrapped to the owner's block,
-    since a scope is kept opaque otherwise."""
+    `exists = owner` (always true for a faction, so dropped), or `owner? = { … }` (4.5.3; 142 of
+    4.6.0's 340 demands). Unwrapped to the owner's block, since a scope is kept opaque otherwise."""
     if not isinstance(block, dict):
         return block
     if block.get('exists') == 'owner':
         block = {k: v for k, v in block.items() if k != 'exists'}
-    if isinstance(block.get('owner'), dict) and set(block) == {'owner'}:
-        return block['owner']
+    if len(block) == 1:
+        (k, v), = block.items()
+        if k in ('owner', 'owner?') and isinstance(v, dict):
+            return v
     return block or None
+
+
+def demand_condition(block, dlc: dict, variables: dict):
+    """A demand's `potential` or `trigger`, normalised. A lone owner block is unwrapped
+    (`owner_scope`); one beside the faction's own conditions (`owner = { has_country_flag = … }
+    support >= 0.1`, the Cybernetic Creed's) is followed in place, so its conditions stay readable
+    instead of an opaque scope."""
+    def norm(b):
+        return normalize_trigger(b, dlc, variables, owner_hook(norm))
+    return norm(owner_scope(block))
 
 
 def expand_inline(text: str, params: dict[str, str]) -> dict:
@@ -260,8 +273,8 @@ def extract_politics(install_dir: Path, loc: dict[str, str], scripted_vars: dict
                 (key, d_order, ctx.text(title) or title, ctx.text(unfulfilled) or unfulfilled,
                  ctx.text(_unquote(d.get('desc')), True, fvars),
                  _number(d.get('fulfilled_effect')), _number(d.get('unfulfilled_effect')),
-                 dumps(ctx.trig(owner_scope(d.get('potential')), fvars)),
-                 dumps(ctx.trig(owner_scope(d.get('trigger')), fvars))))
+                 dumps(demand_condition(d.get('potential'), ctx.dlc, fvars)),
+                 dumps(demand_condition(d.get('trigger'), ctx.dlc, fvars))))
             n_demands += 1
 
     n_rules = 0

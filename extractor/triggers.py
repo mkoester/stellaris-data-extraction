@@ -273,6 +273,34 @@ def normalize_trigger(block, dlc_triggers: dict[str, str] | None = None,
     return walk(block)
 
 
+# The scopes a cost block's `trigger` reads the building empire through: a building's or
+# district's planet → `owner`, a starbase part's → `owner`, the builder → `from` (4.6
+# `buildings/nomadic_cost_switcher`: `from? = { is_nomadic = no }`). Followed in place.
+_COST_SCOPES = ('owner', 'from', 'owner_or_space_owner')
+
+
+def empire_trigger(trigger, dlc: dict[str, str] | None = None,
+                 variables: dict[str, float] | None = None) -> dict | None:
+    """A resources block's `trigger` (a building's `potential`, a `show_tech_unlock_if`),
+    normalised as a condition on the empire: the scope blocks of `_COST_SCOPES` are followed in
+    place and `exists = owner|from` dropped (true wherever a cost is asked). What is left in the planet's or ship's own scope (`has_deposit`, `has_modifier`) stays
+    a leaf the dashboard cannot answer."""
+    def strip(b):
+        if not isinstance(b, dict):
+            return b
+        return {k: v for k, v in b.items()
+                if not (k == 'exists' and str(v).strip('"') in _COST_SCOPES)}
+
+    def norm(b):
+        return normalize_trigger(strip(b), dlc, variables, hook)
+
+    def hook(k: str, v):
+        if k in _COST_SCOPES and isinstance(v, dict):
+            return norm(v) or {'leaf': 'always', 'value': 'yes'}
+        return None
+    return norm(trigger) if isinstance(trigger, dict) else None
+
+
 def _to_list_blocks(v) -> list[dict]:
     if isinstance(v, dict):
         return [v]

@@ -3,7 +3,7 @@
 import unittest
 
 from extractor.jobs import _drop_scaled_duplicates, _fallback_block
-from extractor.precursors import _default_overclocks, _primary_resource_block
+from extractor.precursors import _clear_time, _default_overclocks, _primary_resource_block
 
 
 def signals_from(table):
@@ -109,6 +109,20 @@ class TestPrimaryResourceBlock(unittest.TestCase):
         sig = signals_from({'a': ({'has_country_flag=x'}, set()),
                             'b': ({'has_country_flag=y'}, set())})
         self.assertIsNone(_primary_resource_block(blocks, sig, {'oc_balanced'}))
+
+
+class TestClearTime(unittest.TestCase):
+    def test_a_literal(self):
+        self.assertEqual(_clear_time('360', {}), 360)
+
+    def test_a_scripted_variable(self):
+        # 4.6.1: d_deep_sleep_cryo_pods `time = @deep_sleep_cryo_pod_clear_days`
+        self.assertEqual(_clear_time('@deep_sleep_cryo_pod_clear_days',
+                                     {'@deep_sleep_cryo_pod_clear_days': 360.0}), 360)
+
+    def test_none_without_a_time(self):
+        self.assertIsNone(_clear_time(None, {}))
+        self.assertIsNone(_clear_time('@unknown', {}))
 
 
 if __name__ == '__main__':

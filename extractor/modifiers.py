@@ -23,6 +23,8 @@ MODIFIER_LOC_OVERRIDES: dict[str, str] = {
     'country_storm_repulsion_influence_add': 'MOD_COUNTRY_STORM_REPELLING_ADD',
 }
 
+# Keys the heuristic in _write_modifier_label (cost/upkeep/fee, crime, cooldown, empire size,
+# amenities usage, …) doesn't catch.
 INVERTED_MODIFIERS: frozenset[str] = frozenset({
     # Upkeep / resource costs
     'leaders_upkeep_mult',
@@ -34,17 +36,7 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     'planet_pops_upkeep_mult',
     'pop_resettlement_cost_mult',
     # Resource consumption
-    'pop_amenities_usage_add',
     'pop_housing_usage_mult',
-    # Administrative burden / empire size
-    'species_empire_size_mult',
-    'empire_size_pops_mult',
-    'empire_size_mult',
-    'empire_size_branch_office_mult',
-    'empire_size_colonies_mult',
-    'empire_size_districts_mult',
-    'empire_size_systems_mult',
-    'empire_size_penalty_mult',
     # Factions (the game pairs −unmet with +met as a bonus; +unmet is a civic drawback)
     'faction_demands_unmet_mult',
     # Influence costs
@@ -55,14 +47,11 @@ INVERTED_MODIFIERS: frozenset[str] = frozenset({
     'edicts_cost_mult',
     # War / exhaustion
     'country_war_exhaustion_mult',
-    # Combat (taking more damage / longer cooldowns / higher costs = worse)
+    # Combat (taking more damage / higher costs = worse)
     'army_damage_taken_mult',
-    'gravity_snare_cooldown_mult',
     'gravity_snare_cost_mult',
     'ships_upkeep_mult',
-    'shroud_delve_cooldown',
     # Costs / fees (a reduction is good) — seen on precursor relics & rewards
-    'pop_amenities_usage_mult',
     'terraforming_cost_mult',
     'country_trade_fee',
     # Trait slot counts (more negative trait slots allowed = worse)
@@ -255,13 +244,17 @@ def _write_modifier_label(w: Writer, loc: dict[str, str], mod_key: str):
     # Good/bad colour: prefer the game's own `good` flag (common/scripted_modifiers) where it
     # defines the modifier. Otherwise fall back: lower is better for any cost/upkeep/fee key —
     # the curated set plus every `_cost_`/`_upkeep_` anywhere (e.g. tradition_cost_empire_size_mult
-    # −25% is a saving, not a penalty) — and for crime and devastation (a scientist governor's
-    # planet_storm_devastation_mult −2% a level is less damage from cosmic storms).
+    # −25% is a saving, not a penalty) — for crime and devastation (a scientist governor's
+    # planet_storm_devastation_mult −2% a level is less damage from cosmic storms), and for
+    # cooldowns, empire size, amenities usage, border friction and the market's maximum price
+    # increase (the tenets' −30% Council Agenda Cooldown, ideologies' −15% Empire Size from System;
+    # not shipsize_*_fallen_empire_size_damage_factor, a ship size's).
     if mod_key in _SCRIPTED_MOD_GOOD:
         pig = 1 if _SCRIPTED_MOD_GOOD[mod_key] else 0
     else:
         inverted = (mod_key in INVERTED_MODIFIERS
-                    or re.search(r'_(cost|upkeep|fee)(_|$)|crime|devastation', mod_key))
+                    or re.search(r'_(cost|upkeep|fee)(_|$)|crime|devastation|cooldown|(?<!fallen_)empire_size'
+                                 r'|amenities_usage|friction|max_price', mod_key))
         pig = 0 if inverted else 1
     w.execute(
         """INSERT OR REPLACE INTO modifier_label (modifier_key, label, positive_is_good)

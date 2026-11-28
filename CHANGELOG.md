@@ -4,6 +4,50 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.28] - 2026-11-28
+
+### Added
+
+- `resource_variant`: every conditional cost, upkeep and output block of buildings, districts,
+  ship sizes and starbase parts with its condition, so a reader can give each empire its own cost
+  (a nomad's Augmentation Center: 80 rare crystals, not 800 minerals; bio ships, wilderness,
+  megacorp surcharges).
+- `technology_unlock.condition_json`: the empires a research card lists a building, district or
+  component for (`show_tech_unlock_if`: Planetary Power Grid's Chloroplastic Cyst is the
+  wilderness empire's Energy Nexus).
+- `building.potential_json` for every building, and `situation_stage_flag`: the country flags a
+  situation stage sets — how an empire gets a building such as the Augmentation Center.
+- `tenet_council_bypass`: the tenets that let one leader class of one ethic take any non-enclave
+  council position (Sacred Counsel, Chain of Command, Rationality), from the game rule
+  `can_leader_bypass_councilor_conditions`.
+- `situation_block`: what stops a situation, from each `monthly_progress` modifier with
+  `mult = 0` or `factor = 0`: its text and conditions, `owner` blocks followed, a colony scope
+  holding only building checks as `owns_building`, `num_buildings` as a leaf with its building
+  (47 on 4.6.0 and 4.6.1: an ascension's Genomic Research Facility, Augmentation Center, Identity Complex,
+  Gene Tailoring, Psi Corps, Great Awakening, Chamber of Silence).
+
+### Fixed
+
+- Windows: progress and SQL on stdout/stderr are written as UTF-8. A redirected stream used the
+  code page (cp1252), and the first `→` in the progress ended the extraction with a
+  `UnicodeEncodeError` (the dashboard 0.2.1, a player's report).
+- With `--mod`, a mod's localisation no longer beats the game's outside `replace/`: a mod's own
+  files sort after the game's, and of one key's texts the highest version wins (before: the
+  lowest). Sort Those Buildings' fallback names ("building_energy_nexus Placeholder") had
+  replaced 10 vanilla building names, Energy Nexus and Mineral Purification Hubs among them.
+  The unmodded dump is unchanged.
+- `modifier_label.positive_is_good`: lower is better for every cooldown, empire size, amenities
+  usage, border friction and maximum market price increase key. 13 keys were coloured the wrong
+  way, among them Council Agenda Cooldown, Border Friction, Maximum Market Price Increase and
+  the ideologies' Empire Size from System.
+- `faction_demand`: a condition wrapped in `owner? = { … }` is read as the owner's conditions.
+  It used to be an opaque `owner` scope, which affected 122 of 340 demands on 4.6.1, many of
+  them on 4.6.0 too (the technologist's research restrictions, among others). An owner block
+  beside the faction's own conditions, or inside an `OR`, is now followed in place too, so no
+  demand keeps an opaque `owner` (22 more, among them all 18 Cybernetic Creed demands).
+- `deposit.clear_time`: a `time` given as a scripted variable is resolved. 4.6.1's Deprecated
+  Cryo-Pods (360 days) read as NULL.
+
 ## [0.1.27] - 2026-11-26
 
 ### Added

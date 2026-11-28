@@ -217,6 +217,28 @@ def _load_dir(d: Path) -> tuple[dict, dict[str, float]]:
     return out, variables
 
 
+def council_bypasses(rule) -> list[tuple[str, str | None, str | None]]:
+    """[(tenet, leader class, ethic)] from the game rule can_leader_bypass_councilor_conditions:
+    each AND names a leader class, an ethic and the tenet the owner must have active."""
+    out = []
+    def walk(n):
+        if isinstance(n, list):
+            for x in n:
+                walk(x)
+        elif isinstance(n, dict):
+            owner = n.get('owner?') or n.get('owner')
+            tenet = owner.get('has_active_tenet') if isinstance(owner, dict) else None
+            if isinstance(tenet, str):
+                lc, eth = n.get('leader_class'), n.get('has_ethic')
+                out.append((tenet, lc if isinstance(lc, str) else None,
+                            eth if isinstance(eth, str) else None))
+            else:
+                for v in n.values():
+                    walk(v)
+    walk(rule)
+    return out
+
+
 def extract_ideologies(install_dir: Path, loc: dict[str, str], scripted_vars: dict[str, float],
                        w: Writer, progress=sys.stderr) -> None:
     common = install_dir / 'common'
@@ -375,6 +397,13 @@ def extract_ideologies(install_dir: Path, loc: dict[str, str], scripted_vars: di
                           (key, tier, effect))
             links(tip_keys, tier)
 
+    # ── Tenets that let one leader class sit on any council position (a game rule) ──
+    rules, _ = _load_dir(common / 'game_rules')
+    bypasses = council_bypasses(rules.get('can_leader_bypass_councilor_conditions'))
+    for tenet, leader_class, ethic in bypasses:
+        w.execute("INSERT INTO tenet_council_bypass (tenet_key, leader_class, ethic) VALUES (?, ?, ?)",
+                  (tenet, leader_class, ethic))
+
     # ── Buildings only an ideology allows ──
     buildings, b_vars = _load_dir(common / 'buildings')
     variables = {**scripted_vars, **b_vars}
@@ -388,5 +417,5 @@ def extract_ideologies(install_dir: Path, loc: dict[str, str], scripted_vars: di
 
     print(f"  {sum(1 for k in types if k != 'inline_script')} ideologies ({n_mods} adoption "
           f"modifiers), {len(tenets)} tenets ({n_tiers} tiers, {n_tmods} modifiers, "
-          f"{n_links} unlock links), {n_b} ideological buildings", file=progress)
+          f"{n_links} unlock links, {len(bypasses)} council bypasses), {n_b} ideological buildings", file=progress)
     w.commit()

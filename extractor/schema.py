@@ -542,6 +542,8 @@ CREATE TABLE building (
     host_trigger_json  TEXT,        -- what the host colony needs (the rest of `potential`)
     allow_json         TEXT,        -- `allow` (pop_amount >= 2500, an upgraded capital)
     prerequisites_json TEXT,        -- the techs it needs, sorted
+    potential_json     TEXT,        -- a building without owner_type: its `potential` as a condition
+                                    -- on the empire (`owner = {…}` followed in place); NULL: none
     sort_order  INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE building_resource (
@@ -1214,6 +1216,7 @@ CREATE TABLE event_chain (
     category      TEXT,                    -- `situation_log_category`: precursors / developments / …
     counters_json TEXT                     -- [{"key":"cybrex_artifacts","max":6}]; NULL: none
 );
+DROP TABLE IF EXISTS situation_block;
 DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
@@ -1242,6 +1245,28 @@ CREATE TABLE situation_stage (
     name          TEXT,                    -- e.g. "Medium"
     sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
+);
+-- What stops a situation: a `monthly_progress` modifier with `mult = 0` or `factor = 0` — while
+-- its conditions hold, the situation makes no progress (empire dashboard: what an ascension needs,
+-- e.g. Gene Tailoring for genetic ascension, a Chamber of Silence for the Endbringers' Shroud).
+CREATE TABLE situation_block (
+    situation_key TEXT NOT NULL,
+    sort_order    INTEGER NOT NULL,
+    text          TEXT,                    -- the modifier's `desc`, localised: why it stopped
+    trigger_json  TEXT NOT NULL,           -- normalised; `owner` followed; num_buildings as
+                                           -- {leaf, building, cmp, value}
+    PRIMARY KEY (situation_key, sort_order),
+    FOREIGN KEY (situation_key) REFERENCES situation(key)
+);
+-- The country flags a stage's `on_first_enter` events set (empire dashboard: how to get a
+-- building gated on a flag — 4.6 Cyberization stage 2's cyber.200 sets augmentation_center_available).
+DROP TABLE IF EXISTS situation_stage_flag;
+CREATE TABLE situation_stage_flag (
+    situation_key TEXT NOT NULL,
+    stage_key     TEXT NOT NULL,
+    flag          TEXT NOT NULL,
+    event_id      TEXT NOT NULL,
+    PRIMARY KEY (situation_key, stage_key, flag, event_id)
 );
 -- A situation stage's modifiers while the situation is in it (empire dashboard: research speed
 -- from the Nomad Economy's thriving stage and the like).
@@ -1325,6 +1350,25 @@ CREATE TABLE district_resource (
     resource TEXT NOT NULL,
     amount   REAL NOT NULL,
     PRIMARY KEY (key, kind, resource)
+);
+-- The triggered resource blocks of a building, district, ship size or starbase part, next to its
+-- `*_resource` row (the regular empire's). Per kind that has any triggered block, every block of
+-- that kind: the game sums those whose trigger holds, and an untriggered one always applies.
+-- 4.6: `buildings/nomadic_cost_switcher` (minerals, or rare crystals ×0.1 for a nomad),
+-- `country_uses_bio_ships`, `is_wilderness_empire`, `is_megacorp` surcharges, origins, civics.
+DROP TABLE IF EXISTS resource_variant;
+CREATE TABLE resource_variant (
+    source       TEXT NOT NULL,            -- the *_resource table: building_resource, district_resource,
+                                           -- ship_size_resource, starbase_module_resource, starbase_building_resource
+    key          TEXT NOT NULL,            -- the definition's key
+    kind         TEXT NOT NULL,            -- 'cost' | 'upkeep' | 'produces'
+    block        INTEGER NOT NULL,         -- the kind's blocks in file order, inline scripts after
+    resource     TEXT NOT NULL,
+    amount       REAL NOT NULL,            -- times the block's `mult`
+    trigger_json TEXT,                     -- a condition on the empire (`owner`/`from` followed in
+                                           -- place); planet or ship tests stay leaves; NULL: always
+    sort_order   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (source, key, kind, block, resource)
 );
 DROP TABLE IF EXISTS district_job;
 CREATE TABLE district_job (
@@ -1563,6 +1607,7 @@ CREATE TABLE technology_unlock (
     label      TEXT,            -- the object's name; an own line's title carries its prefix ("Unlocks Megastructure: Dyson Swarm")
     detail     TEXT,            -- an own line's or a feature's description
     sort_order INTEGER NOT NULL, -- per tech: own lines first, then derived ones by kind and name
+    condition_json TEXT,         -- a derived object's `show_tech_unlock_if`, a condition on the empire: the card lists it only then; NULL: always
     PRIMARY KEY (tech_key, kind, item_key)
 );
 -- What researching a tech needs (empire dashboard: techs within reach).
@@ -2021,6 +2066,7 @@ CREATE TABLE deed (
 DROP TABLE IF EXISTS ideology_building;
 DROP TABLE IF EXISTS ideology_concept;
 DROP TABLE IF EXISTS tenet_unlock;
+DROP TABLE IF EXISTS tenet_council_bypass;
 DROP TABLE IF EXISTS tenet_tier_modifier;
 DROP TABLE IF EXISTS tenet_tier;
 DROP TABLE IF EXISTS tenet_swap;
@@ -2215,6 +2261,12 @@ CREATE TABLE tenet_unlock (
     kind       TEXT NOT NULL,                  -- edict, policy, agenda, decision, … (the loc link's type)
     target_key TEXT NOT NULL,                  -- e.g. "broadcasting_authoritarian"
     sort_order INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenet_key) REFERENCES tenet(key)
+);
+CREATE TABLE tenet_council_bypass (
+    tenet_key    TEXT NOT NULL,                -- while active, this leader class of this ethic
+    leader_class TEXT,                         -- may occupy any non-enclave council position
+    ethic        TEXT,                         -- (game rule can_leader_bypass_councilor_conditions)
     FOREIGN KEY (tenet_key) REFERENCES tenet(key)
 );
 CREATE TABLE ideology_concept (

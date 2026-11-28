@@ -117,9 +117,12 @@ class TestLoadLocalisation(unittest.TestCase):
         self.assertEqual(labels['key1'], 'Label One')
         self.assertEqual(labels['key2'], 'Label Two')
 
-    def test_lowest_version_wins(self):
-        labels = self.write_and_load('l_english:\n key:1 "Newer"\n key:0 "Original"\n')
-        self.assertEqual(labels['key'], 'Original')
+    def test_highest_version_wins(self):
+        # a mod's key:0 against the game's key:2 (Sort Those Buildings, 4.6.1): the game's text
+        labels = self.write_and_load('l_english:\n key:0 "key Placeholder"\n key:2 "Real"\n')
+        self.assertEqual(labels['key'], 'Real')
+        labels = self.write_and_load('l_english:\n key:0 "First"\n key:0 "Second"\n')
+        self.assertEqual(labels['key'], 'First')  # a tie: the first read
 
     def test_single_ref_resolved_one_level(self):
         labels = self.write_and_load('l_english:\n alias:0 "$target$"\n target:0 "Real Label"\n')
