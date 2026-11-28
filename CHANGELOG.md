@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.28] - 2026-11-28
 
 ### Added
 
@@ -23,17 +23,19 @@ All notable changes to this project are documented here. The format follows
 - `situation_block`: what stops a situation, from each `monthly_progress` modifier with
   `mult = 0` or `factor = 0`: its text and conditions, `owner` blocks followed, a colony scope
   holding only building checks as `owns_building`, `num_buildings` as a leaf with its building
-  (47 on 4.6.1: an ascension's Genomic Research Facility, Augmentation Center, Identity Complex,
+  (47 on 4.6.0 and 4.6.1: an ascension's Genomic Research Facility, Augmentation Center, Identity Complex,
   Gene Tailoring, Psi Corps, Great Awakening, Chamber of Silence).
 
 ### Fixed
 
+- Windows: progress and SQL on stdout/stderr are written as UTF-8. A redirected stream used the
+  code page (cp1252), and the first `→` in the progress ended the extraction with a
+  `UnicodeEncodeError` (the dashboard 0.2.1, a player's report).
 - With `--mod`, a mod's localisation no longer beats the game's outside `replace/`: a mod's own
   files sort after the game's, and of one key's texts the highest version wins (before: the
   lowest). Sort Those Buildings' fallback names ("building_energy_nexus Placeholder") had
   replaced 10 vanilla building names, Energy Nexus and Mineral Purification Hubs among them.
   The unmodded dump is unchanged.
-
 - `modifier_label.positive_is_good`: lower is better for every cooldown, empire size, amenities
   usage, border friction and maximum market price increase key. 13 keys were coloured the wrong
   way, among them Council Agenda Cooldown, Border Friction, Maximum Market Price Increase and
