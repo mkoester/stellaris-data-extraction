@@ -76,6 +76,12 @@ def _merge_dir(d: Path, progress) -> dict:
 
 
 def main():
+    # Windows writes a redirected stdout/stderr in the locale's code page (cp1252), which has no
+    # '→': the extraction ended at its first such progress line (the dashboard 0.2.1 on Windows, a
+    # player's report of 2026-11-28). The SQL on stdout wants UTF-8 anyway.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(
         description=f'Stellaris Data Extractor v{__version__} -> SQL / SQLite',
         formatter_class=argparse.RawDescriptionHelpFormatter,

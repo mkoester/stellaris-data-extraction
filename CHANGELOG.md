@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows: progress and SQL on stdout/stderr are written as UTF-8. A redirected stream used the
+  code page (cp1252), and the first `→` in the progress ended the extraction with a
+  `UnicodeEncodeError` (the dashboard 0.2.1, a player's report).
+
 ### Added
 
 - `resource_variant`: every conditional cost, upkeep and output block of buildings, districts,
