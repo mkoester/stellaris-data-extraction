@@ -7,7 +7,7 @@ from pathlib import Path
 
 from extractor.clausewitz import parse_file
 from extractor.localisation import load_localisation
-from extractor.mods import _localisation_target, cut, losing_spans, overlay, top_level_spans, unpack
+from extractor.mods import _localisation_target, after_game, cut, losing_spans, overlay, top_level_spans, unpack
 
 
 class TestTopLevelSpans(unittest.TestCase):
@@ -58,6 +58,20 @@ class TestLocalisationTarget(unittest.TestCase):
         self.assertIsNone(_localisation_target('localisation/german/x_l_german.yml'))
 
 
+class TestAfterGame(unittest.TestCase):
+    def test_paths(self):
+        game = {'localisation/english/buildings_l_english.yml'}
+        self.assertEqual(after_game('localisation/english/!stb_l_english.yml', game),
+                         'localisation/english/~!stb_l_english.yml')
+        self.assertEqual(after_game('localisation/english/sub/a_l_english.yml', game),
+                         'localisation/english/~sub/a_l_english.yml')  # a subfolder sorts last too
+        self.assertEqual(after_game('localisation/english/buildings_l_english.yml', game),
+                         'localisation/english/buildings_l_english.yml')  # replaces the game's
+        self.assertEqual(after_game('localisation/english/replace/a_l_english.yml', game),
+                         'localisation/english/replace/a_l_english.yml')
+        self.assertEqual(after_game('common/x/a.txt', game), 'common/x/a.txt')
+
+
 def write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding='utf-8')
@@ -72,7 +86,8 @@ class TestOverlay(unittest.TestCase):
             write(game / 'common/species_archetypes/00_archetypes.txt', 'BIOLOGICAL = { max_traits = 5 }')
             write(game / 'common/on_actions/00_on_actions.txt', 'on_game_start = { events = { a.1 } }')
             write(game / 'common/zones/00_zones.txt', 'zone_x = { }')
-            write(game / 'localisation/english/a_l_english.yml', 'l_english:\n k:0 "Vanilla"\n')
+            write(game / 'localisation/english/a_l_english.yml',
+                  'l_english:\n k:0 "Vanilla"\n n:0 "Energy Nexus"\n')
             write(game / 'gfx/x.dds', 'binary')
             write(mod1 / 'descriptor.mod', 'name="One"\nversion="1.0"\nreplace_path="common/zones"')
             write(mod1 / 'common/colony_types/zzz_mod.txt', 'col_a = { v = 2 }\ncol_new = { v = 3 }')
@@ -81,6 +96,9 @@ class TestOverlay(unittest.TestCase):
             write(mod1 / 'localisation/replace/b_l_english.yml', 'l_english:\n k:0 "Modded"\n')
             write(mod1 / 'localisation/german/b_l_german.yml', 'l_german:\n k:0 "Deutsch"\n')
             write(mod2 / 'common/species_archetypes/00_archetypes.txt', 'BIOLOGICAL = { max_traits = 12 }')
+            # Sort Those Buildings' fallback names, in a file that sorts before the game's
+            write(mod2 / 'localisation/english/!stb_l_english.yml',
+                  'l_english:\n n:0 "n Placeholder"\n own:0 "Mod key"\n')
             out.mkdir()
 
             overrides = overlay(game, [mod1, mod2], out)
@@ -98,8 +116,11 @@ class TestOverlay(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in (out / 'common/on_actions').iterdir()),
                              ['00_on_actions.txt', 'mod_on_actions.txt'])  # merged, not cut
             self.assertEqual([p.name for p in (out / 'common/zones').iterdir()], ['mod_zones.txt'])
-            self.assertEqual(load_localisation(out / 'localisation/english')['k'], 'Modded')
+            loc = load_localisation(out / 'localisation/english')
+            self.assertEqual(loc['k'], 'Modded')
             self.assertFalse((out / 'localisation/german').exists())
+            self.assertEqual(loc['n'], 'Energy Nexus')  # the game's text beats a mod's placeholder
+            self.assertEqual(loc['own'], 'Mod key')
             self.assertTrue((out / 'gfx/x.dds').exists())
             self.assertEqual(overrides, {str(mod1): 1, str(mod2): 0})
             # the game's own folder is untouched

@@ -26,8 +26,19 @@ All notable changes to this project are documented here. The format follows
 - `tenet_council_bypass`: the tenets that let one leader class of one ethic take any non-enclave
   council position (Sacred Counsel, Chain of Command, Rationality), from the game rule
   `can_leader_bypass_councilor_conditions`.
+- `situation_block`: what stops a situation, from each `monthly_progress` modifier with
+  `mult = 0` or `factor = 0`: its text and conditions, `owner` blocks followed, a colony scope
+  holding only building checks as `owns_building`, `num_buildings` as a leaf with its building
+  (47 on 4.6.1: an ascension's Genomic Research Facility, Augmentation Center, Identity Complex,
+  Gene Tailoring, Psi Corps, Great Awakening, Chamber of Silence).
 
 ### Fixed
+
+- With `--mod`, a mod's localisation no longer beats the game's outside `replace/`: a mod's own
+  files sort after the game's, and of one key's texts the highest version wins (before: the
+  lowest). Sort Those Buildings' fallback names ("building_energy_nexus Placeholder") had
+  replaced 10 vanilla building names, Energy Nexus and Mineral Purification Hubs among them.
+  The unmodded dump is unchanged.
 
 - `modifier_label.positive_is_good`: lower is better for every cooldown, empire size, amenities
   usage, border friction and maximum market price increase key. 13 keys were coloured the wrong

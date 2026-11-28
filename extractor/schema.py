@@ -1216,6 +1216,7 @@ CREATE TABLE event_chain (
     category      TEXT,                    -- `situation_log_category`: precursors / developments / …
     counters_json TEXT                     -- [{"key":"cybrex_artifacts","max":6}]; NULL: none
 );
+DROP TABLE IF EXISTS situation_block;
 DROP TABLE IF EXISTS situation_stage_modifier;
 DROP TABLE IF EXISTS situation_stage;
 DROP TABLE IF EXISTS situation_approach;
@@ -1244,6 +1245,18 @@ CREATE TABLE situation_stage (
     name          TEXT,                    -- e.g. "Medium"
     sort_order    INTEGER NOT NULL,        -- the stage's index: a save's `situations.<id>.stage`
     PRIMARY KEY (situation_key, key)
+);
+-- What stops a situation: a `monthly_progress` modifier with `mult = 0` or `factor = 0` — while
+-- its conditions hold, the situation makes no progress (empire dashboard: what an ascension needs,
+-- e.g. Gene Tailoring for genetic ascension, a Chamber of Silence for the Endbringers' Shroud).
+CREATE TABLE situation_block (
+    situation_key TEXT NOT NULL,
+    sort_order    INTEGER NOT NULL,
+    text          TEXT,                    -- the modifier's `desc`, localised: why it stopped
+    trigger_json  TEXT NOT NULL,           -- normalised; `owner` followed; num_buildings as
+                                           -- {leaf, building, cmp, value}
+    PRIMARY KEY (situation_key, sort_order),
+    FOREIGN KEY (situation_key) REFERENCES situation(key)
 );
 -- The country flags a stage's `on_first_enter` events set (empire dashboard: how to get a
 -- building gated on a flag — 4.6 Cyberization stage 2's cyber.200 sets augmentation_center_available).

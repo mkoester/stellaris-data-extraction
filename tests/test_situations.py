@@ -4,8 +4,8 @@ import json
 import unittest
 
 from extractor.clausewitz import Parser, tokenize
-from extractor.situations import (chain_counters, event_ids, flags_set, is_permanent, outcomes_json, project_number, stage_keys,
-                                  stage_modifiers)
+from extractor.situations import (chain_counters, event_ids, flags_set, is_permanent, outcomes_json,
+                                  progress_blocks, project_number, stage_keys, stage_modifiers)
 
 # Shaped like crashed_ship_asteroid_category's on_success (common/anomalies/00_anomaly_categories.txt).
 ANOMALY = """
@@ -78,6 +78,59 @@ class TestOutcomes(unittest.TestCase):
     def test_no_events_is_none(self):
         self.assertIsNone(outcomes_json({'add_resource': {'energy': '100'}}, {}))
 
+
+# Shaped like 4.6.1 genetic_ascension_situation's and situation_breach_shroud_endbringers'
+# monthly_progress (common/situations/12_biogenesis_situations.txt, 13_shroud_situations.txt).
+PROGRESS = """
+monthly_progress = {
+	base = 5
+	modifier = { mult = 1.2 desc = "fast" current_situation_approach = a }
+	modifier = {
+		mult = 0
+		desc = "situation_genomic_facility_needed_desc"
+		owner = {
+			NOT = { any_owned_colony = { has_active_building = building_genomic_facility } }
+			is_wilderness_empire = no
+		}
+	}
+	modifier = {
+		mult = 0
+		desc = situation_gene_tailoring_needed_desc
+		current_stage = stage_2
+		owner = { NOT = { has_technology = tech_gene_tailoring } }
+	}
+	modifier = {
+		mult = 0
+		desc = chamber
+		current_stage = stage_2
+		owner = {
+			has_tradition = tr_psionics_shroud_psi_corps
+			num_buildings = { type = building_chamber_of_silence value < 1 }
+		}
+	}
+	modifier = { mult = 0 desc = odd any_owned_colony = { has_active_building = x is_capital = yes } }
+}
+"""
+
+
+class TestProgressBlocks(unittest.TestCase):
+    def test_what_stops_a_situation(self):
+        blocks = progress_blocks(Parser(tokenize(PROGRESS)).parse())
+        self.assertEqual([d for d, _ in blocks], [
+            'situation_genomic_facility_needed_desc', 'situation_gene_tailoring_needed_desc', 'chamber', 'odd'])
+        self.assertEqual(blocks[0][1], {'op': 'and', 'args': [
+            {'op': 'not', 'args': [{'leaf': 'owns_building', 'value': 'building_genomic_facility'}]},
+            {'leaf': 'is_wilderness_empire', 'value': 'no'}]})
+        self.assertEqual(blocks[1][1], {'op': 'and', 'args': [
+            {'leaf': 'current_stage', 'value': 'stage_2'},
+            {'op': 'not', 'args': [{'leaf': 'has_technology', 'value': 'tech_gene_tailoring'}]}]})
+        self.assertIn({'leaf': 'num_buildings', 'building': 'building_chamber_of_silence', 'cmp': '<', 'value': '1'},
+                      blocks[2][1]['args'][1]['args'])
+        # a colony scope asking more than a building stays opaque
+        self.assertEqual(blocks[3][1], {'leaf': 'any_owned_colony', 'value': 'scope'})
+
+    def test_none_without_monthly_progress(self):
+        self.assertEqual(progress_blocks({}), [])
 
 class TestFlagsSet(unittest.TestCase):
     def test_every_branch_counts_and_comments_do_not(self):
